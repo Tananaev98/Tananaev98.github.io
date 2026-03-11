@@ -1,6 +1,6 @@
 @echo off
 git add .
 git commit -m "quick update"
-git push
+git push game2 master
 echo Done!
 pause
