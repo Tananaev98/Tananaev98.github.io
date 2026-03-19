@@ -111,6 +111,11 @@ const startSHOT_INTERVAL = activeHeroObject.startSHOT_INTERVAL;
 // Глобальные параметры оглушения
 
 let globalDamage = startGlobalDamage; // Базовый урон
+let globalDamageBonusPercent = 0; // Прирост урона в процентах
+const globalMaxDamageBonusPercent = activeHeroObject.maxDamageBonusPercentSize ?? 0; // Прирост урона в процентах
+let globalDamageBonusPercentSize = activeHeroObject.DamageBonusPercentSize ?? 0; //Размер прироста в процентах
+let blockCount = 0; //Счетчик заблокированных атак
+
 let globalCritChance = startGlobalCritChance;    // 15% шанс критического удара
 let globalCritMultiplier = startGlobalCritMultiplier; // 150% крит урон
 const WOUND_DURATION = 5000; // 5 секунд в миллисекундах
@@ -186,7 +191,7 @@ class Enemy {
         this.woundEndTime = 0;
         this.woundDamagePerSecond = 0;
         this.lastWoundTick = 0;
-        
+		this.lastShotTime = 0;        
         // Создаем DOM элемент для отображения врага
         this.element = this.createEnemyElement();
         
@@ -1183,19 +1188,23 @@ function setupDesktopAim() {
  * Проверяет, находится ли враг в радиусе прицела и наносит урон
  */
 function checkAimAndDamage() {
-    const now = Date.now();
-    if (now - lastShotTime < SHOT_INTERVAL) return;
-    lastShotTime = now;
-
-    // Получаем врага под прицелом
     const enemy = getEnemyAtPoint(aimPosition.x, aimPosition.y);
-    if (enemy) {
-        const index = activeEnemies.indexOf(enemy);
-        if (index !== -1) {
-            const isDead = damageEnemy(enemy, index);
-            if (isDead) {
-                activeEnemies.splice(index, 1);
-            }
+    if (!enemy) return;
+
+    const now = Date.now();
+    const isBoss = bossM.includes(enemy.type);
+    const shotInterval = isBoss ? SHOT_INTERVAL : 300; // разные интервалы
+	
+    // Если с момента последнего выстрела по этому врагу прошло меньше интервала — выходим
+    if (now - (enemy.lastShotTime) < shotInterval) return;
+
+    enemy.lastShotTime = now;
+
+    const index = activeEnemies.indexOf(enemy);
+    if (index !== -1) {
+        const isDead = damageEnemy(enemy, index);
+        if (isDead) {
+            activeEnemies.splice(index, 1);
         }
     }
 }
@@ -1204,12 +1213,21 @@ function checkAimAndDamage() {
 function damageEnemy(enemy, index) {
     // Рассчитываем урон с учетом крита
     const damageResult = calculateDamage();
+	
+	const isBoss = bossM.includes(enemy.type);
+	
+	if(activeHeroObject.name == 'eremei' && !isBoss) {
+		addDamageBonus();
+	}
+	
     
     // Наносим урон
     enemy.hp -= damageResult.damage;
     
     // Запускаем анимацию удара по врагу
-    animateEnemyHit(enemy);
+	
+	animateEnemyHit(enemy);
+	
 	
 	if (enemy.type === bossAliveName && currentBoss) {
         updateBossHealthBar();
@@ -1231,8 +1249,10 @@ function damageEnemy(enemy, index) {
     const yPercent = ((enemyRect.top + enemyRect.height / 2 - fieldRect.top) / fieldRect.height) * 100;
     
     // Создаем анимацию текста урона (передаем информацию о крите)
-    createDamageText(damageResult.damage, xPercent, yPercent, damageResult.isCritical);
-    
+	if (isBoss) {
+		createDamageText(damageResult.damage, xPercent, yPercent, damageResult.isCritical);
+    }
+	
     // Визуальная обратная связь при попадании
     enemy.element.style.filter = 'brightness(1.5)';
     setTimeout(() => {
@@ -1311,7 +1331,7 @@ function createWoundText(enemy) {
 //* Рассчитывает урон с учетом шанса критического удара
 function calculateDamage() {
     // Базовый урон
-    let damage = globalDamage;
+    let damage = (globalDamage+ (globalDamage * globalDamageBonusPercent));
     let isCritical = false;
     
     // Проверяем, выпал ли критический удар
@@ -1332,6 +1352,12 @@ function calculateDamage() {
         isCritical: isCritical
     };
 }
+
+function addDamageBonus() {
+	globalDamageBonusPercent = (globalDamageBonusPercent + globalDamageBonusPercentSize);
+	if (globalDamageBonusPercent >= globalMaxDamageBonusPercent) {globalDamageBonusPercent = globalMaxDamageBonusPercent};
+}
+
 /* 
  * Запускает анимацию удара по врагу
  * @param {Enemy} enemy - объект врага
@@ -1617,7 +1643,7 @@ function showLevelUpModal() {
         modal.innerHTML = `
             <div class="modal-content">
                 <h2>🎉 УРОВЕНЬ ${playerLevel} 🎉</h2>
-                <p class="modal-subtitle">Выберите одно дополнительное улучшение:</p>
+                <p class="modal-subtitle">Выберите одно временное улучшение:</p>
                 <div class="upgrade-options" id="upgradeOptions"></div>
             </div>
         `;
@@ -1775,7 +1801,7 @@ function getAvailableUpgrades() {
     if (SHOT_INTERVAL > 100) { // Только если интервал больше 200 мс
         const fireRateRarity = getRandomRarity();
         const fireRateMultiplier = getRarityMultiplier(fireRateRarity);
-        const fireRateDecrease = (390-startSHOT_INTERVAL) * fireRateMultiplier;
+        const fireRateDecrease = (1000-startSHOT_INTERVAL) * fireRateMultiplier;
         const newInterval = Math.max(100, SHOT_INTERVAL - fireRateDecrease);
         
         upgrades.push({

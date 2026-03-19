@@ -27,6 +27,16 @@ function clearGameState() {
 function completeLevel() {
     if (lvlNumber > gameState.lastCompletedLevel) {
         gameState.lastCompletedLevel = lvlNumber;
+        
+        gameState.mHero.forEach(heroKey => {
+            const hero = gameState[heroKey];
+            if (!hero) return;
+            
+            if (hero.lvlUnlock <= lvlNumber) {
+                hero.unlock = true; 
+            }
+        }); // Добавлена закрывающая скобка
+        
         saveGameState();
     }
 }
@@ -40,21 +50,24 @@ function createGameState() {
         const defaultState = {
 			lastCompletedLevel: 0,
 			mHero: ['eremei', 'dunya', 'luka', 'kim', 'vas', 'gen', 'gm', 'kir', 'gam', 'gama','gamb','gamc', 'gamd','game','gamf', 'gamg', 'gamh', ],
-			activeHero: 'luka',
+			activeHero: 'eremei',
 			eremei: {
 				name: 'eremei', 
 				dispName: 'Еремей Дуболом',
 				image: 'images/hero/2_eremei/eremei_min.png',
 				fullImage: 'images/hero/2_eremei/eremei_full.png',
-				startGlobalDamage: 70,
+				startGlobalDamage: 130,
 				startGlobalCritChance: 0.01,
 				startGlobalCritMultiplier: 1.8,
 				startGlobalWoundChance	: 0.01,
 				startCastleDamageReduction : 0.03,
-				startSHOT_INTERVAL : 380,
+				startSHOT_INTERVAL : 990,
 				castleHP : 120,
 				lvlUnlock: 1,
+				feature: 'Каждая заблокированная <br> атака увеличивает урон <br> на 0,2% вплоть до 35%',
 				unlock: true, 
+				maxDamageBonusPercentSize: 0.35,
+				DamageBonusPercentSize: 0.002,
 			},
 			
 			
@@ -71,7 +84,7 @@ function createGameState() {
 				startSHOT_INTERVAL : 360,
 				castleHP : 100,
 				lvlUnlock: 10,
-				unlock: true,
+				unlock: false,
 			},
 			
 			luka: {
@@ -87,14 +100,14 @@ function createGameState() {
 				startSHOT_INTERVAL : 340,
 				castleHP : 70,
 				lvlUnlock: 20,
-				unlock: true,
+				unlock: false,
 			},
 			
 			kim: {
 				name: 'luka', 
 				dispName: 'Лука стрелок',
 				image: 'images/hero/3_luka/luka_min.png',
-				startGlobalDamage: 25,
+				startGlobalDamage: 300,
 				startGlobalCritChance: 0.25,
 				startGlobalCritMultiplier: 1.8,
 				startGlobalWoundChance	: 0.1,

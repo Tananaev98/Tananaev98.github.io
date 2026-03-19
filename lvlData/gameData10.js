@@ -1,4 +1,4 @@
-let lvlNumber = 3; 
+let lvlNumber = 10; 
 
 
 const ENEMY_TYPES = {

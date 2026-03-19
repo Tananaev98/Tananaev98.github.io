@@ -341,3 +341,23 @@ body, .main_menu_image, .select-character-button,
 .character-portrait.locked {
     cursor: not-allowed !important;
 }
+
+.statH {
+	color: #483554;
+    font-size: 20px;	
+	 font-weight: bold;
+}
+
+.feature-container {
+  display: grid;
+  /* 'max-content' заставит первую колонку быть ровно по ширине слова */
+  grid-template-columns: max-content 1fr; 
+  gap: 6px;      /* Расстояние между двоеточием и текстом */
+  align-items: start;
+  text-align: left; /* Важно, если у родителя стоит center */
+}
+
+.featur {
+  font-weight: bold; /* Для красоты, как на скрине */
+  white-space: nowrap;
+}

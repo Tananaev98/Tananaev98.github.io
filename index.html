@@ -117,14 +117,24 @@ if (clearBtn) {
 					<div class="character-info-content">
 						<div class="character-stats">
 							<div class="hero-stats">
+								<p><a class="statH">Стартовые характеристики:</a></p><br>
+								<p><a>(Характеристики с которыми персонаж </a></p>
+								<p><a>начинает прохождение уровней</a></p>
+								<p><a>чем выше та или иная характеристика</a></p>
+								<p><a>тем сильнее будут ее временные усиления</a></p>
+								<p><a>при прохождении уровней)</a></p><br>
 								<p><span>Урон:</span> <span class="value">${hero.startGlobalDamage}</span></p>
 								<p><span>Шанс критического урона:</span> <span class="value">${(hero.startGlobalCritChance * 100).toFixed(0)}%</span></p>
 								<p><span>Критический урон:</span> <span class="value">${hero.startGlobalCritMultiplier * 100}%</span></p>
 								<p><span>Шанс ранения:</span> <span class="value">${(hero.startGlobalWoundChance * 100).toFixed(0)}%</span></p>
-								<p><span>Скорость атаки:</span> <span class="value">${400 - hero.startSHOT_INTERVAL}</span></p>
+								<p><span>Скорость атаки:</span> <span class="value">${1000 - hero.startSHOT_INTERVAL}</span></p>
 								<p><span>Здоровье:</span> <span class="value">${hero.castleHP}</span></p>
 								<p><span>Защита (снижение урона):</span> <span class="value">${(hero.startCastleDamageReduction * 100).toFixed(0)}%</span></p>
-							</div>
+						<p class="feature-container">
+						  <span class="featur">Особенность:</span>
+						  <span class="value">${hero.feature}</span>
+						</p>
+						</div>
 						</div>
 						<div class="character-fullimage">
 							<img src="${hero.fullImage}" alt="${hero.dispName}">
