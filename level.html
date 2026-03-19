@@ -7,22 +7,38 @@
     <link rel="stylesheet" href="main_css.css">
 
     <script>
-        // Получаем номер уровня из URL
-        const params = new URLSearchParams(window.location.search);
-        const level = params.get("level") || 1;
+const params = new URLSearchParams(window.location.search);
+const level = params.get("level") || 1;
 
-        // Подключаем нужный gameData
-        const dataScript = document.createElement("script");
-        dataScript.src = "lvlData/gameData" + level + ".js";
+let loadedCount = 0;
+const totalToLoad = 2; // gameData + saveData
 
-        dataScript.onload = function () {
-            // После загрузки данных подключаем игру
-            const gameScript = document.createElement("script");
-            gameScript.src = "game.js";
-            document.body.appendChild(gameScript);
-        };
+function checkAllLoaded() {
+    if (loadedCount === totalToLoad) {
+        // Оба файла загружены – запускаем игру
+        const gameScript = document.createElement("script");
+        gameScript.src = "game.js";
+        document.body.appendChild(gameScript);
+    }
+}
 
-        document.head.appendChild(dataScript);
+// Загружаем gameData
+const dataScript = document.createElement("script");
+dataScript.src = "lvlData/gameData" + level + ".js";
+dataScript.onload = function () {
+    loadedCount++;
+    checkAllLoaded();
+};
+document.head.appendChild(dataScript);
+
+// Загружаем saveData
+const saveScript = document.createElement("script");
+saveScript.src = "saveData.js";
+saveScript.onload = function () {
+    loadedCount++;
+    checkAllLoaded();
+};
+document.head.appendChild(saveScript);
     </script>
 
 </head>

@@ -10,6 +10,9 @@
 <body>
 
   <div class="select-character-button" id="selectCharacterBtn">Персонажи</div>
+  
+  <div class="select-character-button" id="clearProgressBtn">Очистить прогресс (временная кнопка для отладки)</div>
+  
 <br><br><br><br><br>
 <a href="level.html?level=1" class="level locked" data-level="1">Уровень 1 - Мятежная выпечка</a>
 <a href="level.html?level=2" class="level locked" data-level="2">Уровень 2 - Грибная поляна</a>
@@ -33,17 +36,28 @@
 <a href="level.html?level=20" class="level locked" data-level="20">Уровень 20 - Не проработан, временно дубль уровня 3</a>
 <a href="level.html?level=21" class="level locked" data-level="21">Уровень 21 - Не проработан, временно дубль уровня 3</a>
 
-<script>
-    // ==================== Работа с localStorage ====================
-    let gameState = { lastCompletedLevel: 0 };
+<script src="saveData.js"></script>
 
-    // Загружаем прогресс игрока (только чтение)
-    const saved = localStorage.getItem('gameState');
-    if (saved) {
-        gameState = JSON.parse(saved);
-		console.log(gameState);
-    }
-	
+<script>
+
+
+// Получаем кнопку очистки прогресса
+const clearBtn = document.getElementById('clearProgressBtn');
+
+if (clearBtn) {
+    clearBtn.addEventListener('click', function() {
+        // Проверяем, существует ли функция clearGameState (например, из saveData.js)
+        if (typeof clearGameState === 'function') {
+            // Вызываем функцию очистки
+            clearGameState();
+            location.reload();
+        } else {
+            console.error('Функция clearGameState не найдена. Проверьте подключение saveData.js');
+        }
+    });
+}
+
+    // ==================== Работа с localStorage ====================
 
   // Функция сохранения
         function saveGameState() {
@@ -107,7 +121,7 @@
 								<p><span>Шанс критического урона:</span> <span class="value">${(hero.startGlobalCritChance * 100).toFixed(0)}%</span></p>
 								<p><span>Критический урон:</span> <span class="value">${hero.startGlobalCritMultiplier * 100}%</span></p>
 								<p><span>Шанс ранения:</span> <span class="value">${(hero.startGlobalWoundChance * 100).toFixed(0)}%</span></p>
-								<p><span>Скорость атаки:</span> <span class="value">${1000 - hero.startSHOT_INTERVAL}</span></p>
+								<p><span>Скорость атаки:</span> <span class="value">${400 - hero.startSHOT_INTERVAL}</span></p>
 								<p><span>Здоровье:</span> <span class="value">${hero.castleHP}</span></p>
 								<p><span>Защита (снижение урона):</span> <span class="value">${(hero.startCastleDamageReduction * 100).toFixed(0)}%</span></p>
 							</div>

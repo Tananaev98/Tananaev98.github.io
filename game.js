@@ -2,7 +2,7 @@
 //clearGameState(); //очищаем прогресс для отладки 
     // Загружаем прогресс игрока (только чтение)
 
-let gameStateLstorage = createGameState();
+let gameStateLstorage = gameState;
 
 
 const activeHeroStr = gameStateLstorage.activeHero;
@@ -87,6 +87,8 @@ let castleHP = {
     level: 1
 };
 
+const startGlobalCastleHp = activeHeroObject.castleHP;
+
 castleHP.current = activeHeroObject.castleHP;
 castleHP.max = activeHeroObject.castleHP;
 
@@ -98,13 +100,13 @@ let castleImage = null;
 let aimElement = null;
 let damageContainer = null;
 
-let startGlobalDamage = activeHeroObject.startGlobalDamage; 
-let startGlobalCritChance = activeHeroObject.startGlobalCritChance;    
-let startGlobalCritMultiplier = activeHeroObject.startGlobalCritMultiplier; 
+const startGlobalDamage = activeHeroObject.startGlobalDamage; 
+const startGlobalCritChance = activeHeroObject.startGlobalCritChance;    
+const startGlobalCritMultiplier = activeHeroObject.startGlobalCritMultiplier; 
 
-let startGlobalWoundChance = activeHeroObject.startGlobalWoundChance;
-let startCastleDamageReduction = activeHeroObject.startCastleDamageReduction;
-let startSHOT_INTERVAL = activeHeroObject.startSHOT_INTERVAL;
+const startGlobalWoundChance = activeHeroObject.startGlobalWoundChance;
+const startCastleDamageReduction = activeHeroObject.startCastleDamageReduction;
+const startSHOT_INTERVAL = activeHeroObject.startSHOT_INTERVAL;
 
 // Глобальные параметры оглушения
 
@@ -1673,7 +1675,7 @@ function getAvailableUpgrades() {
     // 1. Урон
     const damageRarity = getRandomRarity();
     const damageMultiplier = getRarityMultiplier(damageRarity);
-    const damageIncrease = Math.round(50 * damageMultiplier);
+    const damageIncrease = Math.round(startGlobalDamage * damageMultiplier);
     upgrades.push({
         id: 'damage',
         name: 'Урон',
@@ -1689,7 +1691,7 @@ function getAvailableUpgrades() {
     if (globalCritChance < 1) {
         const critChanceRarity = getRandomRarity();
         const critChanceMultiplier = getRarityMultiplier(critChanceRarity);
-        const critChanceIncrease = 0.05 * critChanceMultiplier;
+        const critChanceIncrease = startGlobalCritChance * critChanceMultiplier;
         upgrades.push({
             id: 'critChance',
             name: 'Шанс крита',
@@ -1705,7 +1707,7 @@ function getAvailableUpgrades() {
     // 3. Множитель крита - всегда доступен
     const critMultiplierRarity = getRandomRarity();
     const critMultiplierMultiplier = getRarityMultiplier(critMultiplierRarity);
-    const critMultiplierIncrease = 0.25 * critMultiplierMultiplier;
+    const critMultiplierIncrease   = (startGlobalCritMultiplier/5) * critMultiplierMultiplier;
     upgrades.push({
         id: 'critMultiplier',
         name: 'Множитель крита',
@@ -1721,7 +1723,7 @@ function getAvailableUpgrades() {
     if (globalWoundChance < 1) {
         const woundChanceRarity = getRandomRarity();
         const woundChanceMultiplier = getRarityMultiplier(woundChanceRarity);
-        const woundChanceIncrease = 0.05 * woundChanceMultiplier;
+        const woundChanceIncrease = startGlobalWoundChance * woundChanceMultiplier;
         upgrades.push({
             id: 'woundChance',
             name: 'Шанс ранения',
@@ -1738,7 +1740,7 @@ function getAvailableUpgrades() {
     // 6. Здоровье  - всегда доступно
     const castleHpRarity = getRandomRarity();
     const castleHpMultiplier = getRarityMultiplier(castleHpRarity);
-    const castleHpIncrease = Math.round(40 * castleHpMultiplier);
+    const castleHpIncrease = Math.round(startGlobalCastleHp * castleHpMultiplier);
     upgrades.push({
         id: 'castleHP',
         name: 'Здоровье',
@@ -1756,7 +1758,7 @@ function getAvailableUpgrades() {
     if (castleDamageReduction < 0.99) {
         const defenseRarity = getRandomRarity();
         const defenseMultiplier = getRarityMultiplier(defenseRarity);
-        const defenseIncrease = 0.05 * defenseMultiplier;
+        const defenseIncrease = startCastleDamageReduction * defenseMultiplier;
         upgrades.push({
             id: 'castleDefense',
             name: 'Защита',
@@ -1773,13 +1775,13 @@ function getAvailableUpgrades() {
     if (SHOT_INTERVAL > 100) { // Только если интервал больше 200 мс
         const fireRateRarity = getRandomRarity();
         const fireRateMultiplier = getRarityMultiplier(fireRateRarity);
-        const fireRateDecrease = 20 * fireRateMultiplier;
+        const fireRateDecrease = (390-startSHOT_INTERVAL) * fireRateMultiplier;
         const newInterval = Math.max(100, SHOT_INTERVAL - fireRateDecrease);
         
         upgrades.push({
             id: 'fireRate',
-            name: 'Скорострельность',
-            description: `Ускоряет стрельбу на ${fireRateDecrease} мс`,
+            name: 'Скорость атаки',
+            description: `Увеличивает скорость атаки на ${fireRateDecrease}`,
             rarity: fireRateRarity,
             apply: function() {
                 SHOT_INTERVAL = Math.max(200, SHOT_INTERVAL - fireRateDecrease);
@@ -1815,302 +1817,7 @@ function getRarityColor(rarity) {
     };
     return colors[rarity] || '#808080';
 }
-// ==================== Сохранение и загрузка прогреса ====================
 
-
-// 1. Инициализация прогресса
-let gameState = createGameState();
-
-// 2. Сохранение
-function saveGameState() {
-    localStorage.setItem('gameState', JSON.stringify(gameState));
-}
-
-// 3. Загрузка (чтение без изменения gameState)
-function loadGameState() {
-    const saved = localStorage.getItem('gameState');
-    if (saved) {
-        return JSON.parse(saved);
-    }
-    return null;
-}
-
-// 4. Очистка (для отладки)
-function clearGameState() {
-    localStorage.removeItem('gameState');
-}
-
-// 5. Обновление уровня
-function completeLevel() {
-    if (lvlNumber > gameState.lastCompletedLevel) {
-        gameState.lastCompletedLevel = lvlNumber;
-        saveGameState();
-    }
-}
-
-// 6. Создание/инициализация прогресса
-function createGameState() {
-    const saved = localStorage.getItem('gameState');
-    if (saved) {
-        return JSON.parse(saved); // читаем из localStorage
-    } else {
-        const defaultState = {
-			lastCompletedLevel: 0,
-			mHero: ['eremei', 'dunya', 'luka', 'kim', 'vas', 'gen', 'gm', 'kir', 'gam', 'gama','gamb','gamc', 'gamd','game','gamf', 'gamg', 'gamh', ],
-			activeHero: 'luka',
-			eremei: {
-				name: 'eremei', 
-				dispName: 'Еремей Дуболом',
-				image: 'images/hero/2_eremei/eremei_min.png',
-				fullImage: 'images/hero/2_eremei/eremei_full.png',
-				startGlobalDamage: 30,
-				startGlobalCritChance: 0.15,
-				startGlobalCritMultiplier: 1.5,
-				startGlobalWoundChance	: 0.1,
-				startCastleDamageReduction : 0.01,
-				startSHOT_INTERVAL : 380,
-				castleHP : 100,
-				lvlUnlock: 1,
-				unlock: true, 
-			},
-			
-			
-			dunya: {
-				name: 'dunya', 
-				dispName: 'Ветроманка Дуня',
-				image: 'images/hero/1_babka/dunya_min.png',
-				fullImage: 'images/hero/1_babka/dunya_full.png',
-				startGlobalDamage: 30,
-				startGlobalCritChance: 0.15,
-				startGlobalCritMultiplier: 1.5,
-				startGlobalWoundChance	: 0.1,
-				startCastleDamageReduction : 0.01,
-				startSHOT_INTERVAL : 380,
-				castleHP : 100,
-				lvlUnlock: 10,
-				unlock: true,
-			},
-			
-			luka: {
-				name: 'luka', 
-				dispName: 'Лука стрелок',
-				image: 'images/hero/3_luka/luka_min.png',
-				fullImage: 'images/hero/3_luka/luka_full.png',
-				startGlobalDamage: 25,
-				startGlobalCritChance: 0.25,
-				startGlobalCritMultiplier: 1.8,
-				startGlobalWoundChance	: 0.1,
-				startCastleDamageReduction : 0.01,
-				startSHOT_INTERVAL : 360,
-				castleHP : 50,
-				lvlUnlock: 20,
-				unlock: true,
-			},
-			
-			kim: {
-				name: 'luka', 
-				dispName: 'Лука стрелок',
-				image: 'images/hero/3_luka/luka_min.png',
-				startGlobalDamage: 25,
-				startGlobalCritChance: 0.25,
-				startGlobalCritMultiplier: 1.8,
-				startGlobalWoundChance	: 0.1,
-				startCastleDamageReduction : 0.01,
-				startSHOT_INTERVAL : 360,
-				castleHP : 50,
-				lvlUnlock: 30,
-				unlock: false,
-			},
-			
-			
-			vas: {
-				name: 'luka', 
-				dispName: 'Лука стрелок',
-				image: 'images/hero/3_luka/luka_min.png',
-				startGlobalDamage: 25,
-				startGlobalCritChance: 0.25,
-				startGlobalCritMultiplier: 1.8,
-				startGlobalWoundChance	: 0.1,
-				startCastleDamageReduction : 0.01,
-				startSHOT_INTERVAL : 360,
-				castleHP : 50,
-				lvlUnlock: 40,
-				unlock: false,
-			},
-			
-			
-			gen: {
-				name: 'luka', 
-				dispName: 'Лука стрелок',
-				image: 'images/hero/3_luka/luka_min.png',
-				startGlobalDamage: 25,
-				startGlobalCritChance: 0.25,
-				startGlobalCritMultiplier: 1.8,
-				startGlobalWoundChance	: 0.1,
-				startCastleDamageReduction : 0.01,
-				startSHOT_INTERVAL : 360,
-				castleHP : 50,
-				lvlUnlock: 50,
-				unlock: false,
-			},
-			
-			gm: {
-				name: 'luka', 
-				dispName: 'Лука стрелок',
-				image: 'images/hero/3_luka/luka_min.png',
-				startGlobalDamage: 25,
-				startGlobalCritChance: 0.25,
-				startGlobalCritMultiplier: 1.8,
-				startGlobalWoundChance	: 0.1,
-				startCastleDamageReduction : 0.01,
-				startSHOT_INTERVAL : 360,
-				castleHP : 50,
-				lvlUnlock: 60,
-				unlock: false,
-			},
-			
-			kir: {
-				name: 'luka', 
-				dispName: 'Лука стрелок',
-				image: 'images/hero/3_luka/luka_min.png',
-				startGlobalDamage: 25,
-				startGlobalCritChance: 0.25,
-				startGlobalCritMultiplier: 1.8,
-				startGlobalWoundChance	: 0.1,
-				startCastleDamageReduction : 0.01,
-				startSHOT_INTERVAL : 360,
-				castleHP : 50,
-				lvlUnlock: 70,
-				unlock: false,
-			},
-			
-			gam: {
-				name: 'luka', 
-				dispName: 'Лука стрелок',
-				image: 'images/hero/3_luka/luka_min.png',
-				startGlobalDamage: 25,
-				startGlobalCritChance: 0.25,
-				startGlobalCritMultiplier: 1.8,
-				startGlobalWoundChance	: 0.1,
-				startCastleDamageReduction : 0.01,
-				startSHOT_INTERVAL : 360,
-				castleHP : 50,
-				lvlUnlock: 80,
-				unlock: false,
-			},
-			
-			gama: {
-				name: 'luka', 
-				dispName: 'Лука стрелок',
-				image: 'images/hero/3_luka/luka_min.png',
-				startGlobalDamage: 25,
-				startGlobalCritChance: 0.25,
-				startGlobalCritMultiplier: 1.8,
-				startGlobalWoundChance	: 0.1,
-				startCastleDamageReduction : 0.01,
-				startSHOT_INTERVAL : 360,
-				castleHP : 50,
-				lvlUnlock: 90,
-				unlock: false,
-			},
-			
-			gamb: {
-				name: 'luka', 
-				dispName: 'Лука стрелок',
-				image: 'images/hero/3_luka/luka_min.png',
-				startGlobalDamage: 25,
-				startGlobalCritChance: 0.25,
-				startGlobalCritMultiplier: 1.8,
-				startGlobalWoundChance	: 0.1,
-				startCastleDamageReduction : 0.01,
-				startSHOT_INTERVAL : 360,
-				castleHP : 50,
-				lvlUnlock: 100,
-				unlock: false,
-			},
-			
-			gamc: {
-				name: 'luka', 
-				dispName: 'Лука стрелок',
-				image: 'images/hero/3_luka/luka_min.png',
-				startGlobalDamage: 25,
-				startGlobalCritChance: 0.25,
-				startGlobalCritMultiplier: 1.8,
-				startGlobalWoundChance	: 0.1,
-				startCastleDamageReduction : 0.01,
-				startSHOT_INTERVAL : 360,
-				castleHP : 50,
-				lvlUnlock: 110,
-				unlock: false,
-			},
-			
-			gamd: {
-				name: 'luka', 
-				dispName: 'Лука стрелок',
-				image: 'images/hero/3_luka/luka_min.png',
-				startGlobalDamage: 25,
-				startGlobalCritChance: 0.25,
-				startGlobalCritMultiplier: 1.8,
-				startGlobalWoundChance	: 0.1,
-				startCastleDamageReduction : 0.01,
-				startSHOT_INTERVAL : 360,
-				castleHP : 50,
-				lvlUnlock: 120,
-				unlock: false,
-			},
-			
-			gamf: {
-				name: 'luka', 
-				dispName: 'Лука стрелок',
-				image: 'images/hero/3_luka/luka_min.png',
-				startGlobalDamage: 25,
-				startGlobalCritChance: 0.25,
-				startGlobalCritMultiplier: 1.8,
-				startGlobalWoundChance	: 0.1,
-				startCastleDamageReduction : 0.01,
-				startSHOT_INTERVAL : 360,
-				castleHP : 50,
-				lvlUnlock: 130,
-				unlock: false,
-			},
-			
-			gamg: {
-				name: 'luka', 
-				dispName: 'Лука стрелок',
-				image: 'images/hero/3_luka/luka_min.png',
-				startGlobalDamage: 25,
-				startGlobalCritChance: 0.25,
-				startGlobalCritMultiplier: 1.8,
-				startGlobalWoundChance	: 0.1,
-				startCastleDamageReduction : 0.01,
-				startSHOT_INTERVAL : 360,
-				castleHP : 50,
-				lvlUnlock: 140,
-				unlock: false,
-			},
-			
-			gamh: {
-				name: 'luka', 
-				dispName: 'Лука стрелок',
-				image: 'images/hero/3_luka/luka_min.png',
-				startGlobalDamage: 25,
-				startGlobalCritChance: 0.25,
-				startGlobalCritMultiplier: 1.8,
-				startGlobalWoundChance	: 0.1,
-				startCastleDamageReduction : 0.01,
-				startSHOT_INTERVAL : 360,
-				castleHP : 50,
-				lvlUnlock: 141,
-				unlock: false,
-			},
-				
-			}; // дефолт
-        
-		
-		localStorage.setItem('gameState', JSON.stringify(defaultState));
-        return defaultState;
-    }
-}
 
 
 // ==================== ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ДЛЯ УЛУЧШЕНИЙ ====================
