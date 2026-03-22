@@ -1,0 +1,87 @@
+
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monstrous world</title>
+    <link rel="stylesheet" href="main_css.css">
+
+    <script>
+const params = new URLSearchParams(window.location.search);
+const level = params.get("level") || 1;
+
+let loadedCount = 0;
+const totalToLoad = 2; // gameData + saveData
+
+function checkAllLoaded() {
+    if (loadedCount === totalToLoad) {
+        // Оба файла загружены – запускаем игру
+        const gameScript = document.createElement("script");
+        gameScript.src = "game.js";
+        document.body.appendChild(gameScript);
+    }
+}
+
+// Загружаем gameData
+const dataScript = document.createElement("script");
+dataScript.src = "lvlData/gameData" + level + ".js";
+dataScript.onload = function () {
+    loadedCount++;
+    checkAllLoaded();
+};
+document.head.appendChild(dataScript);
+
+// Загружаем saveData
+const saveScript = document.createElement("script");
+saveScript.src = "saveData.js";
+saveScript.onload = function () {
+    loadedCount++;
+    checkAllLoaded();
+};
+document.head.appendChild(saveScript);
+    </script>
+
+</head>
+<body>
+
+
+
+<div class="main_menu_image">
+	<img src="images/hero/1_babka/dunya_min.png" class="heroImageClass" id="heroImage">
+    <div class="castle-health-container">
+
+       
+        <!-- Контейнер для полоски здоровья -->
+        <div class="health-bar-container" id="hpCont">
+			
+            <!-- Сама полоска здоровья -->
+            <div class="health-bar" id="castleHealthBar"></div>
+            <!-- Числовое значение поверх полоски -->
+            <div class="health-text" id="castleHealthText">Вихревая бабка</div>
+        </div>
+    </div>
+
+	<img src="images/background/zamok.png" class="img_zamok" id="castleImage">
+		
+	<!-- Элемент прицела -->
+	<div id="aim" class="aim"></div>
+
+	<!-- Контейнер для текста урона -->
+	<div id="damage-container"></div>
+</div>
+
+
+<!-- Добавить перед закрывающим тегом </body> -->
+<div class="boss-health-container" id="bossHealthContainer">
+    <div class="boss-health-bar" id="bossHealthBar">
+        <div class="boss-health-fill" id="bossHealthFill"></div>
+        <div class="boss-health-ornament-left"></div>
+        <div class="boss-health-ornament-right"></div>
+        <div class="boss-name" id="bossName"></div>
+    </div>
+</div>
+
+
+
+</body>
+</html>

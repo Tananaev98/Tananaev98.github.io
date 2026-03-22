@@ -1,0 +1,363 @@
+.level {
+    display: block;
+    margin: 10px 0;
+    text-decoration: none;
+    color: gray;
+    pointer-events: none; /* делает ссылку некликабельной */
+}
+
+.level.locked::after {
+    content: " 🔒"; /* визуальный замок */
+}
+
+.level.unlocked {
+    color: blue;
+    pointer-events: auto; /* делает ссылку кликабельной */
+}
+
+.level.unlocked::after {
+    content: ""; /* убираем замок */
+}
+
+/* ====== Кнопка выбора персонажа ====== */
+.select-character-button {
+    display: inline-block;
+    padding: 12px 24px;
+    margin: 20px;
+    background: linear-gradient(135deg, #5a3e2b, #3e2a1c);
+    border: 3px solid #8B4513;
+    color: #e0c9a6;
+    font-size: 14px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    cursor: pointer;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    transition: all 0.3s ease;
+    border-radius: 5px;
+}
+
+.select-character-button:hover {
+    background: linear-gradient(135deg, #6b4c35, #4f3822);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.7);
+    color: #fff;
+}
+
+/* ====== Модальное окно выбора персонажа ====== */
+.character-select-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.character-select-modal .modal-content {
+    background: linear-gradient(135deg, #D1B892, #B89A6D);
+    padding: 30px;
+    border-radius: 15px;
+    border: 5px solid #8B4513;
+    width: 90%;
+	height: 90%;
+    max-width: 90%;
+    max-height: 80%;
+    overflow: hidden;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+    position: relative;
+
+    /* Сетка внутри модального окна */
+    display: grid;
+    grid-template-columns: 1fr 300px; /* левая колонка резиновая, правая фиксированная */
+    grid-template-rows: auto 1fr auto; /* строки: заголовок, контент, кнопка (но кнопка только справа) */
+    gap: 20px;
+    align-items: start;
+}
+
+/* Заголовок — на всю ширину, первая строка */
+.character-select-modal h2 {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    text-align: center;
+    margin: 0 0 10px 0;
+    color: #5C4033;
+    font-size: 28px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+/* Крестик закрытия — абсолютное позиционирование, вне сетки */
+.close-modal {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    width: 36px;
+    height: 36px;
+    background: radial-gradient(circle at 30% 30%, #8B0000, #5a1e1e);
+    border: 2px solid #FFD700;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #FFD700;
+    font-size: 28px;
+    font-weight: 900;
+    line-height: 1;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 0 10px rgba(139, 0, 0, 0.5), inset 0 0 5px rgba(255, 215, 0, 0.3);
+    font-family: Arial, sans-serif;
+    text-shadow: 0 0 4px #000;
+    z-index: 10;
+}
+
+.close-modal:hover {
+    background: radial-gradient(circle at 30% 30%, #a52a2a, #6b1e1e);
+    border-color: #fff;
+    color: #fff;
+    transform: scale(1.1);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+}
+
+.close-modal:active {
+    transform: scale(0.95);
+}
+
+/* Сетка портретов — левая колонка, занимает вторую и третью строки */
+.character-grid {
+    display: grid;
+    grid-template-columns: repeat(8, min-content);
+    column-gap: 5px;
+    row-gap: 15px;
+    margin: 0;
+    padding: 10px 0;
+    justify-content: start;
+    grid-column: 1;
+    grid-row: 2 / span 2; /* растягивается на строки 2 и 3 */
+}
+
+.character-portrait {
+    width: 100px;
+    height: 120px;
+    border: 3px solid #5C4033;
+    border-radius: 5px;
+    background: #3e2a1c;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+    overflow: hidden;
+}
+
+.character-portrait img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.character-portrait.locked {
+    background: #2a1a0e;
+    color: #8B4513;
+    font-size: 48px;
+    font-weight: bold;
+    text-shadow: 2px 2px 0 #000;
+    border-color: #8B4513;
+    opacity: 0.7;
+    cursor: not-allowed !important;
+}
+
+.character-portrait.selected {
+    border-color: #FFD700;
+    box-shadow: 0 0 20px #FFD700;
+    transform: scale(1.05);
+}
+
+.character-portrait:hover:not(.locked) {
+    border-color: #cd7f32;
+    transform: scale(1.02);
+}
+
+/* Блок информации о герое — правая колонка, вторая строка */
+.character-info {
+	height: 550px; 
+    background: rgba(123, 31, 162, 0.1);
+    border: 3px solid #8B4513;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: inset 0 0 15px rgba(0,0,0,0.7), 0 5px 15px rgba(0,0,0,0.5);
+    color: #5C4033;
+    position: relative;
+    grid-column: 2;
+    grid-row: 2;
+    width: 270%;
+    box-sizing: border-box;
+	justify-self: start;
+	transform: translateX(-63%);
+}
+
+.character-info h3 {
+    color: #5C4033;
+    margin-bottom: 15px;
+    font-size: 24px;
+    text-align: center;
+    letter-spacing: 2px;
+}
+
+.hero-stats {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1px;
+    line-height: 1.2;
+	margin-top: 4%;
+	
+}
+
+.hero-stats p {
+    display: flex;
+    justify-content: flex-start; 
+    align-items: baseline;
+    gap: 8px; 
+    margin: 0;
+    padding: 2px 0;
+    font-size: 16px;
+    color: blue;
+    flex-wrap: wrap; 
+	transform: translateX(89%);
+
+}
+
+
+.value{
+    color: blue !important;
+}
+
+.hero-stats p span {
+    color: #483554;
+    font-weight: bold;
+    background: none;
+    padding: 0;
+    border: none;
+    font-size: 14px;
+	
+}
+
+/* Контейнер для содержимого панели информации (имя + статы + картинка) */
+.character-info-content {
+    display: flex;
+    gap: 20px;
+    height: 100%;
+}
+
+/* Блок со статами */
+.character-stats {
+    flex: 1;
+}
+
+/* Блок с полным изображением */
+.character-fullimage {
+    flex: 0 0 200px;           /* фиксированная ширина колонки */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.character-fullimage img {
+
+    max-width: 200%;
+    max-height: 200%;         /* ограничиваем высоту, чтобы не вылезало */
+	transform: translateX(-110%);
+	margin-bottom: 35%;
+    object-fit: contain;
+    border: 2px solid #8B4513;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+}
+
+.info-placeholder {
+    text-align: center;
+    color: #8B4513;
+    font-style: italic;
+    padding: 20px;
+}
+
+.locked-message {
+    color: #8B0000;
+    text-align: center;
+    font-weight: bold;
+    padding: 10px;
+}
+
+/* Кнопка "Выбрать" — правая колонка, третья строка, прижата к низу */
+.select-hero-btn {
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #5a3e2b, #3e2a1c);
+    border: 3px solid #8B4513;
+    color: #e0c9a6;
+    font-size: 18px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+    grid-column: 2;
+    grid-row: 3;
+    align-self: end;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.select-hero-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #6b4c35, #4f3822);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    color: #fff;
+}
+
+.select-hero-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ====== КАСТОМНЫЕ КУРСОРЫ ====== */
+body, .main_menu_image, .select-character-button,
+.level,
+.close-modal,
+.select-hero-btn,
+.character-portrait:not(.locked),
+.character-select-modal,
+.character-select-modal * {
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><polygon points="2,2 30,12 16,20 12,30 2,2" fill="%23e0c9a6" stroke="%238B4513" stroke-width="2" stroke-linejoin="round"/></svg>') 2 2, auto !important;
+}
+
+/* Заблокированные портреты — not-allowed */
+.character-portrait.locked {
+    cursor: not-allowed !important;
+}
+
+.statH {
+	color: #483554;
+    font-size: 20px;	
+	 font-weight: bold;
+}
+
+.feature-container {
+  display: grid;
+  /* 'max-content' заставит первую колонку быть ровно по ширине слова */
+  grid-template-columns: max-content 1fr; 
+  gap: 6px;      /* Расстояние между двоеточием и текстом */
+  align-items: start;
+  text-align: left; /* Важно, если у родителя стоит center */
+}
+
+.featur {
+  font-weight: bold; /* Для красоты, как на скрине */
+  white-space: nowrap;
+}
