@@ -17,7 +17,7 @@ if errorlevel 1 (
     echo Нет изменений для коммита или ошибка коммита
 ) else (
     echo Отправляем на сервер...
-    git push game2 master
+    git push origin master
 )
 
 echo Done!
