@@ -39,192 +39,292 @@
 <script src="saveData.js"></script>
 
 <script>
+// ==================== Работа с localStorage и уровнями ====================
+const lastUnlockLevel = gameState.lastCompletedLevel + 1;
+const levels = document.querySelectorAll('.level');
+levels.forEach(link => {
+    const levelNumber = parseInt(link.dataset.level);
+    if (levelNumber <= lastUnlockLevel) {
+        link.classList.remove('locked');
+        link.classList.add('unlocked');
+    }
+});
 
-
-// Получаем кнопку очистки прогресса
+// ==================== Кнопка очистки прогресса ====================
 const clearBtn = document.getElementById('clearProgressBtn');
-
 if (clearBtn) {
     clearBtn.addEventListener('click', function() {
-        // Проверяем, существует ли функция clearGameState (например, из saveData.js)
         if (typeof clearGameState === 'function') {
-            // Вызываем функцию очистки
             clearGameState();
             location.reload();
         } else {
-            console.error('Функция clearGameState не найдена. Проверьте подключение saveData.js');
+            console.error('Функция clearGameState не найдена');
         }
     });
 }
 
-    // ==================== Работа с localStorage ====================
+// ==================== Модальное окно выбора персонажа ====================
+const selectBtn = document.getElementById('selectCharacterBtn');
+let currentSelectedHero = null;
+let upgradeBtnInModal = null;
+let upgradeInfoSpan = null;
 
-  // Функция сохранения
-        function saveGameState() {
-            localStorage.setItem('gameState', JSON.stringify(gameState));
+function openCharacterSelect() {
+    const oldModal = document.querySelector('.character-select-modal');
+    if (oldModal) oldModal.remove();
+
+    const modal = document.createElement('div');
+    modal.className = 'character-select-modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Выбор и развитие персонажей</h2>
+            <div class="character-grid" id="characterGrid"></div>
+            <div class="character-info" id="characterInfo">
+                <p class="info-placeholder">Выберите персонажа</p>
+            </div>
+		<div class="modal-actions">
+
+			<div class="upgrade-wrapper">
+			<div class="upgrade-cost" id="upgradeCostModal"></div>
+				<button class="upgrade-hero-btn" id="upgradeHeroModalBtn" disabled>Повысить уровень</button>
+				
+			</div>
+			<button class="select-hero-btn" id="selectHeroBtn" disabled>Выбрать персонажа</button>
+		</div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    const grid = document.getElementById('characterGrid');
+    const infoPanel = document.getElementById('characterInfo');
+    const selectHeroBtn = document.getElementById('selectHeroBtn');
+    upgradeBtnInModal = document.getElementById('upgradeHeroModalBtn');
+    upgradeInfoSpan = document.getElementById('upgradeCostModal');
+
+    let currentSelectedElement = null;
+    let currentHeroKey = null;
+
+	function updateUpgradeButton(hero) {
+		if (!hero) return;
+		const maxLevel = 100;
+		if (hero.level >= maxLevel) {
+			upgradeBtnInModal.disabled = true;
+			upgradeBtnInModal.style.background = "linear-gradient(135deg, #5a3e2b, #3e2a1c)";
+			upgradeInfoSpan.innerHTML = `Достигнут максимальный уровень`;
+			return;
+		}
+		const cost = hero.zlataUp;
+		const hasEnough = gameState.zlata >= cost;
+		if (hasEnough) {
+			upgradeBtnInModal.disabled = false;
+			upgradeBtnInModal.style.background = "linear-gradient(135deg, #2e6b2e, #1e4a1e)";
+			upgradeInfoSpan.innerHTML = `Стоимость повышения: ${cost} <img src="images/other/zlata.webp" class="zlata-icon">`;
+		} else {
+			upgradeBtnInModal.disabled = true;
+			upgradeBtnInModal.style.background = "linear-gradient(135deg, #5a3e2b, #3e2a1c)";
+			const deficit = cost - gameState.zlata;
+			upgradeInfoSpan.innerHTML = `Не хватает ${deficit} <img src="images/other/zlata.webp" class="zlata-icon">`;
+		}
+	}
+
+    function updateInfoPanel(heroKey) {
+        const hero = gameState[heroKey];
+        if (!hero || !hero.unlock) return;
+
+        infoPanel.innerHTML = `
+            <h3>${hero.dispName}</h3>
+            <div class="character-info-content">
+                <div class="character-stats">
+                    <div class="hero-stats">
+                        <p><a class="statH">Стартовые характеристики:</a></p>
+                        <p><a>(Характеристики с которыми персонаж </a></p>
+                        <p><a>начинает прохождение уровней</a></p>
+                        <p><a>чем выше та или иная характеристика</a></p>
+                        <p><a>тем сильнее будут ее временные усиления</a></p>
+                        <p><a>при прохождении уровней)</a></p><br>
+						<p><span>Уровень:</span> <span class="value stat">${Math.round(hero.level)}</span></p>
+                        <p><span>Урон:</span> <span class="value stat-damage">${Math.round(hero.startGlobalDamage)}</span></p>
+                        <p><span>Шанс критического урона:</span> <span class="value stat-critChance">${Math.round((hero.startGlobalCritChance * 100)).toFixed(0)}%</span></p>
+                        <p><span>Критический урон:</span> <span class="value stat-critMulti">${Math.round(hero.startGlobalCritMultiplier * 100)}%</span></p>
+                        <p><span>Шанс ранения:</span> <span class="value stat-wound">${Math.round((hero.startGlobalWoundChance * 100)).toFixed(0)}%</span></p>
+                        <p><span>Скорость атаки:</span> <span class="value stat-speed">${1000 - hero.startSHOT_INTERVAL}</span></p>
+                        <p><span>Здоровье:</span> <span class="value stat-hp">${hero.castleHP}</span></p>
+                        <p><span>Защита (снижение урона):</span> <span class="value stat-def">${(hero.startCastleDamageReduction * 100).toFixed(0)}%</span></p>
+                        <p class="feature-container">
+                          <span class="featur">Особенность:</span>
+                          <span class="value">${hero.feature}</span>
+                        </p>
+                    </div>
+                </div>
+                <div class="character-fullimage">
+                    <img src="${hero.fullImage}" alt="${hero.dispName}">
+                </div>
+            </div>
+        `;
+        updateUpgradeButton(hero);
+    }
+
+		function previewUpgrade() {
+			if (!currentHeroKey) return;
+			const hero = gameState[currentHeroKey];
+			if (!hero || !hero.unlock || upgradeBtnInModal.disabled) return;
+			if (hero.level >= 100) return;
+			 
+			// Создаём копию героя с улучшениями (не трогая оригинал)
+			const upgraded = heroUp(currentHeroKey, true);
+			if (!upgraded) return;
+
+			const fields = [
+				{ current: hero.startGlobalDamage, new: upgraded.startGlobalDamage, class: 'stat-damage', factor: 1, suffix: '' },
+				{ current: hero.startGlobalCritChance, new: upgraded.startGlobalCritChance, class: 'stat-critChance', factor: 100, suffix: '%' },
+				{ current: hero.startGlobalCritMultiplier, new: upgraded.startGlobalCritMultiplier, class: 'stat-critMulti', factor: 100, suffix: '%' },
+				{ current: hero.startGlobalWoundChance, new: upgraded.startGlobalWoundChance, class: 'stat-wound', factor: 100, suffix: '%' },
+				{ current: 1000 - hero.startSHOT_INTERVAL, new: 1000 - upgraded.startSHOT_INTERVAL, class: 'stat-speed', factor: 1, suffix: '' },
+				{ current: hero.castleHP, new: upgraded.castleHP, class: 'stat-hp', factor: 1, suffix: '' },
+				{ current: hero.startCastleDamageReduction, new: upgraded.startCastleDamageReduction, class: 'stat-def', factor: 100, suffix: '%' }
+			];
+
+			fields.forEach(f => {
+				const elements = infoPanel.querySelectorAll(`.${f.class}`);
+				elements.forEach(el => {
+					const oldVal = f.factor ? (f.current * f.factor) : f.current;
+					const newVal = f.factor ? (f.new * f.factor) : f.new;
+					const diff = newVal - oldVal;
+					if (Math.abs(diff) > 0.001) {
+						// Формируем строку изменения
+						let diffText = (diff > 0 ? '+' : '') + diff.toFixed(f.suffix ? (f.suffix === '%' ? 0 : 0) : 0);
+						if (f.suffix) diffText += f.suffix;
+						const span = document.createElement('span');
+						span.className = 'stat-diff';
+						span.textContent = ' ' + diffText;
+						span.style.color = '#005109';
+						span.style.fontWeight = 'bold';
+						// Вставляем после текущего элемента
+						el.parentNode.insertBefore(span, el.nextSibling);
+						// Сохраняем ссылку на созданный элемент для удаления
+						el.setAttribute('data-has-diff', 'true');
+						if (!el._diffSpan) el._diffSpan = span;
+					}
+				});
+			});
+		}
+
+		function revertPreview() {
+			const statClasses = ['stat-damage', 'stat-critChance', 'stat-critMulti', 'stat-wound', 'stat-speed', 'stat-hp', 'stat-def'];
+			statClasses.forEach(cls => {
+				const elements = infoPanel.querySelectorAll(`.${cls}`);
+				elements.forEach(el => {
+					if (el._diffSpan) {
+						el._diffSpan.remove();
+						delete el._diffSpan;
+					}
+					el.removeAttribute('data-has-diff');
+				});
+			});
+		}
+		
+		
+		function upgradeHero() {
+			if (!currentHeroKey) return;
+			const hero = gameState[currentHeroKey];
+			if (!hero || !hero.unlock) return;
+			const maxLevel = 100;
+			if (hero.level >= maxLevel) {
+				alert("Персонаж достиг максимального уровня (100)");
+				return;
+			}
+			const cost = hero.zlataUp;
+			if (gameState.zlata >= cost) {
+				heroUp(currentHeroKey, false);
+				const updatedHero = gameState[currentHeroKey];
+				updateUpgradeButton(updatedHero);
+				updateInfoPanel(currentHeroKey);
+			} else {
+				alert("Недостаточно злата!");
+			}
+		}
+
+    // Построение сетки портретов
+    gameState.mHero.forEach(heroKey => {
+        const hero = gameState[heroKey];
+        if (!hero) return;
+
+        const portrait = document.createElement('div');
+        portrait.className = 'character-portrait';
+        portrait.dataset.hero = heroKey;
+
+        if (hero.unlock) {
+            const img = document.createElement('img');
+            img.src = hero.image;
+            img.alt = hero.dispName;
+            portrait.appendChild(img);
+        } else {
+            portrait.classList.add('locked');
+            portrait.textContent = '?';
         }
 
-        // Разблокировка уровней (существующий код)
-        const lastUnlockLevel = gameState.lastCompletedLevel + 1;
-        const levels = document.querySelectorAll('.level');
-        levels.forEach(link => {
-            const levelNumber = parseInt(link.dataset.level);
-            if (levelNumber <= lastUnlockLevel) {
-                link.classList.remove('locked');
-                link.classList.add('unlocked');
+        if (heroKey === gameState.activeHero && hero.unlock) {
+            portrait.classList.add('selected');
+            currentSelectedHero = heroKey;
+            currentSelectedElement = portrait;
+            currentHeroKey = heroKey;
+            updateInfoPanel(heroKey);
+            selectHeroBtn.disabled = false;
+        }
+
+        portrait.addEventListener('click', () => {
+            if (currentSelectedElement) {
+                currentSelectedElement.classList.remove('selected');
             }
+            portrait.classList.add('selected');
+            currentSelectedElement = portrait;
+            currentSelectedHero = heroKey;
+            currentHeroKey = heroKey;
+
+            if (!hero.unlock) {
+                infoPanel.innerHTML = `<p class="locked-message">Герой будет доступен после прохождения уровня ${hero.lvlUnlock}.</p>`;
+                selectHeroBtn.disabled = true;
+                upgradeBtnInModal.disabled = true;
+                upgradeInfoSpan.innerHTML = '';
+                return;
+            }
+
+            updateInfoPanel(heroKey);
+            selectHeroBtn.disabled = false;
         });
 
-        // ==================== Модальное окно выбора персонажа ====================
-        const selectBtn = document.getElementById('selectCharacterBtn');
-        let currentSelectedHero = null; // ключ выбранного героя
+        grid.appendChild(portrait);
+    });
 
-        function openCharacterSelect() {
-            // Удаляем предыдущее окно, если есть
-            const oldModal = document.querySelector('.character-select-modal');
-            if (oldModal) oldModal.remove();
-
-            // Создаём структуру окна
-            const modal = document.createElement('div');
-            modal.className = 'character-select-modal';
-            modal.innerHTML = `
-                <div class="modal-content">
-                    <span class="close-modal">&times;</span>
-                    <h2>Выбор и развитие персонажей</h2>
-                    <div class="character-grid" id="characterGrid"></div>
-                    <div class="character-info" id="characterInfo">
-                        <p class="info-placeholder">Выберите персонажа</p>
-                    </div>
-                    <button class="select-hero-btn" id="selectHeroBtn" disabled>Выбрать</button>
-                </div>
-            `;
-            document.body.appendChild(modal);
-
-            const grid = document.getElementById('characterGrid');
-            const infoPanel = document.getElementById('characterInfo');
-            const selectBtn = document.getElementById('selectHeroBtn');
-
-            // Переменная для хранения текущего выбранного элемента портрета (для визуального выделения)
-            let currentSelectedElement = null;
-
-            // Функция обновления панели информации
-			function updateInfoPanel(heroKey) {
-				const hero = gameState[heroKey];
-				if (!hero || !hero.unlock) return;
-
-				infoPanel.innerHTML = `
-					<h3>${hero.dispName}</h3>
-					<div class="character-info-content">
-						<div class="character-stats">
-							<div class="hero-stats">
-								<p><a class="statH">Стартовые характеристики:</a></p><br>
-								<p><a>(Характеристики с которыми персонаж </a></p>
-								<p><a>начинает прохождение уровней</a></p>
-								<p><a>чем выше та или иная характеристика</a></p>
-								<p><a>тем сильнее будут ее временные усиления</a></p>
-								<p><a>при прохождении уровней)</a></p><br>
-								<p><span>Урон:</span> <span class="value">${hero.startGlobalDamage}</span></p>
-								<p><span>Шанс критического урона:</span> <span class="value">${(hero.startGlobalCritChance * 100).toFixed(0)}%</span></p>
-								<p><span>Критический урон:</span> <span class="value">${hero.startGlobalCritMultiplier * 100}%</span></p>
-								<p><span>Шанс ранения:</span> <span class="value">${(hero.startGlobalWoundChance * 100).toFixed(0)}%</span></p>
-								<p><span>Скорость атаки:</span> <span class="value">${1000 - hero.startSHOT_INTERVAL}</span></p>
-								<p><span>Здоровье:</span> <span class="value">${hero.castleHP}</span></p>
-								<p><span>Защита (снижение урона):</span> <span class="value">${(hero.startCastleDamageReduction * 100).toFixed(0)}%</span></p>
-						<p class="feature-container">
-						  <span class="featur">Особенность:</span>
-						  <span class="value">${hero.feature}</span>
-						</p>
-						</div>
-						</div>
-						<div class="character-fullimage">
-							<img src="${hero.fullImage}" alt="${hero.dispName}">
-						</div>
-					</div>
-				`;
-			}
-
-            // Построение сетки портретов
-            gameState.mHero.forEach(heroKey => {
-                const hero = gameState[heroKey];
-                if (!hero) return;
-
-                const portrait = document.createElement('div');
-                portrait.className = 'character-portrait';
-                portrait.dataset.hero = heroKey;
-
-                if (hero.unlock) {
-                    const img = document.createElement('img');
-                    img.src = hero.image;
-                    img.alt = hero.dispName;
-                    portrait.appendChild(img);
-                } else {
-                    portrait.classList.add('locked');
-                    portrait.textContent = '?';
-                }
-
-                // Если это текущий активный герой и он разблокирован, подсвечиваем
-                if (heroKey === gameState.activeHero && hero.unlock) {
-                    portrait.classList.add('selected');
-                    currentSelectedHero = heroKey;
-                    currentSelectedElement = portrait;
-                    updateInfoPanel(heroKey);
-                    selectBtn.disabled = false;
-                }
-
-				portrait.addEventListener('click', () => {
-					// Снимаем выделение с предыдущего портрета
-					if (currentSelectedElement) {
-						currentSelectedElement.classList.remove('selected');
-					}
-
-					// Выделяем текущий портрет
-					portrait.classList.add('selected');
-					currentSelectedElement = portrait;
-					currentSelectedHero = heroKey;
-
-					if (!hero.unlock) {
-						// Заблокированный герой: показываем сообщение с уровнем
-						infoPanel.innerHTML = `<p class="locked-message">Герой будет доступен после прохождения уровня ${hero.lvlUnlock}.</p>`;
-						selectBtn.disabled = true; // кнопка выбора неактивна
-						return;
-					}
-
-					// Разблокированный герой: обновляем информацию и активируем кнопку
-					updateInfoPanel(heroKey);
-					selectBtn.disabled = false;
-				});
-
-                grid.appendChild(portrait);
-            });
-
-            // Кнопка "Выбрать"
-            selectBtn.addEventListener('click', () => {
-                if (currentSelectedHero) {
-                    gameState.activeHero = currentSelectedHero;
-                    saveGameState();
-                    modal.remove();
-                }
-            });
-
-            // Закрытие по крестику
-            modal.querySelector('.close-modal').addEventListener('click', () => {
-                modal.remove();
-            });
-
-            // Закрытие по клику вне окна (опционально)
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    modal.remove();
-                }
-            });
+    selectHeroBtn.addEventListener('click', () => {
+        if (currentSelectedHero) {
+            gameState.activeHero = currentSelectedHero;
+            saveGameState();
+            modal.remove();
         }
+    });
 
-        selectBtn.addEventListener('click', openCharacterSelect);	
-	
-	
-	
-	
-	
+    if (upgradeBtnInModal) {
+        upgradeBtnInModal.addEventListener('mouseenter', previewUpgrade);
+        upgradeBtnInModal.addEventListener('mouseleave', revertPreview);
+        upgradeBtnInModal.addEventListener('click', upgradeHero);
+		upgradeBtnInModal.addEventListener('click', previewUpgrade);
+    }
+
+    modal.querySelector('.close-modal').addEventListener('click', () => {
+        modal.remove();
+    });
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+}
+
+selectBtn.addEventListener('click', openCharacterSelect)
+</script>
 	
 </script>
 

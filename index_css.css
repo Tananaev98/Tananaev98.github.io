@@ -361,3 +361,74 @@ body, .main_menu_image, .select-character-button,
   font-weight: bold; /* Для красоты, как на скрине */
   white-space: nowrap;
 }
+
+
+//* Стили для блока действий в модальном окне */
+.modal-content .modal-actions {
+    grid-column: 2;
+    grid-row: 3;
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* разносит элементы по краям */
+    width: 100%;
+    box-sizing: border-box;
+    gap: 20px; /* опционально, создаёт отступ между блоками, если места достаточно */
+}
+
+.upgrade-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-shrink: 0; /* чтобы левый блок не сжимался при необходимости */
+}
+
+.upgrade-hero-btn {
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #5a3e2b, #3e2a1c);
+    border: 3px solid #8B4513;
+    color: #e0c9a6;
+    font-size: 16px;
+    font-weight: bold;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+    width: 100%;        /* растягивается по ширине родителя */
+}
+
+.upgrade-cost {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    background: #2c1a0e;
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1px solid #8B4513;
+    font-size: 14px;
+    font-weight: bold;
+    color: #FFD966;
+    white-space: nowrap;
+    width: fit-content;
+    margin: 0 auto;
+}
+
+.zlata-icon {
+    width: 20px;
+    height: 20px;
+    vertical-align: middle;
+    margin-left: 4px;
+}
+
+
+.select-hero-btn {
+    flex-shrink: 0; /* чтобы кнопка не сжималась */
+    padding: 12px 24px;
+    align-self: center;
+	margin-top: 2%;
+}
+
+.stat-highlight {
+    color: #006108 !important;
+    font-weight: bold !important;
+}

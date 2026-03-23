@@ -58,6 +58,7 @@ let bossHealthFill = null;
 let bossHealthContainer = null;
 let bossNameElement = null;
 let currentBoss = null;
+let countDefeatBoss = 0;
 
 // Конфигурация игры - основные настройки
 const GAME_CONFIG = {
@@ -66,6 +67,8 @@ const GAME_CONFIG = {
 	CASTLE_BASE_HP: 300,
 	CASTLE_HP_PER_LEVEL: 20
 };
+
+let rowTotal = ""; //Строка итогов прохождения уровня
 
 // Массив активных врагов - хранит все текущие объекты врагов
 let activeEnemies = [];
@@ -1077,6 +1080,9 @@ function showEndGameModal(victory, timeSeconds) {
 		completeLevel();
 	}
 	
+	zlatP = countZlat*countDefeatBoss;
+	if(zlatP >0){addZlat(zlatP)};
+	
     const modal = document.createElement('div');
     modal.className = 'level-up-modal endgame-modal';
     modal.innerHTML = `
@@ -1084,7 +1090,7 @@ function showEndGameModal(victory, timeSeconds) {
             <h2>${victory ? 'ПОБЕДА!' : 'ПОРАЖЕНИЕ!'}</h2>
             <p class="modal-subtitle">${victory ? 'Последний противник побежден!' : 'Ваш персонаж побежден'}</p>
             <div class="endgame-stats">
-                <div class="resource-line">Ресурсы: <span>0</span></div>
+                <div class="resource-line"> Получено злат: <span>${zlatP} <img src='images/other/zlata.webp' class='zlatImg'></span> </div>
                 <div class="time-line">Время: <span>${formatTime(timeSeconds)}</span></div>
             </div>
             <div class="endgame-buttons">
@@ -1444,6 +1450,7 @@ function giveExperienceForKill(enemyType) {
 function handleEnemyDeath(enemy, cause = 'player') {
     const enemyName = enemy.customName || ENEMY_TYPES[enemy.type]?.name || 'Враг';
     if (enemyName == bossAliveName) {
+		countDefeatBoss++;
         // Это босс
         if (enemy.type === 'enem5') {   // ПОБЕДА
             killAllEnemies();
