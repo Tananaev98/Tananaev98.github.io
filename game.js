@@ -1498,7 +1498,6 @@ function subsDamageEnemy(isBoss) {
 	
 	//Способность Еремея 	
 	if(activeHeroObject.name === 'eremei' && !isBoss) {
-		showCenterText('Отбивальщик! + ' + DamageBonusPercentSize + '% к урону', 1500, 'info');
 		addDamageBonus();
 	}
 			
