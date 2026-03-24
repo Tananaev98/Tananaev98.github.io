@@ -1,4 +1,5 @@
 let lvlNumber = 2; 
+let countZlat = lvlNumber *5;
 
 
 const ENEMY_TYPES = {

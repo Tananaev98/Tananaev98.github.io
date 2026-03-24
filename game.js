@@ -34,6 +34,39 @@ const ANIMATION_PARAMS = {
 
 let timeGame   = 0;
 
+
+//фарм золота-------
+let countZlat = 0; 
+
+if (lvlNumber <= 40) {
+	countZlat = lvlNumber *5; //фармим примерно 5 до 200 золотых за уровень
+}
+
+if (lvlNumber <= 50 && lvlNumber > 40) {
+	countZlat = lvlNumber *10; //фармим от 500 до 2500 золотых за уровень
+}
+
+if (lvlNumber <= 60 && lvlNumber > 50) {
+	countZlat = lvlNumber *20; //фармим от 1200 до 6000 золотых за уровень
+}
+
+if (lvlNumber <= 70 && lvlNumber > 60) {
+	countZlat = lvlNumber *70; //фармим от 4900 до 24500 золотых за уровень
+}
+
+if (lvlNumber <= 80 && lvlNumber > 70) {
+	countZlat = lvlNumber *75; //фармим от 6000 до 30000 золотых за уровень
+}
+
+if (lvlNumber <= 90 && lvlNumber > 80) {
+	countZlat = lvlNumber *80; //фармим от 7200 до 36000 золотых за уровень
+}
+
+if (lvlNumber > 90) {
+	countZlat = lvlNumber * 85; //фармим от 7650 до 38250 золотых за уровень
+}
+//----------------------------------------------------------------------------
+
 // Параметры типов врагов - характеристики для каждого типа врагов
 
  //clearGameState();//для отладки
