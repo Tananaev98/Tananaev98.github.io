@@ -74,7 +74,7 @@ const ENEMY_TYPES = {
         image: 'images/enemies/regions/1_smesh_les/lvl1/2.webp',
         baseHP: 4000,
         baseSpeed: 0,
-        baseDamage: 30,
+        baseDamage: 22,
         spawnWeight: 15,                  
 		baseExp: 400, 
         size: '25%'
@@ -85,7 +85,7 @@ const ENEMY_TYPES = {
         image: 'images/enemies/regions/1_smesh_les/lvl1/3.webp',
         baseHP: 20000,
         baseSpeed: 0,
-        baseDamage: 10,
+        baseDamage: 24,
         spawnWeight: 20,
 		baseExp: 600, 
         size: '25%'                        
@@ -97,7 +97,7 @@ const ENEMY_TYPES = {
         image: 'images/enemies/regions/1_smesh_les/lvl1/4.webp',
         baseHP: 60000,
         baseSpeed: 0,
-        baseDamage: 70,
+        baseDamage: 26,
         spawnWeight: 10,
 		baseExp: 800, 
         size: '25%'                        
@@ -109,7 +109,7 @@ const ENEMY_TYPES = {
         image: 'images/enemies/regions/1_smesh_les/lvl1/5.webp',
         baseHP: 75000,
         baseSpeed: 0,
-        baseDamage: 40,
+        baseDamage: 28,
         spawnWeight: 5,
 		baseExp: 0, 
         size: '25%'                        
@@ -128,43 +128,43 @@ const ENEMY_TYPES = {
  
  
  const bossAbilities = [
-    { boss: 'enem1', type: 'enem11', xPos: 10, yPos: 10, customHP: 1, customDamage:  50, customSpeed: 10}, //0
-	{ boss: 'enem1', type: 'enem11', xPos: 20, yPos: 10, customHP: 1, customDamage:  50, customSpeed: 10}, //1
-	{ boss: 'enem1', type: 'enem11', xPos: 30, yPos: 10, customHP: 1, customDamage:  50, customSpeed: 10}, //2
-	{ boss: 'enem1', type: 'enem11', xPos: 70, yPos: 10, customHP: 1, customDamage:  50, customSpeed: 10}, //3
-	{ boss: 'enem1', type: 'enem11', xPos: 80, yPos: 10, customHP: 1, customDamage:  50, customSpeed: 10}, //4
-	{ boss: 'enem1', type: 'enem11', xPos: 90, yPos: 10, customHP: 1, customDamage:  50, customSpeed: 10}, //5
+    { boss: 'enem1', type: 'enem11', xPos: 10, yPos: 10, customHP: 1, customDamage:  ENEMY_TYPES.enem1.baseDamage, customSpeed: 10}, //0
+	{ boss: 'enem1', type: 'enem11', xPos: 20, yPos: 10, customHP: 1, customDamage:  ENEMY_TYPES.enem1.baseDamage, customSpeed: 10}, //1
+	{ boss: 'enem1', type: 'enem11', xPos: 30, yPos: 10, customHP: 1, customDamage:  ENEMY_TYPES.enem1.baseDamage, customSpeed: 10}, //2
+	{ boss: 'enem1', type: 'enem11', xPos: 70, yPos: 10, customHP: 1, customDamage:  ENEMY_TYPES.enem1.baseDamage, customSpeed: 10}, //3
+	{ boss: 'enem1', type: 'enem11', xPos: 80, yPos: 10, customHP: 1, customDamage:  ENEMY_TYPES.enem1.baseDamage, customSpeed: 10}, //4
+	{ boss: 'enem1', type: 'enem11', xPos: 90, yPos: 10, customHP: 1, customDamage:  ENEMY_TYPES.enem1.baseDamage, customSpeed: 10}, //5
 	
-	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 30, customHP: 1, customDamage:  100, customSpeed: 11}, 
-	{ boss: 'enem2', type: 'enem22', xPos: 20, yPos: 10, customHP: 1, customDamage:  100, customSpeed: 11}, 
-	{ boss: 'enem2', type: 'enem22', xPos: 30, yPos: 40, customHP: 1, customDamage:  100, customSpeed: 6}, 
-	{ boss: 'enem2', type: 'enem22', xPos: 70, yPos: 10, customHP: 1, customDamage:  100, customSpeed: 5}, 
-	{ boss: 'enem2', type: 'enem22', xPos: 80, yPos: 20, customHP: 1, customDamage:  100, customSpeed: 12}, 
-	{ boss: 'enem2', type: 'enem22', xPos: 90, yPos: 15, customHP: 1, customDamage:  100, customSpeed: 4}, 
+	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 30, customHP: 1, customDamage:  ENEMY_TYPES.enem2.baseDamage, customSpeed: 11}, 
+	{ boss: 'enem2', type: 'enem22', xPos: 20, yPos: 10, customHP: 1, customDamage:  ENEMY_TYPES.enem2.baseDamage, customSpeed: 11}, 
+	{ boss: 'enem2', type: 'enem22', xPos: 30, yPos: 40, customHP: 1, customDamage:  ENEMY_TYPES.enem2.baseDamage, customSpeed: 6}, 
+	{ boss: 'enem2', type: 'enem22', xPos: 70, yPos: 10, customHP: 1, customDamage:  ENEMY_TYPES.enem2.baseDamage, customSpeed: 5}, 
+	{ boss: 'enem2', type: 'enem22', xPos: 80, yPos: 20, customHP: 1, customDamage:  ENEMY_TYPES.enem2.baseDamage, customSpeed: 12}, 
+	{ boss: 'enem2', type: 'enem22', xPos: 90, yPos: 15, customHP: 1, customDamage:  ENEMY_TYPES.enem2.baseDamage, customSpeed: 4}, 
 	
-	{ boss: 'enem3', type: 'enem33', xPos: 11, yPos: 10, customHP: 1, customDamage:  150, customSpeed: 8}, 
-	{ boss: 'enem3', type: 'enem33', xPos: 22, yPos: 20, customHP: 1, customDamage:  150, customSpeed: 6}, 
-	{ boss: 'enem3', type: 'enem33', xPos: 33, yPos: 10, customHP: 1, customDamage:  150, customSpeed: 6}, 
-	{ boss: 'enem3', type: 'enem33', xPos: 63, yPos: 40, customHP: 1, customDamage:  150, customSpeed: 9}, 
-	{ boss: 'enem3', type: 'enem33', xPos: 75, yPos: 10, customHP: 1, customDamage:  150, customSpeed: 6}, 
-	{ boss: 'enem3', type: 'enem33', xPos: 89, yPos: 20, customHP: 1, customDamage:  150, customSpeed: 7}, 
-	{ boss: 'enem3', type: 'enem33', xPos: 70, yPos: 30, customHP: 1, customDamage:  150, customSpeed: 9}, 
+	{ boss: 'enem3', type: 'enem33', xPos: 11, yPos: 10, customHP: 1, customDamage:  ENEMY_TYPES.enem3.baseDamage, customSpeed: 8}, 
+	{ boss: 'enem3', type: 'enem33', xPos: 22, yPos: 20, customHP: 1, customDamage:  ENEMY_TYPES.enem3.baseDamage, customSpeed: 6}, 
+	{ boss: 'enem3', type: 'enem33', xPos: 33, yPos: 10, customHP: 1, customDamage:  ENEMY_TYPES.enem3.baseDamage, customSpeed: 6}, 
+	{ boss: 'enem3', type: 'enem33', xPos: 63, yPos: 40, customHP: 1, customDamage:  ENEMY_TYPES.enem3.baseDamage, customSpeed: 9}, 
+	{ boss: 'enem3', type: 'enem33', xPos: 75, yPos: 10, customHP: 1, customDamage:  ENEMY_TYPES.enem3.baseDamage, customSpeed: 6}, 
+	{ boss: 'enem3', type: 'enem33', xPos: 89, yPos: 20, customHP: 1, customDamage:  ENEMY_TYPES.enem3.baseDamage, customSpeed: 7}, 
+	{ boss: 'enem3', type: 'enem33', xPos: 70, yPos: 30, customHP: 1, customDamage:  ENEMY_TYPES.enem3.baseDamage, customSpeed: 9}, 
 		
-	{ boss: 'enem4', type: 'enem44', xPos: 10, yPos: 11, customHP: 1, customDamage:  200, customSpeed: 5}, 
-	{ boss: 'enem4', type: 'enem44', xPos: 30, yPos: 21, customHP: 1, customDamage:  200, customSpeed: 6}, 
-	{ boss: 'enem4', type: 'enem44', xPos: 35, yPos: 12, customHP: 1, customDamage:  200, customSpeed: 6}, 
-	{ boss: 'enem4', type: 'enem44', xPos: 65, yPos: 42, customHP: 1, customDamage:  200, customSpeed: 15}, 
-	{ boss: 'enem4', type: 'enem44', xPos: 75, yPos: 13, customHP: 1, customDamage:  200, customSpeed: 6}, 
-	{ boss: 'enem4', type: 'enem44', xPos: 90, yPos: 24, customHP: 1, customDamage:  200, customSpeed: 7}, 
-	{ boss: 'enem4', type: 'enem44', xPos: 85, yPos: 35, customHP: 1, customDamage:  200, customSpeed: 16}, 
+	{ boss: 'enem4', type: 'enem44', xPos: 10, yPos: 11, customHP: 1, customDamage:  ENEMY_TYPES.enem4.baseDamage, customSpeed: 5}, 
+	{ boss: 'enem4', type: 'enem44', xPos: 30, yPos: 21, customHP: 1, customDamage:  ENEMY_TYPES.enem4.baseDamage, customSpeed: 6}, 
+	{ boss: 'enem4', type: 'enem44', xPos: 35, yPos: 12, customHP: 1, customDamage:  ENEMY_TYPES.enem4.baseDamage, customSpeed: 6}, 
+	{ boss: 'enem4', type: 'enem44', xPos: 65, yPos: 42, customHP: 1, customDamage:  ENEMY_TYPES.enem4.baseDamage, customSpeed: 15}, 
+	{ boss: 'enem4', type: 'enem44', xPos: 75, yPos: 13, customHP: 1, customDamage:  ENEMY_TYPES.enem4.baseDamage, customSpeed: 6}, 
+	{ boss: 'enem4', type: 'enem44', xPos: 90, yPos: 24, customHP: 1, customDamage:  ENEMY_TYPES.enem4.baseDamage, customSpeed: 7}, 
+	{ boss: 'enem4', type: 'enem44', xPos: 85, yPos: 35, customHP: 1, customDamage:  ENEMY_TYPES.enem4.baseDamage, customSpeed: 16}, 
 	
-	{ boss: 'enem5', type: 'enem55', xPos: 85, yPos: 9, customHP: 1, customDamage:  250, customSpeed: 12}, 
-	{ boss: 'enem5', type: 'enem55', xPos: 90, yPos: 17, customHP: 1, customDamage:  250, customSpeed: 13}, 
-	{ boss: 'enem5', type: 'enem55', xPos: 75, yPos: 16, customHP: 1, customDamage:  250, customSpeed: 6}, 
-	{ boss: 'enem5', type: 'enem55', xPos: 65, yPos: 31, customHP: 1, customDamage:  250, customSpeed: 4}, 
-	{ boss: 'enem5', type: 'enem55', xPos: 35, yPos: 20, customHP: 1, customDamage:  250, customSpeed: 14}, 
-	{ boss: 'enem5', type: 'enem55', xPos: 30, yPos: 20, customHP: 1, customDamage:  250, customSpeed: 7}, 
-	{ boss: 'enem5', type: 'enem55', xPos: 10, yPos: 35, customHP: 1, customDamage:  250, customSpeed: 12}, 
+	{ boss: 'enem5', type: 'enem55', xPos: 85, yPos: 9, customHP: 1, customDamage:   ENEMY_TYPES.enem5.baseDamage, customSpeed: 12}, 
+	{ boss: 'enem5', type: 'enem55', xPos: 90, yPos: 17, customHP: 1, customDamage:  ENEMY_TYPES.enem5.baseDamage, customSpeed: 13}, 
+	{ boss: 'enem5', type: 'enem55', xPos: 75, yPos: 16, customHP: 1, customDamage:  ENEMY_TYPES.enem5.baseDamage, customSpeed: 6}, 
+	{ boss: 'enem5', type: 'enem55', xPos: 65, yPos: 31, customHP: 1, customDamage:  ENEMY_TYPES.enem5.baseDamage, customSpeed: 4}, 
+	{ boss: 'enem5', type: 'enem55', xPos: 35, yPos: 20, customHP: 1, customDamage:  ENEMY_TYPES.enem5.baseDamage, customSpeed: 14}, 
+	{ boss: 'enem5', type: 'enem55', xPos: 30, yPos: 20, customHP: 1, customDamage:  ENEMY_TYPES.enem5.baseDamage, customSpeed: 7}, 
+	{ boss: 'enem5', type: 'enem55', xPos: 10, yPos: 35, customHP: 1, customDamage:  ENEMY_TYPES.enem5.baseDamage, customSpeed: 12}, 
 	
 		
 ];

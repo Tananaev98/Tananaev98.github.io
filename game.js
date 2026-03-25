@@ -97,7 +97,7 @@ let countDefeatBoss = 0;
 const GAME_CONFIG = {
     START_Y: 5,           // Начальная позиция Y (выше экрана)
     TARGET_Y: 73,           // Целевая позиция Y (красная линия/замок)
-	CASTLE_BASE_HP: 300,
+	CASTLE_BASE_HP: activeHeroObject.castleHP,
 	CASTLE_HP_PER_LEVEL: 20
 };
 
@@ -118,8 +118,8 @@ let castleLevelText = null;
 
 
 let castleHP = {
-    current: 100,
-    max: 100,
+    current: activeHeroObject.castleHP,
+    max: activeHeroObject.castleHP,
     level: 1
 };
 

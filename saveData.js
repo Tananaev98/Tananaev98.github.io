@@ -68,7 +68,7 @@ function heroUp(heroName, infoMode) {
         hero.startGlobalWoundChance += 0.01;
         hero.upSpecif = 3;
     } else if (hero.upSpecif === 3) {
-        hero.startSHOT_INTERVAL -= 10;
+        hero.startSHOT_INTERVAL -= 1;
         hero.upSpecif = 4;
     } else if (hero.upSpecif === 4) {
         hero.castleHP += Math.floor(hero.castleHP * 0.05);      // +5% HP
@@ -113,7 +113,7 @@ function createGameState() {
 				startGlobalWoundChance	: 0.01,
 				startCastleDamageReduction : 0.06,
 				startSHOT_INTERVAL : 970,
-				castleHP : 180,
+				castleHP : 140,
 				lvlUnlock: 1,
 				zlataUp: 10,
 				upSpecif: 1, 	
@@ -136,7 +136,7 @@ function createGameState() {
 				startGlobalWoundChance	: 0.01,
 				startCastleDamageReduction : 0.02,
 				startSHOT_INTERVAL : 940,
-				castleHP : 100,
+				castleHP : 80,
 				lvlUnlock: 10,
 				zlataUp: 10,
 				upSpecif: 1, 
@@ -150,13 +150,13 @@ function createGameState() {
 				image: 'images/hero/3_luka/luka_min.png',
 				fullImage: 'images/hero/3_luka/luka_full.png',
 				level: 1,
-				startGlobalDamage: 53,
+				startGlobalDamage: 55,
 				startGlobalCritChance: 0.01,
 				startGlobalCritMultiplier: 1.6,
 				startGlobalWoundChance	: 0.02,
 				startCastleDamageReduction : 0.01,
-				startSHOT_INTERVAL : 850,
-				castleHP : 70,
+				startSHOT_INTERVAL : 870,
+				castleHP : 50,
 				lvlUnlock: 20,
 				zlataUp: 10,
 				upSpecif: 1,
