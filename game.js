@@ -1124,8 +1124,9 @@ function showEndGameModal(victory, timeSeconds) {
             <p class="modal-subtitle">${victory ? 'Последний противник побежден!' : 'Ваш персонаж побежден'}</p>
             <div class="endgame-stats">
                 <div class="resource-line"> Получено злат: <span>${zlatP} <img src='images/other/zlata.webp' class='zlatImg'></span> </div>
-                <div class="time-line">Время: <span>${formatTime(timeSeconds)}</span></div>
-            </div>
+                <div class="time-line">Время прохождения: <span>${formatTime(timeSeconds)}</span></div>` 
+				+ rowTotal + 	
+            `</div>
             <div class="endgame-buttons">
                 <button class="endgame-button restart">Еще разок</button>
                 <button class="endgame-button base">На базу</button>

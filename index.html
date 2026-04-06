@@ -9,6 +9,19 @@
 </head>
 <body>
 
+<div class="skill-points-display" id="skillPointsDisplay">
+    <span class="skill-points-icon">⚡</span>
+    <span class="skill-points-label">Очки мастерства:</span>
+    <span class="skill-points-value" id="skillPointsValue">0</span>
+	
+	    <!-- НОВАЯ ПОДСКАЗКА -->
+    <div class="skill-points-tooltip">
+        Очки мастерства начисляются за скорость прохождения уровней: чем быстрее вы проходите уровень, тем больше очков получаете! 
+		      (Если уровень проходится дольше 10 минут, очки не начисляются.)
+    </div>
+	
+</div>
+
   <div class="select-character-button" id="selectCharacterBtn">Персонажи</div>
   
   <div class="select-character-button" id="clearProgressBtn">Очистить прогресс (временная кнопка для отладки)</div>
@@ -322,6 +335,18 @@ function openCharacterSelect() {
         }
     });
 }
+
+// ==================== ОТОБРАЖЕНИЕ ОЧКОВ МАСТЕРСТВА ====================
+function updateSkillPointsDisplay() {
+    const pointsSpan = document.getElementById('skillPointsValue');
+    if (pointsSpan) {
+        const points = (typeof gameState !== 'undefined' && gameState.skillPoints !== undefined) ? gameState.skillPoints : 0;
+        pointsSpan.textContent = points;
+    }
+}
+
+// Вызываем при загрузке
+updateSkillPointsDisplay();
 
 selectBtn.addEventListener('click', openCharacterSelect)
 </script>

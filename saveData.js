@@ -25,15 +25,20 @@ function clearGameState() {
 
 // 5. Обновление уровня
 function completeLevel() {
+	
+	saveLevelTime(lvlNumber, timeSec2);
     if (lvlNumber > gameState.lastCompletedLevel) {
         gameState.lastCompletedLevel = lvlNumber;
+		
+		rowTotal = rowTotal + `<div class="time-line">Разблокирован уровень ${lvlNumber+1}!</div>`;
         
         gameState.mHero.forEach(heroKey => {
             const hero = gameState[heroKey];
             if (!hero) return;
             
-            if (hero.lvlUnlock <= lvlNumber) {
-                hero.unlock = true; 
+            if (hero.lvlUnlock <= lvlNumber && hero.unlock == false) {
+                hero.unlock = true;
+				rowTotal = rowTotal + `<div class="time-line">Разблокирован новый герой — ${hero.dispName}!</div>`;	
             }
         }); // Добавлена закрывающая скобка
         
@@ -90,6 +95,52 @@ function heroUp(heroName, infoMode) {
 }
 
 
+function saveLevelTime(level, timeInSeconds) {
+	
+	const currentTime = gameState.levelTimes[level];
+	
+	updRecord = false; 
+	
+	// если записи нет — добавляем
+	if (currentTime === undefined) {
+		updRecord = true;
+		gameState.levelTimes[level] = timeInSeconds;
+	}
+
+	// если новое время меньше старого — обновляем
+	if (timeInSeconds < currentTime) {
+		updRecord = true;
+		gameState.levelTimes[level] = timeInSeconds;
+	}
+	
+	//выводим предыдущее время:
+	rowTotal = rowTotal + `<div class="time-line">Лучшее время: <span>${formatTime(currentTime)}</span></div>`;
+
+	//если рекород не побит то на этом заканчиваем
+	if (!updRecord) {return}
+
+	//если рекород побит то:
+	// считаем общую сумму
+	let totalScore = 0;
+
+	for (const lvl in gameState.levelTimes) {
+		const time = gameState.levelTimes[lvl];
+
+		// 1000 - время, но не меньше 0
+		const value = Math.max(0, 600 - time);
+
+		totalScore += value;
+	}
+	
+	skillPoints = totalScore-gameState.skillPoints;
+	
+	if (skillPoints > 0) {
+		rowTotal = rowTotal + `<div class="time-line">Рекорд побит — очки мастерства: +${skillPoints}!</div>`;
+		gameState.skillPoints = gameState.skillPoints+skillPoints;
+		saveGameState();
+	}
+	
+}
 
 function createGameState() {
     const saved = localStorage.getItem('gameState');
@@ -97,9 +148,12 @@ function createGameState() {
         return JSON.parse(saved); // читаем из localStorage
     } else {
         const defaultState = {
-			lastCompletedLevel: 0,
+			lastCompletedLevel: 0,			
+			levelTimes: {
+	          },
+			skillPoints: 0,			  
 			mHero: ['eremei', 'dunya', 'luka', 'kim', 'vas', 'gen', 'gm', 'kir', 'gam', 'gama','gamb','gamc', 'gamd','game','gamf', 'gamg', 'gamh', ],
-			activeHero: 'dunya',
+			activeHero: 'eremei',
 			zlata: 0, 
 			eremei: {
 				name: 'eremei', 
@@ -137,7 +191,7 @@ function createGameState() {
 				startCastleDamageReduction : 0.02,
 				startSHOT_INTERVAL : 940,
 				castleHP : 80,
-				lvlUnlock: 10,
+				lvlUnlock: 2,
 				zlataUp: 10,
 				upSpecif: 1, 
 				unlock: true,
@@ -157,7 +211,7 @@ function createGameState() {
 				startCastleDamageReduction : 0.01,
 				startSHOT_INTERVAL : 870,
 				castleHP : 50,
-				lvlUnlock: 20,
+				lvlUnlock: 3,
 				zlataUp: 10,
 				upSpecif: 1,
 				unlock: true,
