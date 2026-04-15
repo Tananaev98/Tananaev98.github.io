@@ -111,10 +111,10 @@ function saveLevelTime(level, timeInSeconds) {
 	if (timeInSeconds < currentTime) {
 		updRecord = true;
 		gameState.levelTimes[level] = timeInSeconds;
+		//выводим предыдущее время:
+		rowTotal = rowTotal + `<div class="time-line">Лучшее время: <span>${formatTime(currentTime)}</span></div>`;
 	}
 	
-	//выводим предыдущее время:
-	rowTotal = rowTotal + `<div class="time-line">Лучшее время: <span>${formatTime(currentTime)}</span></div>`;
 
 	//если рекород не побит то на этом заканчиваем
 	if (!updRecord) {return}

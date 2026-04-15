@@ -1,4 +1,4 @@
-let lvlNumber = 3; 
+let lvlNumber = 4; 
 let factorChar = (lvlNumber*5) / 100;
 
 
@@ -6,18 +6,18 @@ const ENEMY_TYPES = {
 	
 	enem11: {  
         name: 'enem11',                     
-        image: 'images/enemies/regions/1_smesh_les/lvl3/11.webp',  
+        image: 'images/enemies/regions/1_smesh_les/lvl4/11.webp',  
         baseHP: 100,                     
         baseSpeed: 0.020,                  
         baseDamage: 20,                    
         spawnWeight: 5,                  
 		baseExp: 0,                     
-        size: '7%'                        
+        size: '10%'                        
     },
 	
 	enem22: {  
         name: 'enem22',                     
-        image: 'images/enemies/regions/1_smesh_les/lvl3/22.webp',  
+        image: 'images/enemies/regions/1_smesh_les/lvl4/22.webp',  
         baseHP: 100,                      
         baseSpeed: 0.020,                  
         baseDamage: 20,                    
@@ -28,7 +28,7 @@ const ENEMY_TYPES = {
 	
 	enem33: {  
         name: 'enem33',                     
-        image: 'images/enemies/regions/1_smesh_les/lvl3/33.webp',  
+        image: 'images/enemies/regions/1_smesh_les/lvl4/33.webp',  
         baseHP: 100,                      
         baseSpeed: 0.020,                 
         baseDamage: 20,                    
@@ -39,7 +39,7 @@ const ENEMY_TYPES = {
 	
 	enem44: {  
         name: 'enem44',                     
-        image: 'images/enemies/regions/1_smesh_les/lvl3/44.webp',  
+        image: 'images/enemies/regions/1_smesh_les/lvl4/44.webp',  
         baseHP: 100,                      
         baseSpeed: 0.020,                 
         baseDamage: 20,                    
@@ -50,7 +50,7 @@ const ENEMY_TYPES = {
 	
 	enem55: {  
         name: 'enem55',                     
-        image: 'images/enemies/regions/1_smesh_les/lvl3/55.webp',  
+        image: 'images/enemies/regions/1_smesh_les/lvl4/55.webp',  
         baseHP: 100,                      
         baseSpeed: 0.020,                 
         baseDamage: 20,                    
@@ -61,19 +61,19 @@ const ENEMY_TYPES = {
 	
     enem1: {  
         name: 'enem1',                     
-		dispName:  'Колючий',
-        image: 'images/enemies/regions/1_smesh_les/lvl3/1.webp',  
+		dispName:  'Дровосек',
+        image: 'images/enemies/regions/1_smesh_les/lvl4/1.webp',  
         baseHP: (2600) +(2600*factorChar),                      // Базовое здоровье
         baseSpeed: 0,                  
         baseDamage: (20)+(20)*factorChar,                      
         spawnWeight: 5,                  
 		baseExp: 250,                      
-        size: '25%'                        
+        size: '22%'                        
     },
     enem2: {  
         name: 'enem2',
-		dispName:  'Шипун',
-        image: 'images/enemies/regions/1_smesh_les/lvl3/2.webp',
+		dispName:  'Грибник',
+        image: 'images/enemies/regions/1_smesh_les/lvl4/2.webp',
         baseHP: (4200) + (4200*factorChar),
         baseSpeed: 0,
         baseDamage: (22)+(22)*factorChar,
@@ -84,8 +84,8 @@ const ENEMY_TYPES = {
     },
     enem3: {  
         name: 'enem3',
-		dispName:  'Уф',
-        image: 'images/enemies/regions/1_smesh_les/lvl3/3.webp',
+		dispName:  'Охотник',
+        image: 'images/enemies/regions/1_smesh_les/lvl4/3.webp',
         baseHP: (21000) + (21000) *factorChar,
         baseSpeed: 0,
         baseDamage: (24)+(24)*factorChar,
@@ -97,8 +97,8 @@ const ENEMY_TYPES = {
 	
 	enem4: {  
         name: 'enem4',
-		dispName:  'Румяная',
-        image: 'images/enemies/regions/1_smesh_les/lvl3/4.webp',
+		dispName:  'Пастух',
+        image: 'images/enemies/regions/1_smesh_les/lvl4/4.webp',
         baseHP: (62000)+(62000)*factorChar,
         baseSpeed: 0,
         baseDamage: (26)+(26)*factorChar,
@@ -110,8 +110,8 @@ const ENEMY_TYPES = {
 	
 	enem5: {  
         name: 'enem5',
-		dispName:  'Кисельный берег',
-        image: 'images/enemies/regions/1_smesh_les/lvl3/5.webp',
+		dispName:  'Лесник',
+        image: 'images/enemies/regions/1_smesh_les/lvl4/5.webp',
         baseHP: (76000)+(76000)*factorChar,
         baseSpeed: 0,
         baseDamage: (28)+(28)*factorChar,
@@ -140,11 +140,9 @@ const ENEMY_TYPES = {
  //customSpeed с какой скоростью летит атака? 
  const bossAbilities = [
     { boss: 'enem1', type: 'enem11', xPos: 10, yPos: 10, customHP: 1, customDamage:  ENEMY_TYPES.enem1.baseDamage, customSpeed: 12}, //0
-	{ boss: 'enem1', type: 'enem11', xPos: 20, yPos: 10, customHP: 1, customDamage:  ENEMY_TYPES.enem1.baseDamage, customSpeed: 8}, //1
-	{ boss: 'enem1', type: 'enem11', xPos: 25, yPos: 10, customHP: 1, customDamage:  ENEMY_TYPES.enem1.baseDamage, customSpeed: 13}, //2
-	{ boss: 'enem1', type: 'enem11', xPos: 70, yPos: 10, customHP: 1, customDamage:  ENEMY_TYPES.enem1.baseDamage, customSpeed: 10}, //3
-	{ boss: 'enem1', type: 'enem11', xPos: 80, yPos: 10, customHP: 1, customDamage:  ENEMY_TYPES.enem1.baseDamage, customSpeed: 22}, //4
-	{ boss: 'enem1', type: 'enem11', xPos: 90, yPos: 10, customHP: 1, customDamage:  ENEMY_TYPES.enem1.baseDamage, customSpeed: 18}, //5
+	{ boss: 'enem1', type: 'enem11', xPos: 20, yPos: 10, customHP: 1, customDamage:  ENEMY_TYPES.enem1.baseDamage, customSpeed: 12}, //1
+	{ boss: 'enem1', type: 'enem11', xPos: 25, yPos: 10, customHP: 1, customDamage:  ENEMY_TYPES.enem1.baseDamage, customSpeed: 12}, //2
+
 	
 	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 30, customHP: 1, customDamage:  ENEMY_TYPES.enem2.baseDamage, customSpeed: 20}, 
 	{ boss: 'enem2', type: 'enem22', xPos: 20, yPos: 10, customHP: 1, customDamage:  ENEMY_TYPES.enem2.baseDamage, customSpeed: 6}, 
@@ -206,11 +204,11 @@ const ENEMY_TYPES = {
 //затем снова уйдет на кд указанное в bossDelayAbDop
 // и так по кругу пока игрок не убъет босса
   const bossAbilitiesDop = [
-    { boss: 'enem1', indexAbilities: [0, 1, 2, 5, 5]},
-	{ boss: 'enem1', indexAbilities: [3, 4, 5]}, 
-	{ boss: 'enem1', indexAbilities: [5, 1, 2]}, 
-	{ boss: 'enem1', indexAbilities: [3, 1, 1]}, 
-	{ boss: 'enem1', indexAbilities: [0, 1, 5,4,4,4,4,4]},
+    { boss: 'enem1', indexAbilities: [0, 1, 2]},
+	{ boss: 'enem1', indexAbilities: [2, 2, 2]}, 
+	{ boss: 'enem1', indexAbilities: [0, 0, 1]}, 
+	{ boss: 'enem1', indexAbilities: [0, 1, 1]}, 
+	{ boss: 'enem1', indexAbilities: [0, 1, 1, 2, 0, 2]},
 
 	{ boss: 'enem2', indexAbilities: [0, 1, 1, 2]},
 	{ boss: 'enem2', indexAbilities: [3, 4, 5]}, 
