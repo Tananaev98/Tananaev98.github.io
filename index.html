@@ -2,36 +2,82 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Philosopher:wght@400;700&family=Pangolin&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="main_css.css">
 	<link rel="stylesheet" href="index_css.css">
     <title>Выбор уровня</title>
 
 </head>
-<body>
+<body class="menu-page">
 
-<div class="skill-points-display" id="skillPointsDisplay">
-    <span class="skill-points-icon">⚡</span>
-    <span class="skill-points-label">Очки мастерства:</span>
-    <span class="skill-points-value" id="skillPointsValue">0</span>
-	
-	    <!-- НОВАЯ ПОДСКАЗКА -->
-    <div class="skill-points-tooltip">
-        Очки мастерства начисляются за скорость прохождения уровней: чем быстрее вы проходите уровень, тем больше очков получаете! 
-		      (Если уровень проходится дольше 10 минут, очки не начисляются.)
+<header class="menu-topbar">
+    <div class="skill-points-display" id="skillPointsDisplay">
+        <span class="skill-points-icon">⚡</span>
+        <span class="skill-points-label">Очки мастерства:</span>
+        <span class="skill-points-value" id="skillPointsValue">0</span>
+        <div class="skill-points-tooltip">
+            Очки мастерства начисляются за скорость прохождения уровней: чем быстрее вы проходите уровень, тем больше очков получаете!
+            (Если уровень проходится дольше 10 минут, очки не начисляются.)
+        </div>
     </div>
-	
-</div>
 
-  <div class="select-character-button" id="selectCharacterBtn">Персонажи</div>
-  
-  <div class="select-character-button" id="clearProgressBtn">Очистить прогресс (временная кнопка для отладки)</div>
-  
-<br><br><br><br><br>
-<a href="level.html?level=1" class="level locked" data-level="1">Уровень 1 - Мятежная выпечка</a>
-<a href="level.html?level=2" class="level locked" data-level="2">Уровень 2 - Грибная поляна</a>
-<a href="level.html?level=3" class="level locked" data-level="3">Уровень 3 - Кисель</a>
-<a href="level.html?level=4" class="level locked" data-level="4">Уровень 4 - Ремесленики</a>
+    <div class="menu-actions">
+        <div class="select-character-button" id="selectCharacterBtn">Персонажи</div>
+        <div class="select-character-button menu-debug-btn" id="clearProgressBtn">Очистить прогресс</div>
+    </div>
+</header>
 
+<main class="menu-main">
+    <div class="menu-hero">
+
+    </div>
+
+    <nav class="levels-grid" aria-label="Список уровней">
+        <a href="level.html?level=1" class="level locked" data-level="1">
+            <span class="level-num">01</span>
+            <span class="level-body">
+                <span class="level-label">Уровень 1</span>
+                <span class="level-name">Мятежная выпечка</span>
+            </span>
+            <span class="level-status" aria-hidden="true"></span>
+        </a>
+        <a href="level.html?level=2" class="level locked" data-level="2">
+            <span class="level-num">02</span>
+            <span class="level-body">
+                <span class="level-label">Уровень 2</span>
+                <span class="level-name">Грибная поляна</span>
+            </span>
+            <span class="level-status" aria-hidden="true"></span>
+        </a>
+        <a href="level.html?level=3" class="level locked" data-level="3">
+            <span class="level-num">03</span>
+            <span class="level-body">
+                <span class="level-label">Уровень 3</span>
+                <span class="level-name">Кисель</span>
+            </span>
+            <span class="level-status" aria-hidden="true"></span>
+        </a>
+        <a href="level.html?level=4" class="level locked" data-level="4">
+            <span class="level-num">04</span>
+            <span class="level-body">
+                <span class="level-label">Уровень 4</span>
+                <span class="level-name">Ремесленики</span>
+            </span>
+            <span class="level-status" aria-hidden="true"></span>
+        </a>
+        <a href="level.html?level=5" class="level locked" data-level="5">
+            <span class="level-num">05</span>
+            <span class="level-body">
+                <span class="level-label">Уровень 5</span>
+                <span class="level-name">Ночные хищники</span>
+            </span>
+            <span class="level-status" aria-hidden="true"></span>
+        </a>
+    </nav>
+</main>
 
 <script src="saveData.js"></script>
 

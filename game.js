@@ -276,7 +276,6 @@ class Enemy {
         // Обновляем состояние ранения
         const diedFromWound = this.updateWound();
         if (diedFromWound) {
-			handleEnemyDeath(this, 'wound');
             return 'dead_from_wound';
         }
         
@@ -731,10 +730,6 @@ function gameLoop(currentTime) {
 		showCenterText((timeNextBoss-timeSec2), 800, 'info');
 	}
 	
-	console.log("Время прошло:" +timeSec2);
-		
-
-    
     // Вычисляем deltaTime (время с предыдущего кадра в миллисекундах)
     const deltaTime = currentTime - lastFrameTime;
     lastFrameTime = currentTime;
@@ -766,15 +761,6 @@ function gameLoop(currentTime) {
     const clampedDeltaTime = Math.min(deltaTime, 100);
       
     checkAimAndDamage();
-	
-		
-    
-    if (spawnEnabled) {
-        const now = Date.now();
-        if (now - lastSpawnTime > GAME_CONFIG.SPAWN_INTERVAL) {
-            lastSpawnTime = now;
-        }
-    }
     
     for (let i = activeEnemies.length - 1; i >= 0; i--) {
         const enemy = activeEnemies[i];
@@ -783,10 +769,8 @@ function gameLoop(currentTime) {
         const updateResult = enemy.update(clampedDeltaTime);
         
         if (updateResult === 'dead_from_wound') {
-            
-            console.log(`${enemy.type} умер от ранения!`);
-			handleEnemyDeath(this);
-            
+            handleEnemyDeath(enemy, 'wound');
+
             // Анимация смерти
             enemy.element.style.transition = 'all 0.3s ease';
             enemy.element.style.opacity = '0';
@@ -847,11 +831,12 @@ function stopBossEvents() {
 }
 
 function executeBossEvent() {
-		bossAbD =  bossAbilitiesDop.filter(ba => ba.boss === bossAliveName);
-		bossAb  =  bossAbilities.filter(ba => ba.boss === bossAliveName);
-		console.log(bossAliveName);
-		randomAbilityIndex = Math.floor(Math.random() * bossAbD.length);
-		randomAbilityM = bossAbD[randomAbilityIndex].indexAbilities;
+		const bossAbD = bossAbilitiesDop.filter(ba => ba.boss === bossAliveName);
+		const bossAb = bossAbilities.filter(ba => ba.boss === bossAliveName);
+		if (bossAbD.length === 0) return;
+
+		const randomAbilityIndex = Math.floor(Math.random() * bossAbD.length);
+		const randomAbilityM = bossAbD[randomAbilityIndex].indexAbilities;
 	//	console.log( 'bossAbD равен'+randomAbilityM);
 		
 		let ind =0;
@@ -862,7 +847,11 @@ function executeBossEvent() {
         }
         
         const activeAbility = randomAbilityM[ind];
-		abObject = bossAb[activeAbility];
+		const abObject = bossAb[activeAbility];
+		if (!abObject) {
+			ind++;
+			return;
+		}
 		
 		if (activeEnemies.length <= randomAbilityM.length+1 && !isGamePaused && !isGameOver) {
 			spawnEnemyWithParams(abObject.type, abObject.xPos, abObject.yPos, abObject.customHP, abObject.customDamage, abObject.customSpeed, true);
@@ -1017,8 +1006,6 @@ function updateBossHealthBar() {
         }, 1000);
     }
     
-    // Отладочный вывод
-    console.log(`Босс HP: ${currentBoss.hp}/${currentBoss.maxHP} (${healthPercent.toFixed(1)}%)`);
 }
 
 /**
@@ -1070,8 +1057,8 @@ function animateCastleHit() {
     // Триггерим перерисовку DOM
     void castleImage.offsetWidth;
 	
-	 heroImage = document.getElementById('heroImage');
-	 hpImage   = document.getElementById('hpCont');
+	 const heroImage = document.getElementById('heroImage');
+	 const hpImage = document.getElementById('hpCont');
     
     // Добавляем класс с анимацией
     castleImage.classList.add('castle-hit-animation');
@@ -1433,10 +1420,10 @@ function animateEnemyHit(enemy) {
     }, 400); // 400мс - длительность анимации
 }
 
-function createDamageText(damage, xPercent, yPercent) {
+function createDamageText(damage, xPercent, yPercent, isCritical = false) {
     // Создаем элемент текста урона
     const damageText = document.createElement('div');
-    damageText.className = 'damage-text';
+    damageText.className = isCritical ? 'damage-text damage-critical' : 'damage-text';
     damageText.textContent = `-${damage}`;
     
     // Устанавливаем начальную позицию
@@ -1482,8 +1469,7 @@ function giveExperienceForKill(enemyType) {
 }
 
 function handleEnemyDeath(enemy, cause = 'player') {
-    const enemyName = enemy.customName || ENEMY_TYPES[enemy.type]?.name || 'Враг';
-    if (enemyName == bossAliveName) {
+    if (enemy.type === bossAliveName) {
 		countDefeatBoss++;
         // Это босс
         if (enemy.type === 'enem5') {   // ПОБЕДА
@@ -1654,8 +1640,8 @@ function pauseGame() {
     
     // Сохраняем оригинальные скорости врагов
     activeEnemies.forEach(enemy => {
-        enemy.originalSpeed = enemy.speed;
-        enemy.speed = 0;
+        enemy.originalSpeedPixelsPerSecond = enemy.speedPixelsPerSecond;
+        enemy.speedPixelsPerSecond = 0;
     });
     
     
@@ -1667,8 +1653,8 @@ function resumeGame() {
     
     // Восстанавливаем скорости врагов
     activeEnemies.forEach(enemy => {
-        if (enemy.originalSpeed !== undefined) {
-            enemy.speed = enemy.originalSpeed;
+        if (enemy.originalSpeedPixelsPerSecond !== undefined) {
+            enemy.speedPixelsPerSecond = enemy.originalSpeedPixelsPerSecond;
         }
     });
     
@@ -1976,17 +1962,6 @@ function getRarityMultiplier(rarity) {
         case 'epic': return 4;
         case 'legendary': return 5;
         default: return 1;
-    }
-}
-
-function getRarityName(rarity) {
-    switch (rarity) {
-        case 'common': return 'Обычное';
-        case 'uncommon': return 'Необычное';
-        case 'rare': return 'Редкое';
-        case 'epic': return 'Эпическое';
-        case 'legendary': return 'Легендарное';
-        default: return 'Обычное';
     }
 }
 
