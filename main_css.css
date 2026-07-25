@@ -375,24 +375,24 @@ body {
     }
 
     .heroImageClass {
-        width: 14%;
-        max-width: 64px;
-        height: auto;
-        aspect-ratio: 1;
+        width: 12%;
+        max-width: 56px;
+        height: 9%;
+        aspect-ratio: auto;
         left: 3%;
-        bottom: max(2%, env(safe-area-inset-bottom, 0px));
+        bottom: 9%;
         border-width: 3px;
     }
 
     .castle-health-container {
         width: 78%;
         left: 18%;
-        bottom: max(2%, env(safe-area-inset-bottom, 0px));
+        bottom: 8%;
     }
 
     .health-bar-container {
         height: 28px;
-        margin-bottom: 4px;
+        margin-bottom: 0;
         border-width: 2px;
     }
 
@@ -401,7 +401,42 @@ body {
     }
 
     .img_zamok {
-        height: 18%;
+        height: 20%;
+    }
+
+    /* Полоска HP босса: по центру, короче, без смещения влево */
+    .boss-health-container {
+        left: 50%;
+        top: max(12px, env(safe-area-inset-top, 0px));
+        transform: translateX(-50%);
+        width: 68%;
+        max-width: 320px;
+        height: 26px;
+    }
+
+    .boss-health-bar {
+        right: auto;
+        left: 0;
+        width: 100%;
+    }
+
+    .boss-health-ornament-left,
+    .boss-health-ornament-right {
+        width: 28px;
+        height: 36px;
+    }
+
+    .boss-health-ornament-left {
+        left: -14px;
+    }
+
+    .boss-health-ornament-right {
+        right: -14px;
+    }
+
+    .boss-name {
+        font-size: 12px;
+        letter-spacing: 1px;
     }
 
     .modal-content {
@@ -970,30 +1005,39 @@ body {
     animation: lowHealthPulse 1s infinite;
 }
 
-/* Медиа-запросы для адаптивности */
-@media (max-width: 768px) {
+/* Медиа-запросы для адаптивности (узкие экраны / мобилки) */
+@media (max-width: 768px), (hover: none) and (pointer: coarse) {
     .boss-health-container {
-        width: 90%;
-        height: 30px;
-        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 68%;
+        max-width: 320px;
+        height: 26px;
+        top: max(12px, env(safe-area-inset-top, 0px));
+    }
+
+    .boss-health-bar {
+        right: auto;
+        left: 0;
+        width: 100%;
     }
     
     .boss-health-ornament-left,
     .boss-health-ornament-right {
-        width: 35px;
-        height: 45px;
+        width: 28px;
+        height: 36px;
     }
     
     .boss-health-ornament-left {
-        left: -20px;
+        left: -14px;
     }
     
     .boss-health-ornament-right {
-        right: -20px;
+        right: -14px;
     }
     
     .boss-name {
-        font-size: 14px;
+        font-size: 12px;
         letter-spacing: 1px;
     }
 }

@@ -254,7 +254,25 @@ class Enemy {
         img.dataset.type = this.type;
         
         // Устанавливаем размер в зависимости от типа врага
-        img.style.width = ENEMY_TYPES[this.type].size;
+        let sizeStr = ENEMY_TYPES[this.type].size;
+        // На мобилке поле узкое — босс и атаки визуально мелкие, масштабируем только mobile
+        if (isMobileDevice) {
+            const match = String(sizeStr).match(/^([\d.]+)(.*)$/);
+            if (match) {
+                const value = parseFloat(match[1]);
+                const unit = match[2] || '%';
+                const isBoss = typeof bossM !== 'undefined' && bossM.includes(this.type);
+                const mult = isBoss ? 2 : 4;
+                const capped = Math.min(value * mult, isBoss ? 85 : 48);
+                sizeStr = capped + unit;
+            }
+        }
+        img.style.width = sizeStr;
+        if (typeof bossM !== 'undefined' && bossM.includes(this.type)) {
+            img.classList.add('enemy-boss');
+        } else {
+            img.classList.add('enemy-attack');
+        }
         
         // Настраиваем общие стили элемента
         img.style.position = 'absolute';  // Абсолютное позиционирование
