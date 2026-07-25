@@ -9,7 +9,8 @@
 html, body {
     overflow: hidden;
     height: 100%;
-    height: 100dvh;
+    height: 100svh;
+    height: -webkit-fill-available;
     margin: 0;
     padding: 0;
     touch-action: none;
@@ -86,93 +87,120 @@ body {
 
 .img_zamok{
 	position: absolute;
-	bottom: 0%;
-	width:100%;
-	height:21%;
+	bottom: 0;
+	width: 100%;
+	height: 21%;
 	z-index: 10;
 	filter: drop-shadow(0px 10px 10px rgba(0, 0, 0, 0.5));
-	left: 0%;
+	left: 0;
+	object-fit: cover;
+	object-position: bottom center;
+	pointer-events: none;
 }
 
 
 
-/* ====== СТИЛИ ЛЕВОЙ ПАНЕЛИ ====== */
+/* ====== СТАТУС-БАР ГЕРОЯ (портрет + HP) ====== */
+/* Один блок: портрет и полоска всегда выровнены вместе */
 
+.hero-status-bar {
+	position: absolute;
+	left: 7%;
+	right: 7%;
+	bottom: 3.8%;
+	height: clamp(44px, 9.5%, 68px);
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: clamp(8px, 1.2vw, 14px);
+	z-index: 99;
+	box-sizing: border-box;
+	pointer-events: none;
+}
 
 .heroImageClass {
-	position:absolute;
-	width: 8%;
-	height: 10%;
-	left: 9%;
-    bottom: 5%;
-    text-align: center;
-	
+	position: relative;
+	flex: 0 0 auto;
+	height: 100%;
+	width: auto;
+	aspect-ratio: 1 / 1;
+	object-fit: cover;
+	object-position: center top;
+	display: block;
 	z-index: 99;
-	/* Сама рамка: сложный градиент для имитации металла/дерева */
-  border: 4px solid #5d3a24;
-  border-style: double;
-  
-  /* Эффект объема и "вдавленности" в основную панель */
-  box-shadow: 
-    inset 0 0 10px rgba(0,0,0,0.8), /* Внутренняя тень */
-    2px 2px 5px rgba(0,0,0,0.5);    /* Внешняя тень на пергамент */
-
-  /* Скругление углов (совсем небольшое, для естественности) */
-  border-radius: 2px;
-  filter: sepia(0.2) contrast(1.1);
+	border: 4px solid #5d3a24;
+	border-style: double;
+	box-shadow:
+		inset 0 0 10px rgba(0,0,0,0.8),
+		2px 2px 5px rgba(0,0,0,0.5);
+	border-radius: 2px;
+	filter: sepia(0.2) contrast(1.1);
+	box-sizing: border-box;
 }
 
 .castle-health-container {
-	position:absolute;
-	width: 70%;
-	left: 21%;
-    bottom: 4%;
-    text-align: center;
+	position: relative;
+	flex: 1 1 auto;
+	min-width: 0;
+	width: auto;
+	height: 72%;
+	left: auto;
+	bottom: auto;
+	display: flex;
+	align-items: center;
+	text-align: center;
 	z-index: 99;
 }
 
 .castle-health-container h3 {
-    color: #8B4513;
-    margin-bottom: 15px;
-    font-size: 18px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+	color: #8B4513;
+	margin-bottom: 15px;
+	font-size: 18px;
+	text-transform: uppercase;
+	letter-spacing: 1px;
 }
 
 /* Контейнер для полоски здоровья */
 .health-bar-container {
-    position: relative;
-    width: 100%;
-    height: 40px;
-    background-color: #5C4033;
-    border: 3px solid #8B4513;
-    border-radius: 5px;
-    overflow: hidden;
-    margin-bottom: 10px;
+	position: relative;
+	width: 100%;
+	height: 100%;
+	min-height: 28px;
+	background-color: #5C4033;
+	border: 3px solid #8B4513;
+	border-radius: 5px;
+	overflow: hidden;
+	margin-bottom: 0;
+	box-sizing: border-box;
 }
 
 /* Сама полоска здоровья (будет менять ширину) */
 .health-bar {
-    position: absolute;
-    left: 0;
-    top: 0;
-    height: 100%;
-    width: 100%; /* Будет меняться через JS */
-    background: linear-gradient(to right, #4CAF50, #8BC34A);
-    transition: width 0.3s ease;
+	position: absolute;
+	left: 0;
+	top: 0;
+	height: 100%;
+	width: 100%; /* Будет меняться через JS */
+	background: linear-gradient(to right, #4CAF50, #8BC34A);
+	transition: width 0.3s ease;
 }
 
 /* Текст здоровья поверх полоски */
 .health-text {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: white;
-    font-weight: bold;
-    font-size: 18px;
-    text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.5);
-    z-index: 1;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	color: white;
+	font-weight: bold;
+	font-size: clamp(12px, 1.6vw, 18px);
+	text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.5);
+	z-index: 1;
+	white-space: nowrap;
+	max-width: 95%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	pointer-events: none;
 }
 
 /* ДОБАВИТЬ в конец файла: */
@@ -365,53 +393,55 @@ body {
     .main_menu_image {
         width: 100%;
         height: 100%;
-        height: 100dvh;
+        height: 100svh;
+        height: -webkit-fill-available;
         margin-left: 0;
         margin-top: 0;
         left: 0;
         top: 0;
         border: none;
         touch-action: none;
+        box-sizing: border-box;
+    }
+
+    .hero-status-bar {
+        left: 4%;
+        right: 4%;
+        bottom: max(3.5%, env(safe-area-inset-bottom, 0px));
+        height: clamp(40px, 8.5vh, 54px);
+        gap: 8px;
     }
 
     .heroImageClass {
-        width: 12%;
-        max-width: 56px;
-        height: 9%;
-        aspect-ratio: auto;
-        left: 3%;
-        bottom: 9%;
         border-width: 3px;
     }
 
     .castle-health-container {
-        width: 78%;
-        left: 18%;
-        bottom: 8%;
+        height: 70%;
     }
 
     .health-bar-container {
-        height: 28px;
-        margin-bottom: 0;
         border-width: 2px;
+        min-height: 24px;
     }
 
     .health-text {
-        font-size: 13px;
+        font-size: clamp(11px, 3.4vw, 14px);
     }
 
     .img_zamok {
-        height: 20%;
+        height: 22%;
     }
 
-    /* Полоска HP босса: по центру, короче, без смещения влево */
+    /* Полоска HP босса: по центру, короче (тонкая настройка — в блоках по экранам в конце файла) */
     .boss-health-container {
         left: 50%;
-        top: max(12px, env(safe-area-inset-top, 0px));
+        right: auto;
+        top: max(10px, env(safe-area-inset-top, 0px));
         transform: translateX(-50%);
-        width: 68%;
-        max-width: 320px;
-        height: 26px;
+        width: min(62vw, 260px);
+        max-width: 260px;
+        height: 24px;
     }
 
     .boss-health-bar {
@@ -422,27 +452,27 @@ body {
 
     .boss-health-ornament-left,
     .boss-health-ornament-right {
-        width: 28px;
-        height: 36px;
+        width: 22px;
+        height: 30px;
     }
 
     .boss-health-ornament-left {
-        left: -14px;
+        left: -11px;
     }
 
     .boss-health-ornament-right {
-        right: -14px;
+        right: -11px;
     }
 
     .boss-name {
-        font-size: 12px;
-        letter-spacing: 1px;
+        font-size: 11px;
+        letter-spacing: 0.5px;
     }
 
     .modal-content {
         padding: 18px 14px;
         width: min(94%, 420px);
-        max-height: 90dvh;
+        max-height: 90svh;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
         touch-action: pan-y;
@@ -474,6 +504,62 @@ body {
     .damage-text.damage-critical {
         font-size: 22px;
     }
+}
+
+/* Размеры босса/атак по умолчанию на мобилке (переопределяются блоками по экранам в конце) */
+@media (hover: none) and (pointer: coarse) {
+    .enemy.enemy-boss {
+        width: 42vw;
+        max-width: 88%;
+    }
+
+    .enemy.enemy-attack {
+        width: 16vw;
+        max-width: 52%;
+    }
+}
+
+/* Доп. страховка через класс с JS (iPhone UA) */
+html.is-mobile .enemy.enemy-boss {
+    width: 42vw;
+    max-width: 88%;
+}
+
+html.is-mobile .enemy.enemy-attack {
+    width: 16vw;
+    max-width: 52%;
+}
+
+html.is-mobile .boss-health-container {
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(62vw, 260px);
+    max-width: 260px;
+}
+
+html.is-mobile .boss-health-bar {
+    right: auto;
+    left: 0;
+    width: 100%;
+}
+
+html.is-mobile .hero-status-bar {
+    left: 4%;
+    right: 4%;
+    bottom: max(3.5%, env(safe-area-inset-bottom, 0px));
+    height: clamp(40px, 8.5vh, 54px);
+}
+
+html.is-mobile .img_zamok {
+    height: 22%;
+}
+
+html.is-mobile .main_menu_image {
+    width: 100%;
+    height: 100svh;
+    height: -webkit-fill-available;
+    margin: 0;
+    border: none;
 }
 
 /* Стили для текста урона */
@@ -1010,10 +1096,10 @@ body {
     .boss-health-container {
         left: 50%;
         transform: translateX(-50%);
-        width: 68%;
-        max-width: 320px;
-        height: 26px;
-        top: max(12px, env(safe-area-inset-top, 0px));
+        width: min(62vw, 260px);
+        max-width: 260px;
+        height: 24px;
+        top: max(10px, env(safe-area-inset-top, 0px));
     }
 
     .boss-health-bar {
@@ -1024,21 +1110,21 @@ body {
     
     .boss-health-ornament-left,
     .boss-health-ornament-right {
-        width: 28px;
-        height: 36px;
+        width: 22px;
+        height: 30px;
     }
     
     .boss-health-ornament-left {
-        left: -14px;
+        left: -11px;
     }
     
     .boss-health-ornament-right {
-        right: -14px;
+        right: -11px;
     }
     
     .boss-name {
-        font-size: 12px;
-        letter-spacing: 1px;
+        font-size: 11px;
+        letter-spacing: 0.5px;
     }
 }
 
@@ -1185,4 +1271,260 @@ body {
 	width: 15px;
 	height: 15px;
 }
+
+/* =============================================================================
+   МОБИЛЬНЫЕ НАСТРОЙКИ ПО ЭКРАНАМ (крути только здесь)
+   ПК не затрагивается: везде есть (hover: none) and (pointer: coarse)
+
+   Что обычно крутят:
+   - РазмерБосса .............. .enemy.enemy-boss { width }
+   - РазмерАтакБосса .......... .enemy.enemy-attack { width }
+   - ПолоскаХпБосса ........... .boss-health-container { width, top }
+   - Статусбар героя (опционально) .hero-status-bar { bottom, height, left, right }
+     (портрет и HP склеены в flex — отдельно их не двигай)
+   ============================================================================= */
+
+
+/* -----------------------------------------------------------------------------
+   iphoneSE (1-го поколения и близкие ~320 CSS px)
+   РазмерБосса: 50vw
+   РазмерАтакБосса: 20vw
+   ПортретГероя: bottom 14%, 44x44
+   ПолоскаХпГероя: bottom 13%
+   ВысотаЗамка: 10%
+   ПолоскаХпБосса: max 220px / 68vw
+   ----------------------------------------------------------------------------- */
+@media (hover: none) and (pointer: coarse) and (max-width: 320px) {
+    .enemy.enemy-boss { width: 50vw; max-width: 90%; }
+    .enemy.enemy-attack { width: 20vw; max-width: 20%; }
+
+    .hero-status-bar {
+        bottom: 3.2%;
+        height: clamp(38px, 8vh, 48px);
+    }
+
+    .boss-health-container {
+        left: 50%;
+        transform: translateX(-50%);
+        width: min(68vw, 220px);
+        max-width: 220px;
+        top: 10px;
+        height: 22px;
+    }
+    .boss-health-bar {
+        right: auto;
+        left: 0;
+        width: 100%;
+    }
+}
+
+
+/* -----------------------------------------------------------------------------
+   iphoneSE (2020 / 2022) и iPhone 8 / X малые ~375 CSS px
+   РазмерБосса: 40vw
+   РазмерАтакБосса: 16vw
+   ПортретГероя: bottom 14%, 46x46
+   ПолоскаХпГероя: bottom 13%
+   ВысотаЗамка: 25%
+   ПолоскаХпБосса: max 240px / 66vw
+   ----------------------------------------------------------------------------- */
+@media (hover: none) and (pointer: coarse) and (min-width: 321px) and (max-width: 375px) {
+    .enemy.enemy-boss { width: 40vw; max-width: 90%; }
+    .enemy.enemy-attack { width: 16vw; }
+
+    .hero-status-bar {
+        bottom: 3.5%;
+        height: clamp(40px, 8.2vh, 50px);
+    }
+
+    .boss-health-container {
+        left: 50%;
+        transform: translateX(-50%);
+        width: min(66vw, 240px);
+        max-width: 240px;
+        top: 10px;
+        height: 24px;
+    }
+    .boss-health-bar {
+        right: auto;
+        left: 0;
+        width: 100%;
+    }
+}
+
+
+/* -----------------------------------------------------------------------------
+   iphone12 / 13 / 14 / 15 (обычные) ~390 CSS px
+   РазмерБосса: 42vw
+   РазмерАтакБосса: 30vw
+   ПортретГероя: bottom 12%, 48x48
+   ПолоскаХпГероя: bottom 11%
+   ВысотаЗамка: 24%
+   ПолоскаХпБосса: max 260px / 62vw
+   ----------------------------------------------------------------------------- */
+@media (hover: none) and (pointer: coarse) and (min-width: 376px) and (max-width: 400px) {
+    .enemy.enemy-boss { width: 42vw; max-width: 88%; }
+    .enemy.enemy-attack { width: 30vw; max-width: 52%; }
+
+    .hero-status-bar {
+        bottom: 3.8%;
+        height: clamp(42px, 8.5vh, 52px);
+    }
+
+    .boss-health-container {
+        left: 50%;
+        transform: translateX(-50%);
+        width: min(62vw, 260px);
+        max-width: 260px;
+        top: 12px;
+        height: 24px;
+    }
+    .boss-health-bar {
+        right: auto;
+        left: 0;
+        width: 100%;
+    }
+}
+
+
+/* -----------------------------------------------------------------------------
+   googlePixel (Pixel 6/7/8 обычные) ~412 CSS px
+   РазмерБосса: 40vw
+   РазмерАтакБосса: 28vw
+   ПортретГероя: bottom 12%, 50x50
+   ПолоскаХпГероя: bottom 11%
+   ВысотаЗамка: 23%
+   ПолоскаХпБосса: max 280px / 60vw
+   ----------------------------------------------------------------------------- */
+@media (hover: none) and (pointer: coarse) and (min-width: 401px) and (max-width: 430px) {
+    .enemy.enemy-boss { width: 40vw; max-width: 88%; }
+    .enemy.enemy-attack { width: 28vw; max-width: 50%; }
+
+    .hero-status-bar {
+        bottom: 3.8%;
+        height: clamp(44px, 8.5vh, 54px);
+    }
+
+    .boss-health-container {
+        left: 50%;
+        transform: translateX(-50%);
+        width: min(60vw, 280px);
+        max-width: 280px;
+        top: 12px;
+        height: 26px;
+    }
+    .boss-health-bar {
+        right: auto;
+        left: 0;
+        width: 100%;
+    }
+}
+
+
+/* -----------------------------------------------------------------------------
+   iphoneProMax / Plus / крупные Android ~431–480 CSS px
+   РазмерБосса: 36vw
+   РазмерАтакБосса: 24vw
+   ПортретГероя: bottom 11%, 52x52
+   ПолоскаХпГероя: bottom 10%
+   ВысотаЗамка: 22%
+   ПолоскаХпБосса: max 300px / 58vw
+   ----------------------------------------------------------------------------- */
+@media (hover: none) and (pointer: coarse) and (min-width: 431px) and (max-width: 480px) {
+    .enemy.enemy-boss { width: 36vw; max-width: 85%; }
+    .enemy.enemy-attack { width: 24vw; max-width: 48%; }
+
+    .hero-status-bar {
+        bottom: 4%;
+        height: clamp(46px, 8.5vh, 56px);
+    }
+
+    .boss-health-container {
+        left: 50%;
+        transform: translateX(-50%);
+        width: min(58vw, 300px);
+        max-width: 300px;
+        top: 14px;
+        height: 26px;
+    }
+    .boss-health-bar {
+        right: auto;
+        left: 0;
+        width: 100%;
+    }
+}
+
+
+/* -----------------------------------------------------------------------------
+   tabletPortrait (iPad mini / небольшие планшеты) ~481–768 CSS px
+   РазмерБосса: 28vw
+   РазмерАтакБосса: 16vw
+   ПортретГероя: bottom 9%, 56x56
+   ПолоскаХпГероя: bottom 8%
+   ВысотаЗамка: 20%
+   ПолоскаХпБосса: max 360px / 50vw
+   ----------------------------------------------------------------------------- */
+@media (hover: none) and (pointer: coarse) and (min-width: 481px) and (max-width: 768px) {
+    .enemy.enemy-boss { width: 28vw; max-width: 70%; }
+    .enemy.enemy-attack { width: 16vw; max-width: 40%; }
+
+    .hero-status-bar {
+        left: 6%;
+        right: 6%;
+        bottom: 4.2%;
+        height: clamp(48px, 8vh, 60px);
+    }
+
+    .boss-health-container {
+        left: 50%;
+        transform: translateX(-50%);
+        width: min(50vw, 360px);
+        max-width: 360px;
+        top: 16px;
+        height: 28px;
+    }
+    .boss-health-bar {
+        right: auto;
+        left: 0;
+        width: 100%;
+    }
+}
+
+
+/* -----------------------------------------------------------------------------
+   tabletLarge / iPad (портрет шире) ~769–1024 CSS px
+   РазмерБосса: 24vw
+   РазмерАтакБосса: 14vw
+   ПортретГероя: bottom 8%, 64x64
+   ПолоскаХпГероя: bottom 7%
+   ВысотаЗамка: 19%
+   ПолоскаХпБосса: max 420px / 48vw
+   ----------------------------------------------------------------------------- */
+@media (hover: none) and (pointer: coarse) and (min-width: 769px) and (max-width: 1024px) {
+    .enemy.enemy-boss { width: 24vw; max-width: 60%; }
+    .enemy.enemy-attack { width: 14vw; max-width: 35%; }
+
+    .hero-status-bar {
+        left: 7%;
+        right: 7%;
+        bottom: 4.5%;
+        height: clamp(52px, 8vh, 64px);
+    }
+
+    .boss-health-container {
+        left: 50%;
+        transform: translateX(-50%);
+        width: min(48vw, 420px);
+        max-width: 420px;
+        top: 18px;
+        height: 30px;
+    }
+    .boss-health-bar {
+        right: auto;
+        left: 0;
+        width: 100%;
+    }
+}
+
+
 

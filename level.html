@@ -47,21 +47,17 @@ document.head.appendChild(saveScript);
 
 
 <div class="main_menu_image">
-	<img src="images/hero/1_babka/dunya_min.png" class="heroImageClass" id="heroImage">
-    <div class="castle-health-container">
+	<div class="hero-status-bar">
+		<img src="images/hero/1_babka/dunya_min.png" class="heroImageClass" id="heroImage" alt="">
+		<div class="castle-health-container">
+			<div class="health-bar-container" id="hpCont">
+				<div class="health-bar" id="castleHealthBar"></div>
+				<div class="health-text" id="castleHealthText">Вихревая бабка</div>
+			</div>
+		</div>
+	</div>
 
-       
-        <!-- Контейнер для полоски здоровья -->
-        <div class="health-bar-container" id="hpCont">
-			
-            <!-- Сама полоска здоровья -->
-            <div class="health-bar" id="castleHealthBar"></div>
-            <!-- Числовое значение поверх полоски -->
-            <div class="health-text" id="castleHealthText">Вихревая бабка</div>
-        </div>
-    </div>
-
-	<img src="images/background/zamok.png" class="img_zamok" id="castleImage">
+	<img src="images/background/zamok.png" class="img_zamok" id="castleImage" alt="">
 		
 	<!-- Элемент прицела -->
 	<div id="aim" class="aim"></div>

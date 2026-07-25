@@ -253,22 +253,12 @@ class Enemy {
         // Сохраняем тип врага в data-атрибут (можно использовать для стилизации)
         img.dataset.type = this.type;
         
-        // Устанавливаем размер в зависимости от типа врага
-        let sizeStr = ENEMY_TYPES[this.type].size;
-        // На мобилке поле узкое — босс и атаки визуально мелкие, масштабируем только mobile
-        if (isMobileDevice) {
-            const match = String(sizeStr).match(/^([\d.]+)(.*)$/);
-            if (match) {
-                const value = parseFloat(match[1]);
-                const unit = match[2] || '%';
-                const isBoss = typeof bossM !== 'undefined' && bossM.includes(this.type);
-                const mult = isBoss ? 2 : 4;
-                const capped = Math.min(value * mult, isBoss ? 85 : 48);
-                sizeStr = capped + unit;
-            }
+        // Устанавливаем размер: на ПК — из данных уровня; на мобилке — только класс, размер в CSS
+        const isBoss = typeof bossM !== 'undefined' && bossM.includes(this.type);
+        if (!isMobileDevice) {
+            img.style.width = ENEMY_TYPES[this.type].size;
         }
-        img.style.width = sizeStr;
-        if (typeof bossM !== 'undefined' && bossM.includes(this.type)) {
+        if (isBoss) {
             img.classList.add('enemy-boss');
         } else {
             img.classList.add('enemy-attack');
@@ -497,6 +487,7 @@ function areThereAnyLiveEnemies() {
  
 function initGame() {
     console.log('Инициализация игры...');
+    applyMobileDeviceFlag();
     
     // Находим игровое поле в DOM по CSS классу
     gameField = document.querySelector('.main_menu_image');
@@ -1190,15 +1181,28 @@ function showStartModal() {
 // ==================== ФУНКЦИИ ПРИЦЕЛА И УРОНА ====================
 
 /**
- * Определяет мобильное / touch-устройство
+ * Определяет мобильное / touch-устройство (с запасом под iOS Safari)
  */
 function detectMobileDevice() {
+    if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent || '')) {
+        return true;
+    }
     try {
-        if (window.matchMedia('(hover: none) and (pointer: coarse)').matches) {
-            return true;
-        }
+        if (window.matchMedia('(hover: none) and (pointer: coarse)').matches) return true;
+        if (window.matchMedia('(pointer: coarse)').matches) return true;
+        if (window.matchMedia('(max-width: 820px)').matches && ('ontouchstart' in window)) return true;
     } catch (e) { /* ignore */ }
-    return ('ontouchstart' in window) && (navigator.maxTouchPoints > 0);
+    if ('ontouchstart' in window) return true;
+    if ((navigator.maxTouchPoints || navigator.msMaxTouchPoints || 0) > 0) return true;
+    return false;
+}
+
+function applyMobileDeviceFlag() {
+    isMobileDevice = detectMobileDevice();
+    document.documentElement.classList.toggle('is-mobile', isMobileDevice);
+    if (document.body) {
+        document.body.classList.toggle('is-mobile', isMobileDevice);
+    }
 }
 
 /**
@@ -1264,7 +1268,7 @@ function initAim() {
     aimElement = document.getElementById('aim');
     damageContainer = document.getElementById('damage-container');
 
-    isMobileDevice = detectMobileDevice();
+    applyMobileDeviceFlag();
 
     setupDesktopAim();
     if (isMobileDevice || ('ontouchstart' in window)) {
