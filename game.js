@@ -159,6 +159,8 @@ const WOUND_DURATION = 5000; // 5 секунд в миллисекундах
 let globalWoundChance = startGlobalWoundChance; // 30% шанс ранить при попадании
 let aimPosition = { x: 0, y: 0 };
 let isMobileDevice = false;
+const MOBILE_AIM_OFFSET_Y = 48; // прицел чуть выше пальца, чтобы не закрывать цель
+let lastTouchAimTime = 0;
 
 let castleDamageReduction = startCastleDamageReduction;
 
@@ -523,6 +525,8 @@ function initGame() {
 	
 	 gameField.addEventListener('click', function(e) {
         if (isGameOver || isGamePaused) return;
+        // На мобилке / после тапа подсказка не нужна — тап двигает прицел
+        if (isMobileDevice || Date.now() - lastTouchAimTime < 700) return;
 
         const rect = gameField.getBoundingClientRect();
         const clickX = e.clientX - rect.left;
@@ -533,6 +537,9 @@ function initGame() {
             showCenterText('Не нужно тыкать, просто наводи!', 1500, 'info');
         }
     });
+
+    window.addEventListener('resize', handleGameFieldResize);
+    window.addEventListener('orientationchange', handleGameFieldResize);
 }
 
 /**
@@ -1164,11 +1171,73 @@ function showStartModal() {
 
 // ==================== ФУНКЦИИ ПРИЦЕЛА И УРОНА ====================
 
+/**
+ * Определяет мобильное / touch-устройство
+ */
+function detectMobileDevice() {
+    try {
+        if (window.matchMedia('(hover: none) and (pointer: coarse)').matches) {
+            return true;
+        }
+    } catch (e) { /* ignore */ }
+    return ('ontouchstart' in window) && (navigator.maxTouchPoints > 0);
+}
 
 /**
- * Настраивает прицел для мобильных устройств (следует за тапом)
+ * Обновляет aimPosition (и DOM-прицел на мобилке) из клиентских координат
  */
-// ==================== ФУНКЦИИ ПРИЦЕЛА И УРОНА ====================
+function setAimFromClient(clientX, clientY, options) {
+    if (!gameField) return;
+
+    const fingerOffset = options && options.fingerOffset;
+    const showAim = options && options.showAim;
+    const rect = gameField.getBoundingClientRect();
+
+    let x = clientX - rect.left;
+    let y = clientY - rect.top;
+
+    if (fingerOffset) {
+        y -= MOBILE_AIM_OFFSET_Y;
+    }
+
+    x = Math.max(0, Math.min(rect.width, x));
+    y = Math.max(0, Math.min(rect.height, y));
+
+    aimPosition.x = x;
+    aimPosition.y = y;
+
+    if (aimElement && (showAim || isMobileDevice)) {
+        aimElement.style.left = x + 'px';
+        aimElement.style.top = y + 'px';
+    }
+}
+
+/**
+ * Пересчитывает размеры поля у живых врагов после resize / поворота экрана
+ */
+function handleGameFieldResize() {
+    if (!gameField) return;
+
+    const w = gameField.clientWidth;
+    const h = gameField.clientHeight;
+    if (w <= 0 || h <= 0) return;
+
+    activeEnemies.forEach(function(enemy) {
+        enemy.fieldWidth = w;
+        enemy.fieldHeight = h;
+        enemy.pixelX = (enemy.x / 100) * w;
+        enemy.pixelY = (enemy.y / 100) * h;
+        enemy.speedPixelsPerSecond = (enemy.speedPercentPerSecond / 100) * h;
+    });
+
+    aimPosition.x = Math.max(0, Math.min(w, aimPosition.x));
+    aimPosition.y = Math.max(0, Math.min(h, aimPosition.y));
+
+    if (aimElement && isMobileDevice) {
+        aimElement.style.left = aimPosition.x + 'px';
+        aimElement.style.top = aimPosition.y + 'px';
+    }
+}
 
 /**
  * Инициализирует прицел и определяет тип устройства
@@ -1176,11 +1245,14 @@ function showStartModal() {
 function initAim() {
     aimElement = document.getElementById('aim');
     damageContainer = document.getElementById('damage-container');
-    
-    
-    setupDesktopAim();
 
-    
+    isMobileDevice = detectMobileDevice();
+
+    setupDesktopAim();
+    if (isMobileDevice || ('ontouchstart' in window)) {
+        setupMobileAim();
+    }
+
     console.log(`Игра запущена на ${isMobileDevice ? 'мобильном устройстве' : 'компьютере'}`);
 }
 
@@ -1188,18 +1260,13 @@ function initAim() {
  * Настраивает прицел для компьютеров (следует за курсором)
  */
 function setupDesktopAim() {
-    // Для ПК прицел невидим, используем системный курсор
-/*     if (aimElement) {
-        aimElement.style.display = 'none';
-    } */
-    
     // Следим за движением мыши
     gameField.addEventListener('mousemove', function(e) {
-        const rect = gameField.getBoundingClientRect();
-        aimPosition.x = e.clientX - rect.left;
-        aimPosition.y = e.clientY - rect.top;
+        // На мобилке цель ведёт только touch; после тапа игнорируем синтетическую мышь
+        if (isMobileDevice || Date.now() - lastTouchAimTime < 500) return;
+        setAimFromClient(e.clientX, e.clientY, { showAim: false });
     });
-    
+
     // Для отладки: показываем прицел при зажатой клавише (например, Ctrl)
     gameField.addEventListener('mousedown', function(e) {
         if (e.ctrlKey && aimElement) {
@@ -1208,6 +1275,32 @@ function setupDesktopAim() {
             aimElement.style.top = aimPosition.y + 'px';
         }
     });
+}
+
+/**
+ * Настраивает прицел для мобильных (тап / свайп по экрану)
+ */
+function setupMobileAim() {
+    if (aimElement && isMobileDevice) {
+        aimElement.style.display = 'block';
+        aimElement.style.left = aimPosition.x + 'px';
+        aimElement.style.top = aimPosition.y + 'px';
+    }
+
+    function handleTouchAim(e) {
+        if (!e.touches || e.touches.length === 0) return;
+        // Не перехватываем жесты на модалках вне поля — слушаем только gameField
+        e.preventDefault();
+        lastTouchAimTime = Date.now();
+        const touch = e.touches[0];
+        setAimFromClient(touch.clientX, touch.clientY, {
+            fingerOffset: true,
+            showAim: true
+        });
+    }
+
+    gameField.addEventListener('touchstart', handleTouchAim, { passive: false });
+    gameField.addEventListener('touchmove', handleTouchAim, { passive: false });
 }
 
 
