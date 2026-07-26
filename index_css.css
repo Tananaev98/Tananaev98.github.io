@@ -969,8 +969,8 @@ body, .main_menu_image, .select-character-button,
     }
 
     .upgrade-cost {
-        font-size: 12px;
-        padding: 5px 10px;
+        font-size: 10px;
+        padding: 3px 8px;
         white-space: normal;
         text-align: center;
         margin: 0 auto;
@@ -980,9 +980,10 @@ body, .main_menu_image, .select-character-button,
     .select-hero-btn {
         width: 100%;
         margin: 0;
-        padding: 12px 14px;
-        font-size: 14px;
-        letter-spacing: 0.5px;
+        padding: 6px 10px;
+        font-size: 11px;
+        letter-spacing: 0.3px;
+        border-width: 2px;
         grid-column: auto;
         grid-row: auto;
         align-self: stretch;
@@ -990,7 +991,13 @@ body, .main_menu_image, .select-character-button,
     }
 
     .zlata-icon {
-        width: 16px;
-        height: 16px;
+        width: 12px;
+        height: 12px;
+    }
+
+    .modal-content .modal-actions,
+    .character-select-modal .modal-content .modal-actions {
+        gap: 5px;
+        padding-top: 4px;
     }
 }
