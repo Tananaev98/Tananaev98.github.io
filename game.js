@@ -1536,27 +1536,22 @@ function animateEnemyHit(enemy) {
 }
 
 function createDamageText(damage, xPercent, yPercent, isCritical = false) {
-    if (!damageContainer || !gameField) return;
+    // Тот же простой путь, что и у showWoundDamage — Яндекс Браузер его нормально рисует
+    if (!damageContainer) return;
 
     const damageText = document.createElement('div');
     damageText.className = isCritical ? 'damage-text damage-critical' : 'damage-text';
     damageText.textContent = `-${damage}`;
-
-    // Явные стили — надёжнее на Android Chrome, чем только CSS-анимация
     damageText.style.left = xPercent + '%';
     damageText.style.top = yPercent + '%';
-    damageText.style.opacity = '1';
-    damageText.style.visibility = 'visible';
-    damageText.style.zIndex = '2000';
 
     damageContainer.appendChild(damageText);
 
-    const lifetime = isCritical ? 1200 : 1000;
     setTimeout(() => {
         if (damageText.parentNode) {
             damageText.parentNode.removeChild(damageText);
         }
-    }, lifetime);
+    }, isCritical ? 1200 : 1000);
 }
 
 /**
