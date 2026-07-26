@@ -189,6 +189,7 @@ class Enemy {
     constructor(type, xPos) {
         // Сохраняем тип врага
         this.type = type;
+        this.isBoss = typeof bossM !== 'undefined' && bossM.includes(type);
 		
 		this.dispName = ENEMY_TYPES[type].dispName;
         
@@ -209,8 +210,8 @@ class Enemy {
         this.swayTime = Math.random() * Math.PI * 2;
         this.tiltTime = Math.random() * Math.PI * 2;
         
-        // Параметры движения
-        this.x = xPos;                      // Горизонтальная позиция в %
+        // Параметры движения (босс всегда по центру экрана)
+        this.x = this.isBoss ? 50 : xPos;
         this.y = GAME_CONFIG.START_Y;       // Вертикальная позиция в %
         
         // Сохраняем размеры игрового поля на момент создания
@@ -230,12 +231,25 @@ class Enemy {
         this.woundEndTime = 0;
         this.woundDamagePerSecond = 0;
         this.lastWoundTick = 0;
-		this.lastShotTime = 0;        
+		this.lastShotTime = 0;
+        this.isCustom = false; // атаки босса помечаются true в spawnEnemyWithParams
         // Создаем DOM элемент для отображения врага
         this.element = this.createEnemyElement();
         
         // Добавляем созданный элемент в контейнер врагов
         enemiesContainer.appendChild(this.element);
+
+        // Не даём атаке вылезти за края (после вставки в DOM и после загрузки картинки)
+        this.x = this.clampHorizontal(this.x);
+        this.pixelX = (this.x / 100) * this.fieldWidth;
+        this.element.addEventListener('load', () => {
+            if (!this.element) return;
+            this.x = this.clampHorizontal(this.x);
+            this.resolveAwayFromBoss();
+            this.pixelX = (this.x / 100) * this.fieldWidth;
+            this.pixelY = (this.y / 100) * this.fieldHeight;
+            this.applyPositionTransform(0);
+        });
     }
   
   
@@ -254,11 +268,10 @@ class Enemy {
         img.dataset.type = this.type;
         
         // Устанавливаем размер: на ПК — из данных уровня; на мобилке — только класс, размер в CSS
-        const isBoss = typeof bossM !== 'undefined' && bossM.includes(this.type);
         if (!isMobileDevice) {
             img.style.width = ENEMY_TYPES[this.type].size;
         }
-        if (isBoss) {
+        if (this.isBoss) {
             img.classList.add('enemy-boss');
         } else {
             img.classList.add('enemy-attack');
@@ -295,32 +308,179 @@ class Enemy {
         // Обновляем позицию в процентах
         this.y = (this.pixelY / this.fieldHeight) * 100;
         
-        // Движение змейкой (горизонтальное покачивание)
-        this.swayTime += this.swaySpeed * deltaSeconds;
-		const swayPixels =
-		  Math.sin(this.swayTime) * ANIMATION_PARAMS.SWAY_PIXELS;
-
-		// перевод пикселей → проценты
-		const swayPercent =
-		  (swayPixels / this.fieldWidth) * 100;
-
-		let newX = this.x + swayPercent;
-        this.x = Math.max(5, Math.min(95, newX));
+        // Босс всегда по центру; остальные — змейкой, но без выхода за края экрана
+        if (this.isBoss) {
+            this.x = 50;
+        } else {
+            this.swayTime += this.swaySpeed * deltaSeconds;
+            const swayPixels = Math.sin(this.swayTime) * ANIMATION_PARAMS.SWAY_PIXELS;
+            const swayPercent = (swayPixels / this.fieldWidth) * 100;
+            this.x = this.clampHorizontal(this.x + swayPercent);
+            // Атаки босса обтекают силуэт босса (не пересекаются с ним)
+            this.resolveAwayFromBoss();
+        }
         
         // Обновляем пиксельную позицию X
         this.pixelX = (this.x / 100) * this.fieldWidth;
+        this.pixelY = (this.y / 100) * this.fieldHeight;
         
         // Наклон врага (вращение)
         this.tiltTime += this.tiltSpeed * deltaSeconds;
         const tiltAngle = Math.sin(this.tiltTime) * ANIMATION_PARAMS.TILT_AMPLITUDE;
         
-        // Применяем вычисленные позицию и вращение к DOM элементу
-        this.element.style.left = this.x + '%';
-        this.element.style.top = this.y + '%';
-        this.element.style.transform = `rotate(${tiltAngle}deg)`;
+        // Применяем позицию и вращение (у босса left=50% + translateX(-50%) = визуальный центр)
+        this.applyPositionTransform(tiltAngle);
         
         // Проверяем, достиг ли враг красной линии
         return this.y >= GAME_CONFIG.TARGET_Y;
+    }
+
+    /** Ширина спрайта в % от поля (для clamp по краям) */
+    getWidthPercent() {
+        const fieldW = this.fieldWidth || gameField?.clientWidth || 1;
+        const measured = this.element?.offsetWidth || 0;
+        if (measured > 0) {
+            return (measured / fieldW) * 100;
+        }
+        const size = ENEMY_TYPES[this.type]?.size;
+        if (typeof size === 'string' && size.endsWith('%')) {
+            const parsed = parseFloat(size);
+            if (!Number.isNaN(parsed)) return parsed;
+        }
+        // Пока картинка не загрузилась / мобильный CSS без inline size
+        return isMobileDevice ? 20 : 10;
+    }
+
+    /** Высота спрайта в % от поля */
+    getHeightPercent() {
+        const fieldH = this.fieldHeight || gameField?.clientHeight || 1;
+        const measured = this.element?.offsetHeight || 0;
+        if (measured > 0) {
+            return (measured / fieldH) * 100;
+        }
+        // Пока нет layout — грубо как у квадрата/портрета
+        return this.getWidthPercent() * (isMobileDevice ? 1.15 : 1.2);
+    }
+
+    /** AABB в % поля (учитывает центрирование босса) */
+    getLogicalBounds(pad = 0) {
+        const w = this.getWidthPercent();
+        const h = this.getHeightPercent();
+        let left;
+        let right;
+        if (this.isBoss) {
+            left = this.x - w / 2;
+            right = this.x + w / 2;
+        } else {
+            left = this.x;
+            right = this.x + w;
+        }
+        return {
+            left: left - pad,
+            right: right + pad,
+            top: this.y - pad,
+            bottom: this.y + h + pad,
+            width: w,
+            height: h,
+            cx: (left + right) / 2,
+            cy: this.y + h / 2
+        };
+    }
+
+    static boundsOverlap(a, b) {
+        return !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom);
+    }
+
+    /**
+     * Атака босса не должна пересекаться с силуэтом босса:
+     * сдвигаем влево/вправо (обтекание), если некуда — чуть ниже босса.
+     */
+    resolveAwayFromBoss() {
+        if (this.isBoss || !this.isCustom || !bossAlive || !currentBoss || currentBoss === this) {
+            return;
+        }
+
+        const gap = 1.5; // зазор между атакой и боссом, %
+        const attack = this.getLogicalBounds(0);
+        const boss = currentBoss.getLogicalBounds(gap);
+
+        if (!Enemy.boundsOverlap(attack, boss)) {
+            return;
+        }
+
+        const widthPct = attack.width;
+        const preferLeft = attack.cx <= boss.cx;
+
+        const tryPlaceX = (leftEdge) => {
+            const x = this.clampHorizontal(leftEdge);
+            const left = x;
+            const right = x + widthPct;
+            const overlapsH = !(right <= boss.left || left >= boss.right);
+            return { x, ok: !overlapsH };
+        };
+
+        const primary = preferLeft
+            ? tryPlaceX(boss.left - widthPct)
+            : tryPlaceX(boss.right);
+        const secondary = preferLeft
+            ? tryPlaceX(boss.right)
+            : tryPlaceX(boss.left - widthPct);
+
+        if (primary.ok) {
+            this.x = primary.x;
+        } else if (secondary.ok) {
+            this.x = secondary.x;
+        } else {
+            // Узкий экран / широкий босс — уводим атаку под силуэт
+            this.x = preferLeft ? primary.x : secondary.x;
+            this.y = boss.bottom;
+        }
+
+        // Финальная проверка: если всё ещё пересечение по вертикали+горизонтали — ниже босса
+        const after = {
+            left: this.x,
+            right: this.x + widthPct,
+            top: this.y,
+            bottom: this.y + attack.height
+        };
+        if (Enemy.boundsOverlap(after, boss)) {
+            this.y = boss.bottom;
+        }
+
+        this.x = this.clampHorizontal(this.x);
+        this.pixelX = (this.x / 100) * this.fieldWidth;
+        this.pixelY = (this.y / 100) * this.fieldHeight;
+    }
+
+    /** left — левый край спрайта; держим весь спрайт внутри 0..100% */
+    clampHorizontal(x) {
+        if (this.isBoss) return 50;
+        const widthPct = this.getWidthPercent();
+        const margin = 0.5;
+        const minX = margin;
+        const maxX = Math.max(minX, 100 - widthPct - margin);
+        return Math.max(minX, Math.min(maxX, x));
+    }
+
+    /** Позиция на поле; босс всегда горизонтально по центру */
+    applyPositionTransform(tiltAngle = 0) {
+        if (!this.isBoss) {
+            this.x = this.clampHorizontal(this.x);
+        }
+        this.element.style.left = this.x + '%';
+        this.element.style.top = this.y + '%';
+        if (this.isBoss) {
+            this.element.style.transform = `translateX(-50%) rotate(${tiltAngle}deg)`;
+        } else {
+            this.element.style.transform = `rotate(${tiltAngle}deg)`;
+        }
+    }
+
+    /** Transform для анимации смерти (сохраняет центрирование босса) */
+    applyDeathTransform() {
+        this.element.style.transform = this.isBoss
+            ? 'translateX(-50%) scale(0) rotate(180deg)'
+            : 'scale(0) rotate(180deg)';
     }
     
     /**
@@ -660,8 +820,11 @@ function spawnEnemyWithParams(type, xPos, yPos, customHP, customDamage, customSp
         
          
         
+        // Боссы всегда по центру; атаки — по xPos, но clamp по ширине спрайта сделает Enemy
+        const spawnX = bossM.includes(type) ? 50 : xPos;
+
         // Создаем врага
-        const enemy = new Enemy(type, xPos);
+        const enemy = new Enemy(type, spawnX);
         
         enemy.isCustom = isCustom;
         
@@ -687,8 +850,12 @@ function spawnEnemyWithParams(type, xPos, yPos, customHP, customDamage, customSp
         }
         
         // Обновляем позицию элемента в DOM
-        enemy.element.style.left = enemy.x + '%';
-        enemy.element.style.top = enemy.y + '%';
+        enemy.applyPositionTransform(0);
+        // Атаки босса сразу ставим так, чтобы не пересекаться с силуэтом
+        if (enemy.isCustom) {
+            enemy.resolveAwayFromBoss();
+            enemy.applyPositionTransform(0);
+        }
         
         // Добавляем в активные враги
         activeEnemies.push(enemy);
@@ -757,8 +924,7 @@ function gameLoop(currentTime) {
 	
 	if (timeSec2 >= timeNextBoss && !bossAlive && !areThereAnyLiveEnemies() && bossTimer === null) {    
 		bossAliveName = bossM[0];
-		let xPos = ENEMY_TYPES[bossAliveName]?.xPos ?? 40;
-		const boss = spawnEnemyWithParams(bossAliveName, xPos, 13); 
+		const boss = spawnEnemyWithParams(bossAliveName, 50, 13); 
 		// spawnEnemyWithParams('enem4', 40, 20, 1, 200, 40 )
 		bossAlive = true;
 		currentBoss = boss; // Сохраняем ссылку на босса
@@ -790,7 +956,7 @@ function gameLoop(currentTime) {
             // Анимация смерти
             enemy.element.style.transition = 'all 0.3s ease';
             enemy.element.style.opacity = '0';
-            enemy.element.style.transform = 'scale(0) rotate(180deg)';
+            enemy.applyDeathTransform();
             
             // Удаляем врага из массива и DOM
             setTimeout(() => {
@@ -1416,7 +1582,7 @@ function damageEnemy(enemy, index) {
 		
         enemy.element.style.transition = 'all 0.3s ease';
         enemy.element.style.opacity = '0';
-        enemy.element.style.transform = 'scale(0) rotate(180deg)';
+        enemy.applyDeathTransform();
          
         // Удаляем врага через короткую задержку для анимации
         setTimeout(() => {
@@ -1648,7 +1814,7 @@ function killAllEnemies() {
         if (enemy.element) {
             enemy.element.style.transition = 'all 0.3s ease';
             enemy.element.style.opacity = '0';
-            enemy.element.style.transform = 'scale(0) rotate(180deg)';
+            enemy.applyDeathTransform();
             
             setTimeout(() => {
                 enemy.remove();
