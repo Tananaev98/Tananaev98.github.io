@@ -295,6 +295,20 @@ body {
 }
 
 /* Стили для текста урона */
+#damage-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2000;
+    overflow: visible;
+    /* отдельный слой на GPU — чинит «невидимый» урон на Android Chrome */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+}
+
 .damage-text {
     position: absolute;
     color: #FF0000;
@@ -303,9 +317,15 @@ body {
     font-family: 'Arial', sans-serif;
     text-shadow: 2px 2px 0 #000;
     pointer-events: none;
-    z-index: 999;
+    z-index: 2000;
     white-space: nowrap;
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, -50%) translateZ(0);
+    -webkit-transform: translate(-50%, -50%) translateZ(0);
+    will-change: transform, opacity;
     animation: damageFloat 1s ease-out forwards;
+    -webkit-animation: damageFloat 1s ease-out forwards;
 }
 
 /* Критический урон */
@@ -315,13 +335,14 @@ body {
     font-weight: 900;
     text-shadow: 0 0 5px #FF0000, 0 0 10px #FF8C00, 2px 2px 0 #000;
     animation: criticalDamageFloat 1.2s ease-out forwards;
+    -webkit-animation: criticalDamageFloat 1.2s ease-out forwards;
 }
 
 /* Анимация обычного урона */
 @keyframes damageFloat {
     0% {
         opacity: 1;
-        transform: translateY(0) scale(1);
+        transform: translate(-50%, -50%) translateZ(0) scale(1);
     }
     20% {
         color: #FF6600; /* Оранжевый */
@@ -331,7 +352,24 @@ body {
     }
     100% {
         opacity: 0;
-        transform: translateY(-50px) scale(1.5);
+        transform: translate(-50%, calc(-50% - 50px)) translateZ(0) scale(1.5);
+    }
+}
+
+@-webkit-keyframes damageFloat {
+    0% {
+        opacity: 1;
+        -webkit-transform: translate(-50%, -50%) translateZ(0) scale(1);
+    }
+    20% {
+        color: #FF6600;
+    }
+    40% {
+        color: #FFFF00;
+    }
+    100% {
+        opacity: 0;
+        -webkit-transform: translate(-50%, calc(-50% - 50px)) translateZ(0) scale(1.5);
     }
 }
 
@@ -339,25 +377,52 @@ body {
 @keyframes criticalDamageFloat {
     0% {
         opacity: 1;
-        transform: translateY(0) scale(1);
+        transform: translate(-50%, -50%) translateZ(0) scale(1);
         color: #FFD700;
         text-shadow: 0 0 10px #FF0000, 0 0 20px #FF8C00;
     }
     20% {
-        color: #FF8C00; /* Темно-оранжевый */
-        transform: translateY(-10px) scale(1.1);
+        color: #FF8C00;
+        transform: translate(-50%, calc(-50% - 10px)) translateZ(0) scale(1.1);
     }
     40% {
-        color: #FFFF00; /* Ярко-желтый */
-        transform: translateY(-20px) scale(1.2);
+        color: #FFFF00;
+        transform: translate(-50%, calc(-50% - 20px)) translateZ(0) scale(1.2);
     }
     60% {
-        color: #FFFFFF; /* Белый */
-        transform: translateY(-30px) scale(1.3);
+        color: #FFFFFF;
+        transform: translate(-50%, calc(-50% - 30px)) translateZ(0) scale(1.3);
     }
     100% {
         opacity: 0;
-        transform: translateY(-70px) scale(1.8);
+        transform: translate(-50%, calc(-50% - 70px)) translateZ(0) scale(1.8);
+        color: #FFFFFF;
+        text-shadow: 0 0 20px #FFFFFF, 0 0 30px #FFFF00;
+    }
+}
+
+@-webkit-keyframes criticalDamageFloat {
+    0% {
+        opacity: 1;
+        -webkit-transform: translate(-50%, -50%) translateZ(0) scale(1);
+        color: #FFD700;
+        text-shadow: 0 0 10px #FF0000, 0 0 20px #FF8C00;
+    }
+    20% {
+        color: #FF8C00;
+        -webkit-transform: translate(-50%, calc(-50% - 10px)) translateZ(0) scale(1.1);
+    }
+    40% {
+        color: #FFFF00;
+        -webkit-transform: translate(-50%, calc(-50% - 20px)) translateZ(0) scale(1.2);
+    }
+    60% {
+        color: #FFFFFF;
+        -webkit-transform: translate(-50%, calc(-50% - 30px)) translateZ(0) scale(1.3);
+    }
+    100% {
+        opacity: 0;
+        -webkit-transform: translate(-50%, calc(-50% - 70px)) translateZ(0) scale(1.8);
         color: #FFFFFF;
         text-shadow: 0 0 20px #FFFFFF, 0 0 30px #FFFF00;
     }
@@ -523,11 +588,12 @@ body {
     }
 
     .damage-text {
-        font-size: 16px;
+        font-size: 22px;
+        z-index: 2000;
     }
 
     .damage-text.damage-critical {
-        font-size: 22px;
+        font-size: 28px;
     }
 }
 
@@ -584,37 +650,7 @@ html.is-mobile .main_menu_image {
     border: none;
 }
 
-/* Стили для текста урона */
-.damage-text {
-    position: absolute;
-    color: #FF0000;
-    font-weight: bold;
-    font-size: 20px;
-    font-family: 'Arial', sans-serif;
-    text-shadow: 2px 2px 0 #000;
-    pointer-events: none;
-    z-index: 999;
-    white-space: nowrap;
-    animation: damageFloat 1s ease-out forwards;
-}
-
-@keyframes damageFloat {
-    0% {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-    20% {
-        color: #FF6600; /* Оранжевый */
-    }
-    40% {
-        color: #FFFF00; /* Желтый */
-    }
-    100% {
-        opacity: 0;
-        transform: translateY(-50px) scale(1.5);
-    }
-}
-
+/* (основные стили .damage-text и keyframes — выше, у #damage-container) */
 
 /* Анимация удара по врагу - работает независимо от transform */
 @keyframes enemyHit {

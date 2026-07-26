@@ -1395,10 +1395,10 @@ function damageEnemy(enemy, index) {
     const xPercent = ((enemyRect.left + enemyRect.width / 2 - fieldRect.left) / fieldRect.width) * 100;
     const yPercent = ((enemyRect.top + enemyRect.height / 2 - fieldRect.top) / fieldRect.height) * 100;
     
-    // Создаем анимацию текста урона (передаем информацию о крите)
-	if (isBoss) {
-		createDamageText(damageResult.damage, xPercent, yPercent, damageResult.isCritical);
-		countDamageBoss++;
+    // Всплывающий урон только по боссам (так задумано)
+    if (isBoss) {
+        createDamageText(damageResult.damage, xPercent, yPercent, damageResult.isCritical);
+        countDamageBoss++;
     }
 	
     // Визуальная обратная связь при попадании
@@ -1536,24 +1536,27 @@ function animateEnemyHit(enemy) {
 }
 
 function createDamageText(damage, xPercent, yPercent, isCritical = false) {
-    // Создаем элемент текста урона
+    if (!damageContainer || !gameField) return;
+
     const damageText = document.createElement('div');
     damageText.className = isCritical ? 'damage-text damage-critical' : 'damage-text';
     damageText.textContent = `-${damage}`;
-    
-    // Устанавливаем начальную позицию
+
+    // Явные стили — надёжнее на Android Chrome, чем только CSS-анимация
     damageText.style.left = xPercent + '%';
     damageText.style.top = yPercent + '%';
-    
-    // Добавляем в контейнер
+    damageText.style.opacity = '1';
+    damageText.style.visibility = 'visible';
+    damageText.style.zIndex = '2000';
+
     damageContainer.appendChild(damageText);
-    
-    // Удаляем элемент после завершения анимации
+
+    const lifetime = isCritical ? 1200 : 1000;
     setTimeout(() => {
         if (damageText.parentNode) {
             damageText.parentNode.removeChild(damageText);
         }
-    }, 1000);
+    }, lifetime);
 }
 
 /**
