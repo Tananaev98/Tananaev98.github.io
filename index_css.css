@@ -842,12 +842,12 @@ body, .main_menu_image, .select-character-button,
         font-size: 22px;
     }
 
-    /* Портреты — компактная сетка 3 в ряд, все видны */
+    /* Портреты — компактная сетка, иконки ~в 2 раза меньше */
     .character-grid {
         flex: 0 0 auto;
         display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 8px;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 6px;
         margin: 0;
         padding: 4px 0;
         width: 100%;
@@ -861,11 +861,11 @@ body, .main_menu_image, .select-character-button,
         width: 100%;
         height: auto;
         aspect-ratio: 5 / 6;
-        max-height: 96px;
+        max-height: 48px;
     }
 
     .character-portrait.locked {
-        font-size: 28px;
+        font-size: 16px;
     }
 
     .character-portrait.selected {
