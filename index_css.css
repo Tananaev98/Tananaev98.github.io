@@ -537,7 +537,7 @@
     padding: 10px;
 }
 
-/* Кнопка "Выбрать" — правая колонка, третья строка, прижата к низу */
+/* Кнопка "Выбрать" */
 .select-hero-btn {
     padding: 12px 24px;
     background: linear-gradient(135deg, #5a3e2b, #3e2a1c);
@@ -550,11 +550,10 @@
     cursor: pointer;
     border-radius: 5px;
     transition: all 0.3s ease;
-    grid-column: 2;
-    grid-row: 3;
-    align-self: end;
-    width: 100%;
     box-sizing: border-box;
+    width: auto;
+    flex: 0 0 auto;
+    white-space: nowrap;
 }
 
 .select-hero-btn:hover:not(:disabled) {
@@ -606,23 +605,31 @@ body, .main_menu_image, .select-character-button,
 }
 
 
-//* Стили для блока действий в модальном окне */
-.modal-content .modal-actions {
+/* Стили для блока действий в модальном окне (ПК: под панелью инфо) */
+.character-select-modal .modal-content .modal-actions {
     grid-column: 2;
     grid-row: 3;
     display: flex;
-    align-items: center;
-    justify-content: space-between; /* разносит элементы по краям */
-    width: 100%;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: flex-end;
+    justify-content: flex-end;
+    gap: 16px;
+    width: 270%;
+    max-width: none;
     box-sizing: border-box;
-    gap: 20px; /* опционально, создаёт отступ между блоками, если места достаточно */
+    justify-self: start;
+    transform: translateX(-63%);
+    margin-top: 0;
 }
 
 .upgrade-wrapper {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    flex-shrink: 0; /* чтобы левый блок не сжимался при необходимости */
+    flex: 0 1 auto;
+    min-width: 0;
+    align-items: flex-end;
 }
 
 .upgrade-hero-btn {
@@ -636,7 +643,9 @@ body, .main_menu_image, .select-character-button,
     cursor: pointer;
     border-radius: 5px;
     transition: all 0.3s ease;
-    width: 100%;        /* растягивается по ширине родителя */
+    width: auto;
+    white-space: nowrap;
+    box-sizing: border-box;
 }
 
 .upgrade-cost {
@@ -653,7 +662,7 @@ body, .main_menu_image, .select-character-button,
     color: #FFD966;
     white-space: nowrap;
     width: fit-content;
-    margin: 0 auto;
+    margin: 0;
 }
 
 .zlata-icon {
@@ -665,10 +674,10 @@ body, .main_menu_image, .select-character-button,
 
 
 .select-hero-btn {
-    flex-shrink: 0; /* чтобы кнопка не сжималась */
+    flex-shrink: 0;
     padding: 12px 24px;
-    align-self: center;
-	margin-top: 2%;
+    align-self: flex-end;
+    margin-top: 0;
 }
 
 .stat-highlight {
@@ -769,4 +778,219 @@ body, .main_menu_image, .select-character-button,
 .skill-points-display:hover .skill-points-tooltip {
     opacity: 1;
     visibility: visible;
+}
+
+/* =============================================================================
+   МОБИЛЬНАЯ ВЁРСТКА: окно выбора / улучшения персонажа
+   ПК-стили выше не трогаем
+   ============================================================================= */
+/* Только по ширине экрана — не цепляем ПК с тачскрином */
+@media (max-width: 768px) {
+    .character-select-modal,
+    .character-select-modal .modal-content,
+    .character-select-modal .character-info,
+    .character-select-modal .modal-actions,
+    .character-select-modal button {
+        touch-action: manipulation;
+    }
+
+    .character-select-modal .character-info {
+        touch-action: pan-y;
+    }
+
+    .character-select-modal {
+        align-items: stretch;
+        justify-content: flex-start;
+        padding: max(6px, env(safe-area-inset-top, 0px)) 6px max(6px, env(safe-area-inset-bottom, 0px));
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+
+    .character-select-modal .modal-content {
+        width: 100%;
+        max-width: 100%;
+        height: 100%;
+        max-height: 100%;
+        margin: 0;
+        padding: 12px 10px 10px;
+        gap: 8px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-sizing: border-box;
+        border-width: 3px;
+        /* сброс ПК-сетки */
+        grid-template-columns: none;
+        grid-template-rows: none;
+    }
+
+    .character-select-modal h2 {
+        flex: 0 0 auto;
+        font-size: 15px;
+        letter-spacing: 0.5px;
+        margin: 0 36px 4px 0;
+        line-height: 1.25;
+        grid-column: auto;
+        grid-row: auto;
+    }
+
+    .close-modal {
+        top: 8px;
+        right: 8px;
+        width: 32px;
+        height: 32px;
+        font-size: 22px;
+    }
+
+    /* Портреты — компактная сетка 3 в ряд, все видны */
+    .character-grid {
+        flex: 0 0 auto;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin: 0;
+        padding: 4px 0;
+        width: 100%;
+        justify-content: stretch;
+        grid-column: auto;
+        grid-row: auto;
+        overflow: visible;
+    }
+
+    .character-portrait {
+        width: 100%;
+        height: auto;
+        aspect-ratio: 5 / 6;
+        max-height: 96px;
+    }
+
+    .character-portrait.locked {
+        font-size: 28px;
+    }
+
+    .character-portrait.selected {
+        transform: scale(1.02);
+    }
+
+    /* Инфо + статы — скролл, кнопки остаются снизу */
+    .character-info {
+        flex: 1 1 auto;
+        min-height: 0;
+        height: auto;
+        width: 100%;
+        max-width: 100%;
+        transform: none;
+        grid-column: auto;
+        grid-row: auto;
+        justify-self: stretch;
+        padding: 10px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-y;
+        box-sizing: border-box;
+    }
+
+    .character-info h3 {
+        font-size: 17px;
+        margin-bottom: 6px;
+        letter-spacing: 1px;
+    }
+
+    .character-info-content {
+        flex-direction: column;
+        gap: 8px;
+        height: auto;
+    }
+
+    /* Полный арт на мобилке прячем — экономим место под статы и кнопки */
+    .character-fullimage {
+        display: none;
+    }
+
+    .character-stats {
+        flex: 1 1 auto;
+        width: 100%;
+    }
+
+    .hero-stats {
+        margin-top: 0;
+        gap: 2px;
+    }
+
+    /* Длинное пояснение на мобилке не нужно */
+    .hero-stats > p:nth-child(n + 2):nth-child(-n + 6) {
+        display: none;
+    }
+
+    .hero-stats p {
+        transform: none;
+        font-size: 13px;
+        color: #5C4033;
+        gap: 4px;
+        padding: 1px 0;
+    }
+
+    .hero-stats p span {
+        font-size: 12px;
+    }
+
+    .statH {
+        font-size: 14px;
+    }
+
+    .feature-container {
+        grid-template-columns: 1fr;
+        gap: 2px;
+    }
+
+    /* Кнопки всегда внизу модалки */
+    .character-select-modal .modal-content .modal-actions {
+        flex: 0 0 auto;
+        grid-column: auto;
+        grid-row: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+        gap: 8px;
+        width: 100%;
+        max-width: 100%;
+        margin-top: auto;
+        padding-top: 6px;
+        box-sizing: border-box;
+        transform: none;
+        justify-self: stretch;
+    }
+
+    .upgrade-wrapper {
+        width: 100%;
+        gap: 6px;
+        align-items: stretch;
+    }
+
+    .upgrade-cost {
+        font-size: 12px;
+        padding: 5px 10px;
+        white-space: normal;
+        text-align: center;
+        margin: 0 auto;
+    }
+
+    .upgrade-hero-btn,
+    .select-hero-btn {
+        width: 100%;
+        margin: 0;
+        padding: 12px 14px;
+        font-size: 14px;
+        letter-spacing: 0.5px;
+        grid-column: auto;
+        grid-row: auto;
+        align-self: stretch;
+        box-sizing: border-box;
+    }
+
+    .zlata-icon {
+        width: 16px;
+        height: 16px;
+    }
 }

@@ -85,37 +85,58 @@ body {
 
 
 
+/* Старое изображение рамки больше не используется — статус-бар рисуется CSS */
 .img_zamok{
-	position: absolute;
-	bottom: 0;
-	width: 100%;
-	height: 21%;
-	z-index: 10;
-	filter: drop-shadow(0px 10px 10px rgba(0, 0, 0, 0.5));
-	left: 0;
-	object-fit: cover;
-	object-position: bottom center;
-	pointer-events: none;
+	display: none;
 }
 
 
 
-/* ====== СТАТУС-БАР ГЕРОЯ (портрет + HP) ====== */
-/* Один блок: портрет и полоска всегда выровнены вместе */
+/* ====== СТАТУС-БАР ГЕРОЯ (портрет + HP), CSS «дерево + пергамент» ====== */
 
 .hero-status-bar {
 	position: absolute;
-	left: 7%;
-	right: 7%;
-	bottom: 3.8%;
-	height: clamp(44px, 9.5%, 68px);
+	left: 1.5%;
+	right: 1.5%;
+	bottom: 1.2%;
+	height: clamp(96px, 15%, 180px);
 	display: flex;
 	flex-direction: row;
 	align-items: center;
-	gap: clamp(8px, 1.2vw, 14px);
+	gap: clamp(12px, 1.6vw, 20px);
+	padding: 14px 20px;
 	z-index: 99;
 	box-sizing: border-box;
 	pointer-events: none;
+
+	/* пергамент + гвозди в углах */
+	background-color: #d2b48c;
+	background-image:
+		radial-gradient(circle at 14px 14px, #c4a06a 0 3px, #8b5a2b 3px 5px, transparent 6px),
+		radial-gradient(circle at calc(100% - 14px) 14px, #c4a06a 0 3px, #8b5a2b 3px 5px, transparent 6px),
+		radial-gradient(circle at 14px calc(100% - 14px), #c4a06a 0 3px, #8b5a2b 3px 5px, transparent 6px),
+		radial-gradient(circle at calc(100% - 14px) calc(100% - 14px), #c4a06a 0 3px, #8b5a2b 3px 5px, transparent 6px),
+		linear-gradient(180deg, rgba(255, 248, 230, 0.35) 0%, transparent 42%),
+		linear-gradient(90deg, rgba(92, 64, 51, 0.06) 0%, transparent 18%, transparent 82%, rgba(92, 64, 51, 0.06) 100%),
+		repeating-linear-gradient(
+			0deg,
+			rgba(90, 57, 33, 0.03) 0px,
+			rgba(90, 57, 33, 0.03) 1px,
+			transparent 1px,
+			transparent 4px
+		),
+		linear-gradient(135deg, #e8d5b0 0%, #d4bc8a 48%, #c4a574 100%);
+
+	/* деревянная рамка */
+	border: 5px solid #5a3921;
+	border-radius: 6px;
+	outline: 3px solid #8b5a2b;
+	outline-offset: -9px;
+	box-shadow:
+		0 8px 20px rgba(0, 0, 0, 0.35),
+		0 2px 0 #3f2814,
+		inset 0 0 0 1px rgba(255, 220, 160, 0.25),
+		inset 0 0 18px rgba(90, 57, 33, 0.18);
 }
 
 .heroImageClass {
@@ -128,14 +149,16 @@ body {
 	object-position: center top;
 	display: block;
 	z-index: 99;
-	border: 4px solid #5d3a24;
+	border: 3px solid #5a3921;
 	border-style: double;
 	box-shadow:
-		inset 0 0 10px rgba(0,0,0,0.8),
-		2px 2px 5px rgba(0,0,0,0.5);
-	border-radius: 2px;
-	filter: sepia(0.2) contrast(1.1);
+		inset 0 0 8px rgba(0, 0, 0, 0.75),
+		2px 2px 4px rgba(0, 0, 0, 0.4),
+		0 0 0 1px #8b5a2b;
+	border-radius: 3px;
+	filter: sepia(0.15) contrast(1.08);
 	box-sizing: border-box;
+	background: #3f2814;
 }
 
 .castle-health-container {
@@ -143,7 +166,7 @@ body {
 	flex: 1 1 auto;
 	min-width: 0;
 	width: auto;
-	height: 72%;
+	height: 68%;
 	left: auto;
 	bottom: auto;
 	display: flex;
@@ -165,13 +188,16 @@ body {
 	position: relative;
 	width: 100%;
 	height: 100%;
-	min-height: 28px;
-	background-color: #5C4033;
-	border: 3px solid #8B4513;
-	border-radius: 5px;
+	min-height: 26px;
+	background: linear-gradient(180deg, #4a3220 0%, #2f1d12 100%);
+	border: 2px solid #3f2814;
+	border-radius: 4px;
 	overflow: hidden;
 	margin-bottom: 0;
 	box-sizing: border-box;
+	box-shadow:
+		inset 0 2px 5px rgba(0, 0, 0, 0.45),
+		0 1px 0 rgba(255, 220, 160, 0.2);
 }
 
 /* Сама полоска здоровья (будет менять ширину) */
@@ -181,7 +207,9 @@ body {
 	top: 0;
 	height: 100%;
 	width: 100%; /* Будет меняться через JS */
-	background: linear-gradient(to right, #4CAF50, #8BC34A);
+	background:
+		linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, transparent 42%),
+		linear-gradient(180deg, #8BC34A 0%, #4CAF50 48%, #2E7D32 100%);
 	transition: width 0.3s ease;
 }
 
@@ -193,11 +221,12 @@ body {
 	transform: translate(-50%, -50%);
 	color: white;
 	font-weight: bold;
-	font-size: clamp(12px, 1.6vw, 18px);
-	text-shadow: 2px 2px 2px rgba(0, 0, 0, 0.5);
+	font-size: clamp(14px, 1.8vw, 20px);
+	letter-spacing: 0.3px;
+	text-shadow: 1px 1px 0 #1B5E20, 2px 2px 3px rgba(0, 0, 0, 0.55);
 	z-index: 1;
 	white-space: nowrap;
-	max-width: 95%;
+	max-width: 94%;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	pointer-events: none;
@@ -339,10 +368,6 @@ body {
     cursor: url('images/aim/1.png') 30 30, auto !important;
 }
 
-/* Для замка */
-.img_zamok {
-    cursor: url('images/aim/1.png') 30 30, auto !important;
-}
 /* Стили для прицела */
 .aim {
     position: absolute;
@@ -405,32 +430,32 @@ body {
     }
 
     .hero-status-bar {
-        left: 4%;
-        right: 4%;
-        bottom: max(3.5%, env(safe-area-inset-bottom, 0px));
-        height: clamp(40px, 8.5vh, 54px);
-        gap: 8px;
+        left: 3.5%;
+        right: 3.5%;
+        bottom: max(1.5%, env(safe-area-inset-bottom, 0px));
+        height: clamp(72px, 18vh, 110px);
+        padding: 10px 12px;
+        gap: 10px;
+        border-width: 4px;
+        outline-width: 2px;
+        outline-offset: -7px;
     }
 
     .heroImageClass {
-        border-width: 3px;
+        border-width: 2px;
     }
 
     .castle-health-container {
-        height: 70%;
+        height: 62%;
     }
 
     .health-bar-container {
         border-width: 2px;
-        min-height: 24px;
+        min-height: 22px;
     }
 
     .health-text {
         font-size: clamp(11px, 3.4vw, 14px);
-    }
-
-    .img_zamok {
-        height: 22%;
     }
 
     /* Полоска HP босса: по центру, короче (тонкая настройка — в блоках по экранам в конце файла) */
@@ -544,14 +569,11 @@ html.is-mobile .boss-health-bar {
 }
 
 html.is-mobile .hero-status-bar {
-    left: 4%;
-    right: 4%;
-    bottom: max(3.5%, env(safe-area-inset-bottom, 0px));
-    height: clamp(40px, 8.5vh, 54px);
-}
-
-html.is-mobile .img_zamok {
-    height: 22%;
+    left: 3.5%;
+    right: 3.5%;
+    bottom: max(1.5%, env(safe-area-inset-bottom, 0px));
+    height: clamp(72px, 18vh, 110px);
+    padding: 10px 12px;
 }
 
 html.is-mobile .main_menu_image {
@@ -1299,8 +1321,9 @@ html.is-mobile .main_menu_image {
     .enemy.enemy-attack { width: 20vw; max-width: 20%; }
 
     .hero-status-bar {
-        bottom: 3.2%;
-        height: clamp(38px, 8vh, 48px);
+        bottom: 1.2%;
+        height: clamp(70px, 20vh, 100px);
+        padding: 9px 11px;
     }
 
     .boss-health-container {
@@ -1333,8 +1356,9 @@ html.is-mobile .main_menu_image {
     .enemy.enemy-attack { width: 16vw; }
 
     .hero-status-bar {
-        bottom: 3.5%;
-        height: clamp(40px, 8.2vh, 50px);
+        bottom: 1.4%;
+        height: clamp(72px, 19vh, 105px);
+        padding: 10px 12px;
     }
 
     .boss-health-container {
@@ -1367,8 +1391,9 @@ html.is-mobile .main_menu_image {
     .enemy.enemy-attack { width: 30vw; max-width: 52%; }
 
     .hero-status-bar {
-        bottom: 3.8%;
-        height: clamp(42px, 8.5vh, 52px);
+        bottom: 1.5%;
+        height: clamp(74px, 18vh, 108px);
+        padding: 10px 12px;
     }
 
     .boss-health-container {
@@ -1401,8 +1426,9 @@ html.is-mobile .main_menu_image {
     .enemy.enemy-attack { width: 28vw; max-width: 50%; }
 
     .hero-status-bar {
-        bottom: 3.8%;
-        height: clamp(44px, 8.5vh, 54px);
+        bottom: 1.5%;
+        height: clamp(76px, 18vh, 110px);
+        padding: 10px 13px;
     }
 
     .boss-health-container {
@@ -1435,8 +1461,9 @@ html.is-mobile .main_menu_image {
     .enemy.enemy-attack { width: 24vw; max-width: 48%; }
 
     .hero-status-bar {
-        bottom: 4%;
-        height: clamp(46px, 8.5vh, 56px);
+        bottom: 1.6%;
+        height: clamp(78px, 17vh, 115px);
+        padding: 11px 14px;
     }
 
     .boss-health-container {
@@ -1469,10 +1496,11 @@ html.is-mobile .main_menu_image {
     .enemy.enemy-attack { width: 16vw; max-width: 40%; }
 
     .hero-status-bar {
-        left: 6%;
-        right: 6%;
-        bottom: 4.2%;
-        height: clamp(48px, 8vh, 60px);
+        left: 4%;
+        right: 4%;
+        bottom: 1.8%;
+        height: clamp(82px, 16vh, 130px);
+        padding: 12px 16px;
     }
 
     .boss-health-container {
@@ -1505,10 +1533,11 @@ html.is-mobile .main_menu_image {
     .enemy.enemy-attack { width: 14vw; max-width: 35%; }
 
     .hero-status-bar {
-        left: 7%;
-        right: 7%;
-        bottom: 4.5%;
-        height: clamp(52px, 8vh, 64px);
+        left: 5%;
+        right: 5%;
+        bottom: 2%;
+        height: clamp(88px, 15vh, 140px);
+        padding: 12px 16px;
     }
 
     .boss-health-container {

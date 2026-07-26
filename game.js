@@ -96,7 +96,7 @@ let countDefeatBoss = 0;
 // Конфигурация игры - основные настройки
 const GAME_CONFIG = {
     START_Y: 5,           // Начальная позиция Y (выше экрана)
-    TARGET_Y: 73,           // Целевая позиция Y (красная линия/замок)
+    TARGET_Y: 78,           // Целевая позиция Y (верх статус-бара героя)
 	CASTLE_BASE_HP: activeHeroObject.castleHP,
 	CASTLE_HP_PER_LEVEL: 20
 };
