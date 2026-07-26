@@ -1539,6 +1539,11 @@ function createDamageText(damage, xPercent, yPercent, isCritical = false) {
     // Тот же простой путь, что и у showWoundDamage — Яндекс Браузер его нормально рисует
     if (!damageContainer) return;
 
+    // Не копить десятки нод подряд — на слабом движке Яндекса это даёт «слайдшоу»
+    while (damageContainer.childElementCount > 8) {
+        damageContainer.removeChild(damageContainer.firstChild);
+    }
+
     const damageText = document.createElement('div');
     damageText.className = isCritical ? 'damage-text damage-critical' : 'damage-text';
     damageText.textContent = `-${damage}`;
