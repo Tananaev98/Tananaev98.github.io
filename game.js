@@ -1536,10 +1536,10 @@ function animateEnemyHit(enemy) {
 }
 
 function createDamageText(damage, xPercent, yPercent, isCritical = false) {
-    // Тот же простой путь, что и у showWoundDamage — Яндекс Браузер его нормально рисует
+    // CSS-анимация в Яндекс.Браузере на Android то пропадает, то идёт рывками —
+    // двигаем текст через rAF (как надёжный fallback)
     if (!damageContainer) return;
 
-    // Не копить десятки нод подряд — на слабом движке Яндекса это даёт «слайдшоу»
     while (damageContainer.childElementCount > 8) {
         damageContainer.removeChild(damageContainer.firstChild);
     }
@@ -1549,14 +1549,39 @@ function createDamageText(damage, xPercent, yPercent, isCritical = false) {
     damageText.textContent = `-${damage}`;
     damageText.style.left = xPercent + '%';
     damageText.style.top = yPercent + '%';
+    damageText.style.opacity = '1';
+    damageText.style.animation = 'none';
+    damageText.style.webkitAnimation = 'none';
+    damageText.style.transform = 'translateY(0px) scale(1)';
 
     damageContainer.appendChild(damageText);
 
-    setTimeout(() => {
-        if (damageText.parentNode) {
+    const duration = isCritical ? 1200 : 1000;
+    const travelY = isCritical ? -70 : -50;
+    const endScale = isCritical ? 1.7 : 1.45;
+    const start = performance.now();
+
+    function frame(now) {
+        if (!damageText.parentNode) return;
+
+        const t = Math.min(1, (now - start) / duration);
+        const ease = 1 - Math.pow(1 - t, 3); // ease-out
+        const y = travelY * ease;
+        const scale = 1 + (endScale - 1) * ease;
+        // держим видимым большую часть полёта (Яндекс не любит мгновенный opacity:0)
+        const opacity = t < 0.75 ? 1 : 1 - ((t - 0.75) / 0.25);
+
+        damageText.style.transform = 'translateY(' + y + 'px) scale(' + scale + ')';
+        damageText.style.opacity = String(Math.max(0, opacity));
+
+        if (t < 1) {
+            requestAnimationFrame(frame);
+        } else if (damageText.parentNode) {
             damageText.parentNode.removeChild(damageText);
         }
-    }, isCritical ? 1200 : 1000);
+    }
+
+    requestAnimationFrame(frame);
 }
 
 /**

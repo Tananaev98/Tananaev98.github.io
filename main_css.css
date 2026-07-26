@@ -308,8 +308,6 @@ body {
 
 .damage-text {
     position: absolute;
-    left: 0;
-    top: 0;
     color: #FF0000;
     font-weight: bold;
     font-size: 20px;
@@ -318,44 +316,28 @@ body {
     pointer-events: none;
     z-index: 2000;
     white-space: nowrap;
-    opacity: 0;
-    /* Только transform+opacity — иначе Яндекс на Android рисует «слайдшоу» */
-    transform: translate3d(0, 0, 0);
-    animation: damageFloat 1s linear forwards;
-    will-change: transform, opacity;
-    backface-visibility: hidden;
+    opacity: 1;
+    /* Полёт урона по боссу крутит JS (createDamageText), CSS-animation отключена там же */
+    animation: none;
 }
 
-/* Критический урон — цвет статичный, анимация та же по типу */
 .damage-text.damage-critical {
     color: #FFD700;
     font-size: 28px;
     font-weight: 900;
     text-shadow: 0 0 5px #FF0000, 0 0 10px #FF8C00, 2px 2px 0 #000;
-    animation: criticalDamageFloat 1.2s linear forwards;
+    animation: none;
 }
 
-/* Анимация: без смены color в keyframes (дорого для Яндекса) */
+/* CSS-keyframes оставлены на всякий случай / для старых путей; основной полёт — в JS */
 @keyframes damageFloat {
-    0% {
-        opacity: 1;
-        transform: translate3d(0, 0, 0) scale(1);
-    }
-    100% {
-        opacity: 0;
-        transform: translate3d(0, -50px, 0) scale(1.45);
-    }
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 1; transform: translateY(-50px) scale(1.45); }
 }
 
 @keyframes criticalDamageFloat {
-    0% {
-        opacity: 1;
-        transform: translate3d(0, 0, 0) scale(1);
-    }
-    100% {
-        opacity: 0;
-        transform: translate3d(0, -70px, 0) scale(1.7);
-    }
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 1; transform: translateY(-70px) scale(1.7); }
 }
 
 /* Для контейнера врагов */
