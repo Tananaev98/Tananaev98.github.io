@@ -1,8 +1,27 @@
 /* ========== Меню выбора уровней ========== */
 
-.menu-page {
-    overflow: auto !important;
+/* main_css глушит скролл (overflow/touch-action) под геймплей —
+   на экране выбора уровней возвращаем нормальный скролл, иначе 6+ уровни не достать */
+html.is-menu {
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    height: auto !important;
     min-height: 100%;
+    min-height: 100svh;
+    touch-action: pan-y !important;
+    overscroll-behavior: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.menu-page {
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    height: auto !important;
+    min-height: 100%;
+    min-height: 100svh;
+    touch-action: pan-y !important;
+    overscroll-behavior: auto;
+    -webkit-overflow-scrolling: touch;
     font-family: 'Pangolin', 'Philosopher', Georgia, serif;
     color: #3e2a1c;
 }
@@ -254,11 +273,12 @@
     }
 
     .menu-main {
-        padding: 8px 16px 48px;
+        padding: 8px 16px calc(48px + env(safe-area-inset-bottom, 0px));
     }
 
     .levels-grid {
         grid-template-columns: 1fr;
+        padding-bottom: 24px;
     }
 }
 
