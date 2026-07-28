@@ -26,7 +26,7 @@ const ENEMY_TYPES = {
 
 		baseExp: 0,                     
 
-        size: '7%'                        
+        size: '6%'                        
 
     },
 
@@ -48,7 +48,7 @@ const ENEMY_TYPES = {
 
 		baseExp: 0,                      
 
-        size: '7%'                        
+        size: '6%'                        
 
     },
 
@@ -70,7 +70,7 @@ const ENEMY_TYPES = {
 
 		baseExp: 0,                     
 
-        size: '7%'                        
+        size: '6%'                        
 
     },
 
@@ -92,7 +92,7 @@ const ENEMY_TYPES = {
 
 		baseExp: 0,                       
 
-        size: '7%'                       
+        size: '6%'                       
 
     },
 
@@ -114,7 +114,7 @@ const ENEMY_TYPES = {
 
 		baseExp: 0,                      
 
-        size: '7%'                       
+        size: '6%'                       
 
     },
 
@@ -260,7 +260,7 @@ const ENEMY_TYPES = {
 
  
 
- // Уровень 5 — Ночные хищники
+ // Уровень 5 — Ночная смена
 
  // Боссы стоят примерно в зоне x 34–70, y 13–42.
 

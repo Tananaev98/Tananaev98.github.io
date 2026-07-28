@@ -12,7 +12,7 @@ const ENEMY_TYPES = {
         baseDamage: 20,                    
         spawnWeight: 5,                  
 		baseExp: 0,                     
-        size: '7%'                        
+        size: '6%'                        
     },
 	
 	enem22: {  
@@ -23,7 +23,7 @@ const ENEMY_TYPES = {
         baseDamage: 20,                    
         spawnWeight: 5,                  
 		baseExp: 0,                      
-        size: '9%'                        
+        size: '6%'                        
     },
 	
 	enem33: {  
@@ -45,7 +45,7 @@ const ENEMY_TYPES = {
         baseDamage: 20,                    
         spawnWeight: 5,                  
 		baseExp: 0,                       
-        size: '8%'                       
+        size: '6%'                       
     },
 	
 	enem55: {  

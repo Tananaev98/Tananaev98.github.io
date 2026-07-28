@@ -12,7 +12,7 @@ const ENEMY_TYPES = {
         baseDamage: 20,                    
         spawnWeight: 5,                  
 		baseExp: 0,                     
-        size: '10%'                        
+        size: '6%'                        
     },
 	
 	enem22: {  
@@ -23,7 +23,7 @@ const ENEMY_TYPES = {
         baseDamage: 20,                    
         spawnWeight: 5,                  
 		baseExp: 0,                      
-        size: '7%'                        
+        size: '6%'                        
     },
 	
 	enem33: {  
@@ -129,7 +129,7 @@ const ENEMY_TYPES = {
  let timeNextBoss = 5;
  const bossInterval = 5;
  
- // Уровень 4 — Ремесленники / люди в лесу
+ // Уровень 4 — Самозанятые в чаще
  // Боссы стоят примерно в зоне x 34–70, y 13–42.
  // Атаки по краям (x≤18 / x≥78) или ниже босса.
  // Правило честности: быстрые (speed≥16) стартуют высоко (y≤12),
