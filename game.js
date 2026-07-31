@@ -32,36 +32,8 @@ const ANIMATION_PARAMS = {
 	SWAY_PIXELS: 1,   //
 };
 
-//фарм золота-------
-let countZlat = 0; 
-
-if (lvlNumber <= 40) {
-	countZlat = lvlNumber *5; //фармим примерно 5 до 200 золотых за уровень
-}
-
-if (lvlNumber <= 50 && lvlNumber > 40) {
-	countZlat = lvlNumber *10; //фармим от 500 до 2500 золотых за уровень
-}
-
-if (lvlNumber <= 60 && lvlNumber > 50) {
-	countZlat = lvlNumber *20; //фармим от 1200 до 6000 золотых за уровень
-}
-
-if (lvlNumber <= 70 && lvlNumber > 60) {
-	countZlat = lvlNumber *70; //фармим от 4900 до 24500 золотых за уровень
-}
-
-if (lvlNumber <= 80 && lvlNumber > 70) {
-	countZlat = lvlNumber *75; //фармим от 6000 до 30000 золотых за уровень
-}
-
-if (lvlNumber <= 90 && lvlNumber > 80) {
-	countZlat = lvlNumber *80; //фармим от 7200 до 36000 золотых за уровень
-}
-
-if (lvlNumber > 90) {
-	countZlat = lvlNumber * 85; //фармим от 7650 до 38250 золотых за уровень
-}
+// У каждого уровня фиксированная награда: его можно фармить без ограничений,
+// но экспоненциальная цена прокачки постепенно делает старые уровни невыгодными.
 //----------------------------------------------------------------------------
 //
 // Параметры типов врагов - характеристики для каждого типа врагов
@@ -73,9 +45,60 @@ if (lvlNumber > 90) {
 
  let bossTimer = null;
  const bossAttackTimers = new Set();
- let bossComboHistory = [];
- let bossWaveCounter = 0;
- let bossCombatPhase = 1;
+let bossComboHistory = [];
+let bossWaveCounter = 0;
+let bossCombatPhase = 1;
+
+// Кривая синхронизирована со свободной прокачкой одного выбранного героя:
+// без дополнительного фарма он подходит к финалу примерно на 159-м уровне.
+const BOSS_HEALTH_BALANCE = Object.freeze({
+    baseByType: Object.freeze({
+        enem1: 2600,
+        enem2: 6500,
+        enem3: 11500,
+        enem4: 18500,
+        enem5: 28000
+    }),
+    progressionScale: 2.25,
+    progressionExponent: 2.1,
+    regionFinalBossMultiplier: 1.12
+});
+
+function calculateBossMaxHealth(type, fallbackBaseHealth) {
+    const balancedBaseHealth = BOSS_HEALTH_BALANCE.baseByType[type];
+    if (!Number.isFinite(balancedBaseHealth)) {
+        return Math.max(1, Math.floor(fallbackBaseHealth));
+    }
+
+    const parsedLevel = Number(lvlNumber);
+    const currentLevel = Number.isFinite(parsedLevel)
+        ? Math.max(1, Math.floor(parsedLevel))
+        : 1;
+    const balancedLevel = Math.min(CAMPAIGN_FINAL_LEVEL, currentLevel);
+    const campaignProgress = (balancedLevel - 1) / (CAMPAIGN_FINAL_LEVEL - 1);
+    const levelMultiplier = 1 + (
+        BOSS_HEALTH_BALANCE.progressionScale
+        * (Math.exp(BOSS_HEALTH_BALANCE.progressionExponent * campaignProgress) - 1)
+    );
+
+    // Точечные сюжетные отклонения можно задавать через healthMultiplier
+    // в профиле конкретного босса, не меняя общую кривую региона.
+    const configuredHealthMultiplier = bossCombatConfig?.bosses?.[type]?.healthMultiplier;
+    const bossHealthMultiplier = Number.isFinite(configuredHealthMultiplier) && configuredHealthMultiplier > 0
+        ? configuredHealthMultiplier
+        : 1;
+
+    const isRegionFinalBoss = type === 'enem5'
+        && typeof levelCompletionConfig !== 'undefined'
+        && levelCompletionConfig.isRegionFinal;
+    const regionFinalMultiplier = isRegionFinalBoss
+        ? BOSS_HEALTH_BALANCE.regionFinalBossMultiplier
+        : 1;
+
+    return Math.max(1, Math.round(
+        balancedBaseHealth * levelMultiplier * bossHealthMultiplier * regionFinalMultiplier
+    ));
+}
 
 // Геометрия и ВСЕ настройки конкретного уровня приходят из gameDataN.js.
 // Здесь остаётся только универсальное исполнение механик.
@@ -141,8 +164,12 @@ const startGlobalCritChance = activeHeroObject.startGlobalCritChance;
 const startGlobalCritMultiplier = activeHeroObject.startGlobalCritMultiplier; 
 
 const startGlobalWoundChance = activeHeroObject.startGlobalWoundChance;
-const startCastleDamageReduction = activeHeroObject.startCastleDamageReduction;
+const startCastleDamageReduction = Math.min(
+    MAX_CASTLE_DAMAGE_REDUCTION,
+    activeHeroObject.startCastleDamageReduction
+);
 const startSHOT_INTERVAL = activeHeroObject.startSHOT_INTERVAL;
+const TEMPORARY_UPGRADE_BASE_SHARE = 0.20;
 
 // Глобальные параметры оглушения
 
@@ -162,6 +189,7 @@ const MOBILE_AIM_OFFSET_Y = 48; // прицел чуть выше пальца, 
 let lastTouchAimTime = 0;
 
 let castleDamageReduction = startCastleDamageReduction;
+const castleDamageReductionCap = getHeroDefenseCap(activeHeroObject);
 
 // Таймер для стрельбы
 let lastShotTime = 0;
@@ -192,9 +220,11 @@ class Enemy {
 		
 		this.dispName = ENEMY_TYPES[type].dispName;
         
-        // Рассчитываем финальные параметры с учетом глобальных множителей
-        this.hp = Math.floor(ENEMY_TYPES[type].baseHP);
-		this.maxHP = Math.floor(ENEMY_TYPES[type].baseHP);
+        // HP пяти боссов рассчитывается централизованно; для атак и будущих
+        // нестандартных противников сохраняется значение из данных уровня.
+        const maxHealth = calculateBossMaxHealth(type, ENEMY_TYPES[type].baseHP);
+        this.hp = maxHealth;
+		this.maxHP = maxHealth;
         this.damage = Math.floor(ENEMY_TYPES[type].baseDamage);
         
         
@@ -802,6 +832,9 @@ function resetGame() {
     globalCritChance = startGlobalCritChance;
     globalCritMultiplier = startGlobalCritMultiplier;
     globalWoundChance = startGlobalWoundChance;
+    globalDamageBonusPercent = 0;
+    blockCount = 0;
+    countDamageBoss = 0;
     castleDamageReduction = startCastleDamageReduction;
     SHOT_INTERVAL = startSHOT_INTERVAL;
     
@@ -1220,7 +1253,13 @@ function executeBossEvent() {
                 if (activeBossAttacks >= phase.maxActiveAttacks) return;
 
                 const speed = getBalancedAttackSpeed(attack, phase, profile, shotIndex);
-                const damage = Math.round(attack.customDamage * profile.damageMultiplier * phase.damage * config.damageMultiplier);
+                const damage = calculateBossAttackDamage(
+                    attack.customDamage,
+                    profile.damageMultiplier,
+                    phase.damage,
+                    config.damageMultiplier,
+                    lvlNumber
+                );
                 spawnEnemyWithParams(
                     attack.type,
                     attack.xPos,
@@ -1477,7 +1516,8 @@ function showEndGameModal(victory, timeSeconds) {
 		completeLevel();
 	}
 	
-	const zlatP = countZlat * countDefeatBoss;
+	const bossCount = Array.isArray(bossM) && bossM.length > 0 ? bossM.length : 5;
+	const zlatP = getLevelZlataPayout(lvlNumber, countDefeatBoss, bossCount);
 	if(zlatP >0){addZlat(zlatP)};
 	
     const modal = document.createElement('div');
@@ -1706,10 +1746,8 @@ function checkAimAndDamage() {
 
     const index = activeEnemies.indexOf(enemy);
     if (index !== -1) {
-        let isDead = damageEnemy(enemy, index);
-		if (bossM.includes(enemy.type) && !isDead) {
-			isDead = subsBefDamageEnemy(enemy, index);
-		}	
+        const attackMultiplier = rollHeroAttackMultiplier(isBoss);
+        const isDead = damageEnemy(enemy, index, attackMultiplier);
         if (isDead) {
             activeEnemies.splice(index, 1);
         }
@@ -1717,20 +1755,22 @@ function checkAimAndDamage() {
 }
 
 
-function damageEnemy(enemy, index) {
+function damageEnemy(enemy, index, attackMultiplier = 1) {
     // Рассчитываем урон с учетом крита
    
 	
 	let isBoss = bossM.includes(enemy.type);
 	
 	const damageResult = calculateDamage(isBoss);
+    const woundBaseDamage = damageResult.damage;
+    damageResult.damage = Math.round(damageResult.damage * attackMultiplier);
 
     
     // Наносим урон
     enemy.hp -= damageResult.damage;
 	
 	//Применение особенностей героев
-	subsDamageEnemy(isBoss);
+	subsDamageEnemy(isBoss, enemy.hp <= 0);
     
     // Запускаем анимацию удара по врагу
 	
@@ -1744,8 +1784,8 @@ function damageEnemy(enemy, index) {
 	// Воспроизводим звук
 	playDamageSound();
 	
-	if ((damageResult.damage / 20) > 1) {
-	checkForWound(enemy, damageResult.damage);
+	if ((woundBaseDamage / 20) > 1) {
+	checkForWound(enemy, woundBaseDamage);
 	}
     
     // Получаем позицию врага для отображения текста урона
@@ -1759,7 +1799,6 @@ function damageEnemy(enemy, index) {
     // Всплывающий урон только по боссам (так задумано)
     if (isBoss) {
         createDamageText(damageResult.damage, xPercent, yPercent, damageResult.isCritical);
-        countDamageBoss++;
     }
 	
     // Визуальная обратная связь при попадании
@@ -1868,8 +1907,12 @@ function calculateDamage(isBoss) {
 }
 
 function addDamageBonus() {
-	globalDamageBonusPercent = (globalDamageBonusPercent + globalDamageBonusPercentSize);
-	if (globalDamageBonusPercent >= globalMaxDamageBonusPercent) {globalDamageBonusPercent = globalMaxDamageBonusPercent};
+	const previousBonus = globalDamageBonusPercent;
+	globalDamageBonusPercent = Math.min(
+		globalMaxDamageBonusPercent,
+		globalDamageBonusPercent + globalDamageBonusPercentSize
+	);
+	return globalDamageBonusPercent > previousBonus;
 }
 
 /* 
@@ -2029,54 +2072,63 @@ function killAllEnemies() {
 
 //=====================Подписки на события и особенности героев========================
 
-function subsDamageEnemy(isBoss) {
+function subsDamageEnemy(isBoss, isDestroyed) {
 	
 	//Способность Еремея 	
-	if(activeHeroObject.name === 'eremei' && !isBoss) {
-		addDamageBonus();
+	if(activeHeroObject.name === 'eremei' && !isBoss && isDestroyed) {
+		blockCount++;
+		const bonusIncreased = addDamageBonus();
+
+		if (bonusIncreased && (blockCount % 5 === 0 || globalDamageBonusPercent >= globalMaxDamageBonusPercent)) {
+			showCenterText(
+				`Отбивальщик: урон +${Math.round(globalDamageBonusPercent * 100)}%`,
+				1000,
+				'info'
+			);
+		}
 	}
 			
 }
 
 
-function subsBefDamageEnemy(enemy, index) {
-	
-	let isDead =false;
-	
-	if(activeHeroObject.name === 'dunya') {
-			
-		const random = Math.random(); // Случайное число от 0 до 1
-		let count = 0;
-		
-		
-		if (random <= 0.10 && random > 0.05) {
-			count = 1;
-			showCenterText('Раскрутилась! Двойная атака!', 1500, 'info');
-		} else if (random <= 0.05 && random > 0.01) {
-			count = 2;
-			showCenterText('Ух как раскрутилась! Тройная атака!', 1500, 'info');			
-		}
-		else if (random <= 0.01) {
-			count = 3;
-			showCenterText('Улетай! Четверная атака!', 1500, 'info');
-		}
-		
-		for (let i = 0; i < count; i++) {
-			isDead = damageEnemy(enemy, index);
-			if (isDead) {break};
-		}			
-			
-	}
-		
+function rollHeroAttackMultiplier(isBoss) {
+	if (!isBoss || activeHeroObject.name !== 'dunya') return 1;
 
-	return isDead;
+	const random = Math.random();
+	const doubleChance = activeHeroObject.doubleAttackChance ?? 0.10;
+	const tripleChance = activeHeroObject.tripleAttackChance ?? 0.03;
+	const jackpotChance = activeHeroObject.jackpotAttackChance ?? 0.01;
+	const jackpotMultiplier = Math.max(1, activeHeroObject.jackpotAttackMultiplier ?? 8);
+
+	if (random < jackpotChance) {
+		showCenterText(`ДЖЕКПОТ! Урон ×${jackpotMultiplier}!`, 1700, 'info');
+		return jackpotMultiplier;
+	}
+
+	if (random < jackpotChance + tripleChance) {
+		showCenterText('Ух как раскрутилась! Тройная атака!', 1500, 'info');
+		return 3;
+	}
+
+	if (random < jackpotChance + tripleChance + doubleChance) {
+		showCenterText('Раскрутилась! Двойная атака!', 1500, 'info');
+		return 2;
+	}
+
+	return 1;
 }
 
 function subsCalculateDamageEnemy(isBoss, isCritical) {
 	
-	if(activeHeroObject.name === 'luka' && isBoss && countDamageBoss >=5) {
-		countDamageBoss = 0;
-		return true; 
+	if(activeHeroObject.name === 'luka' && isBoss) {
+		countDamageBoss++;
+		const guaranteedCritEvery = Math.max(1, activeHeroObject.guaranteedCritEvery ?? 5);
+
+		if (countDamageBoss >= guaranteedCritEvery) {
+			countDamageBoss = 0;
+			showCenterText('Считалочка! Точный выстрел!', 900, 'info');
+			return true;
+		}
 	}
 	
 	return isCritical;
@@ -2184,9 +2236,6 @@ async function handleLevelUps() {
         
         console.log(`Повышение уровня до ${playerLevel}! Опыт для след. уровня: ${expToNextLevel}`);
         
-        // Автоматическое повышение базовых характеристик при каждом уровне
-        applyAutomaticLevelUpBonuses();
-        
         // Показываем окно выбора улучшения
 		if(!openLevelUpModal) {
 			await showLevelUpModal();
@@ -2196,41 +2245,6 @@ async function handleLevelUps() {
     }
     
     return levelsGained > 0;
-}
-
-// ==================== ДОБАВЛЯЕМ ФУНКЦИЮ ДЛЯ АВТОМАТИЧЕСКИХ БОНУСОВ ====================
-
-function applyAutomaticLevelUpBonuses() {
-    // Автоматические улучшения при каждом уровне
-    globalDamage = globalDamage + playerLevel;
-    globalCritChance = Math.min(1, globalCritChance + 0.01); // Ограничиваем 100%
-    globalCritMultiplier = globalCritMultiplier + 0.05;
-    
-    // Увеличиваем здоровье замка
-    const hpIncrease = 10;
-    castleHP.max = castleHP.max + hpIncrease;
-    castleHP.current = castleHP.current + hpIncrease;
-    
-    // Защита замка (ограничиваем 99%)
-    castleDamageReduction = Math.min(0.99, castleDamageReduction + 0.01);
-    
-    // Скорострельность (ограничиваем минимальный интервал 200 мс)
-    // Если уже на минимуме, не уменьшаем дальше
-    if (SHOT_INTERVAL > 100) {
-        SHOT_INTERVAL = Math.max(100, SHOT_INTERVAL - 1);
-    }
-    
-    // Обновляем отображение здоровья замка
-    updateCastleHealthDisplay();
-    
-    // Логируем изменения
-    console.log(`Автоматические бонусы уровня ${playerLevel}:`);
-    console.log(`- Урон: ${globalDamage}`);
-    console.log(`- Шанс крита: ${(globalCritChance * 100).toFixed(2)}%`);
-    console.log(`- Множитель крита: ${globalCritMultiplier.toFixed(2)}`);
-    console.log(`- Здоровье замка: ${castleHP.max}`);
-    console.log(`- Защита замка: ${(castleDamageReduction * 100).toFixed(2)}%`);
-    console.log(`- Интервал стрельбы: ${SHOT_INTERVAL} мс`);
 }
 
 // ==================== ОБНОВЛЯЕМ ФУНКЦИЮ showLevelUpModal ====================
@@ -2305,7 +2319,9 @@ function getAvailableUpgrades() {
     // 1. Урон
     const damageRarity = getRandomRarity();
     const damageMultiplier = getRarityMultiplier(damageRarity);
-    const damageIncrease = Math.round(startGlobalDamage * damageMultiplier);
+    const damageIncrease = Math.round(
+        startGlobalDamage * TEMPORARY_UPGRADE_BASE_SHARE * damageMultiplier
+    );
     upgrades.push({
         id: 'damage',
         name: 'Урон',
@@ -2321,7 +2337,10 @@ function getAvailableUpgrades() {
     if (globalCritChance < 1) {
         const critChanceRarity = getRandomRarity();
         const critChanceMultiplier = getRarityMultiplier(critChanceRarity);
-        const critChanceIncrease = startGlobalCritChance * critChanceMultiplier;
+        const critChanceIncrease = Math.min(
+            startGlobalCritChance * TEMPORARY_UPGRADE_BASE_SHARE * critChanceMultiplier,
+            1 - globalCritChance
+        );
         upgrades.push({
             id: 'critChance',
             name: 'Шанс крита',
@@ -2337,7 +2356,7 @@ function getAvailableUpgrades() {
     // 3. Множитель крита - всегда доступен
     const critMultiplierRarity = getRandomRarity();
     const critMultiplierMultiplier = getRarityMultiplier(critMultiplierRarity);
-    const critMultiplierIncrease   = (startGlobalCritMultiplier/5) * critMultiplierMultiplier;
+    const critMultiplierIncrease = startGlobalCritMultiplier * TEMPORARY_UPGRADE_BASE_SHARE * critMultiplierMultiplier;
     upgrades.push({
         id: 'critMultiplier',
         name: 'Множитель крита',
@@ -2353,7 +2372,10 @@ function getAvailableUpgrades() {
     if (globalWoundChance < 1) {
         const woundChanceRarity = getRandomRarity();
         const woundChanceMultiplier = getRarityMultiplier(woundChanceRarity);
-        const woundChanceIncrease = startGlobalWoundChance * woundChanceMultiplier;
+        const woundChanceIncrease = Math.min(
+            startGlobalWoundChance * TEMPORARY_UPGRADE_BASE_SHARE * woundChanceMultiplier,
+            1 - globalWoundChance
+        );
         upgrades.push({
             id: 'woundChance',
             name: 'Шанс ранения',
@@ -2370,7 +2392,9 @@ function getAvailableUpgrades() {
     // 6. Здоровье  - всегда доступно
     const castleHpRarity = getRandomRarity();
     const castleHpMultiplier = getRarityMultiplier(castleHpRarity);
-    const castleHpIncrease = Math.round(startGlobalCastleHp * castleHpMultiplier);
+    const castleHpIncrease = Math.round(
+        startGlobalCastleHp * TEMPORARY_UPGRADE_BASE_SHARE * castleHpMultiplier
+    );
     upgrades.push({
         id: 'castleHP',
         name: 'Здоровье',
@@ -2384,29 +2408,37 @@ function getAvailableUpgrades() {
         }
     });
     
-    // 7. Защита  - проверяем, что еще не достиг максимума (0.99 = 99%)
-    if (castleDamageReduction < 0.99) {
+    // 7. Защита — после достижения 60% больше не предлагается
+    if (castleDamageReduction < castleDamageReductionCap) {
         const defenseRarity = getRandomRarity();
         const defenseMultiplier = getRarityMultiplier(defenseRarity);
-        const defenseIncrease = startCastleDamageReduction * defenseMultiplier;
+        const defenseIncrease = Math.min(
+            startCastleDamageReduction * TEMPORARY_UPGRADE_BASE_SHARE * defenseMultiplier,
+            castleDamageReductionCap - castleDamageReduction
+        );
         upgrades.push({
             id: 'castleDefense',
             name: 'Защита',
             description: `+${(defenseIncrease * 100).toFixed(2)}% к защите`,
             rarity: defenseRarity,
             apply: function() {
-                castleDamageReduction = Math.min(0.99, castleDamageReduction + defenseIncrease);
+                castleDamageReduction = Math.min(
+                    castleDamageReductionCap,
+                    castleDamageReduction + defenseIncrease
+                );
                 console.log(`Защита увеличена до: ${(castleDamageReduction * 100).toFixed(2)}% (множитель: ${defenseMultiplier}x)`);
             }
         });
     }
     
-    // 8. Скорострельность - проверяем, что еще не достиг минимума (100 мс)
-    if (SHOT_INTERVAL > 100) { // Только если интервал больше 100 мс
+    // 8. Скорострельность - проверяем, что еще не достиг минимума (200 мс)
+    if (SHOT_INTERVAL > 200) {
         const fireRateRarity = getRandomRarity();
         const fireRateMultiplier = getRarityMultiplier(fireRateRarity);
-        const fireRateDecrease = (1000-startSHOT_INTERVAL) * fireRateMultiplier;
-        const newInterval = Math.max(100, SHOT_INTERVAL - fireRateDecrease);
+        const fireRateDecrease = Math.min(
+            (1000 - startSHOT_INTERVAL) * TEMPORARY_UPGRADE_BASE_SHARE * fireRateMultiplier,
+            SHOT_INTERVAL - 200
+        );
         
         upgrades.push({
             id: 'fireRate',
@@ -2465,10 +2497,10 @@ function getRandomRarity() {
 function getRarityMultiplier(rarity) {
     switch (rarity) {
         case 'common': return 1;
-        case 'uncommon': return 2;
-        case 'rare': return 3;
-        case 'epic': return 4;
-        case 'legendary': return 5;
+        case 'uncommon': return 1.25;
+        case 'rare': return 1.5;
+        case 'epic': return 2;
+        case 'legendary': return 2.5;
         default: return 1;
     }
 }

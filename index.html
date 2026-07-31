@@ -281,6 +281,7 @@ function openCharacterSelect() {
             </div>
 		<div class="modal-actions">
 
+			<button class="reset-upgrades-btn" id="resetAllUpgradesBtn">Сбросить прокачку</button>
 			<div class="upgrade-wrapper">
 			<div class="upgrade-cost" id="upgradeCostModal"></div>
 				<button class="upgrade-hero-btn" id="upgradeHeroModalBtn" disabled>Повысить уровень</button>
@@ -297,17 +298,17 @@ function openCharacterSelect() {
     const selectHeroBtn = document.getElementById('selectHeroBtn');
     upgradeBtnInModal = document.getElementById('upgradeHeroModalBtn');
     upgradeInfoSpan = document.getElementById('upgradeCostModal');
+    const resetAllUpgradesBtn = document.getElementById('resetAllUpgradesBtn');
 
     let currentSelectedElement = null;
     let currentHeroKey = null;
 
 	function updateUpgradeButton(hero) {
 		if (!hero) return;
-		const maxLevel = 100;
-		if (hero.level >= maxLevel) {
+		if (hero.level >= HERO_MAX_LEVEL) {
 			upgradeBtnInModal.disabled = true;
 			upgradeBtnInModal.style.background = "linear-gradient(135deg, #5a3e2b, #3e2a1c)";
-			upgradeInfoSpan.innerHTML = `Достигнут максимальный уровень`;
+			upgradeInfoSpan.innerHTML = `Достигнут максимальный уровень (${HERO_MAX_LEVEL})`;
 			return;
 		}
 		const cost = hero.zlataUp;
@@ -323,6 +324,18 @@ function openCharacterSelect() {
 			upgradeInfoSpan.innerHTML = `Не хватает ${deficit} <img src="images/other/zlata.webp" class="zlata-icon">`;
 		}
 	}
+
+	function updateResetButton() {
+		const refund = getAllHeroUpgradeRefund();
+		resetAllUpgradesBtn.disabled = refund <= 0;
+		resetAllUpgradesBtn.textContent = refund > 0
+			? `Сбросить всё (+${refund.toLocaleString('ru-RU')} злат)`
+			: 'Сбросить прокачку';
+	}
+
+    function formatPercent(value) {
+        return `${Number((value * 100).toFixed(2))}%`;
+    }
 
     function updateInfoPanel(heroKey) {
         const hero = gameState[heroKey];
@@ -341,12 +354,12 @@ function openCharacterSelect() {
                         <p><a>при прохождении уровней)</a></p><br>
 						<p><span>Уровень:</span> <span class="value stat">${Math.round(hero.level)}</span></p>
                         <p><span>Урон:</span> <span class="value stat-damage">${Math.round(hero.startGlobalDamage)}</span></p>
-                        <p><span>Шанс критического урона:</span> <span class="value stat-critChance">${Math.round((hero.startGlobalCritChance * 100)).toFixed(0)}%</span></p>
+                        <p><span>Шанс критического урона:</span> <span class="value stat-critChance">${formatPercent(hero.startGlobalCritChance)}</span></p>
                         <p><span>Критический урон:</span> <span class="value stat-critMulti">${Math.round(hero.startGlobalCritMultiplier * 100)}%</span></p>
-                        <p><span>Шанс ранения:</span> <span class="value stat-wound">${Math.round((hero.startGlobalWoundChance * 100)).toFixed(0)}%</span></p>
+                        <p><span>Шанс ранения:</span> <span class="value stat-wound">${formatPercent(hero.startGlobalWoundChance)}</span></p>
                         <p><span>Скорость атаки:</span> <span class="value stat-speed">${1000 - hero.startSHOT_INTERVAL}</span></p>
                         <p><span>Здоровье:</span> <span class="value stat-hp">${hero.castleHP}</span></p>
-                        <p><span>Защита (снижение урона):</span> <span class="value stat-def">${(hero.startCastleDamageReduction * 100).toFixed(0)}%</span></p>
+                        <p><span>Защита (снижение урона):</span> <span class="value stat-def">${formatPercent(hero.startCastleDamageReduction)}</span></p>
                         <p class="feature-container">
                           <span class="featur">Особенность:</span>
                           <span class="value">${hero.feature}</span>
@@ -359,13 +372,14 @@ function openCharacterSelect() {
             </div>
         `;
         updateUpgradeButton(hero);
+        updateResetButton();
     }
 
 		function previewUpgrade() {
 			if (!currentHeroKey) return;
 			const hero = gameState[currentHeroKey];
 			if (!hero || !hero.unlock || upgradeBtnInModal.disabled) return;
-			if (hero.level >= 100) return;
+			if (hero.level >= HERO_MAX_LEVEL) return;
 			 
 			// Создаём копию героя с улучшениями (не трогая оригинал)
 			const upgraded = heroUp(currentHeroKey, true);
@@ -425,9 +439,8 @@ function openCharacterSelect() {
 			if (!currentHeroKey) return;
 			const hero = gameState[currentHeroKey];
 			if (!hero || !hero.unlock) return;
-			const maxLevel = 100;
-			if (hero.level >= maxLevel) {
-				alert("Персонаж достиг максимального уровня (100)");
+			if (hero.level >= HERO_MAX_LEVEL) {
+				alert(`Персонаж достиг максимального уровня (${HERO_MAX_LEVEL})`);
 				return;
 			}
 			const cost = hero.zlataUp;
@@ -436,10 +449,35 @@ function openCharacterSelect() {
 				const updatedHero = gameState[currentHeroKey];
 				updateUpgradeButton(updatedHero);
 				updateInfoPanel(currentHeroKey);
+				updateResetButton();
 			} else {
 				alert("Недостаточно злата!");
 			}
 		}
+
+		function resetAllUpgrades() {
+			const refund = getAllHeroUpgradeRefund();
+			if (refund <= 0) return;
+
+			const confirmed = confirm(
+				`Сбросить прокачку всех героев и вернуть ${refund.toLocaleString('ru-RU')} злат?`
+			);
+			if (!confirmed) return;
+
+			const result = resetAllHeroUpgrades();
+			if (!result.success) {
+				alert('Не удалось сохранить сброс прокачки. Изменения отменены.');
+				return;
+			}
+
+			if (currentHeroKey && gameState[currentHeroKey]) {
+				updateInfoPanel(currentHeroKey);
+			}
+			updateResetButton();
+			alert(`Прокачка сброшена. Возвращено ${result.refund.toLocaleString('ru-RU')} злат.`);
+		}
+
+		resetAllUpgradesBtn.addEventListener('click', resetAllUpgrades);
 
     // Построение сетки портретов
     gameState.mHero.forEach(heroKey => {

@@ -1,9 +1,181 @@
 // ==================== Сохранение и загрузка прогресса ====================
 
 const GAME_STATE_STORAGE_KEY = 'gameState';
-const GAME_STATE_VERSION = 1;
+const GAME_STATE_VERSION = 7;
+const MAX_CASTLE_DAMAGE_REDUCTION = 0.60;
+const CAMPAIGN_FINAL_LEVEL = 141;
+const HERO_MAX_LEVEL = 200;
+const LEVEL_REWARD_SCALE = 3;
+const HERO_UPGRADE_BASE_COST = 10;
+const HERO_UPGRADE_COST_GROWTH = 1.06;
+const BOSS_DAMAGE_BALANCE = Object.freeze({
+    progressionScale: 1.25,
+    progressionExponent: 1.70,
+    legacyLinearGrowthPerLevel: 0.05,
+    maxCombatMultiplier: 2.00
+});
 const DEBUG_UNLOCK_SECRET = 'tda98';
 const DEBUG_ZLATA_REWARD = 10_000_000;
+
+const DEFAULT_HERO_PERMANENT_GROWTH = Object.freeze({
+    damageMultiplier: 1.03,
+    critChanceIncrease: 0.01,
+    critMultiplierIncrease: 0.1,
+    woundChanceIncrease: 0.01,
+    shotIntervalReduction: 1,
+    castleHpMultiplier: 1.05,
+    defenseIncrease: 0.01,
+    defenseCap: MAX_CASTLE_DAMAGE_REDUCTION
+});
+
+const HERO_PERMANENT_GROWTH_PROFILES = Object.freeze({
+    guardian: Object.freeze({
+        damageMultiplier: 1.042,
+        critChanceIncrease: 0.003,
+        critMultiplierIncrease: 0.10,
+        woundChanceIncrease: 0.003,
+        shotIntervalReduction: 1,
+        castleHpMultiplier: 1.0525,
+        defenseIncrease: 0.01,
+        defenseCap: 0.60
+    }),
+    tempest: Object.freeze({
+        damageMultiplier: 1.037,
+        critChanceIncrease: 0.007,
+        critMultiplierIncrease: 0.09,
+        woundChanceIncrease: 0.006,
+        shotIntervalReduction: 2,
+        castleHpMultiplier: 1.048,
+        defenseIncrease: 0.0075,
+        defenseCap: 0.50
+    }),
+    marksman: Object.freeze({
+        damageMultiplier: 1.029,
+        critChanceIncrease: 0.008,
+        critMultiplierIncrease: 0.12,
+        woundChanceIncrease: 0.012,
+        shotIntervalReduction: 5,
+        castleHpMultiplier: 1.045,
+        defenseIncrease: 0.0065,
+        defenseCap: 0.40
+    })
+});
+
+function getHeroPermanentGrowth(hero) {
+    return HERO_PERMANENT_GROWTH_PROFILES[hero?.permanentGrowthProfile]
+        ?? DEFAULT_HERO_PERMANENT_GROWTH;
+}
+
+function getHeroDefenseCap(hero) {
+    return Math.min(
+        MAX_CASTLE_DAMAGE_REDUCTION,
+        getHeroPermanentGrowth(hero).defenseCap
+    );
+}
+
+function getHeroUpgradeCost(heroLevel) {
+    const normalizedLevel = Math.min(
+        HERO_MAX_LEVEL,
+        Math.max(1, Math.floor(Number(heroLevel) || 1))
+    );
+
+    if (normalizedLevel >= HERO_MAX_LEVEL) return 0;
+
+    return Math.max(1, Math.round(
+        HERO_UPGRADE_BASE_COST * Math.pow(HERO_UPGRADE_COST_GROWTH, normalizedLevel - 1)
+    ));
+}
+
+function getBossDamageProgressionMultiplier(levelNumber) {
+    const normalizedLevel = Math.min(
+        CAMPAIGN_FINAL_LEVEL,
+        Math.max(1, Math.floor(Number(levelNumber) || 1))
+    );
+    const campaignProgress = (
+        normalizedLevel - 1
+    ) / (CAMPAIGN_FINAL_LEVEL - 1);
+
+    return 1 + (
+        BOSS_DAMAGE_BALANCE.progressionScale
+        * (
+            Math.exp(
+                BOSS_DAMAGE_BALANCE.progressionExponent * campaignProgress
+            ) - 1
+        )
+    );
+}
+
+function calculateBossAttackDamage(
+    configuredAttackDamage,
+    bossMultiplier,
+    phaseMultiplier,
+    levelMultiplier,
+    levelNumber
+) {
+    const normalizedLevel = Math.max(1, Math.floor(Number(levelNumber) || 1));
+    // gameData2..N уже содержат старый множитель +5% за номер уровня.
+    // Сначала убираем его, чтобы новая кривая не накладывалась поверх старой.
+    const legacyProgressionMultiplier = normalizedLevel === 1
+        ? 1
+        : 1 + (
+            BOSS_DAMAGE_BALANCE.legacyLinearGrowthPerLevel * normalizedLevel
+        );
+    const normalizedAttackDamage = Math.max(
+        0,
+        Number(configuredAttackDamage) || 0
+    ) / legacyProgressionMultiplier;
+    const combatMultiplier = Math.min(
+        // Сочетание «сильный босс + третья фаза + сложный уровень»
+        // не должно превращать читаемую атаку в случайный ваншот.
+        BOSS_DAMAGE_BALANCE.maxCombatMultiplier,
+        Math.max(0, Number(bossMultiplier) || 0)
+        * Math.max(0, Number(phaseMultiplier) || 0)
+        * Math.max(0, Number(levelMultiplier) || 0)
+    );
+
+    return Math.max(1, Math.round(
+        normalizedAttackDamage
+        * getBossDamageProgressionMultiplier(normalizedLevel)
+        * combatMultiplier
+    ));
+}
+
+function getLevelZlataReward(levelNumber) {
+    const normalizedLevel = Math.min(
+        CAMPAIGN_FINAL_LEVEL,
+        Math.max(1, Math.floor(Number(levelNumber) || 1))
+    );
+
+    // Награда уровня фиксирована. Цена развития растёт быстрее силы старых уровней,
+    // поэтому фарм остаётся бесконечным, но постепенно теряет эффективность.
+    return getHeroUpgradeCost(normalizedLevel) * LEVEL_REWARD_SCALE;
+}
+
+function getLevelZlataPayout(levelNumber, defeatedBosses, totalBosses = 5) {
+    const normalizedBossCount = Math.max(1, Math.floor(Number(totalBosses) || 1));
+    const normalizedDefeated = Math.min(
+        normalizedBossCount,
+        Math.max(0, Math.floor(Number(defeatedBosses) || 0))
+    );
+
+    return Math.floor(
+        getLevelZlataReward(levelNumber) * (normalizedDefeated / normalizedBossCount)
+    );
+}
+
+function getHeroInvestedZlata(heroLevel) {
+    const normalizedLevel = Math.min(
+        HERO_MAX_LEVEL,
+        Math.max(1, Math.floor(Number(heroLevel) || 1))
+    );
+    let invested = 0;
+
+    for (let level = 1; level < normalizedLevel; level++) {
+        invested += getHeroUpgradeCost(level);
+    }
+
+    return invested;
+}
 
 // 1. Инициализация прогресса
 let gameState = createGameState();
@@ -39,6 +211,61 @@ function persistGameState(state) {
     }
 }
 
+function applyHeroPermanentStatUpgrade(hero) {
+    const growth = getHeroPermanentGrowth(hero);
+
+    if (hero.upSpecif === 1) {
+        hero.startGlobalDamage *= growth.damageMultiplier;
+        hero.startGlobalCritChance = Math.min(
+            1,
+            hero.startGlobalCritChance + growth.critChanceIncrease
+        );
+        hero.upSpecif = 2;
+    } else if (hero.upSpecif === 2) {
+        hero.startGlobalCritMultiplier += growth.critMultiplierIncrease;
+        hero.startGlobalWoundChance = Math.min(
+            1,
+            hero.startGlobalWoundChance + growth.woundChanceIncrease
+        );
+        hero.upSpecif = 3;
+    } else if (hero.upSpecif === 3) {
+        hero.startSHOT_INTERVAL = Math.max(
+            200,
+            hero.startSHOT_INTERVAL - growth.shotIntervalReduction
+        );
+        hero.upSpecif = 4;
+    } else if (hero.upSpecif === 4) {
+        hero.castleHP += Math.floor(
+            hero.castleHP * (growth.castleHpMultiplier - 1)
+        );
+        hero.startCastleDamageReduction = Math.min(
+            getHeroDefenseCap(hero),
+            hero.startCastleDamageReduction + growth.defenseIncrease
+        );
+        hero.upSpecif = 1;
+    }
+}
+
+function rebuildBalancedHero(defaultHero, savedHero) {
+    const rebuiltHero = { ...defaultHero };
+    const savedLevel = Number.isFinite(savedHero.level)
+        ? Math.min(HERO_MAX_LEVEL, Math.max(1, Math.floor(savedHero.level)))
+        : defaultHero.level;
+
+    for (let level = 1; level < savedLevel; level++) {
+        applyHeroPermanentStatUpgrade(rebuiltHero);
+    }
+
+    rebuiltHero.level = savedLevel;
+    rebuiltHero.zlataUp = getHeroUpgradeCost(savedLevel);
+    rebuiltHero.investedZlata = Number.isFinite(savedHero.investedZlata)
+        ? Math.max(0, Math.floor(savedHero.investedZlata))
+        : getHeroInvestedZlata(savedLevel);
+    if (typeof savedHero.unlock === 'boolean') rebuiltHero.unlock = savedHero.unlock;
+
+    return rebuiltHero;
+}
+
 function migrateGameState(savedState) {
     const defaults = getDefaultGameState();
     if (!isPlainObject(savedState)) return defaults;
@@ -72,11 +299,43 @@ function migrateGameState(savedState) {
                 ...(isPlainObject(savedHero) ? savedHero : {})
             };
 
+            if (
+                isPlainObject(savedHero) &&
+                Number.isInteger(defaultHero.balanceRevision) &&
+                savedHero.balanceRevision !== defaultHero.balanceRevision
+            ) {
+                migrated[heroKey] = {
+                    ...migrated[heroKey],
+                    ...rebuildBalancedHero(defaultHero, savedHero)
+                };
+            }
+
             Object.keys(defaultHero).forEach(field => {
                 if (typeof defaultHero[field] === 'number' && !Number.isFinite(migrated[heroKey][field])) {
                     migrated[heroKey][field] = defaultHero[field];
                 }
             });
+
+            migrated[heroKey].startCastleDamageReduction = Math.min(
+                getHeroDefenseCap(migrated[heroKey]),
+                Math.max(0, migrated[heroKey].startCastleDamageReduction)
+            );
+
+            if (Number.isFinite(migrated[heroKey].level)) {
+                migrated[heroKey].level = Math.min(
+                    HERO_MAX_LEVEL,
+                    Math.max(1, Math.floor(migrated[heroKey].level))
+                );
+                migrated[heroKey].zlataUp = getHeroUpgradeCost(migrated[heroKey].level);
+                if (!Number.isFinite(savedHero?.investedZlata)) {
+                    migrated[heroKey].investedZlata = getHeroInvestedZlata(migrated[heroKey].level);
+                } else {
+                    migrated[heroKey].investedZlata = Math.max(
+                        0,
+                        Math.floor(savedHero.investedZlata)
+                    );
+                }
+            }
         } else if (!isPlainObject(savedHero)) {
             delete migrated[heroKey];
         }
@@ -185,6 +444,58 @@ function addZlat(zlatP) {
 		
 }
 
+function getAllHeroUpgradeRefund() {
+    const defaults = getDefaultGameState();
+    return gameState.mHero.reduce((refund, heroKey) => {
+        const hero = gameState[heroKey];
+        const defaultHero = defaults[heroKey];
+        return Number.isFinite(hero?.level) && Number.isFinite(defaultHero?.level)
+            ? refund + (
+                Number.isFinite(hero.investedZlata)
+                    ? Math.max(0, Math.floor(hero.investedZlata))
+                    : getHeroInvestedZlata(hero.level)
+            )
+            : refund;
+    }, 0);
+}
+
+function resetAllHeroUpgrades() {
+    const refund = getAllHeroUpgradeRefund();
+    if (refund <= 0) {
+        return { success: true, refund: 0, resetCount: 0 };
+    }
+
+    const defaults = getDefaultGameState();
+    const previousZlata = gameState.zlata;
+    const previousHeroes = {};
+    let resetCount = 0;
+
+    gameState.mHero.forEach(heroKey => {
+        const currentHero = gameState[heroKey];
+        const defaultHero = defaults[heroKey];
+        if (!Number.isFinite(currentHero?.level) || !Number.isFinite(defaultHero?.level)) return;
+
+        previousHeroes[heroKey] = currentHero;
+        gameState[heroKey] = {
+            ...defaultHero,
+            unlock: currentHero.unlock
+        };
+        resetCount++;
+    });
+
+    gameState.zlata += refund;
+
+    if (!saveGameState()) {
+        gameState.zlata = previousZlata;
+        Object.entries(previousHeroes).forEach(([heroKey, hero]) => {
+            gameState[heroKey] = hero;
+        });
+        return { success: false, refund: 0, resetCount: 0 };
+    }
+
+    return { success: true, refund, resetCount };
+}
+
 function heroUp(heroName, infoMode) {
     const originalHero = gameState[heroName];
     if (!originalHero) {
@@ -192,32 +503,27 @@ function heroUp(heroName, infoMode) {
         return;
     }
 
+    if (originalHero.level >= HERO_MAX_LEVEL) return;
+
+    if (!infoMode && gameState.zlata < originalHero.zlataUp) return;
+
     // Если infoMode, создаём глубокую копию (не трогаем оригинал)
     const hero = infoMode ? JSON.parse(JSON.stringify(originalHero)) : originalHero;
 
     // Применяем улучшения (копию или оригинал)
-    if (hero.upSpecif === 1) {
-        hero.startGlobalDamage += hero.startGlobalDamage * 0.03;
-        hero.startGlobalCritChance += 0.01;
-        hero.upSpecif = 2;
-    } else if (hero.upSpecif === 2) {
-        hero.startGlobalCritMultiplier += 0.1;
-        hero.startGlobalWoundChance += 0.01;
-        hero.upSpecif = 3;
-    } else if (hero.upSpecif === 3) {
-        hero.startSHOT_INTERVAL -= 1;
-        hero.upSpecif = 4;
-    } else if (hero.upSpecif === 4) {
-        hero.castleHP += Math.floor(hero.castleHP * 0.05);      // +5% HP
-        hero.startCastleDamageReduction = hero.startCastleDamageReduction + 0.01; 
-        hero.upSpecif = 1;
-    }
+    applyHeroPermanentStatUpgrade(hero);
 
     // Если не infoMode, сохраняем изменения в оригинале
     if (!infoMode) {
-		gameState.zlata = gameState.zlata -hero.zlataUp;
+		const upgradeCost = hero.zlataUp;
+		gameState.zlata = gameState.zlata - upgradeCost;
+		hero.investedZlata = (
+			Number.isFinite(hero.investedZlata)
+				? hero.investedZlata
+				: getHeroInvestedZlata(hero.level)
+		) + upgradeCost;
 		hero.level++;
-        hero.zlataUp = Math.floor(hero.zlataUp * 1.11);
+        hero.zlataUp = getHeroUpgradeCost(hero.level);
         saveGameState();
         return;
     } else {
@@ -295,66 +601,80 @@ function getDefaultGameState() {
 			activeHero: 'eremei',
 			zlata: 0, 
 			eremei: {
+				balanceRevision: 6,
 				name: 'eremei', 
+				permanentGrowthProfile: 'guardian',
 				dispName: 'Еремей Дуболом',
 				image: 'images/hero/2_eremei/eremei_min.png',
 				fullImage: 'images/hero/2_eremei/eremei_full.png',
 				level: 1,
-				startGlobalDamage: 88,
-				startGlobalCritChance: 0.03,
+				startGlobalDamage: 132,
+				startGlobalCritChance: 0.045,
 				startGlobalCritMultiplier: 2.1,
-				startGlobalWoundChance	: 0.01,
-				startCastleDamageReduction : 0.05,
+				startGlobalWoundChance	: 0.015,
+				startCastleDamageReduction : 0.075,
 				startSHOT_INTERVAL : 970,
-				castleHP : 125,
+				castleHP : 188,
 				lvlUnlock: 1,
 				zlataUp: 10,
+				investedZlata: 0,
 				upSpecif: 1, 	
-				feature: 'Отбивальщик - <br>каждая заблокированная <br> атака увеличивает урон <br> на 0,25% вплоть до 25%',
+				feature: 'Отбивальщик — <br>каждая уничтоженная атака босса<br> даёт +1% урона до конца уровня<br> вплоть до +25%',
 				unlock: true, 
 				maxDamageBonusPercentSize: 0.25,
-				DamageBonusPercentSize: 0.0025,
+				DamageBonusPercentSize: 0.01,
 			},
 			
 			
 			dunya: {
+				balanceRevision: 6,
 				name: 'dunya', 
+				permanentGrowthProfile: 'tempest',
 				dispName: 'Ветроманка Дуня',
 				image: 'images/hero/1_babka/dunya_min.png',
 				fullImage: 'images/hero/1_babka/dunya_full.png',
 				level: 1,
-				startGlobalDamage: 75,
-				startGlobalCritChance: 0.02,
+				startGlobalDamage: 112.5,
+				startGlobalCritChance: 0.03,
 				startGlobalCritMultiplier: 2.0,
-				startGlobalWoundChance	: 0.01,
-				startCastleDamageReduction : 0.02,
+				startGlobalWoundChance	: 0.015,
+				startCastleDamageReduction : 0.03,
 				startSHOT_INTERVAL : 940,
-				castleHP : 80,
+				castleHP : 120,
 				lvlUnlock: 2,
 				zlataUp: 10,
+				investedZlata: 0,
 				upSpecif: 1, 
 				unlock: true,
-				feature: 'Раскрутилась - <br>10% шанс двойной атаки<br> 5% шанс тройной атаки <br> 1% шанс Четверной атаки', 
+				feature: 'Раскрутилась — <br>10% шанс двойной атаки,<br>3% шанс тройной атаки<br>и 1% шанс джекпота: урон ×8',
+				doubleAttackChance: 0.10,
+				tripleAttackChance: 0.03,
+				jackpotAttackChance: 0.01,
+				jackpotAttackMultiplier: 8,
 			},
 			
 			luka: {
+				balanceRevision: 6,
 				name: 'luka', 
+				permanentGrowthProfile: 'marksman',
 				dispName: 'Лука стрелок',
 				image: 'images/hero/3_luka/luka_min.png',
 				fullImage: 'images/hero/3_luka/luka_full.png',
 				level: 1,
-				startGlobalDamage: 55,
-				startGlobalCritChance: 0.01,
-				startGlobalCritMultiplier: 1.6,
-				startGlobalWoundChance	: 0.02,
-				startCastleDamageReduction : 0.01,
-				startSHOT_INTERVAL : 870,
-				castleHP : 50,
+				startGlobalDamage: 105,
+				startGlobalCritChance: 0.015,
+				startGlobalCritMultiplier: 2.2,
+				startGlobalWoundChance	: 0.03,
+				startCastleDamageReduction : 0.015,
+				startSHOT_INTERVAL : 800,
+				castleHP : 75,
 				lvlUnlock: 3,
 				zlataUp: 10,
+				investedZlata: 0,
 				upSpecif: 1,
 				unlock: true,
-				feature: 'Считалочка - <br>каждая 5-я атака <br>всегда критическая', 
+				feature: 'Считалочка — <br>каждый 5-й выстрел по боссу<br> гарантированно критический',
+				guaranteedCritEvery: 5,
 			},
 			
 			kim: {
