@@ -61,6 +61,113 @@ html.is-menu {
     font-size: 11px !important;
     padding: 10px 14px !important;
     letter-spacing: 1px !important;
+    font-family: inherit;
+}
+
+.debug-unlock-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(18, 12, 8, 0.88);
+}
+
+.debug-unlock-dialog {
+    position: relative;
+    width: min(440px, 100%);
+    padding: 32px;
+    color: #3a2418;
+    text-align: center;
+    background: linear-gradient(135deg, #D1B892, #B89A6D);
+    border: 3px solid #8B4513;
+    border-radius: 15px;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.65);
+}
+
+.debug-unlock-dialog h2 {
+    margin: 0 32px 10px;
+    color: #5a2d16;
+}
+
+.debug-unlock-dialog p {
+    margin: 8px 0 16px;
+}
+
+.debug-unlock-close {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    padding: 0;
+    color: #5a2d16;
+    font: 700 32px/1 sans-serif;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+}
+
+.debug-unlock-label {
+    display: block;
+    margin-bottom: 7px;
+    font-weight: 700;
+    text-align: left;
+}
+
+.debug-unlock-input {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 12px 14px;
+    color: #2c1a10;
+    font-family: inherit;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.2;
+    background: #f4e4c7;
+    border: 2px solid #74401e;
+    border-radius: 7px;
+    outline: none;
+}
+
+.debug-unlock-input:focus {
+    border-color: #b66a28;
+    box-shadow: 0 0 0 3px rgba(139, 69, 19, 0.22);
+}
+
+.debug-unlock-status {
+    min-height: 22px;
+    margin: 10px 0 !important;
+    font-weight: 700;
+}
+
+.debug-unlock-status.is-error {
+    color: #8b1e1e;
+}
+
+.debug-unlock-status.is-success {
+    color: #245d24;
+}
+
+.debug-unlock-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+}
+
+.debug-unlock-actions button {
+    padding: 10px 18px;
+    color: #f3dfbd;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, #5a3e2b, #3e2a1c);
+    border: 2px solid #8B4513;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.debug-unlock-submit {
+    background: linear-gradient(135deg, #347334, #215121) !important;
 }
 
 .menu-main {

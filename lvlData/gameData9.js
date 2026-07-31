@@ -1,6 +1,22 @@
 let lvlNumber = 9;
 let factorChar = (lvlNumber * 5) / 100;
 
+const bossCombatConfig = {
+	levelCadence: 0.84, damageMultiplier: 1.12, minWaveDelay: 2310, minShotDelay: 150, minTelegraphMs: 510,
+	phases: [
+		{ phase: 1, minHp: 0.66, cadence: 1.00, speed: 0.98, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.10, maxActiveAttacks: 14 },
+		{ phase: 2, minHp: 0.31, cadence: 0.81, speed: 1.09, damage: 1.11, telegraphMultiplier: 0.92, surpriseChance: 0.20, maxActiveAttacks: 17 },
+		{ phase: 3, minHp: 0.00, cadence: 0.68, speed: 1.18, damage: 1.22, telegraphMultiplier: 0.86, surpriseChance: 0.28, maxActiveAttacks: 19 }
+	],
+	bosses: {
+		enem1: { movementStyle: 'weave', cadence: 0.94, telegraphMs: 740, speedMultiplier: 1.10, damageMultiplier: 1.02, speedVariance: [0.84, 0.96, 1.08, 1.20, 1.30] }, // ALT_WHIP: хлёсткая смена флангов
+		enem2: { movementStyle: 'drift', cadence: 1.02, telegraphMs: 820, speedMultiplier: 1.04, damageMultiplier: 1.08, speedVariance: [0.86, 0.98, 1.10, 1.20, 1.28] }, // CORNERS_BURST: сходится из углов
+		enem3: { movementStyle: 'accelerate', cadence: 0.78, telegraphMs: 570, speedMultiplier: 1.22, damageMultiplier: 1.10, speedVariance: [0.94, 1.04, 1.14, 1.24, 1.32] }, // TWIN_JETS_MID: частые ускоряющиеся струи
+		enem4: { movementStyle: 'lateRush', cadence: 0.88, telegraphMs: 680, speedMultiplier: 1.16, damageMultiplier: 1.14, speedVariance: [0.76, 0.90, 1.06, 1.22, 1.34] }, // RIGHT_STABS: колющий выпад справа
+		enem5: { movementStyle: 'pause', cadence: 0.80, telegraphMs: 650, speedMultiplier: 1.14, damageMultiplier: 1.20, speedVariance: [0.82, 0.94, 1.06, 1.20, 1.32] } // SEQ_WRAP: пауза между обхватами
+	}
+};
+
 
 const ENEMY_TYPES = {
 
@@ -63,7 +79,7 @@ const ENEMY_TYPES = {
 		name: 'enem1',
 		dispName: 'Жгучка',
 		image: 'images/enemies/regions/1_smesh_les/lvl9/1.webp',
-		baseHP: (3000) + (3000 * factorChar),
+		baseHP: (4500) + (4500 * factorChar),
 		baseSpeed: 0,
 		baseDamage: (20) + (20) * factorChar,
 		spawnWeight: 5,
@@ -76,7 +92,7 @@ const ENEMY_TYPES = {
 		name: 'enem2',
 		dispName: 'Цеплялка',
 		image: 'images/enemies/regions/1_smesh_les/lvl9/2.webp',
-		baseHP: (5000) + (5000 * factorChar),
+		baseHP: (15000) + (15000 * factorChar),
 		baseSpeed: 0,
 		baseDamage: (22) + (22) * factorChar,
 		spawnWeight: 15,

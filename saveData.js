@@ -1,26 +1,153 @@
-// ==================== Сохранение и загрузка прогреса ====================
+// ==================== Сохранение и загрузка прогресса ====================
 
+const GAME_STATE_STORAGE_KEY = 'gameState';
+const GAME_STATE_VERSION = 1;
+const DEBUG_UNLOCK_SECRET = 'tda98';
+const DEBUG_ZLATA_REWARD = 10_000_000;
 
 // 1. Инициализация прогресса
 let gameState = createGameState();
 
-// 2. Сохранение
-function saveGameState() {
-    localStorage.setItem('gameState', JSON.stringify(gameState));
+function isPlainObject(value) {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-// 3. Загрузка (чтение без изменения gameState)
-function loadGameState() {
-    const saved = localStorage.getItem('gameState');
-    if (saved) {
-        return JSON.parse(saved);
+function readStoredGameState() {
+    try {
+        const saved = localStorage.getItem(GAME_STATE_STORAGE_KEY);
+        if (!saved) return null;
+
+        const parsed = JSON.parse(saved);
+        if (!isPlainObject(parsed)) {
+            console.warn('Сохранение имеет неверный формат. Создан новый прогресс.');
+            return null;
+        }
+        return parsed;
+    } catch (error) {
+        console.warn('Не удалось прочитать сохранение. Создан новый прогресс.', error);
+        return null;
     }
-    return null;
+}
+
+function persistGameState(state) {
+    try {
+        localStorage.setItem(GAME_STATE_STORAGE_KEY, JSON.stringify(state));
+        return true;
+    } catch (error) {
+        console.error('Не удалось сохранить игровой прогресс.', error);
+        return false;
+    }
+}
+
+function migrateGameState(savedState) {
+    const defaults = getDefaultGameState();
+    if (!isPlainObject(savedState)) return defaults;
+
+    const migrated = { ...defaults, ...savedState };
+    migrated.schemaVersion = GAME_STATE_VERSION;
+    migrated.lastCompletedLevel = Number.isFinite(savedState.lastCompletedLevel)
+        ? Math.max(0, Math.floor(savedState.lastCompletedLevel))
+        : defaults.lastCompletedLevel;
+    migrated.skillPoints = Number.isFinite(savedState.skillPoints)
+        ? Math.max(0, savedState.skillPoints)
+        : defaults.skillPoints;
+    migrated.zlata = Number.isFinite(savedState.zlata)
+        ? Math.max(0, savedState.zlata)
+        : defaults.zlata;
+
+    // Добавляем новых героев из текущей версии, сохраняя пользовательских из
+    // старого сохранения. Отсутствующие поля героя берём из нового шаблона.
+    const savedHeroes = Array.isArray(savedState.mHero)
+        ? savedState.mHero.filter(heroKey => typeof heroKey === 'string')
+        : [];
+    migrated.mHero = [...new Set([...defaults.mHero, ...savedHeroes])];
+
+    migrated.mHero.forEach(heroKey => {
+        const defaultHero = defaults[heroKey];
+        const savedHero = savedState[heroKey];
+
+        if (isPlainObject(defaultHero)) {
+            migrated[heroKey] = {
+                ...defaultHero,
+                ...(isPlainObject(savedHero) ? savedHero : {})
+            };
+
+            Object.keys(defaultHero).forEach(field => {
+                if (typeof defaultHero[field] === 'number' && !Number.isFinite(migrated[heroKey][field])) {
+                    migrated[heroKey][field] = defaultHero[field];
+                }
+            });
+        } else if (!isPlainObject(savedHero)) {
+            delete migrated[heroKey];
+        }
+    });
+
+    const savedTimes = isPlainObject(savedState.levelTimes) ? savedState.levelTimes : {};
+    migrated.levelTimes = {};
+    Object.entries(savedTimes).forEach(([level, time]) => {
+        const levelNumber = Number(level);
+        if (Number.isInteger(levelNumber) && levelNumber > 0 && Number.isFinite(time) && time >= 0) {
+            migrated.levelTimes[levelNumber] = time;
+        }
+    });
+
+    if (typeof migrated.activeHero !== 'string' || !isPlainObject(migrated[migrated.activeHero])) {
+        migrated.activeHero = defaults.activeHero;
+    }
+
+    return migrated;
+}
+
+// 2. Сохранение
+function saveGameState() {
+    return persistGameState(gameState);
+}
+
+// 3. Безопасное чтение без изменения текущего gameState
+function loadGameState() {
+    const saved = readStoredGameState();
+    return saved ? migrateGameState(saved) : null;
 }
 
 // 4. Очистка (для отладки)
 function clearGameState() {
-    localStorage.removeItem('gameState');
+    try {
+        localStorage.removeItem(GAME_STATE_STORAGE_KEY);
+        return true;
+    } catch (error) {
+        console.error('Не удалось очистить игровой прогресс.', error);
+        return false;
+    }
+}
+
+function unlockAllLevelsForDebug(secret, maxAvailableLevel) {
+    if (secret !== DEBUG_UNLOCK_SECRET) {
+        return { success: false, reason: 'invalid-secret' };
+    }
+
+    const normalizedMaxLevel = Number(maxAvailableLevel);
+    if (!Number.isInteger(normalizedMaxLevel) || normalizedMaxLevel < 1) {
+        return { success: false, reason: 'invalid-level-count' };
+    }
+
+    const previousCompletedLevel = gameState.lastCompletedLevel;
+    const previousZlata = gameState.zlata;
+
+    gameState.lastCompletedLevel = Math.max(gameState.lastCompletedLevel, normalizedMaxLevel);
+    gameState.zlata += DEBUG_ZLATA_REWARD;
+
+    if (!saveGameState()) {
+        gameState.lastCompletedLevel = previousCompletedLevel;
+        gameState.zlata = previousZlata;
+        return { success: false, reason: 'save-failed' };
+    }
+
+    return {
+        success: true,
+        unlockedThrough: normalizedMaxLevel,
+        reward: DEBUG_ZLATA_REWARD,
+        totalZlata: gameState.zlata
+    };
 }
 
 // 5. Обновление уровня
@@ -29,8 +156,13 @@ function completeLevel() {
 	saveLevelTime(lvlNumber, timeSec2);
     if (lvlNumber > gameState.lastCompletedLevel) {
         gameState.lastCompletedLevel = lvlNumber;
-		
-		rowTotal = rowTotal + `<div class="time-line">Разблокирован уровень ${lvlNumber+1}!</div>`;
+
+		if (typeof levelCompletionConfig !== 'undefined' && levelCompletionConfig.isRegionFinal) {
+			const completionMessage = levelCompletionConfig.completionMessage || 'Область пройдена!';
+			rowTotal = rowTotal + `<div class="time-line">${completionMessage}</div>`;
+		} else {
+			rowTotal = rowTotal + `<div class="time-line">Разблокирован уровень ${lvlNumber+1}!</div>`;
+		}
         
         gameState.mHero.forEach(heroKey => {
             const hero = gameState[heroKey];
@@ -99,7 +231,7 @@ function saveLevelTime(level, timeInSeconds) {
 	
 	const currentTime = gameState.levelTimes[level];
 	
-	updRecord = false; 
+	let updRecord = false;
 	
 	// если записи нет — добавляем
 	if (currentTime === undefined) {
@@ -132,7 +264,7 @@ function saveLevelTime(level, timeInSeconds) {
 		totalScore += value;
 	}
 	
-	skillPoints = totalScore-gameState.skillPoints;
+	const skillPoints = totalScore - gameState.skillPoints;
 	
 	if (skillPoints > 0) {
 		rowTotal = rowTotal + `<div class="time-line">Рекорд побит — очки мастерства: +${skillPoints}!</div>`;
@@ -143,11 +275,18 @@ function saveLevelTime(level, timeInSeconds) {
 }
 
 function createGameState() {
-    const saved = localStorage.getItem('gameState');
-    if (saved) {
-        return JSON.parse(saved); // читаем из localStorage
-    } else {
-        const defaultState = {
+    const savedState = readStoredGameState();
+    const initialState = migrateGameState(savedState);
+
+    // Сразу записываем результат миграции: так новые поля появятся в старом
+    // сохранении, а повреждённое значение будет заменено рабочим шаблоном.
+    persistGameState(initialState);
+    return initialState;
+}
+
+function getDefaultGameState() {
+    return {
+			schemaVersion: GAME_STATE_VERSION,
 			lastCompletedLevel: 0,			
 			levelTimes: {
 	          },
@@ -416,9 +555,4 @@ function createGameState() {
 			},
 				
 			}; // дефолт
-        
-		
-		localStorage.setItem('gameState', JSON.stringify(defaultState));
-        return defaultState;
-    }
 }

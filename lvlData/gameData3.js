@@ -1,6 +1,22 @@
 let lvlNumber = 3; 
 let factorChar = (lvlNumber*5) / 100;
 
+const bossCombatConfig = {
+	levelCadence: 0.96, damageMultiplier: 1.03, minWaveDelay: 2520, minShotDelay: 168, minTelegraphMs: 580,
+	phases: [
+		{ phase: 1, minHp: 0.66, cadence: 1.00, speed: 0.95, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.07, maxActiveAttacks: 12 },
+		{ phase: 2, minHp: 0.31, cadence: 0.86, speed: 1.05, damage: 1.08, telegraphMultiplier: 0.95, surpriseChance: 0.14, maxActiveAttacks: 14 },
+		{ phase: 3, minHp: 0.00, cadence: 0.74, speed: 1.12, damage: 1.16, telegraphMultiplier: 0.89, surpriseChance: 0.22, maxActiveAttacks: 16 }
+	],
+	bosses: {
+		enem1: { movementStyle: 'accelerate', cadence: 0.96, telegraphMs: 800, speedMultiplier: 1.06, damageMultiplier: 0.96, speedVariance: [0.86, 0.96, 1.06, 1.16, 1.24] }, // NEEDLE_BURST: короткие ускоряющиеся иглы
+		enem2: { movementStyle: 'drift', cadence: 1.02, telegraphMs: 850, speedMultiplier: 1.00, damageMultiplier: 1.01, speedVariance: [0.88, 0.98, 1.07, 1.15, 1.22] }, // RIGHT_HISS: угрозы сползают справа
+		enem3: { movementStyle: 'weave', cadence: 1.10, telegraphMs: 970, speedMultiplier: 0.88, damageMultiplier: 1.15, speedVariance: [0.82, 0.91, 1.00, 1.10, 1.18] }, // HEAT_GUST: волнообразные порывы
+		enem4: { movementStyle: 'lateRush', cadence: 0.92, telegraphMs: 760, speedMultiplier: 1.08, damageMultiplier: 1.06, speedVariance: [0.80, 0.92, 1.05, 1.18, 1.28] }, // DROP_FRUIT: падение → внезапный разгон
+		enem5: { movementStyle: 'pause', cadence: 1.14, telegraphMs: 1040, speedMultiplier: 0.86, damageMultiplier: 1.18, speedVariance: [0.78, 0.88, 0.98, 1.08, 1.16] } // BOTTOM_WALL: вязкая кисельная стена
+	}
+};
+
 
 const ENEMY_TYPES = {
 	
@@ -63,7 +79,7 @@ const ENEMY_TYPES = {
         name: 'enem1',                     
 		dispName:  'Колючий',
         image: 'images/enemies/regions/1_smesh_les/lvl3/1.webp',  
-        baseHP: (2600) +(2600*factorChar),                      // Базовое здоровье
+        baseHP: (3900) + (3900 * factorChar),                      // Базовое здоровье
         baseSpeed: 0,                  
         baseDamage: (20)+(20)*factorChar,                      
         spawnWeight: 5,                  
@@ -74,7 +90,7 @@ const ENEMY_TYPES = {
         name: 'enem2',
 		dispName:  'Шипун',
         image: 'images/enemies/regions/1_smesh_les/lvl3/2.webp',
-        baseHP: (4200) + (4200*factorChar),
+        baseHP: (15000) + (15000 * factorChar),
         baseSpeed: 0,
         baseDamage: (22)+(22)*factorChar,
         spawnWeight: 15,                  

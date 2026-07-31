@@ -1,6 +1,22 @@
 let lvlNumber = 4; 
 let factorChar = (lvlNumber*5) / 100;
 
+const bossCombatConfig = {
+	levelCadence: 0.94, damageMultiplier: 1.05, minWaveDelay: 2480, minShotDelay: 164, minTelegraphMs: 565,
+	phases: [
+		{ phase: 1, minHp: 0.66, cadence: 1.00, speed: 0.96, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.08, maxActiveAttacks: 12 },
+		{ phase: 2, minHp: 0.31, cadence: 0.85, speed: 1.05, damage: 1.09, telegraphMultiplier: 0.94, surpriseChance: 0.15, maxActiveAttacks: 15 },
+		{ phase: 3, minHp: 0.00, cadence: 0.73, speed: 1.13, damage: 1.17, telegraphMultiplier: 0.88, surpriseChance: 0.23, maxActiveAttacks: 17 }
+	],
+	bosses: {
+		enem1: { movementStyle: 'lateRush', cadence: 1.04, telegraphMs: 900, speedMultiplier: 0.96, damageMultiplier: 1.04, speedVariance: [0.80, 0.92, 1.04, 1.16, 1.24] }, // AXE_COLUMNS: тяжёлый замах → удар
+		enem2: { movementStyle: 'weave', cadence: 1.08, telegraphMs: 940, speedMultiplier: 0.90, damageMultiplier: 1.02, speedVariance: [0.82, 0.92, 1.02, 1.12, 1.20] }, // SPORE_CLOUD: плавающее облако
+		enem3: { movementStyle: 'straight', cadence: 0.92, telegraphMs: 700, speedMultiplier: 1.10, damageMultiplier: 1.08, speedVariance: [0.92, 1.00, 1.08, 1.16, 1.22] }, // AIM_PAIRS: точные прямые выстрелы
+		enem4: { movementStyle: 'drift', cadence: 1.12, telegraphMs: 1020, speedMultiplier: 0.86, damageMultiplier: 1.16, speedVariance: [0.80, 0.88, 0.96, 1.04, 1.12] }, // HERD_WALL: медленное смещение стада
+		enem5: { movementStyle: 'accelerate', cadence: 0.82, telegraphMs: 680, speedMultiplier: 1.12, damageMultiplier: 1.14, speedVariance: [0.88, 0.98, 1.08, 1.18, 1.26] } // KEY_PATHS: быстро закрывает пути
+	}
+};
+
 
 const ENEMY_TYPES = {
 	
@@ -63,7 +79,7 @@ const ENEMY_TYPES = {
         name: 'enem1',                     
 		dispName:  'Дровосек',
         image: 'images/enemies/regions/1_smesh_les/lvl4/1.webp',  
-        baseHP: (2600) +(2600*factorChar),
+        baseHP: (3900) + (3900 * factorChar),
         baseSpeed: 0,                  
         baseDamage: (20)+(20)*factorChar,                      
         spawnWeight: 5,                  
@@ -75,7 +91,7 @@ const ENEMY_TYPES = {
         name: 'enem2',
 		dispName:  'Грибник',
         image: 'images/enemies/regions/1_smesh_les/lvl4/2.webp',
-        baseHP: (4200) + (4200*factorChar),
+        baseHP: (15000) + (15000 * factorChar),
         baseSpeed: 0,
         baseDamage: (22)+(22)*factorChar,
         spawnWeight: 15,                  

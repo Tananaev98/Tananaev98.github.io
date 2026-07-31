@@ -32,9 +32,6 @@ const ANIMATION_PARAMS = {
 	SWAY_PIXELS: 1,   //
 };
 
-let timeGame   = 0;
-
-
 //фарм золота-------
 let countZlat = 0; 
 
@@ -75,13 +72,20 @@ if (lvlNumber > 90) {
  let bossAliveName = ''; 
 
  let bossTimer = null;
+ const bossAttackTimers = new Set();
+ let bossComboHistory = [];
+ let bossWaveCounter = 0;
+ let bossCombatPhase = 1;
+
+// Геометрия и ВСЕ настройки конкретного уровня приходят из gameDataN.js.
+// Здесь остаётся только универсальное исполнение механик.
  
 
-bossDelayAb = 1000;
+let bossDelayAb = 1000;
 
 
  
-bossDelayAbDop = 5000;
+let bossDelayAbDop = 5000;
 
 let spawnEnabled = true; // По умолчанию спавн включен
 
@@ -105,11 +109,6 @@ let rowTotal = ""; //Строка итогов прохождения уровн
 
 // Массив активных врагов - хранит все текущие объекты врагов
 let activeEnemies = [];
-
-// Таймеры - для контроля времени в игре
-let lastSpawnTime = 0;      // Время последнего спавна врага
-let gameStartTime = 0;      // Время начала игры
-
 
 // Здоровье крепости и завершение игры: 
 let castleHealthBar = null;
@@ -233,6 +232,12 @@ class Enemy {
         this.lastWoundTick = 0;
 		this.lastShotTime = 0;
         this.isCustom = false; // атаки босса помечаются true в spawnEnemyWithParams
+        this.movementStyle = 'straight';
+        this.movementOriginX = this.x;
+        this.baseSpeedPixelsPerSecond = this.speedPixelsPerSecond;
+        this.hasPausedMidFlight = false;
+        this.pauseUntil = 0;
+        this.hasTriggeredRush = false;
         // Создаем DOM элемент для отображения врага
         this.element = this.createEnemyElement();
         
@@ -302,7 +307,36 @@ class Enemy {
             return 'dead_from_wound';
         }
         
-        // Двигаем врага вниз (в пикселях)
+        const travelRange = Math.max(1, GAME_CONFIG.TARGET_Y - GAME_CONFIG.START_Y);
+        const travelProgress = Math.max(0, Math.min(1, (this.y - GAME_CONFIG.START_Y) / travelRange));
+        let movementMultiplier = 1;
+
+        if (this.isCustom) {
+            if (this.movementStyle === 'accelerate') {
+                movementMultiplier = 0.72 + travelProgress * 0.90;
+            } else if (this.movementStyle === 'lateRush') {
+                movementMultiplier = travelProgress < 0.55 ? 0.72 : 1.48;
+                if (travelProgress >= 0.55 && !this.hasTriggeredRush) {
+                    this.hasTriggeredRush = true;
+                    this.element.classList.add('boss-attack-rush');
+                }
+            } else if (this.movementStyle === 'pause') {
+                if (!this.hasPausedMidFlight && travelProgress >= 0.42) {
+                    this.hasPausedMidFlight = true;
+                    this.pauseUntil = performance.now() + 420;
+                    this.element.classList.add('boss-attack-paused');
+                }
+                if (performance.now() < this.pauseUntil) {
+                    movementMultiplier = 0;
+                } else {
+                    this.element.classList.remove('boss-attack-paused');
+                    movementMultiplier = this.hasPausedMidFlight ? 1.22 : 1;
+                }
+            }
+        }
+
+        // У разных боссов скорость меняется по ходу полёта, но траектория остаётся читаемой.
+        this.speedPixelsPerSecond = this.baseSpeedPixelsPerSecond * movementMultiplier;
         this.pixelY += this.speedPixelsPerSecond * deltaSeconds;
         
         // Обновляем позицию в процентах
@@ -313,9 +347,16 @@ class Enemy {
             this.x = 50;
         } else {
             this.swayTime += this.swaySpeed * deltaSeconds;
-            const swayPixels = Math.sin(this.swayTime) * ANIMATION_PARAMS.SWAY_PIXELS;
-            const swayPercent = (swayPixels / this.fieldWidth) * 100;
-            this.x = this.clampHorizontal(this.x + swayPercent);
+            if (this.isCustom && this.movementStyle === 'weave') {
+                this.x = this.clampHorizontal(this.movementOriginX + Math.sin(this.swayTime * 1.35) * 5.5);
+            } else if (this.isCustom && this.movementStyle === 'drift') {
+                const driftDirection = this.movementOriginX < 50 ? 1 : -1;
+                this.x = this.clampHorizontal(this.movementOriginX + driftDirection * travelProgress * 10);
+            } else {
+                const swayPixels = Math.sin(this.swayTime) * ANIMATION_PARAMS.SWAY_PIXELS;
+                const swayPercent = (swayPixels / this.fieldWidth) * 100;
+                this.x = this.clampHorizontal(this.x + swayPercent);
+            }
             // Атаки босса обтекают силуэт босса (не пересекаются с ним)
             this.resolveAwayFromBoss();
         }
@@ -679,10 +720,9 @@ function initGame() {
     // Сбрасываем состояние игры к начальному
     resetGame();
     
-    // Запоминаем время начала игры
-    gameStartTime = Date.now();
-    lastSpawnTime = Date.now();
-    lastFrameTime = Date.now();
+    // requestAnimationFrame использует свою шкалу времени. Первый кадр сам
+    // инициализирует отметку, чтобы не смешивать её с Date.now().
+    lastFrameTime = null;
     
     // Запускаем игровой цикл
     requestAnimationFrame(gameLoop);
@@ -716,6 +756,10 @@ function initGame() {
  */
 function resetGame() {
     isGameOver = false;
+    activeGameTimeMs = 0;
+    timeSec2 = 0;
+    lastTimeSec2 = 0;
+    lastFrameTime = null;
     castleHP.current = GAME_CONFIG.CASTLE_BASE_HP;
     castleHP.max = GAME_CONFIG.CASTLE_BASE_HP;
     castleHP.level = 1;
@@ -761,7 +805,6 @@ function resetGame() {
     castleDamageReduction = startCastleDamageReduction;
     SHOT_INTERVAL = startSHOT_INTERVAL;
     
-    lastSpawnTime = 0;
 }
 /**
  * Выбирает случайный тип врага на основе весов
@@ -807,7 +850,7 @@ function getRandomXPosition() {
  */
 
 
-function spawnEnemyWithParams(type, xPos, yPos, customHP, customDamage, customSpeed, isCustom=false) {
+function spawnEnemyWithParams(type, xPos, yPos, customHP, customDamage, customSpeed, isCustom=false, movementStyle='straight') {
     
     if(!bossAlive && !bossM.includes(type)){return};
     
@@ -827,6 +870,8 @@ function spawnEnemyWithParams(type, xPos, yPos, customHP, customDamage, customSp
         const enemy = new Enemy(type, spawnX);
         
         enemy.isCustom = isCustom;
+        enemy.movementStyle = movementStyle;
+        enemy.movementOriginX = spawnX;
         
         // Переопределяем Y позицию
         enemy.y = yPos;
@@ -847,6 +892,7 @@ function spawnEnemyWithParams(type, xPos, yPos, customHP, customDamage, customSp
         if (customSpeed !== undefined) {
             enemy.speedPercentPerSecond = ENEMY_TYPES[type].baseSpeed * customSpeed * ANIMATION_PARAMS.BASE_SPEED;
             enemy.speedPixelsPerSecond = (enemy.speedPercentPerSecond / 100) * enemy.fieldHeight;
+            enemy.baseSpeedPixelsPerSecond = enemy.speedPixelsPerSecond;
         }
         
         // Обновляем позицию элемента в DOM
@@ -854,6 +900,7 @@ function spawnEnemyWithParams(type, xPos, yPos, customHP, customDamage, customSp
         // Атаки босса сразу ставим так, чтобы не пересекаться с силуэтом
         if (enemy.isCustom) {
             enemy.resolveAwayFromBoss();
+            enemy.movementOriginX = enemy.x;
             enemy.applyPositionTransform(0);
         }
         
@@ -887,38 +934,32 @@ function disableSpawning() {
 /**
  * Основной игровой цикл - вызывается каждый кадр анимации
  */
- let lastFrameTime = 0;
- 
- let timeSec = 0; 
- let timeSec1 = 0;
- let timeSec2 = 0;
- let lastTimeSec2 = 0;
+let lastFrameTime = null;
+let activeGameTimeMs = 0;
+let timeSec2 = 0;
+let lastTimeSec2 = 0;
  
 function gameLoop(currentTime) {
-	
-	timeGame = (Date.now() - gameStartTime); 
-	timeSec = Math.round(((timeGame) /1000));
-	if (timeSec > timeSec1){
-		timeSec1++;
-			if (!isGamePaused) {timeSec2++}; 
-	}
-	
+    const rawDeltaTime = lastFrameTime === null ? 0 : currentTime - lastFrameTime;
+    lastFrameTime = currentTime;
+
     if (isGameOver || isGamePaused) {
         requestAnimationFrame(gameLoop);
         return;
     }
+
+    // Считаем только активное игровое время. Большие разрывы возникают при
+    // скрытой вкладке и не должны мгновенно перематывать бой вперёд.
+    const deltaTime = Math.min(Math.max(rawDeltaTime, 0), 100);
+    activeGameTimeMs += deltaTime;
+    timeSec2 = Math.floor(activeGameTimeMs / 1000);
 	
 	if ((timeSec2-lastTimeSec2)>=1 && (timeNextBoss-timeSec2)>0 && (timeNextBoss-timeSec2)<5 && !bossAlive) {
 		lastTimeSec2 = timeSec2;
 		showCenterText((timeNextBoss-timeSec2), 800, 'info');
 	}
 	
-    // Вычисляем deltaTime (время с предыдущего кадра в миллисекундах)
-    const deltaTime = currentTime - lastFrameTime;
-    lastFrameTime = currentTime;
-	
-
-	if (timeSec2 >= timeNextBoss && !bossAlive && spawnEnabled) {
+    if (timeSec2 >= timeNextBoss && !bossAlive && spawnEnabled) {
 		disableSpawning(); 
 	}	
 	
@@ -939,16 +980,13 @@ function gameLoop(currentTime) {
 			
 
     
-    // Ограничиваем deltaTime, чтобы избежать скачков при длительных паузах
-    const clampedDeltaTime = Math.min(deltaTime, 100);
-      
     checkAimAndDamage();
     
     for (let i = activeEnemies.length - 1; i >= 0; i--) {
         const enemy = activeEnemies[i];
         
         // Передаем deltaTime врагу для корректного движения
-        const updateResult = enemy.update(clampedDeltaTime);
+        const updateResult = enemy.update(deltaTime);
         
         if (updateResult === 'dead_from_wound') {
             handleEnemyDeath(enemy, 'wound');
@@ -989,58 +1027,215 @@ function gameLoop(currentTime) {
 
 
 function startBossEvents() {
-	
-	const bossObject = mBossDelayAb.find(item => item.boss === bossAliveName);
-	bossDelayAbDop = bossObject.bossDelayAbDop;
-	bossDelayAb    = bossObject.bossDelayAb;
-        // Таймер каждую секунду (1000мс)
-        bossTimer = setInterval(() => {
+    const bossObject = mBossDelayAb.find(item => item.boss === bossAliveName);
+    bossDelayAbDop = bossObject.bossDelayAbDop;
+    bossDelayAb = bossObject.bossDelayAb;
+    bossComboHistory = [];
+    bossWaveCounter = 0;
+    bossCombatPhase = 1;
 
-            
-            // Выполняем событие босса
-            executeBossEvent();
-            
-        }, bossDelayAbDop); 
+    // Первая атака приходит быстрее прежних 5–7 секунд, но с полноценным телеграфом.
+    scheduleNextBossWave(Math.min(2400, bossDelayAbDop * 0.48));
 }
 
 function stopBossEvents() {
     bossAlive = false;
     if (bossTimer) {
-        clearInterval(bossTimer);
+        clearTimeout(bossTimer);
         bossTimer = null;
-        console.log('События босса остановлены');
     }
+    bossAttackTimers.forEach(timerId => clearTimeout(timerId));
+    bossAttackTimers.clear();
+    document.querySelectorAll('.boss-attack-telegraph').forEach(element => element.remove());
+    bossComboHistory = [];
+    console.log('События босса остановлены');
+}
+
+function scheduleBossTask(callback, delay) {
+    const timerId = setTimeout(() => {
+        bossAttackTimers.delete(timerId);
+        callback();
+    }, delay);
+    bossAttackTimers.add(timerId);
+    return timerId;
+}
+
+function getLevelCombatConfig() {
+    if (typeof bossCombatConfig === 'undefined' || !bossCombatConfig.bosses || !bossCombatConfig.phases) {
+        throw new Error(`В gameData${lvlNumber}.js отсутствует bossCombatConfig`);
+    }
+    return bossCombatConfig;
+}
+
+function getBossPhase() {
+    const phases = getLevelCombatConfig().phases;
+    if (!currentBoss || !currentBoss.maxHP) return phases[0];
+    const hpRatio = currentBoss.hp / currentBoss.maxHP;
+    return phases.find(phase => hpRatio >= phase.minHp) || phases[phases.length - 1];
+}
+
+function getBossProfile() {
+    const profile = getLevelCombatConfig().bosses[bossAliveName];
+    if (!profile) {
+        throw new Error(`Для ${bossAliveName} не задан профиль в bossCombatConfig`);
+    }
+    return profile;
+}
+
+function getLevelCadenceMultiplier() {
+    return getLevelCombatConfig().levelCadence;
+}
+
+function getBossWaveDelay() {
+    const profile = getBossProfile();
+    const phase = getBossPhase();
+    const jitter = 0.88 + Math.random() * 0.24;
+    const config = getLevelCombatConfig();
+    return Math.max(config.minWaveDelay, bossDelayAbDop * profile.cadence * phase.cadence * getLevelCadenceMultiplier() * jitter);
+}
+
+function scheduleNextBossWave(delay = getBossWaveDelay()) {
+    if (!bossAlive || isGameOver) return;
+    if (bossTimer) clearTimeout(bossTimer);
+    bossTimer = setTimeout(() => {
+        bossTimer = null;
+        if (bossAlive && !isGamePaused && !isGameOver) {
+            executeBossEvent();
+        }
+        if (bossAlive && !isGameOver) {
+            scheduleNextBossWave();
+        }
+    }, delay);
+}
+
+function getComboDanger(combo, abilities) {
+    const attacks = combo.indexAbilities.map(index => abilities[index]).filter(Boolean);
+    if (attacks.length === 0) return 0;
+    const averageSpeed = attacks.reduce((sum, attack) => sum + attack.customSpeed, 0) / attacks.length;
+    return averageSpeed + attacks.length * 0.8;
+}
+
+function selectBossCombo(combos, abilities, phase) {
+    let candidates = combos
+        .map((combo, index) => ({ combo, index, danger: getComboDanger(combo, abilities) }))
+        .filter(candidate => !bossComboHistory.includes(candidate.index));
+
+    if (candidates.length === 0) {
+        candidates = combos.map((combo, index) => ({ combo, index, danger: getComboDanger(combo, abilities) }));
+    }
+
+    const sortedDanger = [...candidates].sort((a, b) => a.danger - b.danger);
+    const surpriseChance = phase.surpriseChance;
+    let selected;
+
+    if (Math.random() < surpriseChance) {
+        // Редкая опасная серия — неожиданная, но каждая её атака всё равно предупреждается.
+        const dangerousPool = sortedDanger.slice(Math.max(0, sortedDanger.length - 2));
+        selected = dangerousPool[Math.floor(Math.random() * dangerousPool.length)];
+    } else {
+        const weights = candidates.map(candidate => {
+            const normalizedDanger = candidate.danger / Math.max(1, sortedDanger[sortedDanger.length - 1].danger);
+            if (phase.phase === 1) return Math.max(0.25, 1.35 - normalizedDanger);
+            if (phase.phase === 3) return 0.45 + normalizedDanger * 1.35;
+            return 1;
+        });
+        const weightTotal = weights.reduce((sum, weight) => sum + weight, 0);
+        let roll = Math.random() * weightTotal;
+        selected = candidates[candidates.length - 1];
+        for (let i = 0; i < candidates.length; i++) {
+            roll -= weights[i];
+            if (roll <= 0) {
+                selected = candidates[i];
+                break;
+            }
+        }
+    }
+
+    bossComboHistory.push(selected.index);
+    if (bossComboHistory.length > 2) bossComboHistory.shift();
+    return selected.combo.indexAbilities;
+}
+
+function getBossMovementStyle() {
+    return getBossProfile().movementStyle;
+}
+
+function getBalancedAttackSpeed(attack, phase, profile, shotIndex) {
+    const variations = profile.speedVariance;
+    const variation = variations[(bossWaveCounter + shotIndex) % variations.length];
+    let speed = attack.customSpeed * profile.speedMultiplier * phase.speed * variation;
+
+    // Не превращаем низкий спавн в телепорт: быстрые атаки разрешены только высоко.
+    if (attack.yPos > 12) speed = Math.min(speed, 15);
+    else if (attack.yPos > 10) speed = Math.min(speed, 18);
+    else speed = Math.min(speed, 31);
+
+    // Медленные «тяжёлые» угрозы сохраняют отдельный темп даже в третьей фазе.
+    if (attack.customSpeed <= 10) speed = Math.min(speed, 11.5);
+    return Math.max(2, Math.round(speed * 10) / 10);
+}
+
+function showAttackTelegraph(attack, duration, movementStyle) {
+    if (!enemiesContainer || !bossAlive) return null;
+    const marker = document.createElement('div');
+    marker.className = `boss-attack-telegraph telegraph-${movementStyle}`;
+    marker.style.left = `${attack.xPos}%`;
+    marker.style.top = `${attack.yPos}%`;
+    marker.style.setProperty('--telegraph-duration', `${duration}ms`);
+    enemiesContainer.appendChild(marker);
+    scheduleBossTask(() => marker.remove(), duration + 100);
+    return marker;
 }
 
 function executeBossEvent() {
-		const bossAbD = bossAbilitiesDop.filter(ba => ba.boss === bossAliveName);
-		const bossAb = bossAbilities.filter(ba => ba.boss === bossAliveName);
-		if (bossAbD.length === 0) return;
+    const bossAbD = bossAbilitiesDop.filter(ba => ba.boss === bossAliveName);
+    const bossAb = bossAbilities.filter(ba => ba.boss === bossAliveName);
+    if (bossAbD.length === 0 || bossAb.length === 0 || !currentBoss) return;
 
-		const randomAbilityIndex = Math.floor(Math.random() * bossAbD.length);
-		const randomAbilityM = bossAbD[randomAbilityIndex].indexAbilities;
-	//	console.log( 'bossAbD равен'+randomAbilityM);
-		
-		let ind =0;
-		const intr = setInterval(() => {
-        if (ind >= randomAbilityM.length) {
-            clearInterval(intr);
-            return;
-        }
-        
-        const activeAbility = randomAbilityM[ind];
-		const abObject = bossAb[activeAbility];
-		if (!abObject) {
-			ind++;
-			return;
-		}
-		
-		if (activeEnemies.length <= randomAbilityM.length+1 && !isGamePaused && !isGameOver) {
-			spawnEnemyWithParams(abObject.type, abObject.xPos, abObject.yPos, abObject.customHP, abObject.customDamage, abObject.customSpeed, true);
-        }
-		
-        ind++;
-    }, bossDelayAb);		
+    const config = getLevelCombatConfig();
+    const profile = getBossProfile();
+    const phase = getBossPhase();
+    if (phase.phase !== bossCombatPhase) {
+        bossCombatPhase = phase.phase;
+        const phaseMessage = profile.phaseMessages?.[phase.phase]
+            || `ФАЗА ${phase.phase === 2 ? 'II' : 'III'}`;
+        showCenterText(phaseMessage, 1100, 'boss');
+    }
+
+    const selectedAbilityIndexes = selectBossCombo(bossAbD, bossAb, phase);
+    const movementStyle = getBossMovementStyle();
+    const shotDelay = Math.max(config.minShotDelay, bossDelayAb * profile.cadence * phase.cadence);
+    const telegraphMs = Math.max(config.minTelegraphMs, profile.telegraphMs * phase.telegraphMultiplier);
+
+    selectedAbilityIndexes.forEach((abilityIndex, shotIndex) => {
+        const attack = bossAb[abilityIndex];
+        if (!attack) return;
+
+        scheduleBossTask(() => {
+            if (!bossAlive || isGameOver) return;
+            showAttackTelegraph(attack, telegraphMs, movementStyle);
+            scheduleBossTask(() => {
+                if (!bossAlive || isGamePaused || isGameOver) return;
+                const activeBossAttacks = activeEnemies.filter(enemy => enemy.isCustom && !enemy.isBoss).length;
+                if (activeBossAttacks >= phase.maxActiveAttacks) return;
+
+                const speed = getBalancedAttackSpeed(attack, phase, profile, shotIndex);
+                const damage = Math.round(attack.customDamage * profile.damageMultiplier * phase.damage * config.damageMultiplier);
+                spawnEnemyWithParams(
+                    attack.type,
+                    attack.xPos,
+                    attack.yPos,
+                    attack.customHP,
+                    damage,
+                    speed,
+                    true,
+                    movementStyle
+                );
+            }, telegraphMs);
+        }, shotIndex * shotDelay);
+    });
+
+    bossWaveCounter++;
 }
 
 
@@ -1282,7 +1477,7 @@ function showEndGameModal(victory, timeSeconds) {
 		completeLevel();
 	}
 	
-	zlatP = countZlat*countDefeatBoss;
+	const zlatP = countZlat * countDefeatBoss;
 	if(zlatP >0){addZlat(zlatP)};
 	
     const modal = document.createElement('div');
@@ -1780,22 +1975,26 @@ function giveExperienceForKill(enemyType) {
 function handleEnemyDeath(enemy, cause = 'player') {
     if (enemy.type === bossAliveName) {
 		countDefeatBoss++;
-        // Это босс
-        if (enemy.type === 'enem5') {   // ПОБЕДА
-            killAllEnemies();
-            pauseGame();
-            hideBossHealthBar();
-            stopBossEvents();
-            showEndGameModal(true, timeSec2);
-            return;   // Не начисляем опыт, не переходим к следующему боссу
+
+        // Удаляем именно побеждённого босса. Победа определяется отсутствием
+        // следующих боссов, а не жёстко заданным именем вроде enem5.
+        const defeatedBossIndex = bossM.indexOf(enemy.type);
+        if (defeatedBossIndex !== -1) {
+            bossM.splice(defeatedBossIndex, 1);
         }
 
-        // Обычный босс (не последний)
         killAllEnemies();
-        bossM.splice(0, 1);
-        bossAlive = false;
         hideBossHealthBar();
         stopBossEvents();
+        currentBoss = null;
+
+        if (bossM.length === 0) {
+            pauseGame();
+            showEndGameModal(true, timeSec2);
+            return; // Финальный босс не даёт опыт внутри завершённого боя
+        }
+
+        // В последовательности остались боссы — готовим следующую встречу.
         giveExperienceForKill(enemy.type);
         timeNextBoss = timeSec2 + bossInterval;
         enableSpawning();   // Включаем спавн обычных врагов

@@ -8,37 +8,81 @@
 
     <script>
 const params = new URLSearchParams(window.location.search);
-const level = params.get("level") || 1;
+const requestedLevel = params.get('level') ?? '1';
+const parsedLevel = Number(requestedLevel);
+const MIN_LEVEL = 1;
+const MAX_LEVEL = 15;
+const level = Number.isInteger(parsedLevel) && parsedLevel >= MIN_LEVEL && parsedLevel <= MAX_LEVEL
+    ? parsedLevel
+    : null;
 
 let loadedCount = 0;
+let gameStarted = false;
+let loadFailed = false;
 const totalToLoad = 2; // gameData + saveData
 
-function checkAllLoaded() {
-    if (loadedCount === totalToLoad) {
-        // Оба файла загружены – запускаем игру
-        const gameScript = document.createElement("script");
-        gameScript.src = "game.js";
-        document.body.appendChild(gameScript);
-    }
+function showLoadError(message) {
+    if (loadFailed) return;
+    loadFailed = true;
+
+    const renderError = () => {
+        const errorPanel = document.createElement('main');
+        errorPanel.setAttribute('role', 'alert');
+        errorPanel.style.cssText = 'max-width:620px;margin:15vh auto;padding:32px;text-align:center;font-family:sans-serif;color:#3a2418;background:#f6e4c3;border:3px solid #744b2a;border-radius:16px';
+
+        const title = document.createElement('h1');
+        title.textContent = 'Не удалось запустить уровень';
+
+        const description = document.createElement('p');
+        description.textContent = message;
+
+        const backLink = document.createElement('a');
+        backLink.href = 'index.html';
+        backLink.textContent = 'Вернуться к выбору уровня';
+
+        errorPanel.append(title, description, backLink);
+        document.body.replaceChildren(errorPanel);
+    };
+
+    if (document.body) renderError();
+    else document.addEventListener('DOMContentLoaded', renderError, { once: true });
 }
 
-// Загружаем gameData
-const dataScript = document.createElement("script");
-dataScript.src = "lvlData/gameData" + level + ".js";
-dataScript.onload = function () {
-    loadedCount++;
-    checkAllLoaded();
-};
-document.head.appendChild(dataScript);
+function checkAllLoaded() {
+    if (loadFailed || gameStarted || loadedCount !== totalToLoad || !document.body) return;
 
-// Загружаем saveData
-const saveScript = document.createElement("script");
-saveScript.src = "saveData.js";
-saveScript.onload = function () {
-    loadedCount++;
-    checkAllLoaded();
-};
-document.head.appendChild(saveScript);
+    gameStarted = true;
+    const gameScript = document.createElement('script');
+    gameScript.src = 'game.js';
+    gameScript.onerror = () => showLoadError('Файл игрового движка не загрузился.');
+    document.body.appendChild(gameScript);
+}
+
+document.addEventListener('DOMContentLoaded', checkAllLoaded, { once: true });
+
+if (level === null) {
+    showLoadError(`Уровень должен быть целым числом от ${MIN_LEVEL} до ${MAX_LEVEL}.`);
+} else {
+    document.title = `Monstrous world — уровень ${level}`;
+
+    const dataScript = document.createElement('script');
+    dataScript.src = `lvlData/gameData${level}.js`;
+    dataScript.onload = () => {
+        loadedCount++;
+        checkAllLoaded();
+    };
+    dataScript.onerror = () => showLoadError(`Данные уровня ${level} не загрузились.`);
+    document.head.appendChild(dataScript);
+
+    const saveScript = document.createElement('script');
+    saveScript.src = 'saveData.js';
+    saveScript.onload = () => {
+        loadedCount++;
+        checkAllLoaded();
+    };
+    saveScript.onerror = () => showLoadError('Система сохранений не загрузилась.');
+    document.head.appendChild(saveScript);
+}
     </script>
 
 </head>

@@ -1,6 +1,22 @@
 let lvlNumber = 11;
 let factorChar = (lvlNumber * 5) / 100;
 
+const bossCombatConfig = {
+	levelCadence: 0.82, damageMultiplier: 1.15, minWaveDelay: 2260, minShotDelay: 146, minTelegraphMs: 490,
+	phases: [
+		{ phase: 1, minHp: 0.66, cadence: 1.00, speed: 0.99, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.11, maxActiveAttacks: 14 },
+		{ phase: 2, minHp: 0.31, cadence: 0.79, speed: 1.10, damage: 1.12, telegraphMultiplier: 0.91, surpriseChance: 0.22, maxActiveAttacks: 18 },
+		{ phase: 3, minHp: 0.00, cadence: 0.66, speed: 1.20, damage: 1.24, telegraphMultiplier: 0.85, surpriseChance: 0.30, maxActiveAttacks: 20 }
+	],
+	bosses: {
+		enem1: { movementStyle: 'pause', cadence: 1.12, telegraphMs: 880, speedMultiplier: 0.94, damageMultiplier: 1.16, speedVariance: [0.78, 0.88, 0.98, 1.10, 1.20] }, // ALT_HAMMER: пауза перед молотом
+		enem2: { movementStyle: 'accelerate', cadence: 0.80, telegraphMs: 580, speedMultiplier: 1.22, damageMultiplier: 1.09, speedVariance: [0.94, 1.04, 1.14, 1.24, 1.34] }, // LEFT_SAW: пила набирает обороты
+		enem3: { movementStyle: 'drift', cadence: 0.94, telegraphMs: 720, speedMultiplier: 1.10, damageMultiplier: 1.14, speedVariance: [0.86, 0.98, 1.10, 1.22, 1.30] }, // ASYM_THROWS: кривые броски
+		enem4: { movementStyle: 'weave', cadence: 0.84, telegraphMs: 610, speedMultiplier: 1.18, damageMultiplier: 1.12, speedVariance: [0.90, 1.02, 1.14, 1.26, 1.34] }, // CROSSED_THREADS: переплетающиеся нити
+		enem5: { movementStyle: 'lateRush', cadence: 0.72, telegraphMs: 620, speedMultiplier: 1.20, damageMultiplier: 1.22, speedVariance: [0.74, 0.90, 1.08, 1.26, 1.38] } // ARC_SIDES: дуги замыкаются рывком
+	}
+};
+
 
 const ENEMY_TYPES = {
 
@@ -63,7 +79,7 @@ const ENEMY_TYPES = {
 		name: 'enem1',
 		dispName: 'Молотобой',
 		image: 'images/enemies/regions/1_smesh_les/lvl11/1.webp',
-		baseHP: (3200) + (3200 * factorChar),
+		baseHP: (4800) + (4800 * factorChar),
 		baseSpeed: 0,
 		baseDamage: (20) + (20) * factorChar,
 		spawnWeight: 5,
@@ -76,7 +92,7 @@ const ENEMY_TYPES = {
 		name: 'enem2',
 		dispName: 'Пильщик',
 		image: 'images/enemies/regions/1_smesh_les/lvl11/2.webp',
-		baseHP: (5400) + (5400 * factorChar),
+		baseHP: (15000) + (15000 * factorChar),
 		baseSpeed: 0,
 		baseDamage: (22) + (22) * factorChar,
 		spawnWeight: 15,

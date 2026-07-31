@@ -26,6 +26,7 @@
 
     <div class="menu-actions">
         <div class="select-character-button" id="selectCharacterBtn">Персонажи</div>
+        <button type="button" class="select-character-button menu-debug-btn" id="unlockDebugBtn">Разблокировать всё</button>
         <div class="select-character-button menu-debug-btn" id="clearProgressBtn">Очистить прогресс</div>
     </div>
 </header>
@@ -132,6 +133,30 @@
             </span>
             <span class="level-status" aria-hidden="true"></span>
         </a>
+        <a href="level.html?level=13" class="level locked" data-level="13">
+            <span class="level-num">13</span>
+            <span class="level-body">
+                <span class="level-label">Уровень 13</span>
+                <span class="level-name">Клюв и коготь</span>
+            </span>
+            <span class="level-status" aria-hidden="true"></span>
+        </a>
+        <a href="level.html?level=14" class="level locked" data-level="14">
+            <span class="level-num">14</span>
+            <span class="level-body">
+                <span class="level-label">Уровень 14</span>
+                <span class="level-name">Звериный устав</span>
+            </span>
+            <span class="level-status" aria-hidden="true"></span>
+        </a>
+        <a href="level.html?level=15" class="level locked" data-level="15">
+            <span class="level-num">15</span>
+            <span class="level-body">
+                <span class="level-label">Уровень 15</span>
+                <span class="level-name">На курьих правах</span>
+            </span>
+            <span class="level-status" aria-hidden="true"></span>
+        </a>
     </nav>
 </main>
 
@@ -148,6 +173,78 @@ levels.forEach(link => {
         link.classList.add('unlocked');
     }
 });
+
+// ==================== Секретная разблокировка для отладки ====================
+const unlockDebugBtn = document.getElementById('unlockDebugBtn');
+
+function openDebugUnlockModal() {
+    const oldModal = document.querySelector('.debug-unlock-modal');
+    if (oldModal) oldModal.remove();
+
+    const modal = document.createElement('div');
+    modal.className = 'debug-unlock-modal';
+    modal.innerHTML = `
+        <div class="debug-unlock-dialog" role="dialog" aria-modal="true" aria-labelledby="debugUnlockTitle">
+            <button type="button" class="debug-unlock-close" aria-label="Закрыть">&times;</button>
+            <h2 id="debugUnlockTitle">Отладочная разблокировка</h2>
+            <p>Введите секретное слово</p>
+            <form class="debug-unlock-form">
+                <label class="debug-unlock-label" for="debugSecretInput">Секретное слово</label>
+                <input id="debugSecretInput" class="debug-unlock-input" type="password" autocomplete="off" required>
+                <p class="debug-unlock-status" role="status" aria-live="polite"></p>
+                <div class="debug-unlock-actions">
+                    <button type="button" class="debug-unlock-cancel">Отмена</button>
+                    <button type="submit" class="debug-unlock-submit">Применить</button>
+                </div>
+            </form>
+        </div>
+    `;
+
+    const closeButton = modal.querySelector('.debug-unlock-close');
+    const cancelButton = modal.querySelector('.debug-unlock-cancel');
+    const form = modal.querySelector('.debug-unlock-form');
+    const input = modal.querySelector('.debug-unlock-input');
+    const status = modal.querySelector('.debug-unlock-status');
+
+    const closeModal = () => modal.remove();
+    closeButton.addEventListener('click', closeModal);
+    cancelButton.addEventListener('click', closeModal);
+    modal.addEventListener('click', event => {
+        if (event.target === modal) closeModal();
+    });
+
+    form.addEventListener('submit', event => {
+        event.preventDefault();
+
+        const maxAvailableLevel = Math.max(...Array.from(levels, link => Number(link.dataset.level)));
+        const result = typeof unlockAllLevelsForDebug === 'function'
+            ? unlockAllLevelsForDebug(input.value, maxAvailableLevel)
+            : { success: false, reason: 'function-missing' };
+
+        if (!result.success) {
+            status.className = 'debug-unlock-status is-error';
+            status.textContent = result.reason === 'save-failed'
+                ? 'Не удалось сохранить прогресс.'
+                : 'Неверное секретное слово.';
+            input.value = '';
+            input.focus();
+            return;
+        }
+
+        status.className = 'debug-unlock-status is-success';
+        status.textContent = `Готово: открыты уровни 1–${result.unlockedThrough}, начислено ${result.reward.toLocaleString('ru-RU')} злат.`;
+        input.disabled = true;
+        form.querySelector('.debug-unlock-submit').disabled = true;
+        setTimeout(() => location.reload(), 900);
+    });
+
+    document.body.appendChild(modal);
+    input.focus();
+}
+
+if (unlockDebugBtn) {
+    unlockDebugBtn.addEventListener('click', openDebugUnlockModal);
+}
 
 // ==================== Кнопка очистки прогресса ====================
 const clearBtn = document.getElementById('clearProgressBtn');

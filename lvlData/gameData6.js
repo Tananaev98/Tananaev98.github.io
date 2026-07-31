@@ -1,6 +1,22 @@
 let lvlNumber = 6;
 let factorChar = (lvlNumber * 5) / 100;
 
+const bossCombatConfig = {
+	levelCadence: 0.90, damageMultiplier: 1.08, minWaveDelay: 2400, minShotDelay: 158, minTelegraphMs: 540,
+	phases: [
+		{ phase: 1, minHp: 0.66, cadence: 1.00, speed: 0.97, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.09, maxActiveAttacks: 13 },
+		{ phase: 2, minHp: 0.31, cadence: 0.84, speed: 1.07, damage: 1.10, telegraphMultiplier: 0.93, surpriseChance: 0.17, maxActiveAttacks: 16 },
+		{ phase: 3, minHp: 0.00, cadence: 0.71, speed: 1.15, damage: 1.19, telegraphMultiplier: 0.87, surpriseChance: 0.25, maxActiveAttacks: 18 }
+	],
+	bosses: {
+		enem1: { movementStyle: 'weave', cadence: 0.96, telegraphMs: 780, speedMultiplier: 1.06, damageMultiplier: 0.99, speedVariance: [0.86, 0.96, 1.06, 1.16, 1.24] }, // ZIGZAG: усиленная змейка
+		enem2: { movementStyle: 'drift', cadence: 1.02, telegraphMs: 850, speedMultiplier: 1.00, damageMultiplier: 1.04, speedVariance: [0.84, 0.94, 1.04, 1.14, 1.22] }, // CORNERS: угрозы выползают из углов
+		enem3: { movementStyle: 'accelerate', cadence: 0.82, telegraphMs: 620, speedMultiplier: 1.18, damageMultiplier: 1.08, speedVariance: [0.92, 1.02, 1.12, 1.22, 1.30] }, // LEFT_SWARM: быстрый пчелиный рой
+		enem4: { movementStyle: 'pause', cadence: 1.16, telegraphMs: 1040, speedMultiplier: 0.84, damageMultiplier: 1.20, speedVariance: [0.76, 0.86, 0.96, 1.06, 1.14] }, // BOTTOM_WALL: вязкое болотное давление
+		enem5: { movementStyle: 'lateRush', cadence: 0.80, telegraphMs: 680, speedMultiplier: 1.13, damageMultiplier: 1.16, speedVariance: [0.80, 0.92, 1.04, 1.18, 1.30] } // MID_ONLY: присасывается после заминки
+	}
+};
+
 
 const ENEMY_TYPES = {
 
@@ -63,7 +79,7 @@ const ENEMY_TYPES = {
 		name: 'enem1',
 		dispName: 'Шипелка',
 		image: 'images/enemies/regions/1_smesh_les/lvl6/1.webp',
-		baseHP: (2700) + (2700 * factorChar),
+		baseHP: (4050) + (4050 * factorChar),
 		baseSpeed: 0,
 		baseDamage: (20) + (20) * factorChar,
 		spawnWeight: 5,
@@ -76,7 +92,7 @@ const ENEMY_TYPES = {
 		name: 'enem2',
 		dispName: 'Висячий',
 		image: 'images/enemies/regions/1_smesh_les/lvl6/2.webp',
-		baseHP: (4400) + (4400 * factorChar),
+		baseHP: (15000) + (15000 * factorChar),
 		baseSpeed: 0,
 		baseDamage: (22) + (22) * factorChar,
 		spawnWeight: 15,

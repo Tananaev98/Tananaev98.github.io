@@ -82,6 +82,61 @@ body {
 	filter: drop-shadow(15px -0px 15px rgba(0, 0, 0, 0.3));
 }
 
+/* Честное предупреждение перед атакой босса */
+.boss-attack-telegraph {
+    --telegraph-duration: 700ms;
+    position: absolute;
+    width: clamp(18px, 3.2vw, 42px);
+    aspect-ratio: 1;
+    z-index: 4;
+    pointer-events: none;
+    border: 3px solid rgba(255, 222, 120, 0.95);
+    border-radius: 50%;
+    background: rgba(140, 20, 10, 0.2);
+    transform: translate(-50%, -50%) scale(0.35);
+    animation: bossAttackTelegraph var(--telegraph-duration) ease-out forwards;
+}
+
+.boss-attack-telegraph.telegraph-weave,
+.boss-attack-telegraph.telegraph-drift {
+    border-style: dashed;
+}
+
+.boss-attack-telegraph.telegraph-lateRush,
+.boss-attack-telegraph.telegraph-accelerate {
+    border-width: 5px;
+}
+
+.boss-attack-telegraph.telegraph-pause {
+    border-radius: 3px;
+}
+
+@keyframes bossAttackTelegraph {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.35);
+    }
+    25% {
+        opacity: 1;
+    }
+    78% {
+        opacity: 0.9;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(1.3);
+    }
+}
+
+.enemy.enemy-attack.boss-attack-paused {
+    filter: brightness(1.35) drop-shadow(0 0 12px rgba(255, 220, 100, 0.9));
+}
+
+.enemy.enemy-attack.boss-attack-rush {
+    filter: contrast(1.25) drop-shadow(0 0 10px rgba(200, 30, 20, 0.85));
+}
+
 
 
 

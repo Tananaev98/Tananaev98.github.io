@@ -1,6 +1,22 @@
-﻿let lvlNumber = 5; 
+let lvlNumber = 5; 
 
 let factorChar = (lvlNumber*5) / 100;
+
+const bossCombatConfig = {
+	levelCadence: 0.92, damageMultiplier: 1.06, minWaveDelay: 2440, minShotDelay: 160, minTelegraphMs: 550,
+	phases: [
+		{ phase: 1, minHp: 0.66, cadence: 1.00, speed: 0.96, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.08, maxActiveAttacks: 12 },
+		{ phase: 2, minHp: 0.31, cadence: 0.84, speed: 1.06, damage: 1.09, telegraphMultiplier: 0.94, surpriseChance: 0.16, maxActiveAttacks: 15 },
+		{ phase: 3, minHp: 0.00, cadence: 0.72, speed: 1.14, damage: 1.18, telegraphMultiplier: 0.88, surpriseChance: 0.24, maxActiveAttacks: 17 }
+	],
+	bosses: {
+		enem1: { movementStyle: 'drift', cadence: 0.96, telegraphMs: 780, speedMultiplier: 1.04, damageMultiplier: 0.98, speedVariance: [0.86, 0.96, 1.06, 1.16, 1.24] }, // TOP_FEATHER: перья сносит в сторону
+		enem2: { movementStyle: 'pause', cadence: 1.10, telegraphMs: 940, speedMultiplier: 0.88, damageMultiplier: 1.05, speedVariance: [0.78, 0.88, 0.98, 1.08, 1.16] }, // BOTTOM_CROUCH: выжидание перед прыжком
+		enem3: { movementStyle: 'lateRush', cadence: 1.14, telegraphMs: 1020, speedMultiplier: 0.84, damageMultiplier: 1.20, speedVariance: [0.76, 0.88, 1.00, 1.14, 1.26] }, // BOTTOM_WALL: тяжёлый кабаний разгон
+		enem4: { movementStyle: 'accelerate', cadence: 0.82, telegraphMs: 620, speedMultiplier: 1.16, damageMultiplier: 1.07, speedVariance: [0.94, 1.04, 1.14, 1.22, 1.28] }, // LEFT_SCRATCH: частые ускоряющиеся царапины
+		enem5: { movementStyle: 'weave', cadence: 0.78, telegraphMs: 680, speedMultiplier: 1.12, damageMultiplier: 1.15, speedVariance: [0.86, 0.98, 1.10, 1.20, 1.28] } // CONVERGE_FLANKS: волчье схождение флангов
+	}
+};
 
 const ENEMY_TYPES = {
 
@@ -124,7 +140,7 @@ const ENEMY_TYPES = {
 
         image: 'images/enemies/regions/1_smesh_les/lvl5/1.webp',  
 
-        baseHP: (2600) +(2600*factorChar),
+        baseHP: (3900) + (3900 * factorChar),
 
         baseSpeed: 0,                  
 
@@ -148,7 +164,7 @@ const ENEMY_TYPES = {
 
         image: 'images/enemies/regions/1_smesh_les/lvl5/2.webp',
 
-        baseHP: (4200) + (4200*factorChar),
+        baseHP: (15000) + (15000 * factorChar),
 
         baseSpeed: 0,
 

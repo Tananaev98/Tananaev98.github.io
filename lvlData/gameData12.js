@@ -1,6 +1,22 @@
 let lvlNumber = 12;
 let factorChar = (lvlNumber * 5) / 100;
 
+const bossCombatConfig = {
+	levelCadence: 0.80, damageMultiplier: 1.17, minWaveDelay: 2250, minShotDelay: 145, minTelegraphMs: 480,
+	phases: [
+		{ phase: 1, minHp: 0.66, cadence: 1.00, speed: 1.00, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.12, maxActiveAttacks: 15 },
+		{ phase: 2, minHp: 0.31, cadence: 0.78, speed: 1.11, damage: 1.13, telegraphMultiplier: 0.90, surpriseChance: 0.23, maxActiveAttacks: 19 },
+		{ phase: 3, minHp: 0.00, cadence: 0.64, speed: 1.21, damage: 1.25, telegraphMultiplier: 0.84, surpriseChance: 0.32, maxActiveAttacks: 21 }
+	],
+	bosses: {
+		enem1: { movementStyle: 'straight', cadence: 0.96, telegraphMs: 720, speedMultiplier: 1.08, damageMultiplier: 1.06, speedVariance: [0.88, 0.98, 1.08, 1.18, 1.28] }, // PACK_LEFT_THEN_RIGHT: строевой залп
+		enem2: { movementStyle: 'accelerate', cadence: 0.98, telegraphMs: 760, speedMultiplier: 0.94, damageMultiplier: 0.62, speedVariance: [0.82, 0.90, 0.98, 1.06, 1.14] }, // TOP_RAIN: частый, но дробный дождь; не складывать скорость+плотность+урон
+		enem3: { movementStyle: 'pause', cadence: 1.18, telegraphMs: 920, speedMultiplier: 0.88, damageMultiplier: 1.30, speedVariance: [0.76, 0.86, 0.96, 1.08, 1.18] }, // HEAVY_MID: замах дубиной
+		enem4: { movementStyle: 'weave', cadence: 0.94, telegraphMs: 700, speedMultiplier: 1.05, damageMultiplier: 0.58, speedVariance: [0.84, 0.92, 1.00, 1.08, 1.16] }, // FAST_ZIG_HIGH: быстрая серия с одной доминирующей стороной
+		enem5: { movementStyle: 'drift', cadence: 0.68, telegraphMs: 600, speedMultiplier: 1.22, damageMultiplier: 1.24, speedVariance: [0.86, 1.00, 1.14, 1.28, 1.40] } // RHYTHM_PULSE: барабанный пульс L/R
+	}
+};
+
 
 const ENEMY_TYPES = {
 
@@ -63,7 +79,7 @@ const ENEMY_TYPES = {
 		name: 'enem1',
 		dispName: 'Строевик',
 		image: 'images/enemies/regions/1_smesh_les/lvl12/1.webp',
-		baseHP: (3300) + (3300 * factorChar),
+		baseHP: (4950) + (4950 * factorChar),
 		baseSpeed: 0,
 		baseDamage: (20) + (20) * factorChar,
 		spawnWeight: 5,
@@ -76,7 +92,7 @@ const ENEMY_TYPES = {
 		name: 'enem2',
 		dispName: 'Колчанчик',
 		image: 'images/enemies/regions/1_smesh_les/lvl12/2.webp',
-		baseHP: (5600) + (5600 * factorChar),
+		baseHP: (15000) + (15000 * factorChar),
 		baseSpeed: 0,
 		baseDamage: (22) + (22) * factorChar,
 		spawnWeight: 15,
@@ -250,9 +266,9 @@ const bossAbilities = [
 
 const mBossDelayAb = [
 	{ boss: 'enem1', bossDelayAb: 270, bossDelayAbDop: 5600 }, // залп L потом R
-	{ boss: 'enem2', bossDelayAb: 190, bossDelayAbDop: 4700 }, // дождь сверху частый
+	{ boss: 'enem2', bossDelayAb: 260, bossDelayAbDop: 5400 }, // дождь сверху: время прочитать и расчистить полосу
 	{ boss: 'enem3', bossDelayAb: 320, bossDelayAbDop: 5800 }, // тяжёлые удары, пауза после
-	{ boss: 'enem4', bossDelayAb: 230, bossDelayAbDop: 5000 }, // зигзаг высоко, быстрый ритм
+	{ boss: 'enem4', bossDelayAb: 280, bossDelayAbDop: 5200 }, // быстро, но игрок успевает сменить сторону
 	{ boss: 'enem5', bossDelayAb: 210, bossDelayAbDop: 4800 }, // пульс L/R непрерывный
 ];
 
@@ -268,13 +284,13 @@ const bossAbilitiesDop = [
 	{ boss: 'enem1', indexAbilities: [4, 10, 13, 15] },
 
 	// Колчанчик — TOP_RAIN
-	{ boss: 'enem2', indexAbilities: [0, 1, 2, 3, 4, 5] },
-	{ boss: 'enem2', indexAbilities: [10, 11, 12, 13] },
-	{ boss: 'enem2', indexAbilities: [0, 2, 4, 10, 12] },
+	{ boss: 'enem2', indexAbilities: [0, 2, 4] },
+	{ boss: 'enem2', indexAbilities: [1, 3, 5] },
+	{ boss: 'enem2', indexAbilities: [10, 12, 11, 13] },
 	{ boss: 'enem2', indexAbilities: [6, 7, 8] },
 	{ boss: 'enem2', indexAbilities: [9] },
-	{ boss: 'enem2', indexAbilities: [14, 10, 15, 13] },
-	{ boss: 'enem2', indexAbilities: [1, 6, 11, 9, 4] },
+	{ boss: 'enem2', indexAbilities: [14, 10, 15] },
+	{ boss: 'enem2', indexAbilities: [1, 6, 11, 9] },
 
 	// Дубинщик — HEAVY_MID
 	{ boss: 'enem3', indexAbilities: [0, 1, 2, 3, 4, 5, 6] },
@@ -286,13 +302,13 @@ const bossAbilitiesDop = [
 	{ boss: 'enem3', indexAbilities: [2, 9, 5, 11, 14] },
 
 	// Сабелька — FAST_ZIG_HIGH
-	{ boss: 'enem4', indexAbilities: [0, 1, 2, 3, 4, 5, 6, 7] },
 	{ boss: 'enem4', indexAbilities: [0, 2, 4, 6] },
-	{ boss: 'enem4', indexAbilities: [8, 9, 10] },
-	{ boss: 'enem4', indexAbilities: [11, 12, 13, 14, 15] },
-	{ boss: 'enem4', indexAbilities: [0, 8, 2, 10] },
-	{ boss: 'enem4', indexAbilities: [1, 9, 5, 14] },
-	{ boss: 'enem4', indexAbilities: [3, 7, 10, 15, 13] },
+	{ boss: 'enem4', indexAbilities: [1, 3, 5, 7] },
+	{ boss: 'enem4', indexAbilities: [8, 14] },
+	{ boss: 'enem4', indexAbilities: [9, 10, 15] },
+	{ boss: 'enem4', indexAbilities: [0, 2, 9] },
+	{ boss: 'enem4', indexAbilities: [1, 3, 14] },
+	{ boss: 'enem4', indexAbilities: [11, 13, 12] },
 
 	// Барабань — RHYTHM_PULSE
 	{ boss: 'enem5', indexAbilities: [0, 1] },
