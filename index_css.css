@@ -430,22 +430,24 @@ html.is-menu {
 
 .character-select-modal .modal-content {
     background: linear-gradient(135deg, #D1B892, #B89A6D);
-    padding: 30px;
+    padding: 24px;
     border-radius: 15px;
     border: 5px solid #8B4513;
-    width: 90%;
-	height: 90%;
-    max-width: 90%;
-    max-height: 80%;
+    width: min(1400px, calc(100% - 48px));
+	height: min(90vh, 720px);
+    max-width: none;
+    max-height: none;
     overflow: hidden;
     box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
     position: relative;
+    box-sizing: border-box;
 
-    /* Сетка внутри модального окна */
+    /* На широком экране сетка и карточка занимают независимые колонки. */
     display: grid;
-    grid-template-columns: 1fr 300px; /* левая колонка резиновая, правая фиксированная */
-    grid-template-rows: auto 1fr auto; /* строки: заголовок, контент, кнопка (но кнопка только справа) */
-    gap: 20px;
+    grid-template-columns: minmax(360px, 0.85fr) minmax(0, 1.7fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    column-gap: 16px;
+    row-gap: 12px;
     align-items: start;
 }
 
@@ -498,22 +500,33 @@ html.is-menu {
     transform: scale(0.95);
 }
 
-/* Сетка портретов — левая колонка, занимает вторую и третью строки */
+/* Сетка портретов — самостоятельная левая колонка без наложения карточки. */
 .character-grid {
     display: grid;
-    grid-template-columns: repeat(8, min-content);
-    column-gap: 5px;
-    row-gap: 15px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    column-gap: 6px;
+    row-gap: 10px;
     margin: 0;
-    padding: 10px 0;
-    justify-content: start;
+    padding: 6px;
+    justify-content: stretch;
     grid-column: 1;
-    grid-row: 2 / span 2; /* растягивается на строки 2 и 3 */
+    grid-row: 2 / 4;
+    align-content: start;
+    min-width: 0;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    box-sizing: border-box;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(92, 64, 51, 0.55) transparent;
 }
 
 .character-portrait {
-    width: 100px;
-    height: 120px;
+    width: 100%;
+    height: auto;
+    max-width: 100px;
+    aspect-ratio: 5 / 6;
+    justify-self: center;
     border: 3px solid #5C4033;
     border-radius: 5px;
     background: #3e2a1c;
@@ -554,53 +567,104 @@ html.is-menu {
     transform: scale(1.02);
 }
 
-/* Блок информации о герое — правая колонка, вторая строка */
+/* Карточка героя — самостоятельная правая колонка. */
 .character-info {
-	height: 550px; 
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    height: 100%;
+    min-height: 0;
     background: rgba(123, 31, 162, 0.1);
     border: 3px solid #8B4513;
     border-radius: 8px;
-    padding: 20px;
+    padding: 16px;
     box-shadow: inset 0 0 15px rgba(0,0,0,0.7), 0 5px 15px rgba(0,0,0,0.5);
     color: #5C4033;
     position: relative;
     grid-column: 2;
     grid-row: 2;
-    width: 270%;
+    width: 100%;
     box-sizing: border-box;
-	justify-self: start;
-	transform: translateX(-63%);
+    justify-self: stretch;
+    overflow: hidden;
 }
 
 .character-info h3 {
     color: #5C4033;
-    margin-bottom: 15px;
+    margin: 0 0 4px;
     font-size: 24px;
     text-align: center;
     letter-spacing: 2px;
+    line-height: 1.2;
+}
+
+.hero-difficulty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 24px;
+    margin: 0 0 4px;
+    color: #5C4033;
+    font-weight: bold;
+}
+
+.difficulty-label,
+.difficulty-value {
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.difficulty-value {
+    min-width: 42px;
+    color: #7A3E12;
+    font-variant-numeric: tabular-nums;
+}
+
+.difficulty-stars {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    line-height: 1;
+}
+
+.difficulty-star {
+    display: inline-block;
+    font-family: Arial, sans-serif;
+    font-size: 22px;
+    line-height: 1;
+    color: transparent;
+    background: linear-gradient(
+        90deg,
+        #FFD54A 0%,
+        #FFB300 var(--star-fill),
+        rgba(92, 64, 51, 0.18) var(--star-fill),
+        rgba(92, 64, 51, 0.18) 100%
+    );
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke: 0.8px #6B3F18;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
 }
 
 .hero-stats {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1px;
-    line-height: 1.2;
-	margin-top: 4%;
-	
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    line-height: 1.15;
+    margin: 0;
 }
 
 .hero-stats p {
     display: flex;
-    justify-content: flex-start; 
+    justify-content: flex-start;
     align-items: baseline;
-    gap: 8px; 
+    gap: 8px;
     margin: 0;
-    padding: 2px 0;
+    padding: 0;
     font-size: 16px;
     color: blue;
-    flex-wrap: wrap; 
-	transform: translateX(89%);
-
+    flex-wrap: wrap;
 }
 
 
@@ -618,32 +682,48 @@ html.is-menu {
 	
 }
 
-/* Контейнер для содержимого панели информации (имя + статы + картинка) */
+/* Внутри карточки арт остаётся слева, характеристики — справа. */
 .character-info-content {
-    display: flex;
-    gap: 20px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(270px, 0.9fr);
+    gap: 16px;
     height: 100%;
+    min-height: 0;
+    overflow: hidden;
 }
 
 /* Блок со статами */
 .character-stats {
-    flex: 1;
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: 0 4px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(92, 64, 51, 0.55) transparent;
 }
 
 /* Блок с полным изображением */
 .character-fullimage {
-    flex: 0 0 200px;           /* фиксированная ширина колонки */
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+    min-height: 0;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding-right: 4px;
 }
 
 .character-fullimage img {
-
-    max-width: 200%;
-    max-height: 200%;         /* ограничиваем высоту, чтобы не вылезало */
-	transform: translateX(-110%);
-	margin-bottom: 35%;
+    display: block;
+    width: 90%;
+    height: 90%;
+    max-width: 369px;
+    max-height: 90%;
+    box-sizing: border-box;
     object-fit: contain;
     border: 2px solid #8B4513;
     border-radius: 8px;
@@ -713,22 +793,39 @@ body, .main_menu_image, .select-character-button,
 
 .statH {
 	color: #483554;
-    font-size: 20px;	
-	 font-weight: bold;
+    font-size: 20px;
+	font-weight: bold;
 }
 
-.feature-container {
-  display: grid;
-  /* 'max-content' заставит первую колонку быть ровно по ширине слова */
-  grid-template-columns: max-content 1fr; 
-  gap: 6px;      /* Расстояние между двоеточием и текстом */
-  align-items: start;
-  text-align: left; /* Важно, если у родителя стоит center */
+.stats-intro {
+    margin-bottom: 4px;
+}
+
+.stats-intro-copy {
+    margin-top: 3px;
+    color: blue;
+    font-size: 12.5px;
+    line-height: 1.15;
+}
+
+.hero-stats p.feature-container {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+    align-items: start;
+    text-align: left;
+    margin-top: 4px;
 }
 
 .featur {
-  font-weight: bold; /* Для красоты, как на скрине */
-  white-space: nowrap;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.feature-container .value {
+    min-width: 0;
+    line-height: 1.12;
+    overflow-wrap: anywhere;
 }
 
 
@@ -741,12 +838,11 @@ body, .main_menu_image, .select-character-button,
     flex-wrap: nowrap;
     align-items: flex-end;
     justify-content: flex-end;
-    gap: 16px;
-    width: 270%;
-    max-width: none;
+    gap: 12px;
+    width: 100%;
+    max-width: 100%;
     box-sizing: border-box;
-    justify-self: start;
-    transform: translateX(-63%);
+    justify-self: stretch;
     margin-top: 0;
 }
 
@@ -933,11 +1029,9 @@ body, .main_menu_image, .select-character-button,
 }
 
 /* =============================================================================
-   МОБИЛЬНАЯ ВЁРСТКА: окно выбора / улучшения персонажа
-   ПК-стили выше не трогаем
+   АДАПТИВНАЯ ВЁРСТКА: на узком окне сетка располагается над карточкой
    ============================================================================= */
-/* Только по ширине экрана — не цепляем ПК с тачскрином */
-@media (max-width: 768px) {
+@media (max-width: 1240px) {
     .character-select-modal,
     .character-select-modal .modal-content,
     .character-select-modal .character-info,
@@ -1027,6 +1121,7 @@ body, .main_menu_image, .select-character-button,
     /* Инфо + статы — скролл, кнопки остаются снизу */
     .character-info {
         flex: 1 1 auto;
+        display: block;
         min-height: 0;
         height: auto;
         width: 100%;
@@ -1048,10 +1143,27 @@ body, .main_menu_image, .select-character-button,
         letter-spacing: 1px;
     }
 
+    .hero-difficulty {
+        gap: 5px;
+        margin: 0 0 7px;
+        min-height: 22px;
+    }
+
+    .difficulty-label,
+    .difficulty-value {
+        font-size: 12px;
+    }
+
+    .difficulty-star {
+        font-size: 19px;
+        -webkit-text-stroke-width: 0.6px;
+    }
+
     .character-info-content {
-        flex-direction: column;
+        display: block;
         gap: 8px;
         height: auto;
+        overflow: visible;
     }
 
     /* Полный арт на мобилке прячем — экономим место под статы и кнопки */
@@ -1061,7 +1173,13 @@ body, .main_menu_image, .select-character-button,
 
     .character-stats {
         flex: 1 1 auto;
+        display: block;
+        grid-column: auto;
+        grid-row: auto;
         width: 100%;
+        min-height: auto;
+        overflow: visible;
+        padding: 0;
     }
 
     .hero-stats {
@@ -1070,8 +1188,12 @@ body, .main_menu_image, .select-character-button,
     }
 
     /* Длинное пояснение на мобилке не нужно */
-    .hero-stats > p:nth-child(n + 2):nth-child(-n + 6) {
+    .stats-intro-copy {
         display: none;
+    }
+
+    .stats-intro {
+        margin-bottom: 3px;
     }
 
     .hero-stats p {
@@ -1090,7 +1212,7 @@ body, .main_menu_image, .select-character-button,
         font-size: 14px;
     }
 
-    .feature-container {
+    .hero-stats p.feature-container {
         grid-template-columns: 1fr;
         gap: 2px;
     }
@@ -1152,5 +1274,18 @@ body, .main_menu_image, .select-character-button,
     .character-select-modal .modal-content .modal-actions {
         gap: 5px;
         padding-top: 4px;
+    }
+}
+
+/* На планшетной ширине помещаем портреты в две строки, сохраняя мобильную карточку. */
+@media (min-width: 601px) and (max-width: 1240px) {
+    .character-grid {
+        grid-template-columns: repeat(9, 1fr);
+    }
+
+    .character-portrait {
+        max-width: 70px;
+        max-height: 84px;
+        justify-self: center;
     }
 }

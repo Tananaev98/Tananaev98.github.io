@@ -266,6 +266,221 @@ function rebuildBalancedHero(defaultHero, savedHero) {
     return rebuiltHero;
 }
 
+const HERO_DIFFICULTY_MODEL = Object.freeze({
+    survivalWeight: 0.85,
+    damageWeight: 0.08,
+    fireRateWeight: 0.04,
+    mechanicWeight: 0.03,
+    eremeiExpectedRampShare: 0.656,
+    woundDurationSeconds: 5,
+    woundTickSeconds: 0.3,
+    woundDamageSharePerTick: 0.1,
+    volatilityReference: 0.75,
+    rampReference: 0.50
+});
+
+function clampHeroDifficultyValue(value, min = 0, max = 1) {
+    return Math.min(max, Math.max(min, value));
+}
+
+function isHeroEligibleForDifficulty(hero) {
+    return isPlainObject(hero)
+        && typeof hero.name === 'string'
+        && typeof hero.dispName === 'string'
+        && typeof hero.permanentGrowthProfile === 'string'
+        && typeof hero.feature === 'string'
+        && typeof hero.fullImage === 'string'
+        && Number.isFinite(hero.startGlobalDamage)
+        && Number.isFinite(hero.startGlobalCritChance)
+        && Number.isFinite(hero.startGlobalCritMultiplier)
+        && Number.isFinite(hero.startGlobalWoundChance)
+        && Number.isFinite(hero.startSHOT_INTERVAL)
+        && Number.isFinite(hero.castleHP)
+        && Number.isFinite(hero.startCastleDamageReduction);
+}
+
+function buildDifficultyReferenceHero(defaultHero, targetLevel) {
+    const referenceHero = { ...defaultHero };
+    const normalizedLevel = Math.min(
+        HERO_MAX_LEVEL,
+        Math.max(1, Math.floor(Number(targetLevel) || 1))
+    );
+
+    for (let level = 1; level < normalizedLevel; level++) {
+        applyHeroPermanentStatUpgrade(referenceHero);
+    }
+
+    referenceHero.level = normalizedLevel;
+    return referenceHero;
+}
+
+function getHeroAttackMultiplierStats(hero) {
+    const doubleChance = clampHeroDifficultyValue(Number(hero.doubleAttackChance) || 0);
+    const tripleChance = clampHeroDifficultyValue(Number(hero.tripleAttackChance) || 0);
+    const jackpotChance = clampHeroDifficultyValue(Number(hero.jackpotAttackChance) || 0);
+    const normalChance = Math.max(0, 1 - doubleChance - tripleChance - jackpotChance);
+    const jackpotMultiplier = Math.max(1, Number(hero.jackpotAttackMultiplier) || 1);
+    const outcomes = [
+        { chance: normalChance, multiplier: 1 },
+        { chance: doubleChance, multiplier: 2 },
+        { chance: tripleChance, multiplier: 3 },
+        { chance: jackpotChance, multiplier: jackpotMultiplier }
+    ];
+    const totalChance = outcomes.reduce((sum, outcome) => sum + outcome.chance, 0) || 1;
+    const mean = outcomes.reduce(
+        (sum, outcome) => sum + (outcome.chance * outcome.multiplier),
+        0
+    ) / totalChance;
+    const variance = outcomes.reduce(
+        (sum, outcome) => sum + (
+            outcome.chance * Math.pow(outcome.multiplier - mean, 2)
+        ),
+        0
+    ) / totalChance;
+
+    return {
+        mean: Math.max(1, mean),
+        coefficientOfVariation: mean > 0 ? Math.sqrt(Math.max(0, variance)) / mean : 0
+    };
+}
+
+function getHeroExpectedPermanentDps(hero) {
+    const attackStats = getHeroAttackMultiplierStats(hero);
+    const hitsPerSecond = 1000 / Math.max(200, Number(hero.startSHOT_INTERVAL) || 1000);
+    const ordinaryCritChance = clampHeroDifficultyValue(
+        Number(hero.startGlobalCritChance) || 0
+    );
+    const guaranteedCritEvery = Math.max(0, Math.floor(Number(hero.guaranteedCritEvery) || 0));
+    const guaranteedCritShare = guaranteedCritEvery > 0 ? 1 / guaranteedCritEvery : 0;
+    const effectiveCritChance = guaranteedCritShare + (
+        (1 - guaranteedCritShare) * ordinaryCritChance
+    );
+    const critMultiplier = Math.max(1, Number(hero.startGlobalCritMultiplier) || 1);
+    const critFactor = 1 + (effectiveCritChance * (critMultiplier - 1));
+    const maximumRampBonus = Math.max(0, Number(hero.maxDamageBonusPercentSize) || 0);
+    const expectedRampMultiplier = 1 + (
+        maximumRampBonus * HERO_DIFFICULTY_MODEL.eremeiExpectedRampShare
+    );
+    const baseAverageHitDamage = Math.max(0, Number(hero.startGlobalDamage) || 0)
+        * critFactor
+        * expectedRampMultiplier;
+    const directDps = baseAverageHitDamage * attackStats.mean * hitsPerSecond;
+    const woundProcRate = hitsPerSecond * clampHeroDifficultyValue(
+        Number(hero.startGlobalWoundChance) || 0
+    );
+    const averageWaitForWound = woundProcRate > 0 ? 1 / woundProcRate : Infinity;
+    const woundUptime = Number.isFinite(averageWaitForWound)
+        ? HERO_DIFFICULTY_MODEL.woundDurationSeconds / (
+            HERO_DIFFICULTY_MODEL.woundDurationSeconds + averageWaitForWound
+        )
+        : 0;
+    const woundDps = woundUptime
+        * baseAverageHitDamage
+        * (
+            HERO_DIFFICULTY_MODEL.woundDamageSharePerTick
+            / HERO_DIFFICULTY_MODEL.woundTickSeconds
+        );
+
+    return directDps + woundDps;
+}
+
+function getHeroDifficultyMetrics(hero) {
+    const defense = clampHeroDifficultyValue(
+        Number(hero.startCastleDamageReduction) || 0,
+        0,
+        MAX_CASTLE_DAMAGE_REDUCTION
+    );
+    const attackStats = getHeroAttackMultiplierStats(hero);
+    const volatilityBurden = clampHeroDifficultyValue(
+        attackStats.coefficientOfVariation / HERO_DIFFICULTY_MODEL.volatilityReference
+    );
+    const rampBurden = clampHeroDifficultyValue(
+        (Math.max(0, Number(hero.maxDamageBonusPercentSize) || 0))
+        / HERO_DIFFICULTY_MODEL.rampReference
+    );
+
+    return {
+        effectiveHp: Math.max(1, Number(hero.castleHP) || 1) / (1 - defense),
+        expectedDps: Math.max(0.001, getHeroExpectedPermanentDps(hero)),
+        shotsPerSecond: 1000 / Math.max(200, Number(hero.startSHOT_INTERVAL) || 1000),
+        mechanicBurden: Math.max(volatilityBurden, rampBurden)
+    };
+}
+
+function normalizeHeroDifficultyMetric(value, values, lowerIsHarder) {
+    const transform = metricValue => lowerIsHarder
+        ? 1 / Math.max(0.001, metricValue)
+        : metricValue;
+    const transformedValues = values.map(transform);
+    const transformedValue = transform(value);
+    const minimum = Math.min(...transformedValues);
+    const maximum = Math.max(...transformedValues);
+
+    if (!Number.isFinite(minimum) || !Number.isFinite(maximum) || maximum - minimum < 1e-9) {
+        return 0.5;
+    }
+
+    return clampHeroDifficultyValue((transformedValue - minimum) / (maximum - minimum));
+}
+
+function calculateHeroDifficulty(hero) {
+    if (!isHeroEligibleForDifficulty(hero)) return 3;
+
+    const defaults = getDefaultGameState();
+    const targetLevel = Math.min(
+        HERO_MAX_LEVEL,
+        Math.max(1, Math.floor(Number(hero.level) || 1))
+    );
+    let candidateIndex = -1;
+    const comparisonHeroes = defaults.mHero
+        .map(heroKey => defaults[heroKey])
+        .filter(isHeroEligibleForDifficulty)
+        .map((defaultHero, referenceIndex) => {
+            const isCandidate = defaultHero.name === hero.name
+                && defaultHero.dispName === hero.dispName;
+
+            if (isCandidate) {
+                candidateIndex = referenceIndex;
+                return hero;
+            }
+
+            return buildDifficultyReferenceHero(defaultHero, targetLevel);
+        });
+
+    if (candidateIndex < 0) {
+        candidateIndex = comparisonHeroes.length;
+        comparisonHeroes.push(hero);
+    }
+
+    if (comparisonHeroes.length < 2) return 3;
+
+    const allMetrics = comparisonHeroes.map(getHeroDifficultyMetrics);
+    const effectiveHpValues = allMetrics.map(metrics => metrics.effectiveHp);
+    const dpsValues = allMetrics.map(metrics => metrics.expectedDps);
+    const fireRateValues = allMetrics.map(metrics => metrics.shotsPerSecond);
+    const mechanicValues = allMetrics.map(metrics => metrics.mechanicBurden);
+    const rawDifficultyValues = allMetrics.map(metrics => (
+        normalizeHeroDifficultyMetric(metrics.effectiveHp, effectiveHpValues, true)
+            * HERO_DIFFICULTY_MODEL.survivalWeight
+        + normalizeHeroDifficultyMetric(metrics.expectedDps, dpsValues, true)
+            * HERO_DIFFICULTY_MODEL.damageWeight
+        + normalizeHeroDifficultyMetric(metrics.shotsPerSecond, fireRateValues, true)
+            * HERO_DIFFICULTY_MODEL.fireRateWeight
+        + normalizeHeroDifficultyMetric(metrics.mechanicBurden, mechanicValues, false)
+            * HERO_DIFFICULTY_MODEL.mechanicWeight
+    ));
+    const minimumDifficulty = Math.min(...rawDifficultyValues);
+    const maximumDifficulty = Math.max(...rawDifficultyValues);
+
+    if (maximumDifficulty - minimumDifficulty < 1e-9) return 3;
+
+    const normalizedDifficulty = (
+        rawDifficultyValues[candidateIndex] - minimumDifficulty
+    ) / (maximumDifficulty - minimumDifficulty);
+
+    return Math.round((1 + (4 * clampHeroDifficultyValue(normalizedDifficulty))) * 10) / 10;
+}
+
 function migrateGameState(savedState) {
     const defaults = getDefaultGameState();
     if (!isPlainObject(savedState)) return defaults;

@@ -30,6 +30,7 @@ globalThis.progressionApi = {
     getHeroInvestedZlata,
     getBossDamageProgressionMultiplier,
     calculateBossAttackDamage,
+    calculateHeroDifficulty,
     getHeroDefenseCap,
     getDefaultGameState,
     applyHeroPermanentStatUpgrade,
@@ -76,11 +77,18 @@ function buildHeroAtLevel(heroKey, targetLevel) {
     return hero;
 }
 
+const difficultyRows = [];
 for (const level of [1, 40, 80, 120, 160, 200]) {
     const eremei = buildHeroAtLevel('eremei', level);
     const dunya = buildHeroAtLevel('dunya', level);
     const luka = buildHeroAtLevel('luka', level);
     const effectiveHp = hero => hero.castleHP / (1 - hero.startCastleDamageReduction);
+    const difficulty = {
+        eremei: api.calculateHeroDifficulty(eremei),
+        dunya: api.calculateHeroDifficulty(dunya),
+        luka: api.calculateHeroDifficulty(luka)
+    };
+    difficultyRows.push({ level, ...difficulty });
 
     assert.ok(effectiveHp(eremei) > effectiveHp(dunya));
     assert.ok(effectiveHp(dunya) > effectiveHp(luka));
@@ -91,7 +99,13 @@ for (const level of [1, 40, 80, 120, 160, 200]) {
     assert.ok(eremei.startCastleDamageReduction <= api.getHeroDefenseCap(eremei));
     assert.ok(dunya.startCastleDamageReduction <= api.getHeroDefenseCap(dunya));
     assert.ok(luka.startCastleDamageReduction <= api.getHeroDefenseCap(luka));
+    assert.equal(difficulty.eremei, 1);
+    assert.ok(difficulty.dunya > difficulty.eremei);
+    assert.ok(difficulty.dunya < difficulty.luka);
+    assert.equal(difficulty.luka, 5);
 }
+
+console.table(difficultyRows);
 
 assert.equal(api.getHeroDefenseCap(buildHeroAtLevel('eremei', 200)), 0.60);
 assert.equal(api.getHeroDefenseCap(buildHeroAtLevel('dunya', 200)), 0.50);

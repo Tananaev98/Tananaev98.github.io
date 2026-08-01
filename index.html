@@ -337,21 +337,48 @@ function openCharacterSelect() {
         return `${Number((value * 100).toFixed(2))}%`;
     }
 
+    function getHeroDifficultyMarkup(hero) {
+        const difficulty = calculateHeroDifficulty(hero);
+        const formattedDifficulty = difficulty.toFixed(1).replace('.', ',');
+        const stars = Array.from({ length: 5 }, (_, index) => {
+            const starFill = Math.round(
+                Math.min(1, Math.max(0, difficulty - index)) * 1000
+            ) / 10;
+            return `<span class="difficulty-star" style="--star-fill: ${starFill}%;">★</span>`;
+        }).join('');
+
+        return `
+            <div class="hero-difficulty"
+                role="img"
+                aria-label="Сложность игры за персонажа: ${formattedDifficulty} из 5"
+                title="Рассчитывается относительно героев того же уровня по выживаемости, среднему урону, темпу атаки и особенностям">
+                <span class="difficulty-label">Сложность:</span>
+                <span class="difficulty-stars" aria-hidden="true">${stars}</span>
+                <span class="difficulty-value">${formattedDifficulty} / 5</span>
+            </div>
+        `;
+    }
+
     function updateInfoPanel(heroKey) {
         const hero = gameState[heroKey];
         if (!hero || !hero.unlock) return;
 
         infoPanel.innerHTML = `
             <h3>${hero.dispName}</h3>
+            ${getHeroDifficultyMarkup(hero)}
             <div class="character-info-content">
                 <div class="character-stats">
                     <div class="hero-stats">
-                        <p><a class="statH">Стартовые характеристики:</a></p>
-                        <p><a>(Характеристики с которыми персонаж </a></p>
-                        <p><a>начинает прохождение уровней</a></p>
-                        <p><a>чем выше та или иная характеристика</a></p>
-                        <p><a>тем сильнее будут ее временные усиления</a></p>
-                        <p><a>при прохождении уровней)</a></p><br>
+						<div class="stats-intro">
+							<div class="statH">Стартовые характеристики:</div>
+							<div class="stats-intro-copy">
+								(Характеристики, с которыми персонаж<br>
+								начинает прохождение уровней.<br>
+								Чем выше та или иная характеристика,<br>
+								тем сильнее будут её временные усиления<br>
+								при прохождении уровней.)
+							</div>
+						</div>
 						<p><span>Уровень:</span> <span class="value stat">${Math.round(hero.level)}</span></p>
                         <p><span>Урон:</span> <span class="value stat-damage">${Math.round(hero.startGlobalDamage)}</span></p>
                         <p><span>Шанс критического урона:</span> <span class="value stat-critChance">${formatPercent(hero.startGlobalCritChance)}</span></p>
