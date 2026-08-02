@@ -196,27 +196,27 @@ const bossAbilities = [
 	{ boss: 'enem1', type: 'enem11', xPos: 70, yPos: 26, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 12 }, //4
 	{ boss: 'enem1', type: 'enem11', xPos: 18, yPos: 18, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 14 }, //5
 	{ boss: 'enem1', type: 'enem11', xPos: 82, yPos: 18, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 15 }, //6
-	{ boss: 'enem1', type: 'enem11', xPos: 50, yPos: 14, customHP: 1, customDamage: attackDamage.enem1.heavy,  customSpeed: 17 }, //7 язык колокола
+	{ boss: 'enem1', type: 'enem11', xPos: 50, yPos: 14, customHP: 1, customDamage: attackDamage.enem1.heavy,  customSpeed: 15 }, //7 язык колокола
 	{ boss: 'enem1', type: 'enem11', xPos: 36, yPos: 7,  customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 21 }, //8
 	{ boss: 'enem1', type: 'enem11', xPos: 64, yPos: 6,  customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 23 }, //9
 	{ boss: 'enem1', type: 'enem11', xPos: 16, yPos: 48, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 4 },  //10
 	{ boss: 'enem1', type: 'enem11', xPos: 84, yPos: 48, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 6 },  //11
 	{ boss: 'enem1', type: 'enem11', xPos: 50, yPos: 5,  customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 25 }, //12 быстрый бой часов
 	{ boss: 'enem1', type: 'enem11', xPos: 26, yPos: 20, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 13 }, //13
-	{ boss: 'enem1', type: 'enem11', xPos: 74, yPos: 20, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 16 }, //14
+	{ boss: 'enem1', type: 'enem11', xPos: 74, yPos: 20, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 15 }, //14
 	{ boss: 'enem1', type: 'enem11', xPos: 50, yPos: 30, customHP: 1, customDamage: attackDamage.enem1.heavy,  customSpeed: 9 },  //15 ложный сон → удар
 
 	// ===== Каркун-Вещун: PERIMETER_FLIGHT — одна дуга поля за серию =====
 	{ boss: 'enem2', type: 'enem22', xPos: 14, yPos: 8,  customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 18 }, //0 верх слева
 	{ boss: 'enem2', type: 'enem22', xPos: 42, yPos: 6,  customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 22 }, //1
 	{ boss: 'enem2', type: 'enem22', xPos: 78, yPos: 7,  customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 24 }, //2 верх справа
-	{ boss: 'enem2', type: 'enem22', xPos: 90, yPos: 18, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 16 }, //3
+	{ boss: 'enem2', type: 'enem22', xPos: 90, yPos: 18, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 15 }, //3
 	{ boss: 'enem2', type: 'enem22', xPos: 90, yPos: 34, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 12 }, //4
 	{ boss: 'enem2', type: 'enem22', xPos: 78, yPos: 48, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 7 },  //5
 	{ boss: 'enem2', type: 'enem22', xPos: 50, yPos: 50, customHP: 1, customDamage: attackDamage.enem2.heavy,  customSpeed: 5 },  //6 низ центра
 	{ boss: 'enem2', type: 'enem22', xPos: 22, yPos: 48, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 8 },  //7
 	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 34, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 13 }, //8
-	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 18, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 17 }, //9
+	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 18, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 15 }, //9
 	{ boss: 'enem2', type: 'enem22', xPos: 30, yPos: 9,  customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 20 }, //10
 	{ boss: 'enem2', type: 'enem22', xPos: 70, yPos: 8,  customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 23 }, //11
 	{ boss: 'enem2', type: 'enem22', xPos: 84, yPos: 28, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 11 }, //12
@@ -234,7 +234,7 @@ const bossAbilities = [
 	{ boss: 'enem3', type: 'enem33', xPos: 82, yPos: 28, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 12 }, //6
 	{ boss: 'enem3', type: 'enem33', xPos: 38, yPos: 24, customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 14 }, //7
 	{ boss: 'enem3', type: 'enem33', xPos: 62, yPos: 24, customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 15 }, //8
-	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 18, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 17 }, //9
+	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 18, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 15 }, //9
 	{ boss: 'enem3', type: 'enem33', xPos: 22, yPos: 6,  customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 21 }, //10
 	{ boss: 'enem3', type: 'enem33', xPos: 78, yPos: 7,  customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 23 }, //11
 	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 8,  customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 20 }, //12
@@ -268,7 +268,7 @@ const bossAbilities = [
 	{ boss: 'enem5', type: 'enem55', xPos: 84, yPos: 26, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 12 }, //4
 	{ boss: 'enem5', type: 'enem55', xPos: 38, yPos: 20, customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 14 }, //5
 	{ boss: 'enem5', type: 'enem55', xPos: 62, yPos: 20, customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 15 }, //6
-	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 16, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 17 }, //7 удар посохом
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 16, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 15 }, //7 удар посохом
 	{ boss: 'enem5', type: 'enem55', xPos: 22, yPos: 7,  customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 21 }, //8
 	{ boss: 'enem5', type: 'enem55', xPos: 78, yPos: 6,  customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 23 }, //9
 	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 5,  customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 25 }, //10 ведьмина вспышка

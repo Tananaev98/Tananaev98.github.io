@@ -140,6 +140,72 @@ function calculateBossAttackDamage(
     ));
 }
 
+function getBossComboDamageMultiplier(
+    combo,
+    abilities,
+    isLongScalingEnabled = false,
+    isShortScalingEnabled = false
+) {
+    const attacks = (combo?.indexAbilities ?? [])
+        .map(index => abilities[index])
+        .filter(Boolean);
+
+    if (attacks.length <= 1) return 1;
+
+    if (attacks.length <= 4) {
+        if (!isShortScalingEnabled) return 1;
+
+        const configuredMultiplier = Number(combo?.damageMultiplier);
+        if (Number.isFinite(configuredMultiplier)) {
+            return Math.min(0.80, Math.max(0.55, configuredMultiplier));
+        }
+
+        const averageSpeed = attacks.reduce(
+            (total, attack) => total + Math.max(0, Number(attack.customSpeed) || 0),
+            0
+        ) / attacks.length;
+        const fastAttackShare = attacks.filter(
+            attack => (Number(attack.customSpeed) || 0) >= 20
+        ).length / attacks.length;
+        const baseMultiplier = attacks.length === 2
+            ? 0.80
+            : attacks.length === 3
+                ? 0.70
+                : 0.60;
+        const speedPenalty = averageSpeed >= 20 ? 0.05 : 0;
+        const fastDensityPenalty = fastAttackShare >= 0.75 ? 0.05 : 0;
+        const multiplier = baseMultiplier - speedPenalty - fastDensityPenalty;
+
+        return Math.round(Math.min(0.80, Math.max(0.55, multiplier)) * 100) / 100;
+    }
+
+    if (!isLongScalingEnabled) return 1;
+
+    const configuredMultiplier = Number(combo?.damageMultiplier);
+    if (Number.isFinite(configuredMultiplier)) {
+        return Math.min(0.50, Math.max(0.24, configuredMultiplier));
+    }
+
+    const averageSpeed = attacks.reduce(
+        (total, attack) => total + Math.max(0, Number(attack.customSpeed) || 0),
+        0
+    ) / attacks.length;
+    const fastAttackShare = attacks.filter(
+        attack => (Number(attack.customSpeed) || 0) >= 20
+    ).length / attacks.length;
+
+    const lengthPenalty = Math.min(0.21, (attacks.length - 5) * 0.07);
+    const speedPenalty = averageSpeed >= 20
+        ? 0.08
+        : averageSpeed >= 14
+            ? 0.04
+            : 0;
+    const fastDensityPenalty = fastAttackShare >= 0.75 ? 0.04 : 0;
+    const multiplier = 0.50 - lengthPenalty - speedPenalty - fastDensityPenalty;
+
+    return Math.round(Math.min(0.50, Math.max(0.24, multiplier)) * 100) / 100;
+}
+
 function getLevelZlataReward(levelNumber) {
     const normalizedLevel = Math.min(
         CAMPAIGN_FINAL_LEVEL,

@@ -74,12 +74,14 @@ body {
 
 
 .enemy {
+    --attack-speed-filter: brightness(1);
+    --attack-state-filter: brightness(1);
     position: absolute;
     transition: transform 0.1s linear; /* Плавный поворот */
     will-change: left, top, transform;
     pointer-events: none;
     z-index: 5; /* Чтобы враги были поверх фона, но под интерфейсом */
-	filter: drop-shadow(15px -0px 15px rgba(0, 0, 0, 0.3));
+	filter: var(--attack-speed-filter) drop-shadow(15px 0 15px rgba(0, 0, 0, 0.3)) var(--attack-state-filter);
 }
 
 /* Честное предупреждение перед атакой босса */
@@ -90,9 +92,10 @@ body {
     aspect-ratio: 1;
     z-index: 4;
     pointer-events: none;
-    border: 3px solid rgba(255, 222, 120, 0.95);
+    border: 3px solid var(--telegraph-border-color, rgba(255, 222, 120, 0.95));
     border-radius: 50%;
-    background: rgba(140, 20, 10, 0.2);
+    background: var(--telegraph-fill-color, rgba(140, 20, 10, 0.2));
+    box-shadow: 0 0 var(--telegraph-glow-size, 2px) var(--telegraph-glow-color, rgba(255, 35, 20, 0.08));
     transform: translate(-50%, -50%) scale(0.35);
     animation: bossAttackTelegraph var(--telegraph-duration) ease-out forwards;
 }
@@ -130,11 +133,12 @@ body {
 }
 
 .enemy.enemy-attack.boss-attack-paused {
-    filter: brightness(1.35) drop-shadow(0 0 12px rgba(255, 220, 100, 0.9));
+    --attack-state-filter: brightness(1.35) drop-shadow(0 0 12px rgba(255, 220, 100, 0.9));
 }
 
 .enemy.enemy-attack.boss-attack-rush {
-    filter: contrast(1.25) drop-shadow(0 0 10px rgba(200, 30, 20, 0.85));
+    /* Рывок усиливает контраст, но краснота по-прежнему определяется только скоростью. */
+    --attack-state-filter: contrast(1.2) brightness(1.06);
 }
 
 

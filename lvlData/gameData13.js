@@ -2,6 +2,8 @@ let lvlNumber = 13;
 let factorChar = (lvlNumber * 5) / 100;
 
 const bossCombatConfig = {
+	scaleLongComboDamage: true,
+	scaleShortComboDamage: true,
 	levelCadence: 0.79, damageMultiplier: 1.18, minWaveDelay: 2230, minShotDelay: 145, minTelegraphMs: 480,
 	phases: [
 		{ phase: 1, minHp: 0.66, cadence: 1.00, speed: 1.00, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.12, maxActiveAttacks: 15 },
@@ -172,7 +174,7 @@ const bossAbilities = [
 	{ boss: 'enem1', type: 'enem11', xPos: 90, yPos: 46, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 4 },  //12
 	{ boss: 'enem1', type: 'enem11', xPos: 86, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 5 },  //13
 	{ boss: 'enem1', type: 'enem11', xPos: 92, yPos: 7,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 20 }, //14
-	{ boss: 'enem1', type: 'enem11', xPos: 88, yPos: 34, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 16 }, //15
+	{ boss: 'enem1', type: 'enem11', xPos: 88, yPos: 34, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 15 }, //15
 
 	// ===== Ухух: CORNER_WHISPER — только углы, смена ритма =====
 	{ boss: 'enem2', type: 'enem22', xPos: 8,  yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 8 },  //0 TL
@@ -218,10 +220,10 @@ const bossAbilities = [
 	{ boss: 'enem4', type: 'enem44', xPos: 8,  yPos: 10, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 14 }, //0
 	{ boss: 'enem4', type: 'enem44', xPos: 10, yPos: 16, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 15 }, //1
 	{ boss: 'enem4', type: 'enem44', xPos: 8,  yPos: 22, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 13 }, //2
-	{ boss: 'enem4', type: 'enem44', xPos: 12, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 16 }, //3
+	{ boss: 'enem4', type: 'enem44', xPos: 12, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 15 }, //3
 	{ boss: 'enem4', type: 'enem44', xPos: 8,  yPos: 34, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 14 }, //4
 	{ boss: 'enem4', type: 'enem44', xPos: 10, yPos: 40, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 12 }, //5
-	{ boss: 'enem4', type: 'enem44', xPos: 14, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 17 }, //6
+	{ boss: 'enem4', type: 'enem44', xPos: 14, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 15 }, //6
 	{ boss: 'enem4', type: 'enem44', xPos: 12, yPos: 36, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 15 }, //7
 	// peck сверху (дробный)
 	{ boss: 'enem4', type: 'enem44', xPos: 10, yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 22 }, //8

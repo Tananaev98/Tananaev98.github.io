@@ -2,6 +2,8 @@ let lvlNumber = 3;
 let factorChar = (lvlNumber*5) / 100;
 
 const bossCombatConfig = {
+	scaleLongComboDamage: true,
+	scaleShortComboDamage: true,
 	levelCadence: 0.96, damageMultiplier: 1.03, minWaveDelay: 2520, minShotDelay: 168, minTelegraphMs: 580,
 	phases: [
 		{ phase: 1, minHp: 0.66, cadence: 1.00, speed: 0.95, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.07, maxActiveAttacks: 12 },
@@ -28,7 +30,7 @@ const ENEMY_TYPES = {
         baseDamage: 20,                    
         spawnWeight: 5,                  
 		baseExp: 0,                     
-        size: '6%'                        
+        size: '7%'                        
     },
 	
 	enem22: {  
@@ -39,7 +41,7 @@ const ENEMY_TYPES = {
         baseDamage: 20,                    
         spawnWeight: 5,                  
 		baseExp: 0,                      
-        size: '6%'                        
+        size: '9%'                        
     },
 	
 	enem33: {  
@@ -61,7 +63,7 @@ const ENEMY_TYPES = {
         baseDamage: 20,                    
         spawnWeight: 5,                  
 		baseExp: 0,                       
-        size: '6%'                       
+        size: '9%'                       
     },
 	
 	enem55: {  
@@ -84,7 +86,7 @@ const ENEMY_TYPES = {
         baseDamage: (20)+(20)*factorChar,                      
         spawnWeight: 5,                  
 		baseExp: 250,                      
-        size: '25%'                        
+        size: '28%'                        
     },
     enem2: {  
         name: 'enem2',
@@ -96,7 +98,7 @@ const ENEMY_TYPES = {
         spawnWeight: 15,                  
 		baseExp: 400, 
 		xPos: 36,
-        size: '28%'
+        size: '35%'
     },
     enem3: {  
         name: 'enem3',
@@ -121,7 +123,7 @@ const ENEMY_TYPES = {
         spawnWeight: 10,
 		baseExp: 800,
 		xPos: 35,
-        size: '30%'                        
+        size: '44%'                        
     },
 	
 	enem5: {  
@@ -134,7 +136,7 @@ const ENEMY_TYPES = {
         spawnWeight: 5,
 		baseExp: 0,
 		xPos: 34,		
-        size: '30%'                        
+        size: '40%'                        
     },
 
 	
@@ -260,6 +262,8 @@ const ENEMY_TYPES = {
 	{ boss: 'enem1', indexAbilities: [8, 10, 12, 9, 11] },
 	{ boss: 'enem1', indexAbilities: [0, 8, 2, 10] },
 	{ boss: 'enem1', indexAbilities: [13, 12, 14, 15, 6] },
+	{ boss: 'enem1', indexAbilities: [0, 1] },
+	{ boss: 'enem1', indexAbilities: [2, 3] },
 
 	// Шипун
 	{ boss: 'enem2', indexAbilities: [0, 1, 2, 3, 4, 5] },
@@ -268,6 +272,8 @@ const ENEMY_TYPES = {
 	{ boss: 'enem2', indexAbilities: [8, 10, 9, 11] },
 	{ boss: 'enem2', indexAbilities: [1, 8, 5, 13] },
 	{ boss: 'enem2', indexAbilities: [12, 13, 14, 15, 7] },
+	{ boss: 'enem2', indexAbilities: [0, 1, 2] },
+	{ boss: 'enem2', indexAbilities: [3, 4, 5] },
 
 	// Уф
 	{ boss: 'enem3', indexAbilities: [0, 1, 2, 3, 4, 5] },
@@ -276,6 +282,8 @@ const ENEMY_TYPES = {
 	{ boss: 'enem3', indexAbilities: [8, 10, 9, 13] },
 	{ boss: 'enem3', indexAbilities: [1, 8, 4, 9] },
 	{ boss: 'enem3', indexAbilities: [11, 13, 12, 14, 15] },
+	{ boss: 'enem3', indexAbilities: [0, 1, 2] },
+	{ boss: 'enem3', indexAbilities: [3, 4, 5] },
 
 	// Румяная
 	{ boss: 'enem4', indexAbilities: [0, 1, 2, 3] },
@@ -284,6 +292,8 @@ const ENEMY_TYPES = {
 	{ boss: 'enem4', indexAbilities: [10, 11, 12] },
 	{ boss: 'enem4', indexAbilities: [0, 10, 4, 11] },
 	{ boss: 'enem4', indexAbilities: [8, 13, 9, 14, 15] },
+	{ boss: 'enem4', indexAbilities: [0, 1, 2] },
+	{ boss: 'enem4', indexAbilities: [4, 5, 6] },
 
 	// Кисельный берег
 	{ boss: 'enem5', indexAbilities: [0, 1, 2, 3, 4, 5, 6, 7] },
@@ -292,4 +302,6 @@ const ENEMY_TYPES = {
 	{ boss: 'enem5', indexAbilities: [8, 9, 10, 11] },
 	{ boss: 'enem5', indexAbilities: [2, 10, 9, 11] },
 	{ boss: 'enem5', indexAbilities: [12, 13, 14, 15] },
+	{ boss: 'enem5', indexAbilities: [0, 1, 2] },
+	{ boss: 'enem5', indexAbilities: [3, 4, 5] },
 ];

@@ -48,6 +48,7 @@ globalThis.bossDamageReportApi = {
     getLevelZlataReward,
     getBossDamageProgressionMultiplier,
     calculateBossAttackDamage,
+    getBossComboDamageMultiplier,
     applyHeroPermanentStatUpgrade
 };`;
 
@@ -183,9 +184,31 @@ function getMaximumActualCombo(threat, hero) {
         const attacks = combo.indexAbilities
             .map(index => abilities[index])
             .filter(Boolean);
+        const comboDamageMultiplier = api.getBossComboDamageMultiplier(
+            combo,
+            abilities,
+            levelData.bossCombatConfig.scaleLongComboDamage,
+            levelData.bossCombatConfig.scaleShortComboDamage
+        );
+        if (
+            attacks.length >= 2
+            && attacks.length <= 4
+            && levelData.bossCombatConfig.scaleShortComboDamage
+        ) {
+            assert.ok(
+                comboDamageMultiplier >= 0.55 && comboDamageMultiplier <= 0.80,
+                `Short combo damage multiplier is outside 0.55-0.80 on level ${levelData.lvlNumber}`
+            );
+        }
+        if (attacks.length >= 5 && levelData.bossCombatConfig.scaleLongComboDamage) {
+            assert.ok(
+                comboDamageMultiplier >= 0.24 && comboDamageMultiplier <= 0.50,
+                `Long combo damage multiplier is outside 0.24-0.50 on level ${levelData.lvlNumber}`
+            );
+        }
         const taken = attacks.reduce((total, attack) => {
             const rawDamage = api.calculateBossAttackDamage(
-                attack.customDamage,
+                attack.customDamage * comboDamageMultiplier,
                 profile.damageMultiplier,
                 finalPhase.damage,
                 levelData.bossCombatConfig.damageMultiplier,
@@ -255,6 +278,57 @@ const actualLevelRows = [];
 for (const campaignLevel of ACTUAL_LEVEL_NUMBERS) {
     const heroLevel = focusedProgression.get(campaignLevel);
     const maximum = getActualLevelMaximum(campaignLevel);
+
+    if (campaignLevel <= 14) {
+        assert.equal(
+            maximum.levelData.bossCombatConfig.scaleLongComboDamage,
+            true,
+            `Long combo damage scaling is disabled on level ${campaignLevel}`
+        );
+        assert.equal(
+            maximum.levelData.bossCombatConfig.scaleShortComboDamage,
+            true,
+            `Short combo damage scaling is disabled on level ${campaignLevel}`
+        );
+    }
+
+    if (campaignLevel <= 2) {
+        const openingPhase = maximum.levelData.bossCombatConfig.phases.find(
+            phase => phase.phase === 1
+        );
+        assert.ok(
+            openingPhase?.excludedDangerousCombos >= 2,
+            `Opening phase still allows the most dangerous combos on level ${campaignLevel}`
+        );
+    }
+
+    if (campaignLevel <= 5) {
+        for (const boss of Object.keys(maximum.levelData.bossCombatConfig.bosses)) {
+            const abilities = maximum.levelData.bossAbilities.filter(
+                ability => ability.boss === boss
+            );
+            const combos = maximum.levelData.bossAbilitiesDop.filter(
+                combo => combo.boss === boss
+            );
+            const readableCombos = combos.filter(combo => {
+                const attacks = combo.indexAbilities
+                    .map(index => abilities[index])
+                    .filter(Boolean);
+                return attacks.length >= 2
+                    && attacks.length <= 3
+                    && attacks.every(attack => attack.customSpeed < 20);
+            });
+
+            assert.ok(
+                combos.length >= 6 && combos.length <= 8,
+                `${boss} has ${combos.length} combos on level ${campaignLevel}; expected 6-8`
+            );
+            assert.ok(
+                readableCombos.length >= 1 && readableCombos.length <= 2,
+                `${boss} has ${readableCombos.length} readable opening combos on level ${campaignLevel}; expected 1-2`
+            );
+        }
+    }
 
     for (const heroKey of HERO_KEYS) {
         const hero = buildHeroAtLevel(heroKey, heroLevel);

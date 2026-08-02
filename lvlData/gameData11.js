@@ -2,6 +2,8 @@ let lvlNumber = 11;
 let factorChar = (lvlNumber * 5) / 100;
 
 const bossCombatConfig = {
+	scaleLongComboDamage: true,
+	scaleShortComboDamage: true,
 	levelCadence: 0.82, damageMultiplier: 1.15, minWaveDelay: 2260, minShotDelay: 146, minTelegraphMs: 490,
 	phases: [
 		{ phase: 1, minHp: 0.66, cadence: 1.00, speed: 0.99, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.11, maxActiveAttacks: 14 },

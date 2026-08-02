@@ -2,6 +2,8 @@ let lvlNumber = 4;
 let factorChar = (lvlNumber*5) / 100;
 
 const bossCombatConfig = {
+	scaleLongComboDamage: true,
+	scaleShortComboDamage: true,
 	levelCadence: 0.94, damageMultiplier: 1.05, minWaveDelay: 2480, minShotDelay: 164, minTelegraphMs: 565,
 	phases: [
 		{ phase: 1, minHp: 0.66, cadence: 1.00, speed: 0.96, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.08, maxActiveAttacks: 12 },
@@ -28,7 +30,7 @@ const ENEMY_TYPES = {
         baseDamage: 20,                    
         spawnWeight: 5,                  
 		baseExp: 0,                     
-        size: '6%'                        
+        size: '9%'                        
     },
 	
 	enem22: {  
@@ -257,6 +259,7 @@ const ENEMY_TYPES = {
 	{ boss: 'enem1', indexAbilities: [0, 6, 1, 7] },
 	{ boss: 'enem1', indexAbilities: [10, 11, 12, 13] },
 	{ boss: 'enem1', indexAbilities: [14, 6, 15, 9, 2] },
+	{ boss: 'enem1', indexAbilities: [0, 1, 2] },
 
 	// Грибник
 	{ boss: 'enem2', indexAbilities: [0, 1, 2, 3, 4] },
@@ -266,6 +269,7 @@ const ENEMY_TYPES = {
 	{ boss: 'enem2', indexAbilities: [0, 6, 3, 7] },
 	{ boss: 'enem2', indexAbilities: [10, 11, 12, 13] },
 	{ boss: 'enem2', indexAbilities: [1, 9, 10, 7, 14] },
+	{ boss: 'enem2', indexAbilities: [0, 1, 2] },
 
 	// Охотник
 	{ boss: 'enem3', indexAbilities: [0, 1, 2, 3] },
@@ -275,6 +279,7 @@ const ENEMY_TYPES = {
 	{ boss: 'enem3', indexAbilities: [0, 4, 2, 6] },
 	{ boss: 'enem3', indexAbilities: [1, 5, 8, 9, 12] },
 	{ boss: 'enem3', indexAbilities: [3, 7, 10, 11, 13] },
+	{ boss: 'enem3', indexAbilities: [0, 1] },
 
 	// Пастух
 	{ boss: 'enem4', indexAbilities: [0, 1, 2, 3, 4, 5] },
@@ -283,6 +288,7 @@ const ENEMY_TYPES = {
 	{ boss: 'enem4', indexAbilities: [12, 13] },
 	{ boss: 'enem4', indexAbilities: [12, 14, 15, 13] },
 	{ boss: 'enem4', indexAbilities: [1, 7, 3, 9, 12] },
+	{ boss: 'enem4', indexAbilities: [0, 1, 2] },
 
 	// Лесник
 	{ boss: 'enem5', indexAbilities: [0, 1, 2, 3, 4, 5] },
@@ -292,4 +298,5 @@ const ENEMY_TYPES = {
 	{ boss: 'enem5', indexAbilities: [0, 12, 4, 13] },
 	{ boss: 'enem5', indexAbilities: [8, 12, 10, 13] },
 	{ boss: 'enem5', indexAbilities: [1, 14, 9, 15, 3] },
+	{ boss: 'enem5', indexAbilities: [0, 1, 2] },
 ];

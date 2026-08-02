@@ -44,7 +44,11 @@ const ANIMATION_PARAMS = {
  let bossAliveName = ''; 
 
  let bossTimer = null;
+ let bossTimerStartedAt = 0;
+ let bossTimerDelay = 0;
+ let pausedBossWaveDelay = null;
  const bossAttackTimers = new Set();
+ let isAutoPausedForVisibility = false;
 let bossComboHistory = [];
 let bossWaveCounter = 0;
 let bossCombatPhase = 1;
@@ -927,6 +931,10 @@ function spawnEnemyWithParams(type, xPos, yPos, customHP, customDamage, customSp
             enemy.speedPixelsPerSecond = (enemy.speedPercentPerSecond / 100) * enemy.fieldHeight;
             enemy.baseSpeedPixelsPerSecond = enemy.speedPixelsPerSecond;
         }
+
+        if (enemy.isCustom && customSpeed !== undefined) {
+            applyBossAttackSpeedVisual(enemy.element, customSpeed);
+        }
         
         // Обновляем позицию элемента в DOM
         enemy.applyPositionTransform(0);
@@ -1002,6 +1010,7 @@ function gameLoop(currentTime) {
 		// spawnEnemyWithParams('enem4', 40, 20, 1, 200, 40 )
 		bossAlive = true;
 		currentBoss = boss; // Сохраняем ссылку на босса
+		window.battleMusic?.setContext(buildBattleMusicContext(bossAliveName));
 		
 		// Показываем полоску здоровья босса
 		if (boss) {
@@ -1073,24 +1082,39 @@ function startBossEvents() {
 
 function stopBossEvents() {
     bossAlive = false;
-    if (bossTimer) {
+    if (bossTimer !== null) {
         clearTimeout(bossTimer);
         bossTimer = null;
     }
-    bossAttackTimers.forEach(timerId => clearTimeout(timerId));
+    bossTimerStartedAt = 0;
+    bossTimerDelay = 0;
+    pausedBossWaveDelay = null;
+    bossAttackTimers.forEach(task => clearTimeout(task.timeoutId));
     bossAttackTimers.clear();
     document.querySelectorAll('.boss-attack-telegraph').forEach(element => element.remove());
     bossComboHistory = [];
     console.log('События босса остановлены');
 }
 
+function armBossTask(task) {
+    task.startedAt = performance.now();
+    task.timeoutId = setTimeout(() => {
+        task.timeoutId = null;
+        bossAttackTimers.delete(task);
+        task.callback();
+    }, task.remainingDelay);
+}
+
 function scheduleBossTask(callback, delay) {
-    const timerId = setTimeout(() => {
-        bossAttackTimers.delete(timerId);
-        callback();
-    }, delay);
-    bossAttackTimers.add(timerId);
-    return timerId;
+    const task = {
+        callback,
+        remainingDelay: Math.max(0, Number(delay) || 0),
+        startedAt: 0,
+        timeoutId: null
+    };
+    bossAttackTimers.add(task);
+    armBossTask(task);
+    return task;
 }
 
 function getLevelCombatConfig() {
@@ -1098,6 +1122,50 @@ function getLevelCombatConfig() {
         throw new Error(`В gameData${lvlNumber}.js отсутствует bossCombatConfig`);
     }
     return bossCombatConfig;
+}
+
+function buildBattleMusicContext(bossName = bossM?.[0]) {
+    const config = getLevelCombatConfig();
+    const bossOrder = Object.keys(config.bosses);
+    const rawBossIndex = bossOrder.indexOf(bossName);
+    const bossIndex = rawBossIndex >= 0 ? rawBossIndex : 0;
+    const profile = config.bosses[bossName] ?? {};
+    const combos = typeof bossAbilitiesDop !== 'undefined' && Array.isArray(bossAbilitiesDop)
+        ? bossAbilitiesDop.filter(combo => combo.boss === bossName)
+        : [];
+    const attacks = typeof bossAbilities !== 'undefined' && Array.isArray(bossAbilities)
+        ? bossAbilities.filter(attack => attack.boss === bossName)
+        : [];
+    const phases = Array.isArray(config.phases) ? config.phases : [];
+    const averageSurpriseChance = phases.length > 0
+        ? phases.reduce((sum, phase) => sum + (Number(phase.surpriseChance) || 0), 0) / phases.length
+        : 0;
+    const isRegionFinal = typeof levelCompletionConfig !== 'undefined'
+        && Boolean(levelCompletionConfig?.isRegionFinal);
+
+    return {
+        levelNumber: lvlNumber,
+        bossName,
+        bossIndex,
+        bossCount: bossOrder.length,
+        isFinalBoss: bossIndex === bossOrder.length - 1,
+        isRegionFinal,
+        movementStyle: profile.movementStyle,
+        cadence: profile.cadence,
+        telegraphMs: profile.telegraphMs,
+        maxComboLength: combos.reduce(
+            (maxLength, combo) => Math.max(maxLength, combo.indexAbilities?.length ?? 0),
+            0
+        ),
+        maxAttackSpeed: attacks.reduce(
+            (maxSpeed, attack) => Math.max(maxSpeed, Number(attack.customSpeed) || 0),
+            0
+        ),
+        averageSurpriseChance,
+        // Необязательные авторские исключения. Для обычных уровней они не нужны.
+        musicMood: profile.musicMood ?? config.musicMood,
+        musicTrack: profile.musicTrack ?? config.musicTrack
+    };
 }
 
 function getBossPhase() {
@@ -1128,17 +1196,19 @@ function getBossWaveDelay() {
 }
 
 function scheduleNextBossWave(delay = getBossWaveDelay()) {
-    if (!bossAlive || isGameOver) return;
-    if (bossTimer) clearTimeout(bossTimer);
+    if (!bossAlive || isGameOver || isGamePaused) return;
+    if (bossTimer !== null) clearTimeout(bossTimer);
+    bossTimerDelay = Math.max(0, Number(delay) || 0);
+    bossTimerStartedAt = performance.now();
     bossTimer = setTimeout(() => {
         bossTimer = null;
+        bossTimerStartedAt = 0;
+        bossTimerDelay = 0;
         if (bossAlive && !isGamePaused && !isGameOver) {
             executeBossEvent();
-        }
-        if (bossAlive && !isGameOver) {
             scheduleNextBossWave();
         }
-    }, delay);
+    }, bossTimerDelay);
 }
 
 function getComboDanger(combo, abilities) {
@@ -1149,12 +1219,29 @@ function getComboDanger(combo, abilities) {
 }
 
 function selectBossCombo(combos, abilities, phase) {
-    let candidates = combos
+    const rankedCombos = combos
         .map((combo, index) => ({ combo, index, danger: getComboDanger(combo, abilities) }))
+        .sort((left, right) => left.danger - right.danger);
+    const excludedDangerousCombos = Math.max(
+        0,
+        Math.min(
+            rankedCombos.length - 1,
+            Math.floor(Number(phase.excludedDangerousCombos) || 0)
+        )
+    );
+    const eligibleIndexes = new Set(
+        rankedCombos
+            .slice(0, rankedCombos.length - excludedDangerousCombos)
+            .map(candidate => candidate.index)
+    );
+    const eligibleCombos = combos
+        .map((combo, index) => ({ combo, index, danger: getComboDanger(combo, abilities) }))
+        .filter(candidate => eligibleIndexes.has(candidate.index));
+    let candidates = eligibleCombos
         .filter(candidate => !bossComboHistory.includes(candidate.index));
 
     if (candidates.length === 0) {
-        candidates = combos.map((combo, index) => ({ combo, index, danger: getComboDanger(combo, abilities) }));
+        candidates = eligibleCombos;
     }
 
     const sortedDanger = [...candidates].sort((a, b) => a.danger - b.danger);
@@ -1186,35 +1273,150 @@ function selectBossCombo(combos, abilities, phase) {
 
     bossComboHistory.push(selected.index);
     if (bossComboHistory.length > 2) bossComboHistory.shift();
-    return selected.combo.indexAbilities;
+    return selected.combo;
 }
 
 function getBossMovementStyle() {
     return getBossProfile().movementStyle;
 }
 
+const FAST_BOSS_ATTACK_SPEED = 18;
+const BOSS_LEFT_FLANK_MAX_X = 28;
+const BOSS_RIGHT_FLANK_MIN_X = 72;
+const MIN_FAST_CROSSFIRE_GAP_MS = 720;
+const BOSS_ATTACK_VISUAL_MIN_SPEED = 2;
+const BOSS_ATTACK_VISUAL_MAX_SPEED = 31;
+
+function getBossAttackDangerIntensity(speed) {
+    const speedRange = BOSS_ATTACK_VISUAL_MAX_SPEED - BOSS_ATTACK_VISUAL_MIN_SPEED;
+    const normalizedSpeed = (Number(speed) - BOSS_ATTACK_VISUAL_MIN_SPEED) / speedRange;
+    return Math.max(0, Math.min(1, normalizedSpeed));
+}
+
+function mixColorChannel(start, end, amount) {
+    return Math.round(start + (end - start) * amount);
+}
+
+function getBossAttackDangerVisual(speed) {
+    const intensity = getBossAttackDangerIntensity(speed);
+    const borderColor = [255, 222, 120].map((channel, index) => (
+        mixColorChannel(channel, [255, 42, 30][index], intensity)
+    ));
+    const fillColor = [140, 20, 10].map((channel, index) => (
+        mixColorChannel(channel, [255, 18, 12][index], intensity)
+    ));
+    const borderAlpha = 0.95 + intensity * 0.05;
+    const fillAlpha = 0.2 + intensity * 0.26;
+    const glowAlpha = 0.08 + intensity * 0.78;
+
+    return {
+        intensity,
+        borderColor: `rgba(${borderColor.join(', ')}, ${borderAlpha.toFixed(3)})`,
+        fillColor: `rgba(${fillColor.join(', ')}, ${fillAlpha.toFixed(3)})`,
+        glowColor: `rgba(255, 35, 20, ${glowAlpha.toFixed(3)})`,
+        glowSize: `${(2 + intensity * 16).toFixed(1)}px`,
+        iconFilter: [
+            `sepia(${(intensity * 0.82).toFixed(3)})`,
+            `saturate(${(1 + intensity * 4.2).toFixed(3)})`,
+            `hue-rotate(${(-30 * intensity).toFixed(1)}deg)`,
+            `contrast(${(1 + intensity * 0.14).toFixed(3)})`,
+            `brightness(${(1 + intensity * 0.04).toFixed(3)})`,
+            `drop-shadow(0 0 ${(intensity * 9).toFixed(1)}px rgba(255, 34, 20, ${(intensity * 0.72).toFixed(3)}))`
+        ].join(' ')
+    };
+}
+
+function applyBossAttackSpeedVisual(element, speed) {
+    if (!element) return;
+    const visual = getBossAttackDangerVisual(speed);
+    element.style.setProperty('--attack-danger', visual.intensity.toFixed(3));
+    element.style.setProperty('--attack-speed-filter', visual.iconFilter);
+    element.dataset.attackSpeed = Number(speed).toFixed(1);
+}
+
+function capBossAttackSpeed(attack, speed) {
+    let cappedSpeed = speed;
+
+    // Не превращаем низкий спавн в телепорт: быстрые атаки разрешены только высоко.
+    if (attack.yPos > 12) cappedSpeed = Math.min(cappedSpeed, 15);
+    else if (attack.yPos > 10) cappedSpeed = Math.min(cappedSpeed, 18);
+    else cappedSpeed = Math.min(cappedSpeed, 31);
+
+    // Медленные «тяжёлые» угрозы сохраняют отдельный темп даже в третьей фазе.
+    if (attack.customSpeed <= 10) cappedSpeed = Math.min(cappedSpeed, 11.5);
+    return cappedSpeed;
+}
+
 function getBalancedAttackSpeed(attack, phase, profile, shotIndex) {
     const variations = profile.speedVariance;
     const variation = variations[(bossWaveCounter + shotIndex) % variations.length];
-    let speed = attack.customSpeed * profile.speedMultiplier * phase.speed * variation;
-
-    // Не превращаем низкий спавн в телепорт: быстрые атаки разрешены только высоко.
-    if (attack.yPos > 12) speed = Math.min(speed, 15);
-    else if (attack.yPos > 10) speed = Math.min(speed, 18);
-    else speed = Math.min(speed, 31);
-
-    // Медленные «тяжёлые» угрозы сохраняют отдельный темп даже в третьей фазе.
-    if (attack.customSpeed <= 10) speed = Math.min(speed, 11.5);
+    const rawSpeed = attack.customSpeed * profile.speedMultiplier * phase.speed * variation;
+    const speed = capBossAttackSpeed(attack, rawSpeed);
     return Math.max(2, Math.round(speed * 10) / 10);
 }
 
-function showAttackTelegraph(attack, duration, movementStyle) {
+function getBossAttackSide(attack) {
+    if (attack.xPos <= BOSS_LEFT_FLANK_MAX_X) return 'left';
+    if (attack.xPos >= BOSS_RIGHT_FLANK_MIN_X) return 'right';
+    return 'center';
+}
+
+function getProjectedBossAttackSpeed(attack, phase, profile) {
+    const maximumVariance = Math.max(...profile.speedVariance);
+    const rawSpeed = attack.customSpeed * profile.speedMultiplier * phase.speed * maximumVariance;
+    return capBossAttackSpeed(attack, rawSpeed);
+}
+
+function getBossAttackScheduleOffsets(abilityIndexes, abilities, shotDelay, phase, profile) {
+    const offsets = [];
+    const lastFastAttackAt = { left: -Infinity, right: -Infinity };
+    const minimumSideSwitchGap = Math.max(
+        MIN_FAST_CROSSFIRE_GAP_MS,
+        Number(profile.minFastSideSwitchMs) || 0
+    );
+    let currentOffset = 0;
+
+    abilityIndexes.forEach((abilityIndex, shotIndex) => {
+        if (shotIndex > 0) currentOffset += shotDelay;
+
+        const attack = abilities[abilityIndex];
+        if (!attack) {
+            offsets.push(Math.round(currentOffset));
+            return;
+        }
+
+        const side = getBossAttackSide(attack);
+        const isFastAttack = side !== 'center'
+            && getProjectedBossAttackSpeed(attack, phase, profile) >= FAST_BOSS_ATTACK_SPEED;
+
+        if (isFastAttack) {
+            const oppositeSide = side === 'left' ? 'right' : 'left';
+            const earliestFairOffset = lastFastAttackAt[oppositeSide] + minimumSideSwitchGap;
+            currentOffset = Math.max(currentOffset, earliestFairOffset);
+            lastFastAttackAt[side] = currentOffset;
+        }
+
+        offsets.push(Math.round(currentOffset));
+    });
+
+    return offsets;
+}
+
+function showAttackTelegraph(attack, duration, movementStyle, speed) {
     if (!enemiesContainer || !bossAlive) return null;
     const marker = document.createElement('div');
+    const visual = getBossAttackDangerVisual(speed);
     marker.className = `boss-attack-telegraph telegraph-${movementStyle}`;
     marker.style.left = `${attack.xPos}%`;
     marker.style.top = `${attack.yPos}%`;
     marker.style.setProperty('--telegraph-duration', `${duration}ms`);
+    marker.style.setProperty('--attack-danger', visual.intensity.toFixed(3));
+    marker.style.setProperty('--telegraph-border-color', visual.borderColor);
+    marker.style.setProperty('--telegraph-fill-color', visual.fillColor);
+    marker.style.setProperty('--telegraph-glow-color', visual.glowColor);
+    marker.style.setProperty('--telegraph-glow-size', visual.glowSize);
+    marker.dataset.attackSpeed = Number(speed).toFixed(1);
+    marker.setAttribute('aria-hidden', 'true');
     enemiesContainer.appendChild(marker);
     scheduleBossTask(() => marker.remove(), duration + 100);
     return marker;
@@ -1235,10 +1437,24 @@ function executeBossEvent() {
         showCenterText(phaseMessage, 1100, 'boss');
     }
 
-    const selectedAbilityIndexes = selectBossCombo(bossAbD, bossAb, phase);
+    const selectedCombo = selectBossCombo(bossAbD, bossAb, phase);
+    const selectedAbilityIndexes = selectedCombo.indexAbilities;
+    const comboDamageMultiplier = getBossComboDamageMultiplier(
+        selectedCombo,
+        bossAb,
+        config.scaleLongComboDamage,
+        config.scaleShortComboDamage
+    );
     const movementStyle = getBossMovementStyle();
     const shotDelay = Math.max(config.minShotDelay, bossDelayAb * profile.cadence * phase.cadence);
     const telegraphMs = Math.max(config.minTelegraphMs, profile.telegraphMs * phase.telegraphMultiplier);
+    const attackScheduleOffsets = getBossAttackScheduleOffsets(
+        selectedAbilityIndexes,
+        bossAb,
+        shotDelay,
+        phase,
+        profile
+    );
 
     selectedAbilityIndexes.forEach((abilityIndex, shotIndex) => {
         const attack = bossAb[abilityIndex];
@@ -1246,15 +1462,15 @@ function executeBossEvent() {
 
         scheduleBossTask(() => {
             if (!bossAlive || isGameOver) return;
-            showAttackTelegraph(attack, telegraphMs, movementStyle);
+            const speed = getBalancedAttackSpeed(attack, phase, profile, shotIndex);
+            showAttackTelegraph(attack, telegraphMs, movementStyle, speed);
             scheduleBossTask(() => {
                 if (!bossAlive || isGamePaused || isGameOver) return;
                 const activeBossAttacks = activeEnemies.filter(enemy => enemy.isCustom && !enemy.isBoss).length;
                 if (activeBossAttacks >= phase.maxActiveAttacks) return;
 
-                const speed = getBalancedAttackSpeed(attack, phase, profile, shotIndex);
                 const damage = calculateBossAttackDamage(
-                    attack.customDamage,
+                    attack.customDamage * comboDamageMultiplier,
                     profile.damageMultiplier,
                     phase.damage,
                     config.damageMultiplier,
@@ -1271,7 +1487,7 @@ function executeBossEvent() {
                     movementStyle
                 );
             }, telegraphMs);
-        }, shotIndex * shotDelay);
+        }, attackScheduleOffsets[shotIndex]);
     });
 
     bossWaveCounter++;
@@ -1507,6 +1723,9 @@ function formatTime(seconds) {
 }
 
 function showEndGameModal(victory, timeSeconds) {
+    // Доигрываем текущую композицию, но после неё оставляем экран результата в тишине.
+    window.battleMusic?.setCombatActive(false);
+
     // Ставим игру на паузу, если ещё не
     if (!isGamePaused && !isGameOver) {
         pauseGame();
@@ -1575,6 +1794,7 @@ function showStartModal() {
     // Обработчик кнопки
     modal.querySelector('.start-button').addEventListener('click', () => {
         document.body.removeChild(modal);
+        window.battleMusic?.start(buildBattleMusicContext(bossM?.[0]));
         resumeGame(); // Снимаем паузу
     });
 }
@@ -1754,6 +1974,18 @@ function checkAimAndDamage() {
     }
 }
 
+const BOSS_DAMAGE_VARIANCE = 0.05;
+
+function rollBossHitDamage(damage, randomRoll = Math.random()) {
+    const numericRoll = Number(randomRoll);
+    const boundedRoll = Number.isFinite(numericRoll)
+        ? Math.max(0, Math.min(1, numericRoll))
+        : 0.5;
+    const varianceMultiplier = 1 - BOSS_DAMAGE_VARIANCE
+        + (BOSS_DAMAGE_VARIANCE * 2 * boundedRoll);
+    return Math.max(1, Math.round(damage * varianceMultiplier));
+}
+
 
 function damageEnemy(enemy, index, attackMultiplier = 1) {
     // Рассчитываем урон с учетом крита
@@ -1761,9 +1993,12 @@ function damageEnemy(enemy, index, attackMultiplier = 1) {
 	
 	let isBoss = bossM.includes(enemy.type);
 	
-	const damageResult = calculateDamage(isBoss);
+    const damageResult = calculateDamage(isBoss);
     const woundBaseDamage = damageResult.damage;
-    damageResult.damage = Math.round(damageResult.damage * attackMultiplier);
+    const multipliedDamage = damageResult.damage * attackMultiplier;
+    damageResult.damage = isBoss
+        ? rollBossHitDamage(multipliedDamage)
+        : Math.round(multipliedDamage);
 
     
     // Наносим урон
@@ -2038,6 +2273,7 @@ function handleEnemyDeath(enemy, cause = 'player') {
         }
 
         // В последовательности остались боссы — готовим следующую встречу.
+		window.battleMusic?.setContext(buildBattleMusicContext(bossM[0]));
         giveExperienceForKill(enemy.type);
         timeNextBoss = timeSec2 + bossInterval;
         enableSpawning();   // Включаем спавн обычных врагов
@@ -2195,8 +2431,42 @@ async function processLevelUp() {
 
 // ==================== ПАУЗА И ВОЗОБНОВЛЕНИЕ ИГРЫ ====================
 
+function pauseBossEventTimers() {
+    const now = performance.now();
+
+    if (bossTimer !== null) {
+        clearTimeout(bossTimer);
+        pausedBossWaveDelay = Math.max(0, bossTimerDelay - (now - bossTimerStartedAt));
+        bossTimer = null;
+        bossTimerStartedAt = 0;
+        bossTimerDelay = 0;
+    }
+
+    bossAttackTimers.forEach(task => {
+        if (task.timeoutId === null) return;
+        clearTimeout(task.timeoutId);
+        task.remainingDelay = Math.max(0, task.remainingDelay - (now - task.startedAt));
+        task.timeoutId = null;
+        task.startedAt = 0;
+    });
+}
+
+function resumeBossEventTimers() {
+    if (bossAlive && !isGameOver && pausedBossWaveDelay !== null) {
+        const remainingDelay = pausedBossWaveDelay;
+        pausedBossWaveDelay = null;
+        scheduleNextBossWave(remainingDelay);
+    }
+
+    bossAttackTimers.forEach(task => {
+        if (task.timeoutId === null) armBossTask(task);
+    });
+}
+
 function pauseGame() {
+    if (isGamePaused) return;
     isGamePaused = true;
+    pauseBossEventTimers();
     
     // Сохраняем оригинальные скорости врагов
     activeEnemies.forEach(enemy => {
@@ -2209,17 +2479,48 @@ function pauseGame() {
 }
 
 function resumeGame() {
+    if (!isGamePaused || document.hidden || isAutoPausedForVisibility) return;
     isGamePaused = false;
+    // Первый кадр после возврата не должен списывать время, прошедшее вне игры.
+    lastFrameTime = null;
     
     // Восстанавливаем скорости врагов
     activeEnemies.forEach(enemy => {
         if (enemy.originalSpeedPixelsPerSecond !== undefined) {
             enemy.speedPixelsPerSecond = enemy.originalSpeedPixelsPerSecond;
+            delete enemy.originalSpeedPixelsPerSecond;
         }
     });
+
+    resumeBossEventTimers();
     
     console.log("Игра возобновлена, таймер групп возобновлен");
 }
+
+function syncGameWithPageVisibility() {
+    const pageIsInactive = document.hidden || !document.hasFocus();
+
+    if (pageIsInactive) {
+        if (!isGameOver && !isGamePaused) {
+            isAutoPausedForVisibility = true;
+            pauseGame();
+            window.battleMusic?.pause({ immediate: true });
+        }
+        return;
+    }
+
+    if (isAutoPausedForVisibility) {
+        isAutoPausedForVisibility = false;
+        if (!isGameOver) {
+            resumeGame();
+            window.battleMusic?.resume();
+        }
+    }
+}
+
+document.addEventListener('visibilitychange', syncGameWithPageVisibility);
+window.addEventListener('blur', syncGameWithPageVisibility);
+window.addEventListener('focus', syncGameWithPageVisibility);
 // ==================== ОБРАБОТКА ПОВЫШЕНИЯ УРОВНЕЙ ====================
 
 // ==================== ОБНОВЛЯЕМ ФУНКЦИЮ handleLevelUps ====================
@@ -2546,22 +2847,6 @@ function playDamageSound() {
     audio.volume = 0.02; // 30% громкости (0.0 - 1.0)
     audio.play();
 }
-
-const musicFiles = ['1.mp3', '2.mp3', '3.mp3', '4.mp3', '5.ogg'];
-let currentTrack = 0;
-
-function playBgMusic() {
-    const audio = new Audio(`music/${musicFiles[currentTrack]}`);
-    audio.volume = 0.03;
-    audio.play();
-    audio.onended = () => {
-        currentTrack = (currentTrack + 1) % musicFiles.length;
-        playBgMusic();
-    };
-}
-
-// Запустить по клику
-//document.addEventListener('click', playBgMusic, { once: true });
 
 // ==================== ЗАПУСК ИГРЫ ====================
 

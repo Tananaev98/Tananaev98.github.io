@@ -2,6 +2,8 @@ let lvlNumber = 14;
 let factorChar = (lvlNumber * 5) / 100;
 
 const bossCombatConfig = {
+	scaleLongComboDamage: true,
+	scaleShortComboDamage: true,
 	levelCadence: 0.78, damageMultiplier: 1.19, minWaveDelay: 2210, minShotDelay: 145, minTelegraphMs: 480,
 	phases: [
 		{ phase: 1, minHp: 0.66, cadence: 1.00, speed: 1.00, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.12, maxActiveAttacks: 15 },
@@ -168,7 +170,7 @@ const bossAbilities = [
 	{ boss: 'enem1', type: 'enem11', xPos: 8,  yPos: 46, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 4 },  //10
 	{ boss: 'enem1', type: 'enem11', xPos: 12, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 5 },  //11
 	{ boss: 'enem1', type: 'enem11', xPos: 10, yPos: 24, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 14 }, //12
-	{ boss: 'enem1', type: 'enem11', xPos: 8,  yPos: 14, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 16 }, //13
+	{ boss: 'enem1', type: 'enem11', xPos: 8,  yPos: 14, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 15 }, //13
 	{ boss: 'enem1', type: 'enem11', xPos: 12, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 20 }, //14
 	{ boss: 'enem1', type: 'enem11', xPos: 10, yPos: 36, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 8 },  //15
 
@@ -191,7 +193,7 @@ const bossAbilities = [
 	// нежданчик: одиночный выход слева
 	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 16, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 15 }, //13
 	{ boss: 'enem2', type: 'enem22', xPos: 8,  yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 22 }, //14
-	{ boss: 'enem2', type: 'enem22', xPos: 90, yPos: 20, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 16 }, //15
+	{ boss: 'enem2', type: 'enem22', xPos: 90, yPos: 20, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 15 }, //15
 
 	// ===== Зубрило: BOTTOM_RAM — давление снизу, редкие тяжёлые =====
 	{ boss: 'enem3', type: 'enem33', xPos: 20, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3 },  //0

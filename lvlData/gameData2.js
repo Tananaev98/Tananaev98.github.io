@@ -2,9 +2,11 @@ let lvlNumber = 2;
 let factorChar = (lvlNumber*5) / 100;
 
 const bossCombatConfig = {
+	scaleLongComboDamage: true,
+	scaleShortComboDamage: true,
 	levelCadence: 0.98, damageMultiplier: 1.02, minWaveDelay: 2550, minShotDelay: 170, minTelegraphMs: 590,
 	phases: [
-		{ phase: 1, minHp: 0.66, cadence: 1.00, speed: 0.95, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.07, maxActiveAttacks: 11 },
+		{ phase: 1, minHp: 0.66, cadence: 1.00, speed: 0.95, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.07, maxActiveAttacks: 11, excludedDangerousCombos: 2 },
 		{ phase: 2, minHp: 0.31, cadence: 0.87, speed: 1.04, damage: 1.08, telegraphMultiplier: 0.95, surpriseChance: 0.13, maxActiveAttacks: 14 },
 		{ phase: 3, minHp: 0.00, cadence: 0.75, speed: 1.11, damage: 1.15, telegraphMultiplier: 0.89, surpriseChance: 0.21, maxActiveAttacks: 16 }
 	],
@@ -258,6 +260,8 @@ const ENEMY_TYPES = {
 	{ boss: 'enem1', indexAbilities: [8, 10, 9, 12] },
 	{ boss: 'enem1', indexAbilities: [1, 8, 5, 12] },
 	{ boss: 'enem1', indexAbilities: [11, 12, 13, 14, 15] },
+	{ boss: 'enem1', indexAbilities: [0, 1, 2] },
+	{ boss: 'enem1', indexAbilities: [3, 4, 5] },
 
 	// Груздь
 	{ boss: 'enem2', indexAbilities: [0, 1, 2, 3, 4, 5, 6] },
@@ -266,6 +270,8 @@ const ENEMY_TYPES = {
 	{ boss: 'enem2', indexAbilities: [8, 10, 9, 11] },
 	{ boss: 'enem2', indexAbilities: [1, 8, 5, 13] },
 	{ boss: 'enem2', indexAbilities: [12, 13, 14, 15, 7] },
+	{ boss: 'enem2', indexAbilities: [0, 1, 2] },
+	{ boss: 'enem2', indexAbilities: [3, 4, 5] },
 
 	// Рыжик
 	{ boss: 'enem3', indexAbilities: [0, 1, 2, 3, 4, 5] },
@@ -274,6 +280,8 @@ const ENEMY_TYPES = {
 	{ boss: 'enem3', indexAbilities: [8, 10, 9, 13] },
 	{ boss: 'enem3', indexAbilities: [2, 8, 3, 9] },
 	{ boss: 'enem3', indexAbilities: [11, 13, 12, 14, 15] },
+	{ boss: 'enem3', indexAbilities: [0, 2, 4] },
+	{ boss: 'enem3', indexAbilities: [1, 3, 5] },
 
 	// Подберезовик
 	{ boss: 'enem4', indexAbilities: [0, 1, 2, 3] },
@@ -282,6 +290,8 @@ const ENEMY_TYPES = {
 	{ boss: 'enem4', indexAbilities: [8, 9] },
 	{ boss: 'enem4', indexAbilities: [0, 8, 4, 9] },
 	{ boss: 'enem4', indexAbilities: [10, 12, 11, 13, 14] },
+	{ boss: 'enem4', indexAbilities: [0, 1, 2] },
+	{ boss: 'enem4', indexAbilities: [4, 5, 6] },
 
 	// Лисичка
 	{ boss: 'enem5', indexAbilities: [0, 1, 2, 3] },
@@ -290,4 +300,6 @@ const ENEMY_TYPES = {
 	{ boss: 'enem5', indexAbilities: [0, 6, 2, 9] },
 	{ boss: 'enem5', indexAbilities: [4, 5, 14, 15] },
 	{ boss: 'enem5', indexAbilities: [12, 14, 13, 15, 4] },
+	{ boss: 'enem5', indexAbilities: [0, 1] },
+	{ boss: 'enem5', indexAbilities: [2, 3] },
 ];

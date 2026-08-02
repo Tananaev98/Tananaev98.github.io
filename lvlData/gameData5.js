@@ -3,6 +3,8 @@ let lvlNumber = 5;
 let factorChar = (lvlNumber*5) / 100;
 
 const bossCombatConfig = {
+	scaleLongComboDamage: true,
+	scaleShortComboDamage: true,
 	levelCadence: 0.92, damageMultiplier: 1.06, minWaveDelay: 2440, minShotDelay: 160, minTelegraphMs: 550,
 	phases: [
 		{ phase: 1, minHp: 0.66, cadence: 1.00, speed: 0.96, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.08, maxActiveAttacks: 12 },
@@ -60,7 +62,7 @@ const ENEMY_TYPES = {
 
 		baseExp: 0,                      
 
-        size: '6%'                        
+        size: '7%'                        
 
     },
 
@@ -375,6 +377,8 @@ const bossAbilitiesDop = [
 	{ boss: 'enem1', indexAbilities: [0, 6, 2, 9] },
 	{ boss: 'enem1', indexAbilities: [4, 5, 14, 15] },
 	{ boss: 'enem1', indexAbilities: [12, 14, 13, 15, 4] },
+	{ boss: 'enem1', indexAbilities: [0, 1] },
+	{ boss: 'enem1', indexAbilities: [2, 3] },
 
 	// Мурка
 	{ boss: 'enem2', indexAbilities: [0, 1, 2, 3, 4, 5] },
@@ -383,6 +387,8 @@ const bossAbilitiesDop = [
 	{ boss: 'enem2', indexAbilities: [7, 9, 8, 11] },
 	{ boss: 'enem2', indexAbilities: [1, 7, 10, 11] },
 	{ boss: 'enem2', indexAbilities: [12, 13, 14, 15, 5] },
+	{ boss: 'enem2', indexAbilities: [0, 1, 2] },
+	{ boss: 'enem2', indexAbilities: [4, 5] },
 
 	// Секач
 	{ boss: 'enem3', indexAbilities: [0, 1, 2, 3, 4, 5, 6, 7] },
@@ -391,6 +397,8 @@ const bossAbilitiesDop = [
 	{ boss: 'enem3', indexAbilities: [8, 9, 10, 11] },
 	{ boss: 'enem3', indexAbilities: [2, 10, 9, 11] },
 	{ boss: 'enem3', indexAbilities: [12, 13, 14, 15] },
+	{ boss: 'enem3', indexAbilities: [0, 1, 2] },
+	{ boss: 'enem3', indexAbilities: [3, 4, 5] },
 
 	// Царапка
 	{ boss: 'enem4', indexAbilities: [0, 1, 2, 3, 4, 5, 6] },
@@ -399,6 +407,8 @@ const bossAbilitiesDop = [
 	{ boss: 'enem4', indexAbilities: [8, 10, 12, 9, 11] },
 	{ boss: 'enem4', indexAbilities: [1, 8, 5, 12] },
 	{ boss: 'enem4', indexAbilities: [13, 14, 15, 11, 3] },
+	{ boss: 'enem4', indexAbilities: [0, 1, 2] },
+	{ boss: 'enem4', indexAbilities: [3, 4, 5] },
 
 	// Волчок
 	{ boss: 'enem5', indexAbilities: [0, 1, 2, 3, 4, 5] },
@@ -407,4 +417,6 @@ const bossAbilitiesDop = [
 	{ boss: 'enem5', indexAbilities: [8, 10, 12, 9, 11] },
 	{ boss: 'enem5', indexAbilities: [2, 8, 3, 10] },
 	{ boss: 'enem5', indexAbilities: [13, 12, 14, 15, 6] },
+	{ boss: 'enem5', indexAbilities: [0, 2, 4] },
+	{ boss: 'enem5', indexAbilities: [1, 3, 5] },
 ];

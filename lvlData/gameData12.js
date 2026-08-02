@@ -2,6 +2,8 @@ let lvlNumber = 12;
 let factorChar = (lvlNumber * 5) / 100;
 
 const bossCombatConfig = {
+	scaleLongComboDamage: true,
+	scaleShortComboDamage: true,
 	levelCadence: 0.80, damageMultiplier: 1.17, minWaveDelay: 2250, minShotDelay: 145, minTelegraphMs: 480,
 	phases: [
 		{ phase: 1, minHp: 0.66, cadence: 1.00, speed: 1.00, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.12, maxActiveAttacks: 15 },
@@ -225,7 +227,7 @@ const bossAbilities = [
 	{ boss: 'enem4', type: 'enem44', xPos: 90, yPos: 12, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 16 }, //1 R
 	{ boss: 'enem4', type: 'enem44', xPos: 12, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 13 }, //2 L
 	{ boss: 'enem4', type: 'enem44', xPos: 88, yPos: 10, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 15 }, //3 R
-	{ boss: 'enem4', type: 'enem44', xPos: 8,  yPos: 14, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 17 }, //4 L
+	{ boss: 'enem4', type: 'enem44', xPos: 8,  yPos: 14, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 15 }, //4 L
 	{ boss: 'enem4', type: 'enem44', xPos: 92, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 12 }, //5 R
 	{ boss: 'enem4', type: 'enem44', xPos: 14, yPos: 4,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 18 }, //6 L
 	{ boss: 'enem4', type: 'enem44', xPos: 86, yPos: 16, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 14 }, //7 R

@@ -2,13 +2,15 @@ let lvlNumber = 1;
 
 // Полный профиль боя уровня: движок только исполняет эти настройки.
 const bossCombatConfig = {
+	scaleLongComboDamage: true,
+	scaleShortComboDamage: true,
 	levelCadence: 1.00,
 	damageMultiplier: 1.00,
 	minWaveDelay: 2600,
 	minShotDelay: 175,
 	minTelegraphMs: 600,
 	phases: [
-		{ phase: 1, minHp: 0.66, cadence: 1.00, speed: 0.94, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.06, maxActiveAttacks: 11 },
+		{ phase: 1, minHp: 0.66, cadence: 1.00, speed: 0.94, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.06, maxActiveAttacks: 11, excludedDangerousCombos: 2 },
 		{ phase: 2, minHp: 0.31, cadence: 0.88, speed: 1.03, damage: 1.07, telegraphMultiplier: 0.96, surpriseChance: 0.12, maxActiveAttacks: 13 },
 		{ phase: 3, minHp: 0.00, cadence: 0.76, speed: 1.10, damage: 1.14, telegraphMultiplier: 0.90, surpriseChance: 0.20, maxActiveAttacks: 15 }
 	],
@@ -271,6 +273,8 @@ const ENEMY_TYPES = {
 	{ boss: 'enem1', indexAbilities: [0, 6, 2, 9] },
 	{ boss: 'enem1', indexAbilities: [4, 5, 13, 14] },
 	{ boss: 'enem1', indexAbilities: [11, 13, 12, 14, 15] },
+	{ boss: 'enem1', indexAbilities: [0, 1] },
+	{ boss: 'enem1', indexAbilities: [2, 3] },
 
 	// Любитель бочков
 	{ boss: 'enem2', indexAbilities: [0, 1, 2, 3, 4, 5] },
@@ -279,6 +283,8 @@ const ENEMY_TYPES = {
 	{ boss: 'enem2', indexAbilities: [8, 10, 9] },
 	{ boss: 'enem2', indexAbilities: [2, 8, 3, 9] },
 	{ boss: 'enem2', indexAbilities: [11, 13, 12, 14, 15] },
+	{ boss: 'enem2', indexAbilities: [0, 2, 4] },
+	{ boss: 'enem2', indexAbilities: [1, 3, 5] },
 
 	// Косолапый
 	{ boss: 'enem3', indexAbilities: [0, 1, 2, 3, 4] },
@@ -287,6 +293,8 @@ const ENEMY_TYPES = {
 	{ boss: 'enem3', indexAbilities: [5, 8, 6, 9] },
 	{ boss: 'enem3', indexAbilities: [10, 11, 12, 13] },
 	{ boss: 'enem3', indexAbilities: [1, 7, 11, 14, 15] },
+	{ boss: 'enem3', indexAbilities: [0, 2, 4] },
+	{ boss: 'enem3', indexAbilities: [5, 7] },
 
 	// Сестричка
 	{ boss: 'enem4', indexAbilities: [0, 1, 2, 3, 4, 5] },
@@ -295,6 +303,8 @@ const ENEMY_TYPES = {
 	{ boss: 'enem4', indexAbilities: [8, 10, 9, 11] },
 	{ boss: 'enem4', indexAbilities: [1, 8, 5, 11] },
 	{ boss: 'enem4', indexAbilities: [12, 13, 14, 15] },
+	{ boss: 'enem4', indexAbilities: [0, 1, 2] },
+	{ boss: 'enem4', indexAbilities: [6, 7] },
 
 	// Колобок
 	{ boss: 'enem5', indexAbilities: [0, 1, 2, 3] },
@@ -303,4 +313,6 @@ const ENEMY_TYPES = {
 	{ boss: 'enem5', indexAbilities: [8, 9, 10] },
 	{ boss: 'enem5', indexAbilities: [0, 8, 4, 9] },
 	{ boss: 'enem5', indexAbilities: [11, 13, 12, 14, 15] },
+	{ boss: 'enem5', indexAbilities: [0, 1, 2] },
+	{ boss: 'enem5', indexAbilities: [4, 5, 6] },
 ];

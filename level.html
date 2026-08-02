@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Monstrous world</title>
-    <link rel="stylesheet" href="main_css.css">
+    <link rel="stylesheet" href="main_css.css?v=speed-danger-telegraph-2026-08-02">
 
     <script>
 const params = new URLSearchParams(window.location.search);
@@ -12,6 +12,7 @@ const requestedLevel = params.get('level') ?? '1';
 const parsedLevel = Number(requestedLevel);
 const MIN_LEVEL = 1;
 const MAX_LEVEL = 15;
+const GAME_BUILD_VERSION = 'boss-damage-variance-2026-08-02';
 const level = Number.isInteger(parsedLevel) && parsedLevel >= MIN_LEVEL && parsedLevel <= MAX_LEVEL
     ? parsedLevel
     : null;
@@ -19,7 +20,7 @@ const level = Number.isInteger(parsedLevel) && parsedLevel >= MIN_LEVEL && parse
 let loadedCount = 0;
 let gameStarted = false;
 let loadFailed = false;
-const totalToLoad = 2; // gameData + saveData
+const totalToLoad = 3; // gameData + saveData + battleMusic
 
 function showLoadError(message) {
     if (loadFailed) return;
@@ -53,7 +54,7 @@ function checkAllLoaded() {
 
     gameStarted = true;
     const gameScript = document.createElement('script');
-    gameScript.src = 'game.js';
+    gameScript.src = `game.js?v=${GAME_BUILD_VERSION}`;
     gameScript.onerror = () => showLoadError('Файл игрового движка не загрузился.');
     document.body.appendChild(gameScript);
 }
@@ -66,7 +67,7 @@ if (level === null) {
     document.title = `Monstrous world — уровень ${level}`;
 
     const dataScript = document.createElement('script');
-    dataScript.src = `lvlData/gameData${level}.js`;
+    dataScript.src = `lvlData/gameData${level}.js?v=${GAME_BUILD_VERSION}`;
     dataScript.onload = () => {
         loadedCount++;
         checkAllLoaded();
@@ -75,13 +76,28 @@ if (level === null) {
     document.head.appendChild(dataScript);
 
     const saveScript = document.createElement('script');
-    saveScript.src = 'saveData.js';
+    saveScript.src = `saveData.js?v=${GAME_BUILD_VERSION}`;
     saveScript.onload = () => {
         loadedCount++;
         checkAllLoaded();
     };
     saveScript.onerror = () => showLoadError('Система сохранений не загрузилась.');
     document.head.appendChild(saveScript);
+
+    const musicPlaylistScript = document.createElement('script');
+    musicPlaylistScript.src = `music/playlist.js?v=${GAME_BUILD_VERSION}`;
+    musicPlaylistScript.onload = () => {
+        const musicPlayerScript = document.createElement('script');
+        musicPlayerScript.src = `music/battle-music.js?v=${GAME_BUILD_VERSION}`;
+        musicPlayerScript.onload = () => {
+            loadedCount++;
+            checkAllLoaded();
+        };
+        musicPlayerScript.onerror = () => showLoadError('Плеер боевой музыки не загрузился.');
+        document.head.appendChild(musicPlayerScript);
+    };
+    musicPlaylistScript.onerror = () => showLoadError('Плейлист боевой музыки не загрузился.');
+    document.head.appendChild(musicPlaylistScript);
 }
     </script>
 

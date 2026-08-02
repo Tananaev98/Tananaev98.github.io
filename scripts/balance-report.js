@@ -1,6 +1,20 @@
 /* eslint-disable no-console */
 
 const assert = require('node:assert/strict');
+const fs = require('node:fs');
+
+const gameSource = fs.readFileSync('game.js', 'utf8');
+assert.match(gameSource, /const BOSS_DAMAGE_VARIANCE = 0\.05;/);
+assert.match(gameSource, /rollBossHitDamage\(multipliedDamage\)/);
+
+const testBossHitDamage = (damage, randomRoll) => Math.max(
+    1,
+    Math.round(damage * (0.95 + 0.10 * randomRoll))
+);
+assert.equal(testBossHitDamage(100, 0), 95);
+assert.equal(testBossHitDamage(100, 0.5), 100);
+assert.equal(testBossHitDamage(100, 1), 105);
+assert.ok(Number.isInteger(testBossHitDamage(137, 0.376)));
 
 const HEROES = {
     eremei: {
