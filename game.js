@@ -199,6 +199,75 @@ const castleDamageReductionCap = getHeroDefenseCap(activeHeroObject);
 let lastShotTime = 0;
 let SHOT_INTERVAL = startSHOT_INTERVAL; // Стреляем каждые 100мс (10 раз в секунду)
 
+// Единый боевой тайминг всех героев:
+// атака начинается сразу, а урон применяется в визуальной точке контакта.
+const HERO_ATTACK_TIMING = Object.freeze({
+    impactAt: 0.72,          // 72% текущего интервала атаки
+    visualCycle: 0.96,       // активная фаза почти равна интервалу
+    minImpactDelayMs: 90,
+    minVisualCycleMs: 140,
+    maxVisualCycleMs: 1300,
+    deflectCycleRatio: 0.28,
+    minDeflectCycleMs: 120,
+    maxDeflectCycleMs: 220,
+    deflectImpactAt: 0.68,
+    animatedHeroes: Object.freeze(['eremei', 'dunya', 'luka'])
+});
+const pendingHeroAttackTimers = new Set();
+
+function getHeroAttackTiming(shotIntervalMs) {
+    const intervalMs = Math.max(120, Number(shotIntervalMs) || SHOT_INTERVAL || 800);
+    const hasSynchronizedVfx = HERO_ATTACK_TIMING.animatedHeroes.includes(activeHeroObject?.name);
+    const cycleMs = Math.max(
+        HERO_ATTACK_TIMING.minVisualCycleMs,
+        Math.min(HERO_ATTACK_TIMING.maxVisualCycleMs, intervalMs * HERO_ATTACK_TIMING.visualCycle)
+    );
+    if (!hasSynchronizedVfx) {
+        return {
+            intervalMs,
+            cycleMs: Math.round(cycleMs),
+            impactDelayMs: 0
+        };
+    }
+    const impactDelayMs = Math.max(
+        HERO_ATTACK_TIMING.minImpactDelayMs,
+        Math.min(cycleMs * 0.9, intervalMs * HERO_ATTACK_TIMING.impactAt)
+    );
+    return {
+        intervalMs,
+        cycleMs: Math.round(cycleMs),
+        impactDelayMs: Math.round(impactDelayMs)
+    };
+}
+
+function getHeroDeflectTiming() {
+    const cycleMs = Math.max(
+        HERO_ATTACK_TIMING.minDeflectCycleMs,
+        Math.min(
+            HERO_ATTACK_TIMING.maxDeflectCycleMs,
+            SHOT_INTERVAL * HERO_ATTACK_TIMING.deflectCycleRatio
+        )
+    );
+    return {
+        intervalMs: 0,
+        cycleMs: Math.round(cycleMs),
+        impactDelayMs: Math.round(cycleMs * HERO_ATTACK_TIMING.deflectImpactAt)
+    };
+}
+
+function scheduleHeroImpact(callback, delayMs) {
+    const timer = window.setTimeout(() => {
+        pendingHeroAttackTimers.delete(timer);
+        callback();
+    }, Math.max(0, delayMs));
+    pendingHeroAttackTimers.add(timer);
+}
+
+function clearPendingHeroAttacks() {
+    pendingHeroAttackTimers.forEach((timer) => window.clearTimeout(timer));
+    pendingHeroAttackTimers.clear();
+}
+
 
 // Система опыта и уровней
 let playerLevel = 1;
@@ -830,6 +899,7 @@ function resetGame() {
         damageContainer.innerHTML = '';
     }
     
+    clearPendingHeroAttacks();
     activeEnemies.forEach(enemy => enemy.remove());
     activeEnemies = [];
     
@@ -1969,10 +2039,7 @@ function checkAimAndDamage() {
     const index = activeEnemies.indexOf(enemy);
     if (index !== -1) {
         const attackRoll = rollHeroAttackMultiplier(isBoss);
-        const isDead = damageEnemy(enemy, index, attackRoll.multiplier, attackRoll.kind);
-        if (isDead) {
-            activeEnemies.splice(index, 1);
-        }
+        damageEnemy(enemy, attackRoll.multiplier, attackRoll.kind, shotInterval);
     }
 }
 
@@ -1989,21 +2056,52 @@ function rollBossHitDamage(damage, randomRoll = Math.random()) {
 }
 
 
-function damageEnemy(enemy, index, attackMultiplier = 1, attackKind = 'normal') {
-    // Рассчитываем урон с учетом крита
-   
-	
-	let isBoss = bossM.includes(enemy.type);
-	
+function damageEnemy(enemy, attackMultiplier = 1, attackKind = 'normal', shotIntervalMs = SHOT_INTERVAL) {
+    if (!enemy?.element || !enemy.element.isConnected) return;
+
+	const isBoss = bossM.includes(enemy.type);
     const damageResult = calculateDamage(isBoss);
     const woundBaseDamage = damageResult.damage;
     const multipliedDamage = damageResult.damage * attackMultiplier;
     damageResult.damage = isBoss
         ? rollBossHitDamage(multipliedDamage)
         : Math.round(multipliedDamage);
+    damageResult.woundBaseDamage = woundBaseDamage;
 
-    
-    // Наносим урон
+    const timing = isBoss
+        ? getHeroAttackTiming(shotIntervalMs)
+        : getHeroDeflectTiming();
+    const predictedDestroyed = enemy.hp - damageResult.damage <= 0;
+
+    // Сначала проигрываем активную фазу атаки. Урон будет применён
+    // централизованно в её точке контакта.
+    if (isBoss) {
+        showEremeiBossImpact(enemy, damageResult.isCritical, timing);
+        showDunyaBossImpact(enemy, damageResult.isCritical, attackKind, timing);
+        showLukaBossImpact(enemy, damageResult.isCritical, damageResult.isCountShot, timing);
+    } else if (predictedDestroyed) {
+        showEremeiDeflectImpact(enemy, damageResult.isCritical, timing);
+        showDunyaDeflectImpact(enemy, damageResult.isCritical, timing);
+        showLukaDeflectImpact(enemy, damageResult.isCritical, timing);
+    }
+
+    if (!isBoss) {
+        // Снаряд считается отбитым сразу: он прекращает движение и умирает
+        // в этом же кадре, а короткий VFX доигрывается независимо.
+        applyHeroImpactDamage(enemy, damageResult, false);
+        return;
+    }
+
+    scheduleHeroImpact(() => {
+        applyHeroImpactDamage(enemy, damageResult, true);
+    }, timing.impactDelayMs);
+}
+
+function applyHeroImpactDamage(enemy, damageResult, isBoss) {
+    const liveIndex = activeEnemies.indexOf(enemy);
+    if (liveIndex === -1 || !enemy?.element || !enemy.element.isConnected || enemy.hp <= 0) return;
+
+    // Фактический урон наносится только в момент визуального контакта.
     enemy.hp -= damageResult.damage;
 	
 	//Применение особенностей героев
@@ -2013,17 +2111,6 @@ function damageEnemy(enemy, index, attackMultiplier = 1, attackKind = 'normal') 
 	
 	animateEnemyHit(enemy);
 
-    if (isBoss) {
-        showEremeiBossImpact(enemy, damageResult.isCritical);
-        showDunyaBossImpact(enemy, damageResult.isCritical, attackKind);
-        showLukaBossImpact(enemy, damageResult.isCritical);
-    } else if (enemy.hp <= 0) {
-        showEremeiDeflectImpact(enemy, damageResult.isCritical);
-        showDunyaDeflectImpact(enemy, damageResult.isCritical);
-        showLukaDeflectImpact(enemy, damageResult.isCritical);
-    }
-	
-	
 	if (enemy.type === bossAliveName && currentBoss) {
         updateBossHealthBar();
     }
@@ -2031,8 +2118,8 @@ function damageEnemy(enemy, index, attackMultiplier = 1, attackKind = 'normal') 
 	// Воспроизводим звук
 	playDamageSound();
 	
-	if ((woundBaseDamage / 20) > 1) {
-	checkForWound(enemy, woundBaseDamage);
+	if ((damageResult.woundBaseDamage / 20) > 1) {
+	checkForWound(enemy, damageResult.woundBaseDamage);
 	}
     
     // Получаем позицию врага для отображения текста урона
@@ -2069,11 +2156,10 @@ function damageEnemy(enemy, index, attackMultiplier = 1, attackKind = 'normal') 
         setTimeout(() => {
             enemy.remove();
         }, 300);
-        
-        return true; // Враг убит
+
+        const currentIndex = activeEnemies.indexOf(enemy);
+        if (currentIndex !== -1) activeEnemies.splice(currentIndex, 1);
     }
-    
-    return false; // Враг жив
 }
 
 function checkForWound(enemy, damage) {
@@ -2137,7 +2223,8 @@ function calculateDamage(isBoss) {
         isCritical = true;
     }
 	
-	isCritical = subsCalculateDamageEnemy(isBoss, isCritical);
+	const heroCriticalResult = subsCalculateDamageEnemy(isBoss, isCritical);
+	isCritical = heroCriticalResult.isCritical;
 	
 	if (isCritical) {
 		damage *= globalCritMultiplier;
@@ -2149,7 +2236,8 @@ function calculateDamage(isBoss) {
     
     return {
         damage: damage,
-        isCritical: isCritical
+        isCritical: isCritical,
+        isCountShot: heroCriticalResult.isCountShot
     };
 }
 
@@ -2395,7 +2483,34 @@ function pickOpaqueHitNormFromSamples(samples) {
     return samples[Math.floor(Math.random() * samples.length)];
 }
 
-function showLukaArrowImpact(enemyEl, { isMini = false, isCritical = false } = {}) {
+function syncLukaArrowMount(mount, enemyEl) {
+    if (!mount?.isConnected) return;
+
+    if (enemyEl?.isConnected) {
+        const renderedStyle = getComputedStyle(enemyEl);
+        mount.style.left = enemyEl.style.left || '0%';
+        mount.style.top = enemyEl.style.top || '0%';
+        // Берём уже интерполированную браузером матрицу. Иначе стрела получает
+        // конечный угол раньше босса, у которого transform идёт через transition.
+        mount.style.transform = renderedStyle.transform === 'none'
+            ? 'none'
+            : renderedStyle.transform;
+    }
+
+    // Для уничтоженной атаки оставляем стрелу в последней позиции;
+    // у живого босса продолжаем повторять покачивание до исчезновения эффекта.
+    requestAnimationFrame(() => syncLukaArrowMount(mount, enemyEl));
+}
+
+function showLukaArrowImpact(
+    enemyEl,
+    {
+        isMini = false,
+        isCritical = false,
+        isCountShot = false,
+        timing = isMini ? getHeroDeflectTiming() : getHeroAttackTiming(SHOT_INTERVAL)
+    } = {}
+) {
     if (!enemyEl || !enemiesContainer) return;
 
     const spawnAt = (hit) => {
@@ -2405,7 +2520,7 @@ function showLukaArrowImpact(enemyEl, { isMini = false, isCritical = false } = {
         pruneImpactNodes(isMini ? '.luka-arrow-mount.is-mini' : '.luka-arrow-mount:not(.is-mini)', isMini ? 4 : 12);
 
         const mount = document.createElement('div');
-        mount.className = `luka-arrow-mount${isMini ? ' is-mini' : ''}${isCritical ? ' is-critical' : ''}`;
+        mount.className = `luka-arrow-mount${isMini ? ' is-mini' : ''}${isCritical ? ' is-critical' : ''}${isCountShot ? ' is-count-shot' : ''}`;
         mount.style.left = enemyEl.style.left || '0%';
         mount.style.top = enemyEl.style.top || '0%';
         mount.style.width = `${Math.max(1, enemyEl.offsetWidth)}px`;
@@ -2415,20 +2530,30 @@ function showLukaArrowImpact(enemyEl, { isMini = false, isCritical = false } = {
         mount.setAttribute('aria-hidden', 'true');
 
         const impact = document.createElement('div');
-        impact.className = `luka-boss-impact${isMini ? ' is-mini' : ''}${isCritical ? ' luka-boss-impact-critical' : ''}`;
+        impact.className = `luka-boss-impact${isMini ? ' is-mini' : ''}${isCritical ? ' luka-boss-impact-critical' : ''}${isCountShot ? ' is-count-shot' : ''}`;
         impact.style.left = `${(hit.x * 100).toFixed(3)}%`;
         impact.style.top = `${(hit.y * 100).toFixed(3)}%`;
         impact.style.setProperty('--luka-arrow-rot', `${(Math.random() * 28 - 14).toFixed(1)}deg`);
         impact.style.setProperty('--luka-flight-x', `${(Math.random() * 20 - 10).toFixed(1)}px`);
+        impact.style.setProperty('--luka-arrow-duration', `${Math.max(280, Math.round(timing.impactDelayMs / 0.18))}ms`);
+        impact.style.setProperty('--luka-trail-duration', `${Math.max(120, timing.impactDelayMs)}ms`);
+        impact.style.setProperty('--luka-ring-duration', `${Math.max(180, Math.round(timing.impactDelayMs / 0.7))}ms`);
+        impact.style.setProperty('--luka-puncture-duration', `${Math.max(300, Math.round(timing.impactDelayMs / 0.19))}ms`);
         impact.innerHTML = `
             <span class="luka-puncture"></span>
             <span class="luka-impact-ring"></span>
             <span class="luka-impact-flash"></span>
             <span class="luka-flight-trail"></span>
+            <span class="luka-count-fire"></span>
             <span class="luka-arrow"></span>
         `;
         mount.appendChild(impact);
         enemiesContainer.appendChild(mount);
+        // Стрелы в живом боссе следуют за его покачиванием. Атака же сразу
+        // сжимается при смерти, поэтому мини-стрелу оставляем в точке отбивания.
+        if (!isMini) {
+            syncLukaArrowMount(mount, enemyEl);
+        }
 
         window.setTimeout(() => mount.remove(), 3100);
     };
@@ -2450,17 +2575,22 @@ function showLukaArrowImpact(enemyEl, { isMini = false, isCritical = false } = {
     });
 }
 
-function showLukaBossImpact(boss, isCritical = false) {
+function showLukaBossImpact(
+    boss,
+    isCritical = false,
+    isCountShot = false,
+    timing = getHeroAttackTiming(SHOT_INTERVAL)
+) {
     if (activeHeroObject?.name !== 'luka' || !boss?.element || !enemiesContainer || !gameField) return;
-    showLukaArrowImpact(boss.element, { isMini: false, isCritical });
+    showLukaArrowImpact(boss.element, { isMini: false, isCritical, isCountShot, timing });
 }
 
-function showLukaDeflectImpact(attackEnemy, isCritical = false) {
+function showLukaDeflectImpact(attackEnemy, isCritical = false, timing = getHeroDeflectTiming()) {
     if (activeHeroObject?.name !== 'luka' || !attackEnemy?.element || !enemiesContainer || !gameField) return;
-    showLukaArrowImpact(attackEnemy.element, { isMini: true, isCritical });
+    showLukaArrowImpact(attackEnemy.element, { isMini: true, isCritical, timing });
 }
 
-function showEremeiBossImpact(boss, isCritical = false) {
+function showEremeiBossImpact(boss, isCritical = false, timing = getHeroAttackTiming(SHOT_INTERVAL)) {
     if (activeHeroObject?.name !== 'eremei' || !boss?.element || !enemiesContainer || !gameField) return;
 
     const pos = getImpactFieldPercent(boss.element);
@@ -2481,19 +2611,29 @@ function showEremeiBossImpact(boss, isCritical = false) {
     impact.className = `eremei-boss-impact${isCritical ? ' eremei-boss-impact-critical' : ''}`;
     impact.style.left = `${pos.left}%`;
     impact.style.top = `${pos.top}%`;
+    const swingDurationMs = Math.max(140, Math.round(timing.impactDelayMs / 0.62));
+    impact.style.setProperty('--eremei-swing-duration', `${swingDurationMs}ms`);
     impact.setAttribute('aria-hidden', 'true');
     impact.innerHTML = `
         <span class="eremei-force eremei-force-ring eremei-force-ring-a"></span>
         <span class="eremei-force eremei-force-ring eremei-force-ring-b"></span>
+        <span class="eremei-heavy-core"></span>
+        <span class="eremei-dust eremei-dust-a"></span>
+        <span class="eremei-dust eremei-dust-b"></span>
+        <span class="eremei-debris eremei-debris-1"></span>
+        <span class="eremei-debris eremei-debris-2"></span>
+        <span class="eremei-debris eremei-debris-3"></span>
+        <span class="eremei-debris eremei-debris-4"></span>
+        <span class="eremei-debris eremei-debris-5"></span>
         <span class="eremei-impact-spark"></span>
         <span class="eremei-club ${swingClass}"></span>
     `;
     enemiesContainer.appendChild(impact);
 
-    window.setTimeout(() => impact.remove(), 700);
+    window.setTimeout(() => impact.remove(), swingDurationMs + 160);
 }
 
-function showEremeiDeflectImpact(attackEnemy, isCritical = false) {
+function showEremeiDeflectImpact(attackEnemy, isCritical = false, timing = getHeroDeflectTiming()) {
     if (activeHeroObject?.name !== 'eremei' || !attackEnemy?.element || !enemiesContainer || !gameField) return;
 
     const pos = getImpactFieldPercent(attackEnemy.element);
@@ -2513,15 +2653,22 @@ function showEremeiDeflectImpact(attackEnemy, isCritical = false) {
     impact.className = `eremei-boss-impact is-mini${isCritical ? ' eremei-boss-impact-critical' : ''}`;
     impact.style.left = `${pos.left}%`;
     impact.style.top = `${pos.top}%`;
+    const swingDurationMs = Math.max(120, Math.round(timing.impactDelayMs / 0.62));
+    impact.style.setProperty('--eremei-swing-duration', `${swingDurationMs}ms`);
     impact.setAttribute('aria-hidden', 'true');
     impact.innerHTML = `
         <span class="eremei-force eremei-force-ring eremei-force-ring-a"></span>
+        <span class="eremei-heavy-core"></span>
+        <span class="eremei-dust eremei-dust-a"></span>
+        <span class="eremei-debris eremei-debris-1"></span>
+        <span class="eremei-debris eremei-debris-2"></span>
+        <span class="eremei-debris eremei-debris-3"></span>
         <span class="eremei-impact-spark"></span>
         <span class="eremei-club ${swingClass}"></span>
     `;
     enemiesContainer.appendChild(impact);
 
-    window.setTimeout(() => impact.remove(), 420);
+    window.setTimeout(() => impact.remove(), swingDurationMs + 100);
 }
 
 // Дуня бьёт двумя метёлками: парный удар противоположных сторон.
@@ -2556,11 +2703,16 @@ const DUNYA_WHIRL_CONFIG = {
     jackpot: { count: 8, durationMs: 1300, spins: 2, sizeClass: 'dunya-whirl-jackpot' }
 };
 
-function showDunyaBossImpact(boss, isCritical = false, attackKind = 'normal') {
+function showDunyaBossImpact(
+    boss,
+    isCritical = false,
+    attackKind = 'normal',
+    timing = getHeroAttackTiming(SHOT_INTERVAL)
+) {
     if (activeHeroObject?.name !== 'dunya' || !boss?.element || !enemiesContainer || !gameField) return;
 
     if (attackKind === 'double' || attackKind === 'triple' || attackKind === 'jackpot') {
-        showDunyaWhirlImpact(boss, isCritical, attackKind);
+        showDunyaWhirlImpact(boss, isCritical, attackKind, timing);
         return;
     }
 
@@ -2576,12 +2728,23 @@ function showDunyaBossImpact(boss, isCritical = false, attackKind = 'normal') {
     impact.className = `dunya-boss-impact${isCritical ? ' dunya-boss-impact-critical' : ''}`;
     impact.style.left = `${pos.left}%`;
     impact.style.top = `${pos.top}%`;
+    const swingDurationMs = timing.cycleMs;
+    const secondHitDelayMs = Math.max(0, Math.round(timing.impactDelayMs - swingDurationMs * 0.58));
+    const sparkDurationMs = Math.max(140, Math.round(swingDurationMs * 0.42));
+    impact.style.setProperty('--dunya-swing-duration', `${swingDurationMs}ms`);
+    impact.style.setProperty('--dunya-spark-duration', `${sparkDurationMs}ms`);
+    impact.style.setProperty('--dunya-wind-duration', `${swingDurationMs}ms`);
     impact.setAttribute('aria-hidden', 'true');
 
-    const broomsHtml = combo.map((hit, index) => `
-        <span class="dunya-broom ${hit.swing}" style="animation-delay: ${hit.delayMs}ms"></span>
-        <span class="dunya-impact-spark dunya-impact-spark-${index + 1}" style="animation-delay: ${hit.delayMs + 210}ms"></span>
-    `).join('');
+    const broomsHtml = combo.map((hit, index) => {
+        const delay = hit.delayMs > 0 ? secondHitDelayMs : 0;
+        const contact = delay + swingDurationMs * 0.58;
+        const sparkDelay = Math.max(0, Math.round(contact - sparkDurationMs * 0.4));
+        return `
+            <span class="dunya-broom ${hit.swing}" style="animation-delay: ${delay}ms"></span>
+            <span class="dunya-impact-spark dunya-impact-spark-${index + 1}" style="animation-delay: ${sparkDelay}ms"></span>
+        `;
+    }).join('');
 
     impact.innerHTML = `
         <span class="dunya-wind dunya-wind-arc dunya-wind-arc-a"></span>
@@ -2593,10 +2756,10 @@ function showDunyaBossImpact(boss, isCritical = false, attackKind = 'normal') {
     `;
     enemiesContainer.appendChild(impact);
 
-    window.setTimeout(() => impact.remove(), 820);
+    window.setTimeout(() => impact.remove(), secondHitDelayMs + swingDurationMs + 120);
 }
 
-function showDunyaDeflectImpact(attackEnemy, isCritical = false) {
+function showDunyaDeflectImpact(attackEnemy, isCritical = false, timing = getHeroDeflectTiming()) {
     if (activeHeroObject?.name !== 'dunya' || !attackEnemy?.element || !enemiesContainer || !gameField) return;
 
     const pos = getImpactFieldPercent(attackEnemy.element);
@@ -2611,13 +2774,21 @@ function showDunyaDeflectImpact(attackEnemy, isCritical = false) {
     impact.className = `dunya-boss-impact is-mini${isCritical ? ' dunya-boss-impact-critical' : ''}`;
     impact.style.left = `${pos.left}%`;
     impact.style.top = `${pos.top}%`;
+    const swingDurationMs = timing.cycleMs;
+    const secondHitDelayMs = Math.max(0, Math.round(timing.impactDelayMs - swingDurationMs * 0.58));
+    const sparkDurationMs = Math.max(100, Math.round(swingDurationMs * 0.42));
+    impact.style.setProperty('--dunya-swing-duration', `${swingDurationMs}ms`);
+    impact.style.setProperty('--dunya-spark-duration', `${sparkDurationMs}ms`);
+    impact.style.setProperty('--dunya-wind-duration', `${swingDurationMs}ms`);
     impact.setAttribute('aria-hidden', 'true');
 
     const broomsHtml = combo.map((hit, index) => {
-        const delay = Math.round(hit.delayMs * 0.7);
+        const delay = hit.delayMs > 0 ? secondHitDelayMs : 0;
+        const contact = delay + swingDurationMs * 0.58;
+        const sparkDelay = Math.max(0, Math.round(contact - sparkDurationMs * 0.4));
         return `
             <span class="dunya-broom ${hit.swing}" style="animation-delay: ${delay}ms"></span>
-            <span class="dunya-impact-spark dunya-impact-spark-${index + 1}" style="animation-delay: ${delay + 140}ms"></span>
+            <span class="dunya-impact-spark dunya-impact-spark-${index + 1}" style="animation-delay: ${sparkDelay}ms"></span>
         `;
     }).join('');
 
@@ -2629,10 +2800,15 @@ function showDunyaDeflectImpact(attackEnemy, isCritical = false) {
     `;
     enemiesContainer.appendChild(impact);
 
-    window.setTimeout(() => impact.remove(), 520);
+    window.setTimeout(() => impact.remove(), secondHitDelayMs + swingDurationMs + 100);
 }
 
-function showDunyaWhirlImpact(boss, isCritical, attackKind) {
+function showDunyaWhirlImpact(
+    boss,
+    isCritical,
+    attackKind,
+    timing = getHeroAttackTiming(SHOT_INTERVAL)
+) {
     const pos = getImpactFieldPercent(boss.element);
     if (!pos || !enemiesContainer) return;
 
@@ -2650,7 +2826,8 @@ function showDunyaWhirlImpact(boss, isCritical, attackKind) {
     ].filter(Boolean).join(' ');
     impact.style.left = `${pos.left}%`;
     impact.style.top = `${pos.top}%`;
-    impact.style.setProperty('--whirl-duration', `${config.durationMs}ms`);
+    const whirlDurationMs = timing.cycleMs;
+    impact.style.setProperty('--whirl-duration', `${whirlDurationMs}ms`);
     impact.style.setProperty('--whirl-spins', String(config.spins));
     impact.setAttribute('aria-hidden', 'true');
 
@@ -2670,7 +2847,7 @@ function showDunyaWhirlImpact(boss, isCritical, attackKind) {
     `;
     enemiesContainer.appendChild(impact);
 
-    window.setTimeout(() => impact.remove(), config.durationMs + 80);
+    window.setTimeout(() => impact.remove(), whirlDurationMs + 100);
 }
 
 function createDamageText(damage, xPercent, yPercent, isCritical = false) {
@@ -2866,11 +3043,11 @@ function subsCalculateDamageEnemy(isBoss, isCritical) {
 		if (countDamageBoss >= guaranteedCritEvery) {
 			countDamageBoss = 0;
 			showCenterText('Считалочка! Точный выстрел!', 900, 'info');
-			return true;
+			return { isCritical: true, isCountShot: true };
 		}
 	}
 	
-	return isCritical;
+	return { isCritical, isCountShot: false };
 }
 
 

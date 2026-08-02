@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Monstrous world</title>
-    <link rel="stylesheet" href="main_css.css?v=luka-arrow-flight-2026-08-02">
-    <script src="enemyAlphaMasks.js?v=luka-arrow-flight-2026-08-02"></script>
+    <link rel="stylesheet" href="main_css.css?v=dunya-smooth-swings-2026-08-02">
+    <script src="enemyAlphaMasks.js?v=dunya-smooth-swings-2026-08-02"></script>
 
     <script>
 const params = new URLSearchParams(window.location.search);
@@ -13,7 +13,7 @@ const requestedLevel = params.get('level') ?? '1';
 const parsedLevel = Number(requestedLevel);
 const MIN_LEVEL = 1;
 const MAX_LEVEL = 15;
-const GAME_BUILD_VERSION = 'luka-arrow-flight-2026-08-02';
+const GAME_BUILD_VERSION = 'dunya-smooth-swings-2026-08-02';
 const level = Number.isInteger(parsedLevel) && parsedLevel >= MIN_LEVEL && parsedLevel <= MAX_LEVEL
     ? parsedLevel
     : null;
