@@ -597,6 +597,11 @@ function migrateGameState(savedState) {
                 }
             });
 
+            // Текст особенности всегда из актуальных дефолтов
+            if (typeof defaultHero.feature === 'string') {
+                migrated[heroKey].feature = defaultHero.feature;
+            }
+
             migrated[heroKey].startCastleDamageReduction = Math.min(
                 getHeroDefenseCap(migrated[heroKey]),
                 Math.max(0, migrated[heroKey].startCastleDamageReduction)
@@ -927,7 +932,7 @@ function getDefaultGameState() {
 				investedZlata: 0,
 				upSpecif: 1, 
 				unlock: true,
-				feature: 'Раскрутилась — <br>10% шанс двойной атаки,<br>3% шанс тройной атаки<br>и 1% шанс джекпота: урон ×8',
+				feature: 'Раскрутилась — <br>10% шанс двойной атаки,<br>3% шанс тройной атаки<br>и 1% шанс: восьмикратного урона!',
 				doubleAttackChance: 0.10,
 				tripleAttackChance: 0.03,
 				jackpotAttackChance: 0.01,

@@ -288,6 +288,8 @@ class Enemy {
             this.pixelX = (this.x / 100) * this.fieldWidth;
             this.pixelY = (this.y / 100) * this.fieldHeight;
             this.applyPositionTransform(0);
+            // Прогрев маски силуэта для стрел Луки
+            ensureEnemyOpaqueSamples(this.element);
         });
     }
   
@@ -1966,8 +1968,8 @@ function checkAimAndDamage() {
 
     const index = activeEnemies.indexOf(enemy);
     if (index !== -1) {
-        const attackMultiplier = rollHeroAttackMultiplier(isBoss);
-        const isDead = damageEnemy(enemy, index, attackMultiplier);
+        const attackRoll = rollHeroAttackMultiplier(isBoss);
+        const isDead = damageEnemy(enemy, index, attackRoll.multiplier, attackRoll.kind);
         if (isDead) {
             activeEnemies.splice(index, 1);
         }
@@ -1987,7 +1989,7 @@ function rollBossHitDamage(damage, randomRoll = Math.random()) {
 }
 
 
-function damageEnemy(enemy, index, attackMultiplier = 1) {
+function damageEnemy(enemy, index, attackMultiplier = 1, attackKind = 'normal') {
     // Рассчитываем урон с учетом крита
    
 	
@@ -2010,6 +2012,16 @@ function damageEnemy(enemy, index, attackMultiplier = 1) {
     // Запускаем анимацию удара по врагу
 	
 	animateEnemyHit(enemy);
+
+    if (isBoss) {
+        showEremeiBossImpact(enemy, damageResult.isCritical);
+        showDunyaBossImpact(enemy, damageResult.isCritical, attackKind);
+        showLukaBossImpact(enemy, damageResult.isCritical);
+    } else if (enemy.hp <= 0) {
+        showEremeiDeflectImpact(enemy, damageResult.isCritical);
+        showDunyaDeflectImpact(enemy, damageResult.isCritical);
+        showLukaDeflectImpact(enemy, damageResult.isCritical);
+    }
 	
 	
 	if (enemy.type === bossAliveName && currentBoss) {
@@ -2174,6 +2186,493 @@ function animateEnemyHit(enemy) {
     }, 400); // 400мс - длительность анимации
 }
 
+function getImpactFieldPercent(targetElement) {
+    if (!targetElement || !gameField) return null;
+    const targetRect = targetElement.getBoundingClientRect();
+    const fieldRect = gameField.getBoundingClientRect();
+    if (fieldRect.width <= 0 || fieldRect.height <= 0) return null;
+    return {
+        left: ((targetRect.left + targetRect.width / 2 - fieldRect.left) / fieldRect.width) * 100,
+        top: ((targetRect.top + targetRect.height / 2 - fieldRect.top) / fieldRect.height) * 100
+    };
+}
+
+function pruneImpactNodes(selector, maxCount) {
+    if (!enemiesContainer) return;
+    const existing = enemiesContainer.querySelectorAll(selector);
+    const overflow = existing.length - maxCount + 1;
+    for (let i = 0; i < overflow; i++) {
+        existing[i]?.remove();
+    }
+}
+
+// Кэш маски силуэта врага: массив точек только в плотной непрозрачной зоне.
+const enemyOpaqueHitCache = new Map();
+const enemyOpaqueHitPending = new Map(); // src -> Promise
+
+function isEnemyBodyPixel(r, g, b, a, alphaMin) {
+    if (a < alphaMin) return false;
+    // Некоторые спрайты вместо прозрачности залиты чёрным — его не считаем телом.
+    if (r <= 14 && g <= 14 && b <= 14) return false;
+    return true;
+}
+
+function collectBodySamples(data, w, h, alphaMin, requireNeighbor) {
+    const body = new Uint8Array(w * h);
+    let bodyCount = 0;
+    for (let i = 0, p = 0; i < body.length; i++, p += 4) {
+        if (isEnemyBodyPixel(data[p], data[p + 1], data[p + 2], data[p + 3], alphaMin)) {
+            body[i] = 1;
+            bodyCount++;
+        }
+    }
+    if (!bodyCount) return [];
+
+    const samples = [];
+    const pad = requireNeighbor ? 1 : 0;
+    for (let y = pad; y < h - pad; y++) {
+        for (let x = pad; x < w - pad; x++) {
+            const idx = y * w + x;
+            if (!body[idx]) continue;
+            if (requireNeighbor) {
+                // Мягкая проверка: хотя бы 2 соседа из 4 — чтобы не тыкать в одиночный антиалиас.
+                const neighbors =
+                    body[idx - 1] + body[idx + 1] + body[idx - w] + body[idx + w];
+                if (neighbors < 2) continue;
+            }
+            samples.push({ x: (x + 0.5) / w, y: (y + 0.5) / h });
+        }
+    }
+    return samples;
+}
+
+function buildOpaqueHitSamples(source, naturalW, naturalH) {
+    const maxSide = 180;
+    const scale = Math.min(1, maxSide / Math.max(naturalW, naturalH));
+    const w = Math.max(1, Math.round(naturalW * scale));
+    const h = Math.max(1, Math.round(naturalH * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return null;
+
+    ctx.clearRect(0, 0, w, h);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(source, 0, 0, w, h);
+    const data = ctx.getImageData(0, 0, w, h).data;
+
+    // Если canvas «пустой»/не прочитался — считаем это ошибкой чтения, не пустым спрайтом.
+    let anyAlpha = 0;
+    for (let p = 3; p < data.length; p += 4) {
+        if (data[p]) {
+            anyAlpha++;
+            if (anyAlpha > 8) break;
+        }
+    }
+    if (anyAlpha <= 8) {
+        throw new Error('opaque-sample-empty-read');
+    }
+
+    // Сначала строже, потом мягче — тонкие силуэты всё равно должны дать точки.
+    const attempts = [
+        { alphaMin: 160, requireNeighbor: true },
+        { alphaMin: 100, requireNeighbor: true },
+        { alphaMin: 60, requireNeighbor: false },
+        { alphaMin: 30, requireNeighbor: false }
+    ];
+
+    let samples = [];
+    for (const attempt of attempts) {
+        samples = collectBodySamples(data, w, h, attempt.alphaMin, attempt.requireNeighbor);
+        if (samples.length >= 8) break;
+    }
+
+    if (!samples.length) return null;
+    if (samples.length <= 1400) return samples;
+    const step = Math.ceil(samples.length / 1400);
+    return samples.filter((_, i) => i % step === 0);
+}
+
+function decodeImageForSampling(src) {
+    return fetch(src)
+        .then((res) => {
+            if (!res.ok) throw new Error('opaque-sample-fetch-failed');
+            return res.blob();
+        })
+        .then((blob) => createImageBitmap(blob))
+        .then((bitmap) => {
+            try {
+                return buildOpaqueHitSamples(bitmap, bitmap.width, bitmap.height);
+            } finally {
+                bitmap.close?.();
+            }
+        });
+}
+
+function getPrecomputedEnemyOpaqueSamples(imgEl) {
+    const rawSrc = imgEl?.getAttribute?.('src');
+    if (!rawSrc || !window.ENEMY_ALPHA_MASKS) return null;
+
+    const key = rawSrc.replace(/\\/g, '/').split(/[?#]/, 1)[0].replace(/^\.\//, '');
+    const mask = window.ENEMY_ALPHA_MASKS[key];
+    if (!mask?.p?.length || !mask.w || !mask.h) return null;
+
+    if (mask.samples) return mask.samples;
+    const samples = mask.p.map((index) => ({
+        x: ((index % mask.w) + 0.5) / mask.w,
+        y: (Math.floor(index / mask.w) + 0.5) / mask.h
+    }));
+    Object.defineProperty(mask, 'samples', { value: samples });
+    return samples;
+}
+
+function ensureEnemyOpaqueSamples(imgEl) {
+    if (!imgEl || !(imgEl instanceof HTMLImageElement)) return Promise.resolve(null);
+    const src = imgEl.currentSrc || imgEl.src;
+    if (!src) return Promise.resolve(null);
+
+    const precomputed = getPrecomputedEnemyOpaqueSamples(imgEl);
+    if (precomputed?.length) {
+        enemyOpaqueHitCache.set(src, precomputed);
+        return Promise.resolve(precomputed);
+    }
+
+    if (enemyOpaqueHitCache.has(src)) {
+        return Promise.resolve(enemyOpaqueHitCache.get(src));
+    }
+    if (enemyOpaqueHitPending.has(src)) {
+        return enemyOpaqueHitPending.get(src);
+    }
+
+    const finalize = (samples) => {
+        enemyOpaqueHitCache.set(src, samples);
+        return samples;
+    };
+
+    // Синхронно только если реально получили точки. null/ошибку не кэшируем навсегда сразу —
+    // сначала пробуем blob/bitmap путь.
+    try {
+        if (imgEl.complete && imgEl.naturalWidth > 0) {
+            const samples = buildOpaqueHitSamples(imgEl, imgEl.naturalWidth, imgEl.naturalHeight);
+            if (samples?.length) {
+                return Promise.resolve(finalize(samples));
+            }
+        }
+    } catch (err) {
+        // tainted canvas / file:// / empty read
+    }
+
+    const promise = decodeImageForSampling(src)
+        .then((samples) => finalize(samples?.length ? samples : null))
+        .catch(() => finalize(null))
+        .finally(() => {
+            enemyOpaqueHitPending.delete(src);
+        });
+
+    enemyOpaqueHitPending.set(src, promise);
+    return promise;
+}
+
+function getEnemyOpaqueSamples(imgEl) {
+    if (!imgEl || !(imgEl instanceof HTMLImageElement)) return null;
+    const src = imgEl.currentSrc || imgEl.src;
+    if (!src) return null;
+
+    const precomputed = getPrecomputedEnemyOpaqueSamples(imgEl);
+    if (precomputed?.length) {
+        enemyOpaqueHitCache.set(src, precomputed);
+        return precomputed;
+    }
+
+    if (enemyOpaqueHitCache.has(src)) return enemyOpaqueHitCache.get(src);
+    ensureEnemyOpaqueSamples(imgEl);
+    return enemyOpaqueHitCache.get(src) ?? null;
+}
+
+function pickOpaqueHitNormFromSamples(samples) {
+    if (!samples?.length) return null;
+    return samples[Math.floor(Math.random() * samples.length)];
+}
+
+function showLukaArrowImpact(enemyEl, { isMini = false, isCritical = false } = {}) {
+    if (!enemyEl || !enemiesContainer) return;
+
+    const spawnAt = (hit) => {
+        if (!hit || !enemyEl.isConnected || !enemiesContainer) return;
+        if (enemyEl.offsetWidth < 2 || enemyEl.offsetHeight < 2) return;
+
+        pruneImpactNodes(isMini ? '.luka-arrow-mount.is-mini' : '.luka-arrow-mount:not(.is-mini)', isMini ? 4 : 12);
+
+        const mount = document.createElement('div');
+        mount.className = `luka-arrow-mount${isMini ? ' is-mini' : ''}${isCritical ? ' is-critical' : ''}`;
+        mount.style.left = enemyEl.style.left || '0%';
+        mount.style.top = enemyEl.style.top || '0%';
+        mount.style.width = `${Math.max(1, enemyEl.offsetWidth)}px`;
+        mount.style.height = `${Math.max(1, enemyEl.offsetHeight)}px`;
+        mount.style.transform = enemyEl.style.transform || 'none';
+        mount.style.transformOrigin = getComputedStyle(enemyEl).transformOrigin || '50% 50%';
+        mount.setAttribute('aria-hidden', 'true');
+
+        const impact = document.createElement('div');
+        impact.className = `luka-boss-impact${isMini ? ' is-mini' : ''}${isCritical ? ' luka-boss-impact-critical' : ''}`;
+        impact.style.left = `${(hit.x * 100).toFixed(3)}%`;
+        impact.style.top = `${(hit.y * 100).toFixed(3)}%`;
+        impact.style.setProperty('--luka-arrow-rot', `${(Math.random() * 28 - 14).toFixed(1)}deg`);
+        impact.style.setProperty('--luka-flight-x', `${(Math.random() * 20 - 10).toFixed(1)}px`);
+        impact.innerHTML = `
+            <span class="luka-puncture"></span>
+            <span class="luka-impact-ring"></span>
+            <span class="luka-impact-flash"></span>
+            <span class="luka-flight-trail"></span>
+            <span class="luka-arrow"></span>
+        `;
+        mount.appendChild(impact);
+        enemiesContainer.appendChild(mount);
+
+        window.setTimeout(() => mount.remove(), 3100);
+    };
+
+    const ready = pickOpaqueHitNormFromSamples(getEnemyOpaqueSamples(enemyEl));
+    if (ready) {
+        spawnAt(ready);
+        return;
+    }
+
+    ensureEnemyOpaqueSamples(enemyEl).then((samples) => {
+        const hit = pickOpaqueHitNormFromSamples(samples);
+        if (hit) {
+            spawnAt(hit);
+            return;
+        }
+        // Последний запасной вариант — центр спрайта, чтобы эффект не пропадал совсем.
+        spawnAt({ x: 0.5, y: 0.45 });
+    });
+}
+
+function showLukaBossImpact(boss, isCritical = false) {
+    if (activeHeroObject?.name !== 'luka' || !boss?.element || !enemiesContainer || !gameField) return;
+    showLukaArrowImpact(boss.element, { isMini: false, isCritical });
+}
+
+function showLukaDeflectImpact(attackEnemy, isCritical = false) {
+    if (activeHeroObject?.name !== 'luka' || !attackEnemy?.element || !enemiesContainer || !gameField) return;
+    showLukaArrowImpact(attackEnemy.element, { isMini: true, isCritical });
+}
+
+function showEremeiBossImpact(boss, isCritical = false) {
+    if (activeHeroObject?.name !== 'eremei' || !boss?.element || !enemiesContainer || !gameField) return;
+
+    const pos = getImpactFieldPercent(boss.element);
+    if (!pos) return;
+
+    // Один полный взмах по боссу: старый эффект снимаем.
+    enemiesContainer.querySelectorAll('.eremei-boss-impact:not(.is-mini)').forEach((node) => node.remove());
+
+    const swingVariants = [
+        'eremei-club-from-left',
+        'eremei-club-from-right',
+        'eremei-club-from-top',
+        'eremei-club-from-bottom'
+    ];
+    const swingClass = swingVariants[Math.floor(Math.random() * swingVariants.length)];
+
+    const impact = document.createElement('div');
+    impact.className = `eremei-boss-impact${isCritical ? ' eremei-boss-impact-critical' : ''}`;
+    impact.style.left = `${pos.left}%`;
+    impact.style.top = `${pos.top}%`;
+    impact.setAttribute('aria-hidden', 'true');
+    impact.innerHTML = `
+        <span class="eremei-force eremei-force-ring eremei-force-ring-a"></span>
+        <span class="eremei-force eremei-force-ring eremei-force-ring-b"></span>
+        <span class="eremei-impact-spark"></span>
+        <span class="eremei-club ${swingClass}"></span>
+    `;
+    enemiesContainer.appendChild(impact);
+
+    window.setTimeout(() => impact.remove(), 700);
+}
+
+function showEremeiDeflectImpact(attackEnemy, isCritical = false) {
+    if (activeHeroObject?.name !== 'eremei' || !attackEnemy?.element || !enemiesContainer || !gameField) return;
+
+    const pos = getImpactFieldPercent(attackEnemy.element);
+    if (!pos) return;
+
+    pruneImpactNodes('.eremei-boss-impact.is-mini', 3);
+
+    const swingVariants = [
+        'eremei-club-from-left',
+        'eremei-club-from-right',
+        'eremei-club-from-top',
+        'eremei-club-from-bottom'
+    ];
+    const swingClass = swingVariants[Math.floor(Math.random() * swingVariants.length)];
+
+    const impact = document.createElement('div');
+    impact.className = `eremei-boss-impact is-mini${isCritical ? ' eremei-boss-impact-critical' : ''}`;
+    impact.style.left = `${pos.left}%`;
+    impact.style.top = `${pos.top}%`;
+    impact.setAttribute('aria-hidden', 'true');
+    impact.innerHTML = `
+        <span class="eremei-force eremei-force-ring eremei-force-ring-a"></span>
+        <span class="eremei-impact-spark"></span>
+        <span class="eremei-club ${swingClass}"></span>
+    `;
+    enemiesContainer.appendChild(impact);
+
+    window.setTimeout(() => impact.remove(), 420);
+}
+
+// Дуня бьёт двумя метёлками: парный удар противоположных сторон.
+let dunyaComboStep = 0;
+const DUNYA_DUAL_COMBOS = [
+    // горизонтальная пара: правая → левая
+    [
+        { swing: 'dunya-broom-from-right', delayMs: 0 },
+        { swing: 'dunya-broom-from-left', delayMs: 130 }
+    ],
+    // вертикальная пара: верхняя → нижняя
+    [
+        { swing: 'dunya-broom-from-top', delayMs: 0 },
+        { swing: 'dunya-broom-from-bottom', delayMs: 130 }
+    ],
+    // горизонтальная пара наоборот: левая → правая
+    [
+        { swing: 'dunya-broom-from-left', delayMs: 0 },
+        { swing: 'dunya-broom-from-right', delayMs: 130 }
+    ],
+    // вертикальная пара наоборот: нижняя → верхняя
+    [
+        { swing: 'dunya-broom-from-bottom', delayMs: 0 },
+        { swing: 'dunya-broom-from-top', delayMs: 130 }
+    ]
+];
+
+const DUNYA_WHIRL_CONFIG = {
+    // Полные обороты «как часовые стрелки»; тройная — быстрее, джекпот — больше оборотов
+    double: { count: 4, durationMs: 900, spins: 1, sizeClass: 'dunya-whirl-double' },
+    triple: { count: 6, durationMs: 580, spins: 1, sizeClass: 'dunya-whirl-triple' },
+    jackpot: { count: 8, durationMs: 1300, spins: 2, sizeClass: 'dunya-whirl-jackpot' }
+};
+
+function showDunyaBossImpact(boss, isCritical = false, attackKind = 'normal') {
+    if (activeHeroObject?.name !== 'dunya' || !boss?.element || !enemiesContainer || !gameField) return;
+
+    if (attackKind === 'double' || attackKind === 'triple' || attackKind === 'jackpot') {
+        showDunyaWhirlImpact(boss, isCritical, attackKind);
+        return;
+    }
+
+    const pos = getImpactFieldPercent(boss.element);
+    if (!pos) return;
+
+    enemiesContainer.querySelectorAll('.dunya-boss-impact:not(.is-mini)').forEach((node) => node.remove());
+
+    const combo = DUNYA_DUAL_COMBOS[dunyaComboStep % DUNYA_DUAL_COMBOS.length];
+    dunyaComboStep += 1;
+
+    const impact = document.createElement('div');
+    impact.className = `dunya-boss-impact${isCritical ? ' dunya-boss-impact-critical' : ''}`;
+    impact.style.left = `${pos.left}%`;
+    impact.style.top = `${pos.top}%`;
+    impact.setAttribute('aria-hidden', 'true');
+
+    const broomsHtml = combo.map((hit, index) => `
+        <span class="dunya-broom ${hit.swing}" style="animation-delay: ${hit.delayMs}ms"></span>
+        <span class="dunya-impact-spark dunya-impact-spark-${index + 1}" style="animation-delay: ${hit.delayMs + 210}ms"></span>
+    `).join('');
+
+    impact.innerHTML = `
+        <span class="dunya-wind dunya-wind-arc dunya-wind-arc-a"></span>
+        <span class="dunya-wind dunya-wind-arc dunya-wind-arc-b"></span>
+        <span class="dunya-wind dunya-wind-streak dunya-wind-streak-1"></span>
+        <span class="dunya-wind dunya-wind-streak dunya-wind-streak-2"></span>
+        <span class="dunya-wind dunya-wind-streak dunya-wind-streak-3"></span>
+        ${broomsHtml}
+    `;
+    enemiesContainer.appendChild(impact);
+
+    window.setTimeout(() => impact.remove(), 820);
+}
+
+function showDunyaDeflectImpact(attackEnemy, isCritical = false) {
+    if (activeHeroObject?.name !== 'dunya' || !attackEnemy?.element || !enemiesContainer || !gameField) return;
+
+    const pos = getImpactFieldPercent(attackEnemy.element);
+    if (!pos) return;
+
+    pruneImpactNodes('.dunya-boss-impact.is-mini', 3);
+
+    const combo = DUNYA_DUAL_COMBOS[dunyaComboStep % DUNYA_DUAL_COMBOS.length];
+    dunyaComboStep += 1;
+
+    const impact = document.createElement('div');
+    impact.className = `dunya-boss-impact is-mini${isCritical ? ' dunya-boss-impact-critical' : ''}`;
+    impact.style.left = `${pos.left}%`;
+    impact.style.top = `${pos.top}%`;
+    impact.setAttribute('aria-hidden', 'true');
+
+    const broomsHtml = combo.map((hit, index) => {
+        const delay = Math.round(hit.delayMs * 0.7);
+        return `
+            <span class="dunya-broom ${hit.swing}" style="animation-delay: ${delay}ms"></span>
+            <span class="dunya-impact-spark dunya-impact-spark-${index + 1}" style="animation-delay: ${delay + 140}ms"></span>
+        `;
+    }).join('');
+
+    impact.innerHTML = `
+        <span class="dunya-wind dunya-wind-arc dunya-wind-arc-a"></span>
+        <span class="dunya-wind dunya-wind-streak dunya-wind-streak-1"></span>
+        <span class="dunya-wind dunya-wind-streak dunya-wind-streak-2"></span>
+        ${broomsHtml}
+    `;
+    enemiesContainer.appendChild(impact);
+
+    window.setTimeout(() => impact.remove(), 520);
+}
+
+function showDunyaWhirlImpact(boss, isCritical, attackKind) {
+    const pos = getImpactFieldPercent(boss.element);
+    if (!pos || !enemiesContainer) return;
+
+    const config = DUNYA_WHIRL_CONFIG[attackKind];
+    if (!config) return;
+
+    enemiesContainer.querySelectorAll('.dunya-boss-impact:not(.is-mini)').forEach((node) => node.remove());
+
+    const impact = document.createElement('div');
+    impact.className = [
+        'dunya-boss-impact',
+        'dunya-whirl',
+        config.sizeClass,
+        isCritical ? 'dunya-boss-impact-critical' : ''
+    ].filter(Boolean).join(' ');
+    impact.style.left = `${pos.left}%`;
+    impact.style.top = `${pos.top}%`;
+    impact.style.setProperty('--whirl-duration', `${config.durationMs}ms`);
+    impact.style.setProperty('--whirl-spins', String(config.spins));
+    impact.setAttribute('aria-hidden', 'true');
+
+    const brooms = Array.from({ length: config.count }, (_, index) => {
+        const angle = (360 / config.count) * index;
+        return `<span class="dunya-broom dunya-whirl-broom" style="--whirl-angle: ${angle}deg"></span>`;
+    }).join('');
+
+    impact.innerHTML = `
+        <span class="dunya-wind dunya-wind-swirl dunya-wind-swirl-1"></span>
+        <span class="dunya-wind dunya-wind-swirl dunya-wind-swirl-2"></span>
+        <span class="dunya-wind dunya-wind-swirl dunya-wind-swirl-3"></span>
+        <span class="dunya-wind dunya-wind-gust"></span>
+        <span class="dunya-whirl-ring"></span>
+        <span class="dunya-whirl-core"></span>
+        ${brooms}
+    `;
+    enemiesContainer.appendChild(impact);
+
+    window.setTimeout(() => impact.remove(), config.durationMs + 80);
+}
+
 function createDamageText(damage, xPercent, yPercent, isCritical = false) {
     // CSS-анимация в Яндекс.Браузере на Android то пропадает, то идёт рывками —
     // двигаем текст через rAF (как надёжный fallback)
@@ -2328,30 +2827,34 @@ function subsDamageEnemy(isBoss, isDestroyed) {
 
 
 function rollHeroAttackMultiplier(isBoss) {
-	if (!isBoss || activeHeroObject.name !== 'dunya') return 1;
+	if (!isBoss || activeHeroObject.name !== 'dunya') {
+		return { multiplier: 1, kind: 'normal' };
+	}
 
 	const random = Math.random();
-	const doubleChance = activeHeroObject.doubleAttackChance ?? 0.10;
-	const tripleChance = activeHeroObject.tripleAttackChance ?? 0.03;
-	const jackpotChance = activeHeroObject.jackpotAttackChance ?? 0.01;
+	// TEMP preview: false = боевые шансы из saveData
+	const DUNYA_SPECIAL_PREVIEW = false;
+	const doubleChance = DUNYA_SPECIAL_PREVIEW ? 0.34 : (activeHeroObject.doubleAttackChance ?? 0.10);
+	const tripleChance = DUNYA_SPECIAL_PREVIEW ? 0.28 : (activeHeroObject.tripleAttackChance ?? 0.03);
+	const jackpotChance = DUNYA_SPECIAL_PREVIEW ? 0.22 : (activeHeroObject.jackpotAttackChance ?? 0.01);
 	const jackpotMultiplier = Math.max(1, activeHeroObject.jackpotAttackMultiplier ?? 8);
 
 	if (random < jackpotChance) {
-		showCenterText(`ДЖЕКПОТ! Урон ×${jackpotMultiplier}!`, 1700, 'info');
-		return jackpotMultiplier;
+		showCenterText('Вихрь! Восьмикратный урон!', 1700, 'info');
+		return { multiplier: jackpotMultiplier, kind: 'jackpot' };
 	}
 
 	if (random < jackpotChance + tripleChance) {
 		showCenterText('Ух как раскрутилась! Тройная атака!', 1500, 'info');
-		return 3;
+		return { multiplier: 3, kind: 'triple' };
 	}
 
 	if (random < jackpotChance + tripleChance + doubleChance) {
 		showCenterText('Раскрутилась! Двойная атака!', 1500, 'info');
-		return 2;
+		return { multiplier: 2, kind: 'double' };
 	}
 
-	return 1;
+	return { multiplier: 1, kind: 'normal' };
 }
 
 function subsCalculateDamageEnemy(isBoss, isCritical) {

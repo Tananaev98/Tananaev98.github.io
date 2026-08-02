@@ -684,6 +684,863 @@ html.is-mobile .main_menu_image {
 /* ====== СТИЛИ ОГЛУШЕНИЯ ====== */
 
 /* Враг в состоянии оглушения */
+/* Удар Еремея: одна дубина, случайная траектория взмаха. */
+.eremei-boss-impact {
+    position: absolute;
+    width: clamp(160px, 22vw, 310px);
+    aspect-ratio: 1;
+    z-index: 8;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    will-change: transform, opacity;
+}
+
+.eremei-boss-impact.is-mini {
+    width: clamp(58px, 8vw, 96px);
+    z-index: 9;
+}
+
+.eremei-boss-impact.is-mini .eremei-club-from-left,
+.eremei-boss-impact.is-mini .eremei-club-from-right,
+.eremei-boss-impact.is-mini .eremei-club-from-top,
+.eremei-boss-impact.is-mini .eremei-club-from-bottom {
+    animation-duration: 360ms;
+}
+
+.eremei-boss-impact.is-mini .eremei-impact-spark {
+    animation-duration: 360ms;
+    width: 36%;
+}
+
+.eremei-boss-impact.is-mini .eremei-force-ring {
+    animation-duration: 380ms;
+}
+
+.eremei-boss-impact.is-mini .eremei-force-ring-b {
+    display: none;
+}
+
+.eremei-club {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 88%;
+    aspect-ratio: 1;
+    background: url('images/effects/eremei-club.webp') center / contain no-repeat;
+    filter: drop-shadow(0 4px 3px rgba(35, 12, 3, 0.5));
+    /* Рукоять у спрайта справа снизу — крутим вокруг неё */
+    transform-origin: 78% 84%;
+    opacity: 0;
+}
+
+.eremei-club-from-left { animation: eremei-club-from-left 620ms cubic-bezier(0.33, 0.08, 0.22, 1) forwards; }
+.eremei-club-from-right { animation: eremei-club-from-right 620ms cubic-bezier(0.33, 0.08, 0.22, 1) forwards; }
+.eremei-club-from-top { animation: eremei-club-from-top 580ms cubic-bezier(0.28, 0.12, 0.18, 1) forwards; }
+.eremei-club-from-bottom { animation: eremei-club-from-bottom 580ms cubic-bezier(0.28, 0.12, 0.18, 1) forwards; }
+
+.eremei-impact-spark {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 34%;
+    aspect-ratio: 1;
+    border: clamp(2px, 0.3vw, 5px) solid rgba(255, 220, 125, 0.96);
+    border-radius: 50%;
+    box-shadow: 0 0 12px rgba(255, 101, 31, 0.92), inset 0 0 11px rgba(255, 86, 18, 0.55);
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.25);
+    animation: eremei-impact-spark 620ms ease-out forwards;
+}
+
+.eremei-boss-impact-critical .eremei-impact-spark {
+    border-color: #fff2a2;
+    box-shadow: 0 0 20px rgba(255, 220, 75, 1), inset 0 0 16px rgba(255, 114, 25, 0.9);
+}
+
+.eremei-boss-impact-critical .eremei-club {
+    filter: drop-shadow(0 4px 3px rgba(35, 12, 3, 0.5)) drop-shadow(0 0 10px rgba(255, 180, 40, 0.55));
+}
+
+/* След физического удара Еремея — только красноватые круги */
+.eremei-force {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    pointer-events: none;
+    opacity: 0;
+    z-index: 1;
+}
+
+.eremei-force-ring {
+    width: 42%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: clamp(2px, 0.28vw, 5px) solid rgba(255, 95, 70, 0.9);
+    box-shadow: 0 0 14px rgba(220, 45, 30, 0.7), inset 0 0 10px rgba(255, 80, 50, 0.35);
+    transform: translate(-50%, -50%) scale(0.2);
+    animation: eremei-force-ring 700ms ease-out both;
+}
+
+.eremei-force-ring-a {
+    animation-delay: 0ms;
+}
+
+.eremei-force-ring-b {
+    width: 52%;
+    border-color: rgba(255, 120, 85, 0.55);
+    box-shadow: 0 0 12px rgba(200, 40, 28, 0.45);
+    animation-delay: 90ms;
+    animation-duration: 760ms;
+}
+
+.eremei-boss-impact-critical .eremei-force-ring {
+    border-color: rgba(255, 140, 90, 0.95);
+    box-shadow: 0 0 18px rgba(255, 90, 45, 0.85), inset 0 0 12px rgba(255, 100, 60, 0.45);
+}
+
+@keyframes eremei-force-ring {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.15);
+    }
+    16% {
+        opacity: 0.95;
+        transform: translate(-50%, -50%) scale(0.55);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(1.55);
+    }
+}
+
+/* Слева → вправо (дуговой взмах) */
+@keyframes eremei-club-from-left {
+    0%   { opacity: 0; transform: translate(-62%, -58%) rotate(-108deg) scale(1.02); }
+    10%  { opacity: 1; transform: translate(-61%, -57%) rotate(-100deg) scale(1.03); }
+    28%  { opacity: 1; transform: translate(-58%, -55%) rotate(-72deg) scale(1.04); }
+    48%  { opacity: 1; transform: translate(-53%, -52%) rotate(-18deg) scale(1.05); }
+    58%  { opacity: 1; transform: translate(-50%, -50%) rotate(18deg) scale(1.07); }
+    78%  { opacity: 0.85; transform: translate(-45%, -48%) rotate(62deg) scale(1.03); }
+    100% { opacity: 0; transform: translate(-40%, -46%) rotate(98deg) scale(0.98); }
+}
+
+/* Справа → влево (дуговой взмах) */
+@keyframes eremei-club-from-right {
+    0%   { opacity: 0; transform: translate(-36%, -46%) rotate(112deg) scale(1.02); }
+    10%  { opacity: 1; transform: translate(-38%, -47%) rotate(100deg) scale(1.03); }
+    28%  { opacity: 1; transform: translate(-42%, -49%) rotate(62deg) scale(1.04); }
+    48%  { opacity: 1; transform: translate(-47%, -51%) rotate(12deg) scale(1.05); }
+    58%  { opacity: 1; transform: translate(-50%, -50%) rotate(-22deg) scale(1.07); }
+    78%  { opacity: 0.85; transform: translate(-55%, -52%) rotate(-68deg) scale(1.03); }
+    100% { opacity: 0; transform: translate(-60%, -54%) rotate(-105deg) scale(0.98); }
+}
+
+/* Сверху → вниз по прямой (рубящий удар, почти без поворота) */
+@keyframes eremei-club-from-top {
+    0%   { opacity: 0; transform: translate(-50%, -118%) rotate(42deg) scale(1.02); }
+    12%  { opacity: 1; transform: translate(-50%, -102%) rotate(42deg) scale(1.04); }
+    42%  { opacity: 1; transform: translate(-50%, -62%) rotate(42deg) scale(1.05); }
+    56%  { opacity: 1; transform: translate(-50%, -50%) rotate(44deg) scale(1.08); }
+    78%  { opacity: 0.8; transform: translate(-50%, -28%) rotate(46deg) scale(1.02); }
+    100% { opacity: 0; transform: translate(-50%, -8%) rotate(48deg) scale(0.96); }
+}
+
+/* Снизу → вверх по прямой */
+@keyframes eremei-club-from-bottom {
+    0%   { opacity: 0; transform: translate(-50%, 18%) rotate(42deg) scale(1.02); }
+    12%  { opacity: 1; transform: translate(-50%, 4%) rotate(42deg) scale(1.04); }
+    42%  { opacity: 1; transform: translate(-50%, -36%) rotate(42deg) scale(1.05); }
+    56%  { opacity: 1; transform: translate(-50%, -50%) rotate(40deg) scale(1.08); }
+    78%  { opacity: 0.8; transform: translate(-50%, -72%) rotate(38deg) scale(1.02); }
+    100% { opacity: 0; transform: translate(-50%, -96%) rotate(36deg) scale(0.96); }
+}
+
+@keyframes eremei-impact-spark {
+    0%, 48% { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+    58% { opacity: 0.95; transform: translate(-50%, -50%) scale(1.05); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.45); }
+}
+
+/* Удар Дуни: две метёлки по очереди (справа → слева → сверху → снизу). */
+.dunya-boss-impact {
+    position: absolute;
+    width: clamp(155px, 21vw, 300px);
+    aspect-ratio: 1;
+    z-index: 8;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    will-change: transform, opacity;
+}
+
+.dunya-boss-impact.is-mini {
+    width: clamp(56px, 7.8vw, 92px);
+    z-index: 9;
+}
+
+.dunya-boss-impact.is-mini .dunya-broom-from-left,
+.dunya-boss-impact.is-mini .dunya-broom-from-right,
+.dunya-boss-impact.is-mini .dunya-broom-from-top,
+.dunya-boss-impact.is-mini .dunya-broom-from-bottom {
+    animation-duration: 380ms;
+}
+
+.dunya-boss-impact.is-mini .dunya-impact-spark,
+.dunya-boss-impact.is-mini .dunya-wind-arc,
+.dunya-boss-impact.is-mini .dunya-wind-streak {
+    animation-duration: 400ms;
+}
+
+.dunya-boss-impact.is-mini .dunya-wind-arc-b,
+.dunya-boss-impact.is-mini .dunya-wind-streak-3 {
+    display: none;
+}
+
+.dunya-broom {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 88%;
+    aspect-ratio: 1;
+    background: url('images/effects/dunya-broom.webp') center / contain no-repeat;
+    filter: drop-shadow(0 3px 4px rgba(20, 40, 55, 0.45));
+    transform-origin: 78% 84%;
+    opacity: 0;
+}
+
+.dunya-broom-from-left { animation: dunya-broom-from-left 600ms cubic-bezier(0.33, 0.08, 0.22, 1) both; }
+.dunya-broom-from-right { animation: dunya-broom-from-right 600ms cubic-bezier(0.33, 0.08, 0.22, 1) both; }
+.dunya-broom-from-top { animation: dunya-broom-from-top 560ms cubic-bezier(0.28, 0.12, 0.18, 1) both; }
+.dunya-broom-from-bottom { animation: dunya-broom-from-bottom 560ms cubic-bezier(0.28, 0.12, 0.18, 1) both; }
+
+.dunya-impact-spark {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 28%;
+    aspect-ratio: 1;
+    border: clamp(2px, 0.3vw, 5px) solid rgba(210, 245, 255, 0.95);
+    border-radius: 50%;
+    box-shadow: 0 0 14px rgba(120, 210, 255, 0.9), inset 0 0 12px rgba(180, 240, 255, 0.55);
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.25);
+    animation: dunya-impact-spark 420ms ease-out both;
+}
+
+.dunya-impact-spark-2 {
+    width: 24%;
+    border-color: rgba(230, 250, 255, 0.9);
+}
+
+.dunya-boss-impact-critical .dunya-impact-spark {
+    border-color: #fff8d0;
+    box-shadow: 0 0 18px rgba(255, 230, 140, 0.95), inset 0 0 14px rgba(160, 230, 255, 0.8);
+}
+
+.dunya-boss-impact-critical .dunya-broom {
+    filter: drop-shadow(0 3px 4px rgba(20, 40, 55, 0.45)) drop-shadow(0 0 10px rgba(150, 220, 255, 0.55));
+}
+
+/* Ветряной след Дуни */
+.dunya-wind {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    pointer-events: none;
+    opacity: 0;
+    z-index: 1;
+}
+
+.dunya-wind-arc {
+    width: 78%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: clamp(2px, 0.28vw, 4px) solid transparent;
+    border-top-color: rgba(220, 245, 255, 0.75);
+    border-right-color: rgba(170, 225, 255, 0.35);
+    box-shadow: 0 0 10px rgba(140, 215, 255, 0.35);
+    filter: blur(0.4px);
+    transform: translate(-50%, -50%) rotate(-30deg) scale(0.35);
+    animation: dunya-wind-arc 720ms ease-out both;
+}
+
+.dunya-wind-arc-a {
+    animation-delay: 0ms;
+}
+
+.dunya-wind-arc-b {
+    width: 92%;
+    border-top-color: rgba(200, 240, 255, 0.45);
+    border-right-color: rgba(160, 220, 255, 0.2);
+    animation-delay: 110ms;
+    animation-duration: 780ms;
+}
+
+.dunya-wind-streak {
+    width: 46%;
+    height: clamp(6px, 1.1vw, 12px);
+    border-radius: 999px;
+    background: linear-gradient(90deg, transparent 0%, rgba(230, 250, 255, 0.8) 45%, rgba(160, 220, 255, 0.15) 100%);
+    filter: blur(1px);
+    transform-origin: left center;
+    animation: dunya-wind-streak 650ms ease-out both;
+}
+
+.dunya-wind-streak-1 {
+    transform: translate(-10%, -50%) rotate(-28deg) scaleX(0.3);
+    animation-delay: 40ms;
+}
+
+.dunya-wind-streak-2 {
+    width: 40%;
+    transform: translate(-5%, -50%) rotate(18deg) scaleX(0.25);
+    animation-delay: 120ms;
+}
+
+.dunya-wind-streak-3 {
+    width: 36%;
+    transform: translate(-15%, -50%) rotate(62deg) scaleX(0.2);
+    animation-delay: 180ms;
+    opacity: 0;
+}
+
+.dunya-wind-swirl {
+    width: 70%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: clamp(2px, 0.28vw, 4px) solid transparent;
+    border-top-color: rgba(220, 245, 255, 0.7);
+    border-left-color: rgba(170, 225, 255, 0.25);
+    filter: blur(0.5px);
+    box-shadow: 0 0 12px rgba(130, 210, 255, 0.3);
+    transform: translate(-50%, -50%) rotate(0deg) scale(0.45);
+    animation: dunya-wind-swirl var(--whirl-duration, 820ms) linear both;
+}
+
+.dunya-wind-swirl-1 { animation-delay: 0ms; }
+.dunya-wind-swirl-2 {
+    width: 84%;
+    border-top-color: rgba(200, 240, 255, 0.45);
+    animation-delay: 40ms;
+}
+.dunya-wind-swirl-3 {
+    width: 96%;
+    border-top-color: rgba(180, 230, 255, 0.3);
+    animation-delay: 80ms;
+}
+
+.dunya-wind-gust {
+    width: 55%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, transparent 0 55%, rgba(200, 240, 255, 0.22) 62%, transparent 78%);
+    filter: blur(1.5px);
+    transform: translate(-50%, -50%) scale(0.5);
+    animation: dunya-wind-gust var(--whirl-duration, 820ms) linear both;
+}
+
+.dunya-whirl-jackpot .dunya-wind-swirl {
+    border-top-color: rgba(255, 245, 200, 0.75);
+    box-shadow: 0 0 14px rgba(255, 220, 120, 0.35), 0 0 12px rgba(130, 210, 255, 0.35);
+}
+
+.dunya-whirl-jackpot .dunya-wind-gust {
+    background: conic-gradient(from 0deg, transparent 0 50%, rgba(255, 235, 170, 0.28) 60%, rgba(180, 230, 255, 0.18) 70%, transparent 82%);
+}
+
+.dunya-boss-impact-critical .dunya-wind-arc,
+.dunya-boss-impact-critical .dunya-wind-streak {
+    filter: blur(0.6px) drop-shadow(0 0 6px rgba(180, 230, 255, 0.55));
+}
+
+@keyframes dunya-wind-arc {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) rotate(-40deg) scale(0.3);
+    }
+    18% {
+        opacity: 0.95;
+        transform: translate(-50%, -50%) rotate(-10deg) scale(0.7);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) rotate(55deg) scale(1.25);
+    }
+}
+
+@keyframes dunya-wind-streak {
+    0% {
+        opacity: 0;
+        filter: blur(1px);
+    }
+    20% {
+        opacity: 0.9;
+    }
+    100% {
+        opacity: 0;
+        filter: blur(2px);
+    }
+}
+
+.dunya-wind-streak-1 {
+    animation-name: dunya-wind-streak-a;
+}
+.dunya-wind-streak-2 {
+    animation-name: dunya-wind-streak-b;
+}
+.dunya-wind-streak-3 {
+    animation-name: dunya-wind-streak-c;
+}
+
+@keyframes dunya-wind-streak-a {
+    0% { opacity: 0; transform: translate(-10%, -50%) rotate(-28deg) scaleX(0.2); }
+    22% { opacity: 0.95; transform: translate(-2%, -50%) rotate(-18deg) scaleX(1); }
+    100% { opacity: 0; transform: translate(18%, -50%) rotate(-8deg) scaleX(1.35); }
+}
+
+@keyframes dunya-wind-streak-b {
+    0% { opacity: 0; transform: translate(-5%, -50%) rotate(18deg) scaleX(0.2); }
+    24% { opacity: 0.85; transform: translate(4%, -50%) rotate(28deg) scaleX(1); }
+    100% { opacity: 0; transform: translate(22%, -50%) rotate(40deg) scaleX(1.3); }
+}
+
+@keyframes dunya-wind-streak-c {
+    0% { opacity: 0; transform: translate(-15%, -50%) rotate(62deg) scaleX(0.15); }
+    28% { opacity: 0.75; transform: translate(-4%, -50%) rotate(72deg) scaleX(0.95); }
+    100% { opacity: 0; transform: translate(12%, -50%) rotate(88deg) scaleX(1.25); }
+}
+
+@keyframes dunya-wind-swirl {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) rotate(0deg) scale(0.4);
+    }
+    12% {
+        opacity: 0.9;
+        transform: translate(-50%, -50%) rotate(40deg) scale(0.75);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) rotate(calc(360deg * var(--whirl-spins, 1))) scale(1.2);
+    }
+}
+
+@keyframes dunya-wind-gust {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) rotate(0deg) scale(0.45);
+    }
+    15% {
+        opacity: 0.85;
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) rotate(calc(360deg * var(--whirl-spins, 1))) scale(1.35);
+    }
+}
+
+@keyframes dunya-broom-from-left {
+    0%   { opacity: 0; transform: translate(-62%, -58%) rotate(-108deg) scale(1.02); }
+    10%  { opacity: 1; transform: translate(-61%, -57%) rotate(-100deg) scale(1.03); }
+    28%  { opacity: 1; transform: translate(-58%, -55%) rotate(-72deg) scale(1.04); }
+    48%  { opacity: 1; transform: translate(-53%, -52%) rotate(-18deg) scale(1.05); }
+    58%  { opacity: 1; transform: translate(-50%, -50%) rotate(18deg) scale(1.07); }
+    78%  { opacity: 0.85; transform: translate(-45%, -48%) rotate(62deg) scale(1.03); }
+    100% { opacity: 0; transform: translate(-40%, -46%) rotate(98deg) scale(0.98); }
+}
+
+@keyframes dunya-broom-from-right {
+    0%   { opacity: 0; transform: translate(-36%, -46%) rotate(112deg) scale(1.02); }
+    10%  { opacity: 1; transform: translate(-38%, -47%) rotate(100deg) scale(1.03); }
+    28%  { opacity: 1; transform: translate(-42%, -49%) rotate(62deg) scale(1.04); }
+    48%  { opacity: 1; transform: translate(-47%, -51%) rotate(12deg) scale(1.05); }
+    58%  { opacity: 1; transform: translate(-50%, -50%) rotate(-22deg) scale(1.07); }
+    78%  { opacity: 0.85; transform: translate(-55%, -52%) rotate(-68deg) scale(1.03); }
+    100% { opacity: 0; transform: translate(-60%, -54%) rotate(-105deg) scale(0.98); }
+}
+
+@keyframes dunya-broom-from-top {
+    0%   { opacity: 0; transform: translate(-50%, -118%) rotate(42deg) scale(1.02); }
+    12%  { opacity: 1; transform: translate(-50%, -102%) rotate(42deg) scale(1.04); }
+    42%  { opacity: 1; transform: translate(-50%, -62%) rotate(42deg) scale(1.05); }
+    56%  { opacity: 1; transform: translate(-50%, -50%) rotate(44deg) scale(1.08); }
+    78%  { opacity: 0.8; transform: translate(-50%, -28%) rotate(46deg) scale(1.02); }
+    100% { opacity: 0; transform: translate(-50%, -8%) rotate(48deg) scale(0.96); }
+}
+
+@keyframes dunya-broom-from-bottom {
+    0%   { opacity: 0; transform: translate(-50%, 18%) rotate(42deg) scale(1.02); }
+    12%  { opacity: 1; transform: translate(-50%, 4%) rotate(42deg) scale(1.04); }
+    42%  { opacity: 1; transform: translate(-50%, -36%) rotate(42deg) scale(1.05); }
+    56%  { opacity: 1; transform: translate(-50%, -50%) rotate(40deg) scale(1.08); }
+    78%  { opacity: 0.8; transform: translate(-50%, -72%) rotate(38deg) scale(1.02); }
+    100% { opacity: 0; transform: translate(-50%, -96%) rotate(36deg) scale(0.96); }
+}
+
+@keyframes dunya-impact-spark {
+    0%, 18% { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+    40% { opacity: 0.95; transform: translate(-50%, -50%) scale(1.05); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.4); }
+}
+
+/* Вихрь метёлок Дуни: double / triple / jackpot — как часовые стрелки */
+.dunya-whirl {
+    width: clamp(190px, 26vw, 360px);
+}
+
+.dunya-whirl-triple {
+    width: clamp(210px, 28vw, 390px);
+}
+
+.dunya-whirl-jackpot {
+    width: clamp(250px, 34vw, 460px);
+}
+
+.dunya-whirl-ring {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 78%;
+    aspect-ratio: 1;
+    border: clamp(2px, 0.28vw, 4px) solid rgba(180, 235, 255, 0.5);
+    border-radius: 50%;
+    border-top-color: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 0 18px rgba(120, 210, 255, 0.4), inset 0 0 14px rgba(200, 240, 255, 0.2);
+    transform: translate(-50%, -50%);
+    opacity: 0;
+    animation: dunya-whirl-ring var(--whirl-duration, 820ms) linear both;
+}
+
+.dunya-whirl-core {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 26%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.98) 0%, rgba(170, 230, 255, 0.7) 38%, rgba(140, 220, 255, 0.15) 62%, rgba(140, 220, 255, 0) 78%);
+    transform: translate(-50%, -50%) scale(0.3);
+    opacity: 0;
+    animation: dunya-whirl-core var(--whirl-duration, 820ms) ease-out both;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.dunya-whirl-broom {
+    left: 50%;
+    top: 50%;
+    width: 64%;
+    /* Рукоять в центре — метла крутится как стрелка часов */
+    transform-origin: 78% 84%;
+    animation: dunya-whirl-clock var(--whirl-duration, 820ms) linear both;
+    filter: drop-shadow(0 2px 3px rgba(20, 40, 55, 0.4));
+    /* Прячем нахлёст рукоятей у оси — остаётся «втулка» из света, не полено */
+    -webkit-mask-image: radial-gradient(circle at 78% 84%, transparent 0 10%, rgba(0, 0, 0, 0.55) 16%, #000 28%);
+    mask-image: radial-gradient(circle at 78% 84%, transparent 0 10%, rgba(0, 0, 0, 0.55) 16%, #000 28%);
+}
+
+.dunya-whirl-triple .dunya-whirl-broom {
+    width: 60%;
+}
+
+.dunya-whirl-jackpot .dunya-whirl-broom {
+    width: 56%;
+    filter: drop-shadow(0 2px 3px rgba(20, 40, 55, 0.4)) drop-shadow(0 0 8px rgba(150, 220, 255, 0.45));
+    -webkit-mask-image: radial-gradient(circle at 78% 84%, transparent 0 12%, rgba(0, 0, 0, 0.5) 18%, #000 30%);
+    mask-image: radial-gradient(circle at 78% 84%, transparent 0 12%, rgba(0, 0, 0, 0.5) 18%, #000 30%);
+}
+
+.dunya-whirl-jackpot .dunya-whirl-ring {
+    width: 88%;
+    border-color: rgba(255, 235, 160, 0.55);
+    border-top-color: rgba(255, 250, 210, 0.95);
+    box-shadow: 0 0 24px rgba(255, 210, 90, 0.5), 0 0 18px rgba(120, 210, 255, 0.45), inset 0 0 16px rgba(255, 245, 200, 0.25);
+}
+
+.dunya-whirl-jackpot .dunya-whirl-core {
+    width: 32%;
+    background: radial-gradient(circle, rgba(255, 252, 230, 0.98) 0%, rgba(255, 220, 140, 0.7) 36%, rgba(255, 210, 110, 0.2) 58%, rgba(140, 220, 255, 0) 78%);
+}
+
+/* Полный равномерный оборот вокруг центра; лёгкий вынос от оси */
+@keyframes dunya-whirl-clock {
+    0% {
+        opacity: 0;
+        transform: translate(-78%, -84%) rotate(var(--whirl-angle, 0deg)) translate(-10%, -10%);
+    }
+    8% {
+        opacity: 1;
+        transform: translate(-78%, -84%) rotate(var(--whirl-angle, 0deg)) translate(-10%, -10%);
+    }
+    90% {
+        opacity: 1;
+        transform: translate(-78%, -84%) rotate(calc(var(--whirl-angle, 0deg) + (360deg * var(--whirl-spins, 1)))) translate(-10%, -10%);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-78%, -84%) rotate(calc(var(--whirl-angle, 0deg) + (360deg * var(--whirl-spins, 1)))) translate(-10%, -10%);
+    }
+}
+
+@keyframes dunya-whirl-ring {
+    0% { opacity: 0; transform: translate(-50%, -50%) rotate(0deg); }
+    10% { opacity: 0.9; }
+    100% { opacity: 0; transform: translate(-50%, -50%) rotate(calc(360deg * var(--whirl-spins, 1))); }
+}
+
+@keyframes dunya-whirl-core {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.2); }
+    15% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.45); }
+}
+
+/* Лука: воткнутая стрела в случайной непрозрачной точке силуэта */
+.luka-arrow-mount {
+    position: absolute;
+    pointer-events: none;
+    z-index: 9;
+    overflow: visible;
+}
+
+.luka-boss-impact {
+    position: absolute;
+    width: clamp(34px, 4.2vw, 56px);
+    aspect-ratio: 1;
+    z-index: 9;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    will-change: transform, opacity;
+}
+
+.luka-boss-impact.is-mini {
+    width: clamp(18px, 2.2vw, 30px);
+}
+
+.luka-arrow {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 100%;
+    aspect-ratio: 1;
+    background: url('images/effects/luka-arrow.png') center / contain no-repeat;
+    filter: drop-shadow(0 2px 1px rgba(20, 8, 2, 0.5));
+    opacity: 0;
+    /* Верх спрайта — остриё; оно остаётся в точке прокола. */
+    transform: translate(-50%, -8%) rotate(var(--luka-arrow-rot, 0deg)) scale(3.4);
+    transform-origin: 50% 10%;
+    animation: luka-arrow-stick 3000ms linear forwards;
+}
+
+.luka-boss-impact.is-mini .luka-arrow {
+    animation-duration: 3000ms;
+}
+
+.luka-flight-trail {
+    position: absolute;
+    left: 50%;
+    top: 52%;
+    width: 12%;
+    height: 170%;
+    border-radius: 50%;
+    background: linear-gradient(
+        180deg,
+        rgba(255, 238, 188, 0.8) 0%,
+        rgba(255, 190, 98, 0.32) 28%,
+        transparent 100%
+    );
+    filter: blur(2px);
+    opacity: 0;
+    transform: translate(-50%, 0) rotate(var(--luka-arrow-rot, 0deg)) scaleY(1.7);
+    transform-origin: 50% 0;
+    animation: luka-flight-trail 620ms ease-in forwards;
+}
+
+.luka-puncture {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 19%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(
+        circle,
+        rgba(20, 4, 2, 0.98) 0 28%,
+        rgba(105, 20, 13, 0.92) 30% 52%,
+        rgba(50, 8, 5, 0.5) 54% 70%,
+        transparent 72%
+    );
+    box-shadow: 0 0 4px rgba(125, 23, 12, 0.85);
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.15);
+    animation: luka-puncture 3000ms ease-out forwards;
+}
+
+.luka-impact-flash {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 58%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(
+        circle,
+        rgba(255, 248, 205, 1) 0 9%,
+        rgba(255, 194, 90, 0.72) 12% 30%,
+        transparent 66%
+    );
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.2);
+    animation: luka-impact-flash 720ms ease-out forwards;
+}
+
+.luka-impact-ring {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 38%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: clamp(1px, 0.18vw, 3px) solid rgba(255, 210, 120, 0.85);
+    box-shadow: 0 0 8px rgba(255, 160, 60, 0.5);
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.2);
+    animation: luka-impact-ring 760ms ease-out both;
+}
+
+.luka-boss-impact.is-mini .luka-impact-ring {
+    animation-duration: 680ms;
+}
+
+.luka-boss-impact-critical .luka-arrow,
+.luka-arrow-mount.is-critical .luka-arrow {
+    filter: drop-shadow(0 2px 1px rgba(20, 8, 2, 0.5)) drop-shadow(0 0 6px rgba(255, 190, 70, 0.7));
+}
+
+.luka-boss-impact-critical .luka-impact-ring,
+.luka-arrow-mount.is-critical .luka-impact-ring {
+    border-color: rgba(255, 235, 150, 0.95);
+    box-shadow: 0 0 12px rgba(255, 200, 80, 0.85);
+}
+
+@keyframes luka-arrow-stick {
+    0% {
+        opacity: 0;
+        transform: translate(calc(-50% + var(--luka-flight-x, 0px)), 58%) rotate(var(--luka-arrow-rot, 0deg)) scale(3.4);
+    }
+    4% {
+        opacity: 1;
+        transform: translate(calc(-50% + var(--luka-flight-x, 0px)), 42%) rotate(var(--luka-arrow-rot, 0deg)) scale(2.8);
+    }
+    15% {
+        opacity: 1;
+        transform: translate(-50%, -8%) rotate(var(--luka-arrow-rot, 0deg)) scale(1.16);
+    }
+    18% {
+        opacity: 1;
+        transform: translate(-50%, -8%) rotate(var(--luka-arrow-rot, 0deg)) scale(0.78);
+    }
+    21% {
+        opacity: 1;
+        transform: translate(-50%, -8%) rotate(calc(var(--luka-arrow-rot, 0deg) - 3deg)) scale(1.08);
+    }
+    25% {
+        opacity: 1;
+        transform: translate(-50%, -8%) rotate(calc(var(--luka-arrow-rot, 0deg) + 2deg)) scale(0.97);
+    }
+    29% {
+        opacity: 1;
+        transform: translate(-50%, -8%) rotate(var(--luka-arrow-rot, 0deg)) scale(1);
+    }
+    90% {
+        opacity: 1;
+        transform: translate(-50%, -8%) rotate(var(--luka-arrow-rot, 0deg)) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -8%) rotate(var(--luka-arrow-rot, 0deg)) scale(1);
+    }
+}
+
+@keyframes luka-impact-ring {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.15);
+    }
+    58% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.15);
+    }
+    70% {
+        opacity: 0.95;
+        transform: translate(-50%, -50%) scale(0.7);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(1.55);
+    }
+}
+
+@keyframes luka-flight-trail {
+    0% {
+        opacity: 0;
+        transform: translate(calc(-50% + var(--luka-flight-x, 0px)), 32%) rotate(var(--luka-arrow-rot, 0deg)) scaleY(1.8);
+    }
+    20% {
+        opacity: 0.8;
+    }
+    72% {
+        opacity: 0.48;
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -4%) rotate(var(--luka-arrow-rot, 0deg)) scaleY(0.18);
+    }
+}
+
+@keyframes luka-impact-flash {
+    0%, 58% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.2);
+    }
+    70% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.05);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(1.65);
+    }
+}
+
+@keyframes luka-puncture {
+    0%, 15% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.15);
+    }
+    19% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.25);
+    }
+    24% {
+        opacity: 0.9;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    88% {
+        opacity: 0.82;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.85);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .eremei-boss-impact,
+    .dunya-boss-impact,
+    .luka-boss-impact,
+    .luka-arrow-mount { display: none; }
+}
+
 .enemy-stunned {
     filter: brightness(0.7) contrast(1.2);
     transition: filter 0.3s ease;

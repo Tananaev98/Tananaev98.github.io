@@ -9,7 +9,9 @@ const functionEnd = gameSource.indexOf('\nfunction subsCalculateDamageEnemy', fu
 
 assert.ok(functionStart >= 0 && functionEnd > functionStart);
 
-const rollFunctionSource = gameSource.slice(functionStart, functionEnd);
+const rollFunctionSource = gameSource
+    .slice(functionStart, functionEnd)
+    .replace('const DUNYA_SPECIAL_PREVIEW = true', 'const DUNYA_SPECIAL_PREVIEW = false');
 const activeHeroObject = {
     name: 'dunya',
     doubleAttackChance: 0.10,
@@ -34,26 +36,24 @@ const rollHeroAttackMultiplier = createRollFunction(
 );
 
 randomRoll = 0.005;
-assert.equal(rollHeroAttackMultiplier(true), 8);
+assert.deepEqual(rollHeroAttackMultiplier(true), { multiplier: 8, kind: 'jackpot' });
 randomRoll = 0.02;
-assert.equal(rollHeroAttackMultiplier(true), 3);
+assert.deepEqual(rollHeroAttackMultiplier(true), { multiplier: 3, kind: 'triple' });
 randomRoll = 0.08;
-assert.equal(rollHeroAttackMultiplier(true), 2);
+assert.deepEqual(rollHeroAttackMultiplier(true), { multiplier: 2, kind: 'double' });
 randomRoll = 0.50;
-assert.equal(rollHeroAttackMultiplier(true), 1);
-assert.equal(rollHeroAttackMultiplier(false), 1);
+assert.deepEqual(rollHeroAttackMultiplier(true), { multiplier: 1, kind: 'normal' });
+assert.deepEqual(rollHeroAttackMultiplier(false), { multiplier: 1, kind: 'normal' });
 assert.deepEqual(shownMessages, [
-    'ДЖЕКПОТ! Урон ×8!',
+    'Вихрь! Восьмикратный урон!',
     'Ух как раскрутилась! Тройная атака!',
     'Раскрутилась! Двойная атака!'
 ]);
 
 const expectedMultiplier = 1 + 0.10 + (0.03 * 2) + (0.01 * 7);
 assert.ok(Math.abs(expectedMultiplier - 1.23) < 1e-12);
-assert.match(
-    gameSource,
-    /damageResult\.damage = Math\.round\(damageResult\.damage \* attackMultiplier\)/
-);
+assert.match(gameSource, /rollBossHitDamage\(multipliedDamage\)/);
 assert.match(gameSource, /checkForWound\(enemy, woundBaseDamage\)/);
+assert.match(gameSource, /showDunyaWhirlImpact/);
 
-console.log('Dunya casino smoke test passed: shared x2/x3/x8 roll and base-hit wound are wired correctly.');
+console.log('Dunya casino smoke test passed: shared x2/x3/x8 roll and whirl wiring are correct.');
