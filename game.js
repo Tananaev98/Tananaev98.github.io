@@ -123,6 +123,7 @@ let bossHealthDelayedFill = null;
 let bossHealthContainer = null;
 let bossNameElement = null;
 let currentBoss = null;
+let bossDeathSequenceActive = false;
 let countDefeatBoss = 0;
 let bossDisplayedHpPercent = 100;
 let bossDelayedHpPercent = 100;
@@ -184,10 +185,6 @@ const TEMPORARY_UPGRADE_BASE_SHARE = 0.20;
 // Глобальные параметры оглушения
 
 let globalDamage = startGlobalDamage; // Базовый урон
-let globalDamageBonusPercent = 0; // Прирост урона в процентах
-const globalMaxDamageBonusPercent = activeHeroObject.maxDamageBonusPercentSize ?? 0; // Прирост урона в процентах
-let globalDamageBonusPercentSize = activeHeroObject.DamageBonusPercentSize ?? 0; //Размер прироста в процентах
-let blockCount = 0; //Счетчик заблокированных атак
 
 let globalCritChance = startGlobalCritChance;    // 15% шанс критического удара
 let globalCritMultiplier = startGlobalCritMultiplier; // 150% крит урон
@@ -409,6 +406,10 @@ class Enemy {
      * @return {boolean} true если враг достиг цели (красной линии)
      */
    update(deltaTime) {
+        if (this.isInert || this.isBossDying) {
+            return false;
+        }
+
         const deltaSeconds = deltaTime / 1000; // Переводим в секунды
         
         
@@ -877,6 +878,7 @@ function resetGame() {
     updateCastleHealthDisplay();
     document.body.style.backgroundColor = '#D1B892';
 	stopBossEvents();
+	bossDeathSequenceActive = false;
 	
 	// Скрываем полоску здоровья босса
     hideBossHealthBar();
@@ -914,11 +916,10 @@ function resetGame() {
     globalCritChance = startGlobalCritChance;
     globalCritMultiplier = startGlobalCritMultiplier;
     globalWoundChance = startGlobalWoundChance;
-    globalDamageBonusPercent = 0;
-    blockCount = 0;
     countDamageBoss = 0;
     castleDamageReduction = startCastleDamageReduction;
     SHOT_INTERVAL = startSHOT_INTERVAL;
+    resetHeroFeatureCombatState();
     
 }
 /**
@@ -1082,7 +1083,14 @@ function gameLoop(currentTime) {
 		disableSpawning(); 
 	}	
 	
-	if (timeSec2 >= timeNextBoss && !bossAlive && !areThereAnyLiveEnemies() && bossTimer === null) {    
+	if (
+        timeSec2 >= timeNextBoss
+        && !bossAlive
+        && !bossDeathSequenceActive
+        && !areThereAnyLiveEnemies()
+        && bossTimer === null
+        && bossM.length > 0
+    ) {
 		bossAliveName = bossM[0];
 		const boss = spawnEnemyWithParams(bossAliveName, 50, 13); 
 		// spawnEnemyWithParams('enem4', 40, 20, 1, 200, 40 )
@@ -1109,18 +1117,11 @@ function gameLoop(currentTime) {
         const updateResult = enemy.update(deltaTime);
         
         if (updateResult === 'dead_from_wound') {
-            handleEnemyDeath(enemy, 'wound');
-
-            // Анимация смерти
-            enemy.element.style.transition = 'all 0.3s ease';
-            enemy.element.style.opacity = '0';
-            enemy.applyDeathTransform();
-            
-            // Удаляем врага из массива и DOM
-            setTimeout(() => {
-                enemy.remove();
-            }, 300);
+            const isBossDeath = beginEnemyDeathVisual(enemy, 'wound');
             activeEnemies.splice(i, 1);
+            if (!isBossDeath) {
+                playGenericEnemyDeathVisual(enemy);
+            }
             continue;
         }
         
@@ -1813,6 +1814,9 @@ function damageCastle(damage) {
     
     // Логируем урон
     console.log(`Крепость получила ${damage} урона. Осталось здоровья: ${castleHP.current}`);
+
+    // Особенность героя: реакция на полученный урон
+    notifyHeroTookDamage(damage);
     
     // Проверяем конец игры
     if (castleHP.current <= 0) {
@@ -1865,6 +1869,202 @@ function formatTime(seconds) {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
+function getActiveHeroSaveKey() {
+    return gameState?.activeHero || activeHeroObject?.name || null;
+}
+
+function getActiveHeroSave() {
+    const heroKey = getActiveHeroSaveKey();
+    return heroKey ? gameState?.[heroKey] : null;
+}
+
+function canUpgradeActiveHeroFromEndgame() {
+    const hero = getActiveHeroSave();
+    if (!hero || hero.level >= HERO_MAX_LEVEL) return false;
+    return gameState.zlata >= hero.zlataUp;
+}
+
+function formatEndgameStatDelta(before, after, { percent = false, digits = 0 } = {}) {
+    const scale = percent ? 100 : 1;
+    const diff = (after - before) * scale;
+    if (Math.abs(diff) < 0.0005) return null;
+    const rounded = Number(diff.toFixed(digits));
+    if (rounded === 0) return null;
+    const sign = rounded > 0 ? '+' : '';
+    return `${sign}${rounded}${percent ? '%' : ''}`;
+}
+
+function buildEndgameUpgradeDeltaText(hero, preview) {
+    const parts = [
+        {
+            label: 'урон',
+            text: formatEndgameStatDelta(hero.startGlobalDamage, preview.startGlobalDamage, { digits: 1 })
+        },
+        {
+            label: 'шанс крита',
+            text: formatEndgameStatDelta(
+                hero.startGlobalCritChance,
+                preview.startGlobalCritChance,
+                { percent: true, digits: 2 }
+            )
+        },
+        {
+            label: 'крит. урон',
+            text: formatEndgameStatDelta(
+                hero.startGlobalCritMultiplier,
+                preview.startGlobalCritMultiplier,
+                { percent: true, digits: 0 }
+            )
+        },
+        {
+            label: 'ранение',
+            text: formatEndgameStatDelta(
+                hero.startGlobalWoundChance,
+                preview.startGlobalWoundChance,
+                { percent: true, digits: 2 }
+            )
+        },
+        {
+            label: 'скор. атаки',
+            text: formatEndgameStatDelta(
+                1000 - hero.startSHOT_INTERVAL,
+                1000 - preview.startSHOT_INTERVAL,
+                { digits: 0 }
+            )
+        },
+        {
+            label: 'HP',
+            text: formatEndgameStatDelta(hero.castleHP, preview.castleHP, { digits: 0 })
+        },
+        {
+            label: 'защита',
+            text: formatEndgameStatDelta(
+                hero.startCastleDamageReduction,
+                preview.startCastleDamageReduction,
+                { percent: true, digits: 2 }
+            )
+        }
+    ]
+        .filter((part) => part.text)
+        .map((part) => `${part.label} ${part.text}`);
+
+    return parts.length ? `Прирост: ${parts.join(', ')}` : '';
+}
+
+function buildEndgameHeroUpgradeMarkup() {
+    const heroKey = getActiveHeroSaveKey();
+    const hero = getActiveHeroSave();
+    if (!heroKey || !hero) return '';
+    if (hero.level >= HERO_MAX_LEVEL) return '';
+    if (!canUpgradeActiveHeroFromEndgame()) return '';
+
+    const preview = heroUp(heroKey, true);
+    if (!preview) return '';
+
+    const deltaText = buildEndgameUpgradeDeltaText(hero, preview);
+    if (!deltaText) return '';
+
+    return `
+        <div class="endgame-hero-upgrade">
+            <img class="endgame-hero-upgrade-portrait" src="${hero.image}" alt="">
+            <div class="endgame-hero-upgrade-body">
+                <div class="endgame-hero-upgrade-title">${hero.dispName}</div>
+                <div class="endgame-hero-upgrade-meta">
+                    Уровень <span class="endgame-hero-level">${Math.round(hero.level)}</span>
+                    → ${Math.round(hero.level) + 1}
+                </div>
+                <div class="endgame-hero-upgrade-deltas">${deltaText}</div>
+                <div class="endgame-hero-upgrade-wallet">
+                    У вас: ${gameState.zlata}
+                    <img src="images/other/zlata.webp" class="zlatImg" alt="">
+                </div>
+            </div>
+            <button type="button" class="endgame-button endgame-upgrade-btn">
+                Повысить
+                <span class="endgame-upgrade-cost">
+                    ${hero.zlataUp}
+                    <img src="images/other/zlata.webp" class="zlatImg" alt="">
+                </span>
+            </button>
+        </div>
+    `;
+}
+
+function playEndgameLevelUpAnimation(modal, level) {
+    const content = modal?.querySelector('.modal-content');
+    const upgradeCard = modal?.querySelector('.endgame-hero-upgrade');
+    if (!content) return;
+
+    content.querySelector('.level-up-celebration')?.remove();
+    content.classList.remove('endgame-level-up-impact');
+    upgradeCard?.classList.remove('endgame-level-up-portrait');
+    void content.offsetWidth;
+
+    const celebration = document.createElement('div');
+    celebration.className = 'level-up-celebration';
+    celebration.setAttribute('aria-hidden', 'true');
+    celebration.innerHTML = `
+        <div class="level-up-rays"></div>
+        <div class="level-up-ring"></div>
+        <div class="level-up-message">
+            <span class="level-up-title">Уровень повышен</span>
+            <span class="level-up-number">${Math.round(level)}</span>
+        </div>
+        <span class="level-up-spark spark-1">✦</span>
+        <span class="level-up-spark spark-2">✦</span>
+        <span class="level-up-spark spark-3">✦</span>
+        <span class="level-up-spark spark-4">✦</span>
+        <span class="level-up-spark spark-5">✦</span>
+        <span class="level-up-spark spark-6">✦</span>
+    `;
+
+    content.appendChild(celebration);
+    content.classList.add('endgame-level-up-impact');
+    upgradeCard?.classList.add('endgame-level-up-portrait');
+    upgradeCard?.querySelector('.endgame-hero-level')?.classList.add('level-up-value');
+
+    window.setTimeout(() => {
+        celebration.remove();
+        content.classList.remove('endgame-level-up-impact');
+        upgradeCard?.classList.remove('endgame-level-up-portrait');
+    }, 1200);
+}
+
+const endgameLevelUpSound = new Audio('sound/level_up.wav?v=1');
+endgameLevelUpSound.preload = 'auto';
+endgameLevelUpSound.volume = 0.10;
+
+function playEndgameLevelUpSound() {
+    endgameLevelUpSound.currentTime = 0;
+    const playback = endgameLevelUpSound.play();
+    if (playback && typeof playback.catch === 'function') {
+        playback.catch(() => {});
+    }
+}
+
+function refreshEndgameHeroUpgrade(modal) {
+    const host = modal?.querySelector('.endgame-hero-upgrade-host');
+    if (!host) return;
+
+    host.innerHTML = buildEndgameHeroUpgradeMarkup();
+    const upgradeBtn = host.querySelector('.endgame-upgrade-btn');
+    if (!upgradeBtn) return;
+
+    upgradeBtn.addEventListener('click', () => {
+        const heroKey = getActiveHeroSaveKey();
+        if (!heroKey || !canUpgradeActiveHeroFromEndgame()) {
+            refreshEndgameHeroUpgrade(modal);
+            return;
+        }
+
+        heroUp(heroKey, false);
+        const updatedHero = getActiveHeroSave();
+        playEndgameLevelUpSound();
+        refreshEndgameHeroUpgrade(modal);
+        playEndgameLevelUpAnimation(modal, updatedHero?.level ?? 0);
+    });
+}
+
 function showEndGameModal(victory, timeSeconds) {
     // Доигрываем текущую композицию, но после неё оставляем экран результата в тишине.
     window.battleMusic?.setCombatActive(false);
@@ -1881,6 +2081,14 @@ function showEndGameModal(victory, timeSeconds) {
 	const bossCount = Array.isArray(bossM) && bossM.length > 0 ? bossM.length : 5;
 	const zlatP = getLevelZlataPayout(lvlNumber, countDefeatBoss, bossCount);
 	if(zlatP >0){addZlat(zlatP)};
+
+    const nextLevelNumber = Math.floor(Number(lvlNumber)) + 1;
+    const maxPlayableLevel = (typeof MAX_LEVEL === 'number' && Number.isFinite(MAX_LEVEL))
+        ? MAX_LEVEL
+        : 15;
+    const hasNextLevel = victory
+        && Number.isFinite(nextLevelNumber)
+        && nextLevelNumber <= maxPlayableLevel;
 	
     const modal = document.createElement('div');
     modal.className = 'level-up-modal endgame-modal';
@@ -1893,7 +2101,9 @@ function showEndGameModal(victory, timeSeconds) {
                 <div class="time-line">Время прохождения: <span>${formatTime(timeSeconds)}</span></div>` 
 				+ rowTotal + 	
             `</div>
+            <div class="endgame-hero-upgrade-host"></div>
             <div class="endgame-buttons">
+                ${hasNextLevel ? '<button class="endgame-button next-level">Следующий уровень</button>' : ''}
                 <button class="endgame-button restart">Еще разок</button>
                 <button class="endgame-button base">На базу</button>
             </div>
@@ -1901,6 +2111,13 @@ function showEndGameModal(victory, timeSeconds) {
     `;
 
     document.body.appendChild(modal);
+    refreshEndgameHeroUpgrade(modal);
+
+    modal.querySelector('.next-level')?.addEventListener('click', () => {
+        const version = typeof GAME_BUILD_VERSION === 'string' ? GAME_BUILD_VERSION : '';
+        const versionQuery = version ? `&v=${encodeURIComponent(version)}` : '';
+        window.location.href = `level.html?level=${nextLevelNumber}${versionQuery}`;
+    });
 
     // Кнопка "Еще разок" – перезагрузка страницы
     modal.querySelector('.restart').addEventListener('click', () => {
@@ -2209,27 +2426,19 @@ function applyHeroImpactDamage(enemy, damageResult, isBoss) {
     // Визуальная обратная связь при попадании
     enemy.element.style.filter = 'brightness(1.5)';
     setTimeout(() => {
-        if (enemy.element) {
+        if (enemy.element && !enemy.isBossDying && !enemy.isInert) {
             enemy.element.style.filter = 'brightness(1)';
         }
     }, 100);
     
     // Проверяем, умер ли враг
     if (enemy.hp <= 0) {
-        // Анимация смерти
-		handleEnemyDeath(enemy, 'player');
-		
-        enemy.element.style.transition = 'all 0.3s ease';
-        enemy.element.style.opacity = '0';
-        enemy.applyDeathTransform();
-         
-        // Удаляем врага через короткую задержку для анимации
-        setTimeout(() => {
-            enemy.remove();
-        }, 300);
-
+        const isBossDeath = beginEnemyDeathVisual(enemy, 'player');
         const currentIndex = activeEnemies.indexOf(enemy);
         if (currentIndex !== -1) activeEnemies.splice(currentIndex, 1);
+        if (!isBossDeath) {
+            playGenericEnemyDeathVisual(enemy);
+        }
     }
 }
 
@@ -2283,42 +2492,37 @@ function createWoundText(enemy) {
 //* Рассчитывает урон с учетом шанса критического удара
 function calculateDamage(isBoss) {
     // Базовый урон
-    let damage = (globalDamage+ (globalDamage * globalDamageBonusPercent));
+    let damage = globalDamage;
     let isCritical = false;
-    
-    // Проверяем, выпал ли критический удар
-    const random = Math.random(); // Случайное число от 0 до 1
-    
-    if (random < globalCritChance) {
-        // КРИТИЧЕСКИЙ УДАР!
-        isCritical = true;
-    }
-	
-	const heroCriticalResult = subsCalculateDamageEnemy(isBoss, isCritical);
-	isCritical = heroCriticalResult.isCritical;
-	
-	if (isCritical) {
-		damage *= globalCritMultiplier;
-		console.log(`Критический удар! Множитель: x${globalCritMultiplier}`);
-	}
-    
-    // Округляем до целого числа
-    damage = Math.round(damage);
-    
-    return {
-        damage: damage,
-        isCritical: isCritical,
-        isCountShot: heroCriticalResult.isCountShot
-    };
-}
 
-function addDamageBonus() {
-	const previousBonus = globalDamageBonusPercent;
-	globalDamageBonusPercent = Math.min(
-		globalMaxDamageBonusPercent,
-		globalDamageBonusPercent + globalDamageBonusPercentSize
-	);
-	return globalDamageBonusPercent > previousBonus;
+    // Крит только по боссу: отбивание снарядов — обычный удар без крита/тряски.
+    if (isBoss) {
+        const random = Math.random();
+        if (random < getEffectiveCritChance()) {
+            isCritical = true;
+        }
+
+        const heroCriticalResult = subsCalculateDamageEnemy(true, isCritical);
+        isCritical = heroCriticalResult.isCritical;
+
+        if (isCritical) {
+            damage *= globalCritMultiplier;
+            console.log(`Критический удар! Множитель: x${globalCritMultiplier}`);
+        }
+
+        damage = Math.round(damage);
+        return {
+            damage,
+            isCritical,
+            isCountShot: heroCriticalResult.isCountShot
+        };
+    }
+
+    return {
+        damage: Math.round(damage),
+        isCritical: false,
+        isCountShot: false
+    };
 }
 
 /* 
@@ -2661,45 +2865,106 @@ function showLukaDeflectImpact(attackEnemy, isCritical = false, timing = getHero
     showLukaArrowImpact(attackEnemy.element, { isMini: true, isCritical, timing });
 }
 
+// Еремей: цикл двуручных ударов дубиной (горизонталь / overhead / диагонали / sweep / chop).
+// Контакт в keyframes ~61–62% — совпадает с impactDelayMs / 0.62.
+let eremeiComboStep = 0;
+const EREMEI_CLUB_SWINGS = [
+    'eremei-club-from-left',   // 1. горизонталь L→R
+    'eremei-club-from-right',  // 2. горизонталь R→L
+    'eremei-club-from-top',    // 3. overhead smash
+    'eremei-club-from-bottom', // 4. rising uppercut
+    'eremei-club-diag-tr',     // 5. диагональ ↘
+    'eremei-club-diag-tl',     // 6. диагональ ↙
+    'eremei-club-diag-br',     // 7. восходящая ↗
+    'eremei-club-smash',       // 8. тяжёлый overhead с замахом
+    'eremei-club-sweep',       // 9. широкий круговой sweep
+    'eremei-club-chop'         // 10. короткий 10-to-2 chop
+];
+
+function nextEremeiClubSwing() {
+    const swingClass = EREMEI_CLUB_SWINGS[eremeiComboStep % EREMEI_CLUB_SWINGS.length];
+    eremeiComboStep += 1;
+    return swingClass;
+}
+
+function renderEremeiImpactHtml(swingClass, { isMini = false, isCritical = false } = {}) {
+    const rings = isMini
+        ? `<span class="eremei-force eremei-force-ring eremei-force-ring-a"></span>`
+        : `
+        <span class="eremei-force eremei-force-ring eremei-force-ring-a"></span>
+        <span class="eremei-force eremei-force-ring eremei-force-ring-b"></span>`;
+    const debris = isMini
+        ? `
+        <span class="eremei-debris eremei-debris-1"></span>
+        <span class="eremei-debris eremei-debris-2"></span>
+        <span class="eremei-debris eremei-debris-3"></span>`
+        : `
+        <span class="eremei-debris eremei-debris-1"></span>
+        <span class="eremei-debris eremei-debris-2"></span>
+        <span class="eremei-debris eremei-debris-3"></span>
+        <span class="eremei-debris eremei-debris-4"></span>
+        <span class="eremei-debris eremei-debris-5"></span>`;
+    const dust = isMini
+        ? `<span class="eremei-dust eremei-dust-a"></span>`
+        : `
+        <span class="eremei-dust eremei-dust-a"></span>
+        <span class="eremei-dust eremei-dust-b"></span>`;
+    const critFx = isCritical
+        ? `
+        <span class="eremei-crit-shock"></span>
+        <span class="eremei-crit-flash"></span>
+        <span class="eremei-club eremei-club-crit-ghost"></span>`
+        : '';
+    const clubClass = isCritical ? 'eremei-club-crit' : swingClass;
+
+    return `
+        ${rings}
+        <span class="eremei-heavy-core"></span>
+        ${dust}
+        ${debris}
+        ${critFx}
+        <span class="eremei-impact-spark"></span>
+        <span class="eremei-club ${clubClass}"></span>
+    `;
+}
+
+function triggerEremeiCritScreenShake({ isMini = false } = {}) {
+    if (!gameField) return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) return;
+
+    const shakeClass = isMini ? 'eremei-screen-shake-mini' : 'eremei-screen-shake';
+    const durationMs = isMini ? 280 : 420;
+    gameField.classList.remove('eremei-screen-shake', 'eremei-screen-shake-mini');
+    // restart CSS animation if shake is already playing
+    void gameField.offsetWidth;
+    gameField.classList.add(shakeClass);
+    window.setTimeout(() => gameField?.classList.remove(shakeClass), durationMs + 40);
+}
+
 function showEremeiBossImpact(boss, isCritical = false, timing = getHeroAttackTiming(SHOT_INTERVAL)) {
     if (activeHeroObject?.name !== 'eremei' || !boss?.element || !enemiesContainer || !gameField) return;
 
     const pos = getImpactFieldPercent(boss.element);
     if (!pos) return;
 
-    // Один полный взмах по боссу: старый эффект снимаем.
     enemiesContainer.querySelectorAll('.eremei-boss-impact:not(.is-mini)').forEach((node) => node.remove());
 
-    const swingVariants = [
-        'eremei-club-from-left',
-        'eremei-club-from-right',
-        'eremei-club-from-top',
-        'eremei-club-from-bottom'
-    ];
-    const swingClass = swingVariants[Math.floor(Math.random() * swingVariants.length)];
+    const swingClass = isCritical ? null : nextEremeiClubSwing();
+    const swingDurationMs = Math.max(140, Math.round(timing.impactDelayMs / 0.62));
 
     const impact = document.createElement('div');
     impact.className = `eremei-boss-impact${isCritical ? ' eremei-boss-impact-critical' : ''}`;
     impact.style.left = `${pos.left}%`;
     impact.style.top = `${pos.top}%`;
-    const swingDurationMs = Math.max(140, Math.round(timing.impactDelayMs / 0.62));
     impact.style.setProperty('--eremei-swing-duration', `${swingDurationMs}ms`);
     impact.setAttribute('aria-hidden', 'true');
-    impact.innerHTML = `
-        <span class="eremei-force eremei-force-ring eremei-force-ring-a"></span>
-        <span class="eremei-force eremei-force-ring eremei-force-ring-b"></span>
-        <span class="eremei-heavy-core"></span>
-        <span class="eremei-dust eremei-dust-a"></span>
-        <span class="eremei-dust eremei-dust-b"></span>
-        <span class="eremei-debris eremei-debris-1"></span>
-        <span class="eremei-debris eremei-debris-2"></span>
-        <span class="eremei-debris eremei-debris-3"></span>
-        <span class="eremei-debris eremei-debris-4"></span>
-        <span class="eremei-debris eremei-debris-5"></span>
-        <span class="eremei-impact-spark"></span>
-        <span class="eremei-club ${swingClass}"></span>
-    `;
+    impact.innerHTML = renderEremeiImpactHtml(swingClass, { isCritical });
     enemiesContainer.appendChild(impact);
+
+    if (isCritical) {
+        const shakeAtMs = Math.round(swingDurationMs * 0.62);
+        window.setTimeout(() => triggerEremeiCritScreenShake(), shakeAtMs);
+    }
 
     window.setTimeout(() => impact.remove(), swingDurationMs + 160);
 }
@@ -2712,31 +2977,17 @@ function showEremeiDeflectImpact(attackEnemy, isCritical = false, timing = getHe
 
     pruneImpactNodes('.eremei-boss-impact.is-mini', 3);
 
-    const swingVariants = [
-        'eremei-club-from-left',
-        'eremei-club-from-right',
-        'eremei-club-from-top',
-        'eremei-club-from-bottom'
-    ];
-    const swingClass = swingVariants[Math.floor(Math.random() * swingVariants.length)];
+    // Отбивание снарядов: только обычный замах, без крит-VFX и тряски.
+    const swingClass = nextEremeiClubSwing();
+    const swingDurationMs = Math.max(120, Math.round(timing.impactDelayMs / 0.62));
 
     const impact = document.createElement('div');
-    impact.className = `eremei-boss-impact is-mini${isCritical ? ' eremei-boss-impact-critical' : ''}`;
+    impact.className = 'eremei-boss-impact is-mini';
     impact.style.left = `${pos.left}%`;
     impact.style.top = `${pos.top}%`;
-    const swingDurationMs = Math.max(120, Math.round(timing.impactDelayMs / 0.62));
     impact.style.setProperty('--eremei-swing-duration', `${swingDurationMs}ms`);
     impact.setAttribute('aria-hidden', 'true');
-    impact.innerHTML = `
-        <span class="eremei-force eremei-force-ring eremei-force-ring-a"></span>
-        <span class="eremei-heavy-core"></span>
-        <span class="eremei-dust eremei-dust-a"></span>
-        <span class="eremei-debris eremei-debris-1"></span>
-        <span class="eremei-debris eremei-debris-2"></span>
-        <span class="eremei-debris eremei-debris-3"></span>
-        <span class="eremei-impact-spark"></span>
-        <span class="eremei-club ${swingClass}"></span>
-    `;
+    impact.innerHTML = renderEremeiImpactHtml(swingClass, { isMini: true, isCritical: false });
     enemiesContainer.appendChild(impact);
 
     window.setTimeout(() => impact.remove(), swingDurationMs + 100);
@@ -3049,82 +3300,286 @@ function giveExperienceForKill(enemyType) {
     }
 }
 
-function handleEnemyDeath(enemy, cause = 'player') {
-    if (enemy.type === bossAliveName) {
-		countDefeatBoss++;
+function waitMs(ms) {
+    return new Promise(resolve => setTimeout(resolve, Math.max(0, ms)));
+}
 
-        // Удаляем именно побеждённого босса. Победа определяется отсутствием
-        // следующих боссов, а не жёстко заданным именем вроде enem5.
-        const defeatedBossIndex = bossM.indexOf(enemy.type);
-        if (defeatedBossIndex !== -1) {
-            bossM.splice(defeatedBossIndex, 1);
-        }
+const UNIVERSAL_BOSS_DEATH = Object.freeze({
+    preset: 'flyBackPerspective',
+    durationMs: 1200
+});
 
-        killAllEnemies();
-        hideBossHealthBar();
-        stopBossEvents();
-        currentBoss = null;
+/**
+ * Пока для всех боссов одна универсальная смерть.
+ * Поле deathAnimation в ENEMY_TYPES можно будет снова использовать позже.
+ */
+function resolveBossDeathAnimation(_bossType) {
+    return { ...UNIVERSAL_BOSS_DEATH };
+}
 
-        if (bossM.length === 0) {
-            pauseGame();
-            showEndGameModal(true, timeSec2);
-            return; // Финальный босс не даёт опыт внутри завершённого боя
-        }
+function playGenericEnemyDeathVisual(enemy) {
+    if (!enemy?.element) return;
+    enemy.element.style.transition = 'all 0.3s ease';
+    enemy.element.style.opacity = '0';
+    enemy.applyDeathTransform();
+    setTimeout(() => {
+        enemy.remove();
+    }, 300);
+}
 
-        // В последовательности остались боссы — готовим следующую встречу.
-		window.battleMusic?.setContext(buildBattleMusicContext(bossM[0]));
-        giveExperienceForKill(enemy.type);
-        timeNextBoss = timeSec2 + bossInterval;
-        enableSpawning();   // Включаем спавн обычных врагов
+/**
+ * Запускает визуал смерти. Для босса — особая последовательность.
+ * @returns {boolean} true, если это смерть босса (визуал уже ведёт sequence)
+ */
+function beginEnemyDeathVisual(enemy, cause = 'player') {
+    if (enemy?.type === bossAliveName || enemy?.isBoss) {
+        handleBossDeathSequence(enemy, cause);
+        return true;
+    }
+    handleEnemyDeath(enemy, cause);
+    return false;
+}
+
+function playBossDeathAnimation(enemy, config) {
+    const el = enemy?.element;
+    if (!el) return Promise.resolve();
+
+    el.classList.remove('enemy-hit', 'enemy-wounded', 'boss-attack-paused', 'boss-attack-rush');
+    el.style.filter = '';
+    el.style.transition = 'none';
+    el.style.setProperty('--boss-death-duration', `${config.durationMs}ms`);
+    el.classList.add('boss-dying', `boss-death--${config.preset}`);
+
+    return waitMs(config.durationMs).then(() => {
+        enemy.remove();
+    });
+}
+
+/**
+ * Атаки улетают вслед за боссом в ту же точку перспективы (верх/центр),
+ * с небольшой задержкой — сначала босс, затем снаряды.
+ */
+function chaseAttacksAfterBoss(attacks, boss, durationMs) {
+    if (!attacks.length) return Promise.resolve();
+
+    const fieldRect = gameField?.getBoundingClientRect?.();
+    if (!fieldRect || fieldRect.width <= 0 || fieldRect.height <= 0) {
+        return fadeOutEnemiesQuick(attacks, Math.min(durationMs, 400));
+    }
+
+    const bossRect = boss?.element?.getBoundingClientRect?.();
+    const vanishX = bossRect
+        ? bossRect.left + bossRect.width / 2
+        : fieldRect.left + fieldRect.width * 0.5;
+    const vanishY = fieldRect.top + fieldRect.height * 0.04;
+
+    const ordered = [...attacks].sort((a, b) => (a.y || 0) - (b.y || 0));
+
+    const tasks = ordered.map((attack, index) => {
+        const el = attack.element;
+        if (!el) return Promise.resolve();
+
+        attack.isInert = true;
+        el.classList.remove('boss-attack-paused', 'boss-attack-rush');
+
+        const rect = el.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const dxVw = ((vanishX - centerX) / window.innerWidth) * 100 * 1.12;
+        const dyVh = ((vanishY - centerY) / window.innerHeight) * 100 * 1.08;
+        // Ниже на поле — позже стартуют, будто догоняют босса.
+        const delay = 70 + index * 42 + Math.floor(Math.random() * 30);
+
+        el.style.transition = 'none';
+        el.style.setProperty('--flyback-x', `${dxVw.toFixed(1)}vw`);
+        el.style.setProperty('--flyback-y', `${dyVh.toFixed(1)}vh`);
+        el.style.setProperty('--flyback-duration', `${durationMs}ms`);
+        el.style.setProperty('--flyback-delay', `${delay}ms`);
+        el.classList.add('boss-attack-flyback');
+
+        return waitMs(durationMs + delay).then(() => attack.remove());
+    });
+
+    return Promise.all(tasks);
+}
+
+function fadeOutEnemiesQuick(enemies, durationMs = 350) {
+    if (!enemies.length) return Promise.resolve();
+
+    const tasks = enemies.map(enemy => {
+        const el = enemy.element;
+        if (!el) return Promise.resolve();
+
+        enemy.isInert = true;
+        el.style.transition = `opacity ${durationMs}ms ease, transform ${durationMs}ms ease`;
+        el.style.opacity = '0';
+        el.style.transform = 'scale(0.35) rotate(20deg)';
+        return waitMs(durationMs).then(() => enemy.remove());
+    });
+
+    return Promise.all(tasks);
+}
+
+function finalizeBossDefeatAftermath(enemy, isFinalBoss) {
+    bossDeathSequenceActive = false;
+
+    if (isFinalBoss) {
+        pauseGame();
+        showEndGameModal(true, timeSec2);
         return;
     }
 
+    window.battleMusic?.setContext(buildBattleMusicContext(bossM[0]));
+    giveExperienceForKill(enemy.type);
+    timeNextBoss = timeSec2 + bossInterval;
+    enableSpawning();
+}
+
+/**
+ * Смерть босса: стоп атак → параллельно deathAnimation босса + рассыпание снарядов
+ * → только потом апгрейд / победа / следующий босс.
+ */
+function handleBossDeathSequence(enemy, cause = 'player') {
+    if (enemy.isBossDying || bossDeathSequenceActive) return;
+    enemy.isBossDying = true;
+    enemy.isInert = true;
+
+    countDefeatBoss++;
+
+    const defeatedBossIndex = bossM.indexOf(enemy.type);
+    if (defeatedBossIndex !== -1) {
+        bossM.splice(defeatedBossIndex, 1);
+    }
+
+    const isFinalBoss = bossM.length === 0;
+
+    // 1) Останавливаем новые атаки и телеграфы сразу.
+    stopBossEvents();
+    hideBossHealthBar();
+    currentBoss = null;
+    bossDeathSequenceActive = true;
+    disableSpawning();
+
+    const attacks = activeEnemies.filter(item => item !== enemy && item.isCustom);
+    const others = activeEnemies.filter(item => item !== enemy && !item.isCustom);
+
+    // Снимаем с симуляции, но DOM оставляем для анимаций.
+    activeEnemies.length = 0;
+    attacks.forEach(attack => {
+        attack.isInert = true;
+    });
+    others.forEach(other => {
+        other.isInert = true;
+    });
+
+    const deathConfig = resolveBossDeathAnimation(enemy.type);
+    const chaseDuration = deathConfig.durationMs + 180;
+
+    Promise.all([
+        playBossDeathAnimation(enemy, deathConfig),
+        chaseAttacksAfterBoss(attacks, enemy, chaseDuration),
+        fadeOutEnemiesQuick(others, 380)
+    ]).then(() => {
+        finalizeBossDefeatAftermath(enemy, isFinalBoss);
+    }).catch(error => {
+        console.warn('Ошибка анимации смерти босса:', error);
+        enemy.remove?.();
+        attacks.forEach(attack => attack.remove?.());
+        others.forEach(other => other.remove?.());
+        finalizeBossDefeatAftermath(enemy, isFinalBoss);
+    });
+}
+
+function handleEnemyDeath(enemy, cause = 'player') {
+    // Не-боссы: награды/логика при необходимости. Сейчас опыт только у боссов.
+    if (enemy?.type === bossAliveName) {
+        handleBossDeathSequence(enemy, cause);
+    }
 }
 
 function killAllEnemies() {
-    // Создаем копию массива, чтобы безопасно итерироваться
     const enemiesToKill = [...activeEnemies];
-    
-    enemiesToKill.forEach(enemy => {
-
-        // Анимация смерти
-        if (enemy.element) {
-            enemy.element.style.transition = 'all 0.3s ease';
-            enemy.element.style.opacity = '0';
-            enemy.applyDeathTransform();
-            
-            setTimeout(() => {
-                enemy.remove();
-            }, 300);
-        }
-    });
-    
-    // Очищаем массив активных врагов
     activeEnemies.length = 0;
-    
+
+    enemiesToKill.forEach(enemy => {
+        enemy.isInert = true;
+        playGenericEnemyDeathVisual(enemy);
+    });
+
     console.log(`Уничтожено ${enemiesToKill.length} врагов`);
 }
 
 //=====================Подписки на события и особенности героев========================
 
-function subsDamageEnemy(isBoss, isDestroyed) {
-	
-	//Способность Еремея 	
-	if(activeHeroObject.name === 'eremei' && !isBoss && isDestroyed) {
-		blockCount++;
-		const bonusIncreased = addDamageBonus();
+/**
+ * Еремей — «Лови обратно»:
+ * после получения урона временно повышает шанс крита.
+ * Состояние живёт только в бою и сбрасывается при рестарте уровня.
+ */
+const EREMEI_CATCH_BACK = Object.freeze({
+    critChanceBonus: 0.10,
+    durationMs: 3000
+});
 
-		if (bonusIncreased && (blockCount % 5 === 0 || globalDamageBonusPercent >= globalMaxDamageBonusPercent)) {
-			showCenterText(
-				`Отбивальщик: урон +${Math.round(globalDamageBonusPercent * 100)}%`,
-				1000,
-				'info'
-			);
-		}
-	}
-			
+let eremeiCatchBackUntilMs = 0;
+
+function resetHeroFeatureCombatState() {
+    eremeiCatchBackUntilMs = 0;
 }
 
+function getEremeiCatchBackConfig() {
+    return {
+        critChanceBonus: Math.max(
+            0,
+            Number(activeHeroObject?.catchBackCritChanceBonus) || EREMEI_CATCH_BACK.critChanceBonus
+        ),
+        durationMs: Math.max(
+            0,
+            Number(activeHeroObject?.catchBackDurationMs) || EREMEI_CATCH_BACK.durationMs
+        )
+    };
+}
+
+function isEremeiCatchBackActive(now = performance.now()) {
+    return activeHeroObject?.name === 'eremei' && now < eremeiCatchBackUntilMs;
+}
+
+function getHeroFeatureCritChanceBonus(now = performance.now()) {
+    if (!isEremeiCatchBackActive(now)) return 0;
+    return getEremeiCatchBackConfig().critChanceBonus;
+}
+
+function getEffectiveCritChance(now = performance.now()) {
+    return Math.min(1, globalCritChance + getHeroFeatureCritChanceBonus(now));
+}
+
+function activateEremeiCatchBack(now = performance.now()) {
+    if (activeHeroObject?.name !== 'eremei') return;
+
+    const { critChanceBonus, durationMs } = getEremeiCatchBackConfig();
+    const wasActive = isEremeiCatchBackActive(now);
+    eremeiCatchBackUntilMs = now + durationMs;
+
+    // Тост только при активации / реактивации с нуля — не спамим на каждый тик урона.
+    if (!wasActive) {
+        const bonusPercent = Math.round(critChanceBonus * 100);
+        showCenterText(`Лови обратно! Крит +${bonusPercent}%`, 1000, 'info');
+    }
+}
+
+/** Единая точка входа: герой получил фактический урон. */
+function notifyHeroTookDamage(appliedDamage) {
+    if (!(appliedDamage > 0) || isGameOver) return;
+
+    if (activeHeroObject?.name === 'eremei') {
+        activateEremeiCatchBack();
+    }
+}
+
+function subsDamageEnemy(_isBoss, _isDestroyed) {
+    // Hook под особенности «при убийстве/попадании».
+    // Еремей больше не использует ramp-урон от отбитых атак.
+}
 
 function rollHeroAttackMultiplier(isBoss) {
 	if (!isBoss || activeHeroObject.name !== 'dunya') {

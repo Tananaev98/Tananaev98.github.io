@@ -59,10 +59,10 @@ legacyState.eremei.balanceRevision = 3;
 delete legacyState.eremei.investedZlata;
 const migratedLegacyState = api.migrateGameState(legacyState);
 assert.equal(migratedLegacyState.eremei.investedZlata, api.getHeroInvestedZlata(10));
-assert.equal(migratedLegacyState.eremei.balanceRevision, 6);
+assert.equal(migratedLegacyState.eremei.balanceRevision, 7);
 assert.equal(migratedLegacyState.eremei.permanentGrowthProfile, 'guardian');
 assert.ok(Math.abs(
-    migratedLegacyState.eremei.startGlobalDamage - (132 * Math.pow(1.042, 3))
+    migratedLegacyState.eremei.startGlobalDamage - (158.4 * Math.pow(1.042, 3))
 ) < 1e-9);
 assert.ok(Math.abs(migratedLegacyState.eremei.startGlobalCritChance - 0.054) < 1e-9);
 assert.ok(Math.abs(migratedLegacyState.eremei.startGlobalCritMultiplier - 2.3) < 1e-9);

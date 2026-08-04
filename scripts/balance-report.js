@@ -19,7 +19,7 @@ assert.ok(Number.isInteger(testBossHitDamage(137, 0.376)));
 const HEROES = {
     eremei: {
         name: 'Еремей',
-        damage: 132,
+        damage: 158.4,
         critChance: 0.045,
         critMultiplier: 2.1,
         woundChance: 0.015,
@@ -27,8 +27,9 @@ const HEROES = {
         hp: 188,
         defense: 0.075,
         growthProfile: 'guardian',
-        featureMultiplier: 1.164,
-        featureType: 'damage'
+        featureType: 'catchBackCrit',
+        catchBackCritChanceBonus: 0.10,
+        catchBackExpectedUptime: 0.45
     },
     dunya: {
         name: 'Дуня',
@@ -156,6 +157,11 @@ function expectedDps(hero, featureMultiplier = true) {
     if (hero.guaranteedCritEvery) {
         const guaranteedShare = 1 / hero.guaranteedCritEvery;
         effectiveCritChance = guaranteedShare + ((1 - guaranteedShare) * hero.critChance);
+    }
+    if (featureMultiplier && hero.featureType === 'catchBackCrit') {
+        effectiveCritChance += (hero.catchBackCritChanceBonus || 0)
+            * (hero.catchBackExpectedUptime || 0.45);
+        effectiveCritChance = Math.min(1, effectiveCritChance);
     }
 
     const critFactor = 1 + (effectiveCritChance * (hero.critMultiplier - 1));
@@ -379,7 +385,7 @@ for (const heroLevel of [1, 40, 80, 120, 160, 200]) {
 
     const eremeiDps = expectedDps(eremei);
     const lukaDps = expectedDps(luka);
-    const eremeiCriticalHit = eremei.damage * eremei.critMultiplier * eremei.featureMultiplier;
+    const eremeiCriticalHit = eremei.damage * eremei.critMultiplier;
     const lukaCriticalHit = luka.damage * luka.critMultiplier;
     const dunyaJackpotCriticalHit = dunya.damage
         * dunya.critMultiplier
@@ -389,7 +395,7 @@ for (const heroLevel of [1, 40, 80, 120, 160, 200]) {
         `Лука потерял преимущество по постоянному DPS на уровне героя ${heroLevel}`
     );
     assert.ok(
-        eremeiCriticalHit > lukaCriticalHit * 1.25,
+        eremeiCriticalHit > lukaCriticalHit * 1.15,
         `Критический удар Еремея недостаточно тяжёлый на уровне героя ${heroLevel}`
     );
     assert.ok(

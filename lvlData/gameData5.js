@@ -154,7 +154,8 @@ const ENEMY_TYPES = {
 
 		xPos: 38,
 
-        size: '24%'                        
+        size: '24%',
+        deathAnimation: { preset: 'ashFade', durationMs: 1200 }                        
 
     },
 
@@ -178,7 +179,8 @@ const ENEMY_TYPES = {
 
 		xPos: 36,
 
-        size: '26%'
+        size: '26%',
+        deathAnimation: { preset: 'spinAway', durationMs: 1150 }
 
     },
 
@@ -202,7 +204,8 @@ const ENEMY_TYPES = {
 
 		xPos: 35,		
 
-        size: '30%'                        
+        size: '30%',
+        deathAnimation: { preset: 'heavySink', durationMs: 1450 }                        
 
     }, 
 
@@ -228,7 +231,8 @@ const ENEMY_TYPES = {
 
 		xPos: 34,
 
-        size: '28%'                        
+        size: '28%',
+        deathAnimation: { preset: 'fleeStretch', durationMs: 1000 }                        
 
     },
 
@@ -254,7 +258,8 @@ const ENEMY_TYPES = {
 
 		xPos: 34,		
 
-        size: '30%'                        
+        size: '30%',
+        deathAnimation: { preset: 'rollOff', durationMs: 1300 }                        
 
     },
 

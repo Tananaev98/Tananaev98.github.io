@@ -156,12 +156,15 @@ function expectedDps(hero) {
         const guaranteedShare = 1 / 5;
         effectiveCritChance = guaranteedShare + ((1 - guaranteedShare) * hero.critChance);
     }
+    if (hero.heroKey === 'eremei') {
+        effectiveCritChance += 0.10 * 0.45;
+        effectiveCritChance = Math.min(1, effectiveCritChance);
+    }
 
     const critFactor = 1 + (effectiveCritChance * (hero.critMultiplier - 1));
-    const damageFeature = hero.heroKey === 'eremei' ? 1.164 : 1;
     const attackMultiplierFeature = hero.heroKey === 'dunya' ? 1.23 : 1;
     const hitsPerSecond = 1000 / hero.interval;
-    const baseAverageHitDamage = hero.damage * critFactor * damageFeature;
+    const baseAverageHitDamage = hero.damage * critFactor;
     const directDps = baseAverageHitDamage * attackMultiplierFeature * hitsPerSecond;
     const woundProcRate = hitsPerSecond * hero.woundChance;
     const averageWaitForWound = woundProcRate > 0 ? 1 / woundProcRate : Infinity;

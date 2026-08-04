@@ -337,12 +337,12 @@ const HERO_DIFFICULTY_MODEL = Object.freeze({
     damageWeight: 0.08,
     fireRateWeight: 0.04,
     mechanicWeight: 0.03,
-    eremeiExpectedRampShare: 0.656,
+    eremeiExpectedCatchBackUptime: 0.45,
     woundDurationSeconds: 5,
     woundTickSeconds: 0.3,
     woundDamageSharePerTick: 0.1,
     volatilityReference: 0.75,
-    rampReference: 0.50
+    catchBackCritReference: 0.10
 });
 
 function clampHeroDifficultyValue(value, min = 0, max = 1) {
@@ -416,20 +416,18 @@ function getHeroExpectedPermanentDps(hero) {
     const ordinaryCritChance = clampHeroDifficultyValue(
         Number(hero.startGlobalCritChance) || 0
     );
+    const catchBackCritBonus = Math.max(0, Number(hero.catchBackCritChanceBonus) || 0);
+    const catchBackCritChance = catchBackCritBonus * HERO_DIFFICULTY_MODEL.eremeiExpectedCatchBackUptime;
     const guaranteedCritEvery = Math.max(0, Math.floor(Number(hero.guaranteedCritEvery) || 0));
     const guaranteedCritShare = guaranteedCritEvery > 0 ? 1 / guaranteedCritEvery : 0;
     const effectiveCritChance = guaranteedCritShare + (
-        (1 - guaranteedCritShare) * ordinaryCritChance
+        (1 - guaranteedCritShare) * clampHeroDifficultyValue(
+            ordinaryCritChance + catchBackCritChance
+        )
     );
     const critMultiplier = Math.max(1, Number(hero.startGlobalCritMultiplier) || 1);
     const critFactor = 1 + (effectiveCritChance * (critMultiplier - 1));
-    const maximumRampBonus = Math.max(0, Number(hero.maxDamageBonusPercentSize) || 0);
-    const expectedRampMultiplier = 1 + (
-        maximumRampBonus * HERO_DIFFICULTY_MODEL.eremeiExpectedRampShare
-    );
-    const baseAverageHitDamage = Math.max(0, Number(hero.startGlobalDamage) || 0)
-        * critFactor
-        * expectedRampMultiplier;
+    const baseAverageHitDamage = Math.max(0, Number(hero.startGlobalDamage) || 0) * critFactor;
     const directDps = baseAverageHitDamage * attackStats.mean * hitsPerSecond;
     const woundProcRate = hitsPerSecond * clampHeroDifficultyValue(
         Number(hero.startGlobalWoundChance) || 0
@@ -460,16 +458,16 @@ function getHeroDifficultyMetrics(hero) {
     const volatilityBurden = clampHeroDifficultyValue(
         attackStats.coefficientOfVariation / HERO_DIFFICULTY_MODEL.volatilityReference
     );
-    const rampBurden = clampHeroDifficultyValue(
-        (Math.max(0, Number(hero.maxDamageBonusPercentSize) || 0))
-        / HERO_DIFFICULTY_MODEL.rampReference
+    const catchBackBurden = clampHeroDifficultyValue(
+        (Math.max(0, Number(hero.catchBackCritChanceBonus) || 0))
+        / HERO_DIFFICULTY_MODEL.catchBackCritReference
     );
 
     return {
         effectiveHp: Math.max(1, Number(hero.castleHP) || 1) / (1 - defense),
         expectedDps: Math.max(0.001, getHeroExpectedPermanentDps(hero)),
         shotsPerSecond: 1000 / Math.max(200, Number(hero.startSHOT_INTERVAL) || 1000),
-        mechanicBurden: Math.max(volatilityBurden, rampBurden)
+        mechanicBurden: Math.max(volatilityBurden, catchBackBurden)
     };
 }
 
@@ -887,14 +885,14 @@ function getDefaultGameState() {
 			activeHero: 'eremei',
 			zlata: 0, 
 			eremei: {
-				balanceRevision: 6,
+				balanceRevision: 7,
 				name: 'eremei', 
 				permanentGrowthProfile: 'guardian',
 				dispName: 'Еремей Дуболом',
 				image: 'images/hero/2_eremei/eremei_min.png',
 				fullImage: 'images/hero/2_eremei/eremei_full.png',
 				level: 1,
-				startGlobalDamage: 132,
+				startGlobalDamage: 158.4,
 				startGlobalCritChance: 0.045,
 				startGlobalCritMultiplier: 2.1,
 				startGlobalWoundChance	: 0.015,
@@ -905,10 +903,10 @@ function getDefaultGameState() {
 				zlataUp: 10,
 				investedZlata: 0,
 				upSpecif: 1, 	
-				feature: 'Отбивальщик — <br>каждая уничтоженная атака босса<br> даёт +1% урона до конца уровня<br> вплоть до +25%',
-				unlock: true, 
-				maxDamageBonusPercentSize: 0.25,
-				DamageBonusPercentSize: 0.01,
+				feature: 'Лови обратно — <br>после получения урона<br>шанс крита +10%<br>на следующие 3 секунды',
+				unlock: true,
+				catchBackCritChanceBonus: 0.10,
+				catchBackDurationMs: 3000,
 			},
 			
 			

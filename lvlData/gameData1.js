@@ -89,7 +89,8 @@ const ENEMY_TYPES = {
         baseDamage: 20,                    
         spawnWeight: 5,                   
 		baseExp: 250,                      
-        size: '15%'                        
+        size: '15%',
+        deathAnimation: { preset: 'hopCollapse', durationMs: 1100 }                        
     },
     enem2: {  
         name: 'enem2',
@@ -100,7 +101,8 @@ const ENEMY_TYPES = {
         baseDamage: 22,
         spawnWeight: 15,                  
 		baseExp: 400, 
-        size: '25%'
+        size: '25%',
+        deathAnimation: { preset: 'packBurst', durationMs: 1000 }
     },
     enem3: {  
         name: 'enem3',
@@ -111,7 +113,8 @@ const ENEMY_TYPES = {
         baseDamage: 24,
         spawnWeight: 20,
 		baseExp: 600, 
-        size: '25%'                        
+        size: '25%',
+        deathAnimation: { preset: 'heavySink', durationMs: 1400 }                        
     }, 
 	
 	enem4: {  
@@ -123,7 +126,8 @@ const ENEMY_TYPES = {
         baseDamage: 26,
         spawnWeight: 10,
 		baseExp: 800, 
-        size: '25%'                        
+        size: '25%',
+        deathAnimation: { preset: 'spinAway', durationMs: 1200 }                        
     },
 	
 	enem5: {  
@@ -135,7 +139,8 @@ const ENEMY_TYPES = {
         baseDamage: 28,
         spawnWeight: 5,
 		baseExp: 0, 
-        size: '25%'                        
+        size: '25%',
+        deathAnimation: { preset: 'rollOff', durationMs: 1300 }                        
     },
 
 	
