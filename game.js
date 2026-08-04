@@ -119,10 +119,16 @@ let spawnEnabled = true; // По умолчанию спавн включен
 // Полоска HP босса
 let bossHealthBar = null;
 let bossHealthFill = null;
+let bossHealthDelayedFill = null;
 let bossHealthContainer = null;
 let bossNameElement = null;
 let currentBoss = null;
 let countDefeatBoss = 0;
+let bossDisplayedHpPercent = 100;
+let bossDelayedHpPercent = 100;
+let bossHpCatchUpTimer = null;
+let bossHpHideTimer = null;
+const BOSS_HP_CATCHUP_DELAY_MS = 480;
 
 // Конфигурация игры - основные настройки
 const GAME_CONFIG = {
@@ -1618,9 +1624,10 @@ function initBossHealthBar() {
     bossHealthContainer = document.getElementById('bossHealthContainer');
     bossHealthBar = document.getElementById('bossHealthBar');
     bossHealthFill = document.getElementById('bossHealthFill');
+    bossHealthDelayedFill = document.getElementById('bossHealthDelayed');
     bossNameElement = document.getElementById('bossName');
     
-    if (!bossHealthContainer || !bossHealthFill || !bossNameElement) {
+    if (!bossHealthContainer || !bossHealthFill || !bossHealthDelayedFill || !bossNameElement) {
         console.error('Элементы полоски здоровья босса не найдены!');
         return;
     }
@@ -1628,12 +1635,46 @@ function initBossHealthBar() {
     console.log('Полоска здоровья босса инициализирована');
 }
 
+function clearBossHpCatchUp() {
+    if (bossHpCatchUpTimer) {
+        window.clearTimeout(bossHpCatchUpTimer);
+        bossHpCatchUpTimer = null;
+    }
+    if (bossHealthDelayedFill) {
+        bossHealthDelayedFill.classList.remove('catching-up');
+    }
+}
+
+function getBossDelayedFillPercent() {
+    if (!bossHealthDelayedFill || !bossHealthBar) return bossDelayedHpPercent;
+    const barWidth = bossHealthBar.clientWidth;
+    if (barWidth <= 0) return bossDelayedHpPercent;
+    return Math.max(0, Math.min(100, (bossHealthDelayedFill.getBoundingClientRect().width / barWidth) * 100));
+}
+
+function syncBossHpBars(healthPercent) {
+    clearBossHpCatchUp();
+    bossDisplayedHpPercent = healthPercent;
+    bossDelayedHpPercent = healthPercent;
+    if (bossHealthFill) bossHealthFill.style.width = `${healthPercent}%`;
+    if (bossHealthDelayedFill) bossHealthDelayedFill.style.width = `${healthPercent}%`;
+}
+
+function startBossHpCatchUp(targetPercent) {
+    if (!bossHealthDelayedFill) return;
+    bossDelayedHpPercent = targetPercent;
+    // force reflow so transition applies from frozen width
+    void bossHealthDelayedFill.offsetWidth;
+    bossHealthDelayedFill.classList.add('catching-up');
+    bossHealthDelayedFill.style.width = `${targetPercent}%`;
+}
+
 /**
  * Показывает полоску здоровья босса
  * @param {Enemy} boss - объект босса
  */
 function showBossHealthBar(boss) {
-    if (!bossHealthContainer || !bossHealthFill || !bossNameElement) return;
+    if (!bossHealthContainer || !bossHealthFill || !bossHealthDelayedFill || !bossNameElement) return;
     
     currentBoss = boss;
     
@@ -1641,15 +1682,17 @@ function showBossHealthBar(boss) {
     if (!boss.maxHP) {
         boss.maxHP = boss.hp;
     }
-    
 
+    if (bossHpHideTimer) {
+        window.clearTimeout(bossHpHideTimer);
+        bossHpHideTimer = null;
+    }
     
-    const bossDisplayName =currentBoss.dispName;
+    const bossDisplayName = currentBoss.dispName;
     bossNameElement.textContent = bossDisplayName;
     
-    // Сбрасываем полоску здоровья
-    const healthPercent = (boss.hp / boss.maxHP) * 100;
-    bossHealthFill.style.width = `${healthPercent}%`;
+    const healthPercent = Math.max(0, Math.min(100, (boss.hp / boss.maxHP) * 100));
+    syncBossHpBars(healthPercent);
     bossHealthFill.classList.remove('low-health');
     bossHealthFill.classList.remove('damaged');
     
@@ -1665,6 +1708,11 @@ function showBossHealthBar(boss) {
 function hideBossHealthBar() {
     if (!bossHealthContainer) return;
     
+    clearBossHpCatchUp();
+    if (bossHpHideTimer) {
+        window.clearTimeout(bossHpHideTimer);
+        bossHpHideTimer = null;
+    }
     currentBoss = null;
     bossHealthContainer.classList.remove('show');
     
@@ -1672,10 +1720,10 @@ function hideBossHealthBar() {
 }
 
 /**
- * Обновляет полоску здоровья босса
+ * Обновляет полоску здоровья босса (Dark Souls: красная сразу, жёлтая догоняет)
  */
 function updateBossHealthBar() {
-    if (!currentBoss || !bossHealthFill) {
+    if (!currentBoss || !bossHealthFill || !bossHealthDelayedFill) {
         return;
     }
     
@@ -1685,16 +1733,37 @@ function updateBossHealthBar() {
         return;
     }
     
-    const healthPercent = (currentBoss.hp / currentBoss.maxHP) * 100;
+    const healthPercent = Math.max(0, Math.min(100, (currentBoss.hp / currentBoss.maxHP) * 100));
+
+    // Каждый кадр зовёт эту функцию — реагируем только на реальное изменение HP.
+    if (Math.abs(healthPercent - bossDisplayedHpPercent) < 0.05) {
+        return;
+    }
+
+    const previousPercent = bossDisplayedHpPercent;
+    bossDisplayedHpPercent = healthPercent;
     bossHealthFill.style.width = `${healthPercent}%`;
     
-    // Добавляем анимацию урона
-    bossHealthFill.classList.add('damaged');
-    setTimeout(() => {
-        if (bossHealthFill) {
-            bossHealthFill.classList.remove('damaged');
-        }
-    }, 500);
+    if (healthPercent < previousPercent - 0.05) {
+        // Урон: красная падает сразу, жёлтая ждёт и копит серию ударов.
+        clearBossHpCatchUp();
+        const frozenDelayed = Math.max(getBossDelayedFillPercent(), previousPercent, healthPercent);
+        bossDelayedHpPercent = frozenDelayed;
+        bossHealthDelayedFill.style.width = `${frozenDelayed}%`;
+
+        bossHpCatchUpTimer = window.setTimeout(() => {
+            bossHpCatchUpTimer = null;
+            startBossHpCatchUp(bossDisplayedHpPercent);
+        }, BOSS_HP_CATCHUP_DELAY_MS);
+
+        bossHealthFill.classList.add('damaged');
+        window.setTimeout(() => {
+            bossHealthFill?.classList.remove('damaged');
+        }, 500);
+    } else {
+        // Лечение / полный сброс — без ложного «догона».
+        syncBossHpBars(healthPercent);
+    }
     
     // Если здоровье низкое, добавляем пульсацию
     if (healthPercent <= 25 && !bossHealthFill.classList.contains('low-health')) {
@@ -1703,11 +1772,13 @@ function updateBossHealthBar() {
         bossHealthFill.classList.remove('low-health');
     }
     
-    // Если здоровье кончилось, скрываем полоску через секунду
+    // Если здоровье кончилось, скрываем полоску после догона
     if (healthPercent <= 0) {
-        setTimeout(() => {
+        if (bossHpHideTimer) window.clearTimeout(bossHpHideTimer);
+        bossHpHideTimer = window.setTimeout(() => {
+            bossHpHideTimer = null;
             hideBossHealthBar();
-        }, 1000);
+        }, BOSS_HP_CATCHUP_DELAY_MS + 700);
     }
     
 }

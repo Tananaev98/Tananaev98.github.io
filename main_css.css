@@ -2148,19 +2148,46 @@ html.is-mobile .main_menu_image {
 	right:22%;	
 }
 
+/* Отстающая жёлто-оранжевая полоска (догоняет после задержки) */
+.boss-health-delayed {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 100%;
+    z-index: 0;
+    background: linear-gradient(
+        to right,
+        #8a4a08 0%,
+        #d97706 42%,
+        #f59e0b 72%,
+        #b45309 100%
+    );
+    box-shadow:
+        inset 0 0 8px rgba(255, 220, 140, 0.18),
+        0 0 8px rgba(245, 158, 11, 0.28);
+    transition: none;
+}
+
+.boss-health-delayed.catching-up {
+    transition: width 0.55s linear;
+}
+
 .boss-health-fill {
     position: absolute;
     left: 0;
     top: 0;
     height: 100%;
     width: 100%; /* Будет меняться через JS */
+    z-index: 1;
     background: linear-gradient(
         to right,
         #8b0000 0%,
         #cc0000 50%,
         #8b0000 100%
     );
-    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Красная полоска снимается почти сразу */
+    transition: width 0.12s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 
         inset 0 0 10px rgba(255, 255, 255, 0.1),
         0 0 10px rgba(255, 0, 0, 0.3);
