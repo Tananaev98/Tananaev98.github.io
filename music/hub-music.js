@@ -32,13 +32,48 @@
             document.addEventListener('pointerdown', event => this.handleFirstInteraction(event), true);
             document.addEventListener('keydown', event => this.handleFirstInteraction(event), true);
             document.addEventListener('click', event => this.handleLevelNavigation(event), true);
-            document.addEventListener('visibilitychange', () => this.handleVisibilityChange());
-            window.addEventListener('pagehide', () => this.savePosition());
-            window.addEventListener('pageshow', () => this.resetNavigationState());
+            document.addEventListener('visibilitychange', () => this.syncWithPageActivity());
+            window.addEventListener('blur', () => this.syncWithPageActivity());
+            window.addEventListener('focus', () => this.syncWithPageActivity());
+            window.addEventListener('pagehide', () => {
+                this.savePosition();
+                this.pauseForBackground();
+            });
+            window.addEventListener('pageshow', () => {
+                this.resetNavigationState();
+                this.syncWithPageActivity();
+            });
 
             // В некоторых браузерах возврат на уже разрешивший звук сайт допускает автозапуск.
             // Если нет — музыка начнётся после первого действия пользователя.
             this.start({ silentFailure: true });
+        }
+
+        isPageInactive() {
+            return document.hidden || !document.hasFocus();
+        }
+
+        pauseForBackground() {
+            // rAF-затухание во скрытой вкладке не доходит до pause() — останавливаем сразу.
+            this.fadeToken += 1;
+            this.savePosition();
+            if (!this.audio.paused) {
+                this.audio.pause();
+            }
+        }
+
+        resumeFromBackground() {
+            if (!this.started || this.navigationStarted || this.isPageInactive()) return;
+            this.audio.volume = 0;
+            this.start({ silentFailure: true });
+        }
+
+        syncWithPageActivity() {
+            if (this.isPageInactive()) {
+                this.pauseForBackground();
+                return;
+            }
+            this.resumeFromBackground();
         }
 
         isLevelLinkInteraction(event) {
@@ -53,6 +88,7 @@
 
         async start({ silentFailure = false } = {}) {
             if (this.started && !this.audio.paused) return true;
+            if (this.isPageInactive()) return false;
 
             try {
                 await this.audio.play();
@@ -65,17 +101,6 @@
                 }
                 return false;
             }
-        }
-
-        handleVisibilityChange() {
-            if (document.hidden) {
-                if (!this.audio.paused) {
-                    this.fadeTo(0, 350, () => this.audio.pause());
-                }
-                return;
-            }
-
-            if (this.started) this.start({ silentFailure: true });
         }
 
         handleLevelNavigation(event) {

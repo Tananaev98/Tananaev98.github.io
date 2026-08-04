@@ -2742,28 +2742,60 @@ function showEremeiDeflectImpact(attackEnemy, isCritical = false, timing = getHe
     window.setTimeout(() => impact.remove(), swingDurationMs + 100);
 }
 
-// Дуня бьёт двумя метёлками: парный удар противоположных сторон.
+// Дуня: dual-wield комбо обычных атак (вихри отдельно).
+// delayMs — относительный вес старта второй метёлки; масштаб под интервал атаки.
 let dunyaComboStep = 0;
+const DUNYA_CONTACT_RATIO = 0.58;
 const DUNYA_DUAL_COMBOS = [
-    // горизонтальная пара: правая → левая
+    // 1. Горизонталь: справа → слева
     [
         { swing: 'dunya-broom-from-right', delayMs: 0 },
         { swing: 'dunya-broom-from-left', delayMs: 130 }
     ],
-    // вертикальная пара: верхняя → нижняя
-    [
-        { swing: 'dunya-broom-from-top', delayMs: 0 },
-        { swing: 'dunya-broom-from-bottom', delayMs: 130 }
-    ],
-    // горизонтальная пара наоборот: левая → правая
+    // 2. Горизонталь: слева → справа
     [
         { swing: 'dunya-broom-from-left', delayMs: 0 },
         { swing: 'dunya-broom-from-right', delayMs: 130 }
     ],
-    // вертикальная пара наоборот: нижняя → верхняя
+    // 3. Вертикаль: сверху → снизу
+    [
+        { swing: 'dunya-broom-from-top', delayMs: 0 },
+        { swing: 'dunya-broom-from-bottom', delayMs: 130 }
+    ],
+    // 4. Вертикаль: снизу → сверху
     [
         { swing: 'dunya-broom-from-bottom', delayMs: 0 },
         { swing: 'dunya-broom-from-top', delayMs: 130 }
+    ],
+    // 5. Крест: диагональ ↘ затем ↙
+    [
+        { swing: 'dunya-broom-diag-tr', delayMs: 0 },
+        { swing: 'dunya-broom-diag-tl', delayMs: 145 }
+    ],
+    // 6. Крест наоборот: ↙ затем ↘
+    [
+        { swing: 'dunya-broom-diag-tl', delayMs: 0 },
+        { swing: 'dunya-broom-diag-tr', delayMs: 145 }
+    ],
+    // 7. Восходящий крест: ↗ затем ↖
+    [
+        { swing: 'dunya-broom-diag-br', delayMs: 0 },
+        { swing: 'dunya-broom-diag-bl', delayMs: 145 }
+    ],
+    // 8. Ножницы: обе метёлки почти одновременно к центру
+    [
+        { swing: 'dunya-broom-scissor-left', delayMs: 0 },
+        { swing: 'dunya-broom-scissor-right', delayMs: 35 }
+    ],
+    // 9. Смешанная: боковой → рубящий
+    [
+        { swing: 'dunya-broom-from-right', delayMs: 0 },
+        { swing: 'dunya-broom-from-top', delayMs: 125 }
+    ],
+    // 10. Смешанная: боковой → подсекающий
+    [
+        { swing: 'dunya-broom-from-left', delayMs: 0 },
+        { swing: 'dunya-broom-from-bottom', delayMs: 125 }
     ]
 ];
 
@@ -2773,6 +2805,62 @@ const DUNYA_WHIRL_CONFIG = {
     triple: { count: 6, durationMs: 580, spins: 1, sizeClass: 'dunya-whirl-triple' },
     jackpot: { count: 8, durationMs: 1300, spins: 2, sizeClass: 'dunya-whirl-jackpot' }
 };
+
+function buildDunyaComboTiming(combo, timing, { isMini = false } = {}) {
+    const swingDurationMs = timing.cycleMs;
+    const sparkDurationMs = Math.max(isMini ? 100 : 140, Math.round(swingDurationMs * 0.42));
+    const maxDelayWeight = Math.max(0, ...combo.map((hit) => hit.delayMs || 0));
+    const availableGap = Math.max(0, timing.impactDelayMs - swingDurationMs * DUNYA_CONTACT_RATIO);
+    const delayScale = maxDelayWeight > 0 ? availableGap / maxDelayWeight : 0;
+
+    let totalMs = swingDurationMs;
+    // След рисуется чуть после старта метлы и доходит до контакта (~58%)
+    const trailLagMs = Math.round(swingDurationMs * 0.18);
+
+    const hits = combo.map((hit, index) => {
+        const delay = Math.round((hit.delayMs || 0) * delayScale);
+        const contact = delay + swingDurationMs * DUNYA_CONTACT_RATIO;
+        const sparkDelay = Math.max(0, Math.round(contact - sparkDurationMs * 0.4));
+        const trailDelay = delay + trailLagMs;
+        totalMs = Math.max(totalMs, delay + swingDurationMs);
+        return { swing: hit.swing, delay, trailDelay, sparkDelay, index };
+    });
+
+    return { swingDurationMs, sparkDurationMs, totalMs, hits };
+}
+
+const DUNYA_TRAIL_BY_SWING = {
+    'dunya-broom-from-left': { trail: 'dunya-trail-h-lr', path: 'M 8 58 C 28 22, 72 22, 92 58' },
+    'dunya-broom-from-right': { trail: 'dunya-trail-h-rl', path: 'M 92 42 C 72 78, 28 78, 8 42' },
+    'dunya-broom-from-top': { trail: 'dunya-trail-v-tb', path: 'M 38 8 C 78 28, 78 72, 38 92' },
+    'dunya-broom-from-bottom': { trail: 'dunya-trail-v-bt', path: 'M 62 92 C 22 72, 22 28, 62 8' },
+    'dunya-broom-diag-tl': { trail: 'dunya-trail-d-tl', path: 'M 14 18 C 34 28, 66 66, 86 82' },
+    'dunya-broom-diag-tr': { trail: 'dunya-trail-d-tr', path: 'M 86 18 C 66 28, 34 66, 14 82' },
+    'dunya-broom-diag-bl': { trail: 'dunya-trail-d-bl', path: 'M 14 82 C 34 66, 66 28, 86 18' },
+    'dunya-broom-diag-br': { trail: 'dunya-trail-d-br', path: 'M 86 82 C 66 66, 34 28, 14 18' },
+    'dunya-broom-scissor-left': { trail: 'dunya-trail-sc-l', path: 'M 10 50 C 30 34, 55 34, 78 50' },
+    'dunya-broom-scissor-right': { trail: 'dunya-trail-sc-r', path: 'M 90 50 C 70 66, 45 66, 22 50' }
+};
+
+function renderDunyaComboBrooms(hits) {
+    return hits.map((hit) => {
+        const trail = DUNYA_TRAIL_BY_SWING[hit.swing] || DUNYA_TRAIL_BY_SWING['dunya-broom-from-left'];
+        return `
+        <span class="dunya-broom ${hit.swing}" style="animation-delay: ${hit.delay}ms">
+            <span class="dunya-broom-orbit" aria-hidden="true">
+                <span class="dunya-orbit-ring dunya-orbit-ring-a"></span>
+                <span class="dunya-orbit-ring dunya-orbit-ring-b"></span>
+                <span class="dunya-orbit-ring dunya-orbit-ring-c"></span>
+            </span>
+        </span>
+        <svg class="dunya-swing-trail ${trail.trail}" viewBox="0 0 100 100" style="animation-delay: ${hit.trailDelay}ms" aria-hidden="true">
+            <path class="dunya-trail-path dunya-trail-path-soft" d="${trail.path}" pathLength="1" style="animation-delay: ${hit.trailDelay}ms"></path>
+            <path class="dunya-trail-path" d="${trail.path}" pathLength="1" style="animation-delay: ${hit.trailDelay}ms"></path>
+        </svg>
+        <span class="dunya-impact-spark dunya-impact-spark-${hit.index + 1}" style="animation-delay: ${hit.sparkDelay}ms"></span>
+    `;
+    }).join('');
+}
 
 function showDunyaBossImpact(
     boss,
@@ -2794,40 +2882,21 @@ function showDunyaBossImpact(
 
     const combo = DUNYA_DUAL_COMBOS[dunyaComboStep % DUNYA_DUAL_COMBOS.length];
     dunyaComboStep += 1;
+    const comboTiming = buildDunyaComboTiming(combo, timing);
 
     const impact = document.createElement('div');
     impact.className = `dunya-boss-impact${isCritical ? ' dunya-boss-impact-critical' : ''}`;
     impact.style.left = `${pos.left}%`;
     impact.style.top = `${pos.top}%`;
-    const swingDurationMs = timing.cycleMs;
-    const secondHitDelayMs = Math.max(0, Math.round(timing.impactDelayMs - swingDurationMs * 0.58));
-    const sparkDurationMs = Math.max(140, Math.round(swingDurationMs * 0.42));
-    impact.style.setProperty('--dunya-swing-duration', `${swingDurationMs}ms`);
-    impact.style.setProperty('--dunya-spark-duration', `${sparkDurationMs}ms`);
-    impact.style.setProperty('--dunya-wind-duration', `${swingDurationMs}ms`);
+    impact.style.setProperty('--dunya-swing-duration', `${comboTiming.swingDurationMs}ms`);
+    impact.style.setProperty('--dunya-spark-duration', `${comboTiming.sparkDurationMs}ms`);
+    impact.style.setProperty('--dunya-wind-duration', `${comboTiming.swingDurationMs}ms`);
     impact.setAttribute('aria-hidden', 'true');
 
-    const broomsHtml = combo.map((hit, index) => {
-        const delay = hit.delayMs > 0 ? secondHitDelayMs : 0;
-        const contact = delay + swingDurationMs * 0.58;
-        const sparkDelay = Math.max(0, Math.round(contact - sparkDurationMs * 0.4));
-        return `
-            <span class="dunya-broom ${hit.swing}" style="animation-delay: ${delay}ms"></span>
-            <span class="dunya-impact-spark dunya-impact-spark-${index + 1}" style="animation-delay: ${sparkDelay}ms"></span>
-        `;
-    }).join('');
-
-    impact.innerHTML = `
-        <span class="dunya-wind dunya-wind-arc dunya-wind-arc-a"></span>
-        <span class="dunya-wind dunya-wind-arc dunya-wind-arc-b"></span>
-        <span class="dunya-wind dunya-wind-streak dunya-wind-streak-1"></span>
-        <span class="dunya-wind dunya-wind-streak dunya-wind-streak-2"></span>
-        <span class="dunya-wind dunya-wind-streak dunya-wind-streak-3"></span>
-        ${broomsHtml}
-    `;
+    impact.innerHTML = renderDunyaComboBrooms(comboTiming.hits);
     enemiesContainer.appendChild(impact);
 
-    window.setTimeout(() => impact.remove(), secondHitDelayMs + swingDurationMs + 120);
+    window.setTimeout(() => impact.remove(), comboTiming.totalMs + 120);
 }
 
 function showDunyaDeflectImpact(attackEnemy, isCritical = false, timing = getHeroDeflectTiming()) {
@@ -2840,38 +2909,21 @@ function showDunyaDeflectImpact(attackEnemy, isCritical = false, timing = getHer
 
     const combo = DUNYA_DUAL_COMBOS[dunyaComboStep % DUNYA_DUAL_COMBOS.length];
     dunyaComboStep += 1;
+    const comboTiming = buildDunyaComboTiming(combo, timing, { isMini: true });
 
     const impact = document.createElement('div');
     impact.className = `dunya-boss-impact is-mini${isCritical ? ' dunya-boss-impact-critical' : ''}`;
     impact.style.left = `${pos.left}%`;
     impact.style.top = `${pos.top}%`;
-    const swingDurationMs = timing.cycleMs;
-    const secondHitDelayMs = Math.max(0, Math.round(timing.impactDelayMs - swingDurationMs * 0.58));
-    const sparkDurationMs = Math.max(100, Math.round(swingDurationMs * 0.42));
-    impact.style.setProperty('--dunya-swing-duration', `${swingDurationMs}ms`);
-    impact.style.setProperty('--dunya-spark-duration', `${sparkDurationMs}ms`);
-    impact.style.setProperty('--dunya-wind-duration', `${swingDurationMs}ms`);
+    impact.style.setProperty('--dunya-swing-duration', `${comboTiming.swingDurationMs}ms`);
+    impact.style.setProperty('--dunya-spark-duration', `${comboTiming.sparkDurationMs}ms`);
+    impact.style.setProperty('--dunya-wind-duration', `${comboTiming.swingDurationMs}ms`);
     impact.setAttribute('aria-hidden', 'true');
 
-    const broomsHtml = combo.map((hit, index) => {
-        const delay = hit.delayMs > 0 ? secondHitDelayMs : 0;
-        const contact = delay + swingDurationMs * 0.58;
-        const sparkDelay = Math.max(0, Math.round(contact - sparkDurationMs * 0.4));
-        return `
-            <span class="dunya-broom ${hit.swing}" style="animation-delay: ${delay}ms"></span>
-            <span class="dunya-impact-spark dunya-impact-spark-${index + 1}" style="animation-delay: ${sparkDelay}ms"></span>
-        `;
-    }).join('');
-
-    impact.innerHTML = `
-        <span class="dunya-wind dunya-wind-arc dunya-wind-arc-a"></span>
-        <span class="dunya-wind dunya-wind-streak dunya-wind-streak-1"></span>
-        <span class="dunya-wind dunya-wind-streak dunya-wind-streak-2"></span>
-        ${broomsHtml}
-    `;
+    impact.innerHTML = renderDunyaComboBrooms(comboTiming.hits);
     enemiesContainer.appendChild(impact);
 
-    window.setTimeout(() => impact.remove(), secondHitDelayMs + swingDurationMs + 100);
+    window.setTimeout(() => impact.remove(), comboTiming.totalMs + 100);
 }
 
 function showDunyaWhirlImpact(
