@@ -4,16 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Monstrous world</title>
-    <link rel="stylesheet" href="main_css.css?v=boss-flyback-death-2026-08-04">
-    <script src="enemyAlphaMasks.js?v=boss-flyback-death-2026-08-04"></script>
+    <link rel="stylesheet" href="main_css.css?v=golden-fields-bg-2026-08-05">
+    <script src="enemyAlphaMasks.js?v=golden-fields-bg-2026-08-05"></script>
 
     <script>
 const params = new URLSearchParams(window.location.search);
 const requestedLevel = params.get('level') ?? '1';
 const parsedLevel = Number(requestedLevel);
 const MIN_LEVEL = 1;
-const MAX_LEVEL = 15;
-const GAME_BUILD_VERSION = 'boss-flyback-death-2026-08-04';
+const MAX_LEVEL = 141;
+const GAME_BUILD_VERSION = 'golden-fields-bg-2026-08-05';
 const level = Number.isInteger(parsedLevel) && parsedLevel >= MIN_LEVEL && parsedLevel <= MAX_LEVEL
     ? parsedLevel
     : null;
@@ -66,6 +66,17 @@ if (level === null) {
     showLoadError(`Уровень должен быть целым числом от ${MIN_LEVEL} до ${MAX_LEVEL}.`);
 } else {
     document.title = `Monstrous world — уровень ${level}`;
+
+    // Тема области для фона геймплея (см. main_css.css :root/body[data-area]).
+    // Необязательна для запуска игры, поэтому не участвует в totalToLoad/checkAllLoaded.
+    const areasScript = document.createElement('script');
+    areasScript.src = `lvlData/areas.js?v=${GAME_BUILD_VERSION}`;
+    areasScript.onload = () => {
+        if (typeof getAreaByLevel === 'function' && document.body) {
+            document.body.dataset.area = String(getAreaByLevel(level).id);
+        }
+    };
+    document.head.appendChild(areasScript);
 
     const dataScript = document.createElement('script');
     dataScript.src = `lvlData/gameData${level}.js?v=${GAME_BUILD_VERSION}`;

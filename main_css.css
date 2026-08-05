@@ -1,8 +1,145 @@
+/* ==================== Тема текущей области ====================
+   Общий файл для index.html (меню) и level.html (геймплей), поэтому переменные
+   темы области определены здесь одним источником для обеих страниц.
+   --area-accent* — акценты карточек/шапки меню.
+   --area-tint — цвет для мягкой перекраски ОСНОВНОГО фона геймплея (.main_menu_image)
+   через background-blend-mode:color: берёт яркость и зерно исходного пергамента,
+   но оттенок — из --area-tint, поэтому контраст для видимости монстров не меняется,
+   меняется только цветовое настроение.
+   --area-bg — сплошной цвет БОКОВОГО фона страницы (body, видно по краям на широких
+   экранах вокруг игрового поля) — своя, отдельная от --area-tint переменная, так как
+   это два разных визуальных слоя и у каждой области они должны настраиваться порознь.
+   База (без переопределения body[data-area]) = Смешной лес, пиксель-в-пиксель
+   совпадает со старыми хардкод-значениями карточек уровня. */
+:root {
+    --area-accent: #8B4513;
+    --area-accent-mid: #6b4c35;
+    --area-accent-dark: #5a3e2b;
+    --area-accent-darker: #3e2a1c;
+    --area-tint: rgba(90, 150, 80, 0.22);
+    --area-bg: #D1B892;
+
+    /* Оформление игрового HUD (полоска босса, панель героя, панели/кнопки
+       приветствия и победы/поражения). База = пиксель-в-пиксель со старыми
+       хардкод-значениями, чтобы область без переопределения ниже выглядела
+       ровно как сегодня. */
+    --gp-frame: #8B4513;
+    --gp-wood: #5a3921;
+    --gp-wood-light: #8b5a2b;
+    --gp-wood-dark: #3f2814;
+    --gp-track-dark: #2f1d12;
+    --gp-glow: rgba(139, 0, 0, 0.5);
+    --gp-glow-strong: rgba(139, 0, 0, 0.8);
+    --gp-panel-a: #D1B892;
+    --gp-panel-b: #B89A6D;
+    --gp-subtitle: #5C4033;
+}
+
+body[data-area="1"] { /* Смешной лес — тот же тон, что и всегда, лишь чуть мшисто-зеленее (эталон, без --area-accent* — карточки меню не трогаем) */
+    --area-tint: rgba(90, 150, 80, 0.22);
+    --area-bg: #D6CB8E;
+
+    --gp-frame: #7A6A1E;
+    --gp-wood: #55481E;
+    --gp-wood-light: #8A7A35;
+    --gp-wood-dark: #362D12;
+    --gp-track-dark: #261F0C;
+    --gp-glow: rgba(90, 150, 80, 0.45);
+    --gp-glow-strong: rgba(90, 150, 80, 0.75);
+    --gp-panel-a: #DCCF9E;
+    --gp-panel-b: #B7A868;
+    --gp-subtitle: #4A4018;
+}
+
+body[data-area="2"] { /* Золотые поля — тёплая золотисто-пшеничная тема для фона геймплея, бокового фона и HUD */
+    --area-accent: #B8860B;
+    --area-accent-mid: #8a6a1e;
+    --area-accent-dark: #6b4f16;
+    --area-accent-darker: #4a350e;
+    --area-tint: rgba(212, 165, 45, 0.24);
+    --area-bg: #E6C468;
+
+    --gp-frame: #7A5209;
+    --gp-wood: #5C4310;
+    --gp-wood-light: #8A6B1E;
+    --gp-wood-dark: #3D2D08;
+    --gp-track-dark: #2E2206;
+    --gp-glow: rgba(184, 134, 11, 0.5);
+    --gp-glow-strong: rgba(184, 134, 11, 0.8);
+    --gp-panel-a: #F0D78C;
+    --gp-panel-b: #D9B84A;
+    --gp-subtitle: #6B4A1A;
+}
+
+body[data-area="3"] { /* Плодородные земли — зеленее, чем Смешной лес */
+    --area-accent: #A0522D;
+    --area-accent-mid: #7a3d20;
+    --area-accent-dark: #5c2e18;
+    --area-accent-darker: #3f1f10;
+    --area-tint: rgba(80, 150, 60, 0.32);
+}
+
+body[data-area="4"] { /* Реки и озёра — синеватый */
+    --area-accent: #2E7D82;
+    --area-accent-mid: #235f63;
+    --area-accent-dark: #1a474a;
+    --area-accent-darker: #102b2d;
+    --area-tint: rgba(60, 110, 150, 0.28);
+}
+
+body[data-area="5"] { /* Дома и дворики — тёплый рустик */
+    --area-accent: #9C5B3B;
+    --area-accent-mid: #7a462d;
+    --area-accent-dark: #5c3520;
+    --area-accent-darker: #3d2415;
+    --area-tint: rgba(150, 100, 70, 0.22);
+}
+
+body[data-area="6"] { /* Засечный лес — глубокая тёмная зелень */
+    --area-accent: #4B5E3A;
+    --area-accent-mid: #3a4a2d;
+    --area-accent-dark: #2c3a22;
+    --area-accent-darker: #1d2716;
+    --area-tint: rgba(60, 90, 55, 0.30);
+}
+
+body[data-area="7"] { /* Кладбища — серо-лиловый */
+    --area-accent: #5B5568;
+    --area-accent-mid: #46414f;
+    --area-accent-dark: #33303b;
+    --area-accent-darker: #211f27;
+    --area-tint: rgba(110, 100, 120, 0.26);
+}
+
+body[data-area="8"] { /* Зимние земли — бледно-ледяной синий */
+    --area-accent: #5C7C99;
+    --area-accent-mid: #486277;
+    --area-accent-dark: #364a59;
+    --area-accent-darker: #24313c;
+    --area-tint: rgba(150, 190, 215, 0.26);
+}
+
+body[data-area="9"] { /* Чёрные горы — тёплый красно-огненный */
+    --area-accent: #8B2E1F;
+    --area-accent-mid: #6b2418;
+    --area-accent-dark: #4d1a11;
+    --area-accent-darker: #2e0f0a;
+    --area-tint: rgba(170, 80, 40, 0.30);
+}
+
+body[data-area="10"] { /* Оплот безумия — искажённый пурпур, тон сильнее остальных */
+    --area-accent: #7A2E6E;
+    --area-accent-mid: #5e2455;
+    --area-accent-dark: #451a3f;
+    --area-accent-darker: #2c1028;
+    --area-tint: rgba(140, 60, 130, 0.34);
+}
+
 * {
-    -webkit-user-select: none;  
-    -moz-user-select: none;     
-    -ms-user-select: none;      
-    user-select: none;          
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 
 
@@ -21,7 +158,7 @@ html, body {
 
 body {
     /* Базовый цвет */
-    background-color: #D1B892; /* Основной тон крафтовой бумаги */
+    background-color: var(--area-bg); /* Основной тон крафтовой бумаги */
     
     /* Первый слой: Очень тонкие линии (имитация волокон) */
     background-image: 
@@ -54,8 +191,11 @@ body {
     position: absolute; /* Для позиционирования врага внутри */
 	width:74%;
 	height:102%;
-    background-image: url('images/background/1.png');
-	border: 2px solid white; 
+    /* Тон области поверх пергамента: background-blend-mode:color берёт яркость/зерно
+       из фото, а оттенок — из --area-tint, так что видимость монстров не страдает. */
+    background-image: linear-gradient(var(--area-tint), var(--area-tint)), url('images/background/1.png');
+    background-blend-mode: color;
+	border: 2px solid white;
 	margin-left: 13%;
 	margin-top: -1%;
 	background-repeat: no-repeat;
@@ -240,12 +380,12 @@ body {
 	pointer-events: none;
 
 	/* пергамент + гвозди в углах */
-	background-color: #d2b48c;
+	background-color: var(--gp-panel-a);
 	background-image:
-		radial-gradient(circle at 14px 14px, #c4a06a 0 3px, #8b5a2b 3px 5px, transparent 6px),
-		radial-gradient(circle at calc(100% - 14px) 14px, #c4a06a 0 3px, #8b5a2b 3px 5px, transparent 6px),
-		radial-gradient(circle at 14px calc(100% - 14px), #c4a06a 0 3px, #8b5a2b 3px 5px, transparent 6px),
-		radial-gradient(circle at calc(100% - 14px) calc(100% - 14px), #c4a06a 0 3px, #8b5a2b 3px 5px, transparent 6px),
+		radial-gradient(circle at 14px 14px, var(--gp-wood-light) 0 3px, var(--gp-wood) 3px 5px, transparent 6px),
+		radial-gradient(circle at calc(100% - 14px) 14px, var(--gp-wood-light) 0 3px, var(--gp-wood) 3px 5px, transparent 6px),
+		radial-gradient(circle at 14px calc(100% - 14px), var(--gp-wood-light) 0 3px, var(--gp-wood) 3px 5px, transparent 6px),
+		radial-gradient(circle at calc(100% - 14px) calc(100% - 14px), var(--gp-wood-light) 0 3px, var(--gp-wood) 3px 5px, transparent 6px),
 		linear-gradient(180deg, rgba(255, 248, 230, 0.35) 0%, transparent 42%),
 		linear-gradient(90deg, rgba(92, 64, 51, 0.06) 0%, transparent 18%, transparent 82%, rgba(92, 64, 51, 0.06) 100%),
 		repeating-linear-gradient(
@@ -255,16 +395,16 @@ body {
 			transparent 1px,
 			transparent 4px
 		),
-		linear-gradient(135deg, #e8d5b0 0%, #d4bc8a 48%, #c4a574 100%);
+		linear-gradient(135deg, color-mix(in srgb, white 30%, var(--gp-panel-a)) 0%, var(--gp-panel-a) 48%, var(--gp-panel-b) 100%);
 
 	/* деревянная рамка */
-	border: 5px solid #5a3921;
+	border: 5px solid var(--gp-wood);
 	border-radius: 6px;
-	outline: 3px solid #8b5a2b;
+	outline: 3px solid var(--gp-wood-light);
 	outline-offset: -9px;
 	box-shadow:
 		0 8px 20px rgba(0, 0, 0, 0.35),
-		0 2px 0 #3f2814,
+		0 2px 0 var(--gp-wood-dark),
 		inset 0 0 0 1px rgba(255, 220, 160, 0.25),
 		inset 0 0 18px rgba(90, 57, 33, 0.18);
 }
@@ -279,16 +419,16 @@ body {
 	object-position: center top;
 	display: block;
 	z-index: 99;
-	border: 3px solid #5a3921;
+	border: 3px solid var(--gp-wood);
 	border-style: double;
 	box-shadow:
 		inset 0 0 8px rgba(0, 0, 0, 0.75),
 		2px 2px 4px rgba(0, 0, 0, 0.4),
-		0 0 0 1px #8b5a2b;
+		0 0 0 1px var(--gp-wood-light);
 	border-radius: 3px;
 	filter: sepia(0.15) contrast(1.08);
 	box-sizing: border-box;
-	background: #3f2814;
+	background: var(--gp-wood-dark);
 }
 
 .castle-health-container {
@@ -306,7 +446,7 @@ body {
 }
 
 .castle-health-container h3 {
-	color: #8B4513;
+	color: var(--gp-frame);
 	margin-bottom: 15px;
 	font-size: 18px;
 	text-transform: uppercase;
@@ -319,8 +459,8 @@ body {
 	width: 100%;
 	height: 100%;
 	min-height: 26px;
-	background: linear-gradient(180deg, #4a3220 0%, #2f1d12 100%);
-	border: 2px solid #3f2814;
+	background: linear-gradient(180deg, var(--gp-wood) 0%, var(--gp-track-dark) 100%);
+	border: 2px solid var(--gp-wood-dark);
 	border-radius: 4px;
 	overflow: hidden;
 	margin-bottom: 0;
@@ -822,6 +962,13 @@ html.is-mobile .main_menu_image {
 .eremei-club-sweep { animation: eremei-club-sweep var(--eremei-swing-duration, 800ms) linear forwards; }
 .eremei-club-chop { animation: eremei-club-chop var(--eremei-swing-duration, 700ms) linear forwards; }
 
+/* Смазанный "хвост" за дубиной на обычных замахах: та же траектория,
+   но приглушённая и с небольшой задержкой — читается как след скорости. */
+.eremei-club-trail {
+    filter: blur(3px) brightness(1.3) saturate(1.3) opacity(0.5);
+    animation-delay: 55ms;
+}
+
 /* Крит: тяжёлый overhead-slam — долгий замах, пауза, обрушение */
 .eremei-club-crit {
     width: 100%;
@@ -953,6 +1100,18 @@ html.is-mobile .main_menu_image {
     55%  { transform: translate(-3px, 1px); }
     74%  { transform: translate(2px, -1px); }
     100% { transform: translate(0, 0); }
+}
+
+/* Лёгкая отдача поля на КАЖДЫЙ удар Еремея по боссу (не только крит) —
+   один короткий "толчок", а не многократная тряска. */
+.main_menu_image.eremei-screen-punch {
+    animation: eremei-screen-punch 190ms cubic-bezier(0.22, 0.7, 0.25, 1) both;
+}
+
+@keyframes eremei-screen-punch {
+    0%   { transform: translate(0, 0) scale(1); }
+    30%  { transform: translate(0, 3px) scale(1.006); }
+    100% { transform: translate(0, 0) scale(1); }
 }
 
 .eremei-heavy-core {
@@ -1118,8 +1277,8 @@ html.is-mobile .main_menu_image {
     32%  { opacity: 1; transform: translate(-61%, -57%) rotate(-78deg) scale(1); }
     46%  { opacity: 1; transform: translate(-57%, -55%) rotate(-50deg) scale(1.02); }
     55%  { opacity: 1; transform: translate(-53%, -52%) rotate(-16deg) scale(1.06); }
-    61%  { opacity: 1; transform: translate(-50%, -50%) rotate(18deg) scale(1.12); }
-    67%  { opacity: 1; transform: translate(-50%, -50%) rotate(20deg) scale(1.06); }
+    61%  { opacity: 1; transform: translate(-45.4%, -15.1%) rotate(18deg) scale(1.12); }
+    67%  { opacity: 1; transform: translate(-47.8%, -14%) rotate(20deg) scale(1.06); }
     78%  { opacity: 0.96; transform: translate(-46%, -48%) rotate(50deg) scale(1.04); }
     100% { opacity: 0; transform: translate(-39%, -45%) rotate(96deg) scale(0.97); }
 }
@@ -1131,8 +1290,8 @@ html.is-mobile .main_menu_image {
     32%  { opacity: 1; transform: translate(-39%, -45%) rotate(78deg) scale(1); }
     46%  { opacity: 1; transform: translate(-43%, -47%) rotate(48deg) scale(1.02); }
     55%  { opacity: 1; transform: translate(-47%, -49%) rotate(14deg) scale(1.06); }
-    61%  { opacity: 1; transform: translate(-50%, -50%) rotate(-22deg) scale(1.12); }
-    67%  { opacity: 1; transform: translate(-50%, -50%) rotate(-24deg) scale(1.06); }
+    61%  { opacity: 1; transform: translate(-8.8%, -52%) rotate(-22deg) scale(1.12); }
+    67%  { opacity: 1; transform: translate(-7.7%, -54.4%) rotate(-24deg) scale(1.06); }
     78%  { opacity: 0.96; transform: translate(-54%, -52%) rotate(-52deg) scale(1.04); }
     100% { opacity: 0; transform: translate(-61%, -55%) rotate(-98deg) scale(0.97); }
 }
@@ -1145,7 +1304,7 @@ html.is-mobile .main_menu_image {
     40%  { opacity: 1; transform: translate(-47%, -91%) rotate(-20deg) scale(1); }
     50%  { opacity: 1; transform: translate(-48%, -78%) rotate(-2deg) scale(1.03); }
     57%  { opacity: 1; transform: translate(-49%, -61%) rotate(24deg) scale(1.07); }
-    62%  { opacity: 1; transform: translate(-50%, -50%) rotate(44deg) scale(1.12); }
+    62%  { opacity: 1; transform: translate(-78.7%, -7.8%) rotate(44deg) scale(1.12); }
     68%  { opacity: 1; transform: translate(-50%, -47%) rotate(50deg) scale(1.06); }
     80%  { opacity: 0.95; transform: translate(-51%, -31%) rotate(70deg) scale(1.03); }
     100% { opacity: 0; transform: translate(-53%, -5%) rotate(96deg) scale(0.97); }
@@ -1159,7 +1318,7 @@ html.is-mobile .main_menu_image {
     40%  { opacity: 1; transform: translate(-54%, 0%) rotate(102deg) scale(1); }
     50%  { opacity: 1; transform: translate(-53%, -14%) rotate(84deg) scale(1.03); }
     57%  { opacity: 1; transform: translate(-51%, -36%) rotate(58deg) scale(1.07); }
-    62%  { opacity: 1; transform: translate(-50%, -50%) rotate(40deg) scale(1.12); }
+    62%  { opacity: 1; transform: translate(-73.4%, -7.9%) rotate(40deg) scale(1.12); }
     68%  { opacity: 1; transform: translate(-50%, -54%) rotate(34deg) scale(1.06); }
     80%  { opacity: 0.95; transform: translate(-48%, -73%) rotate(14deg) scale(1.03); }
     100% { opacity: 0; transform: translate(-45%, -101%) rotate(-14deg) scale(0.97); }
@@ -1172,7 +1331,7 @@ html.is-mobile .main_menu_image {
     32%  { opacity: 1; transform: translate(-34%, -70%) rotate(36deg) scale(1); }
     46%  { opacity: 1; transform: translate(-42%, -60%) rotate(12deg) scale(1.04); }
     55%  { opacity: 1; transform: translate(-47%, -54%) rotate(-6deg) scale(1.08); }
-    62%  { opacity: 1; transform: translate(-50%, -50%) rotate(-18deg) scale(1.14); }
+    62%  { opacity: 1; transform: translate(-11.2%, -47.3%) rotate(-18deg) scale(1.14); }
     70%  { opacity: 1; transform: translate(-54%, -44%) rotate(-32deg) scale(1.06); }
     84%  { opacity: 0.92; transform: translate(-62%, -32%) rotate(-52deg) scale(1.02); }
     100% { opacity: 0; transform: translate(-72%, -18%) rotate(-74deg) scale(0.96); }
@@ -1185,7 +1344,7 @@ html.is-mobile .main_menu_image {
     32%  { opacity: 1; transform: translate(-66%, -70%) rotate(-18deg) scale(1); }
     46%  { opacity: 1; transform: translate(-58%, -60%) rotate(8deg) scale(1.04); }
     55%  { opacity: 1; transform: translate(-53%, -54%) rotate(24deg) scale(1.08); }
-    62%  { opacity: 1; transform: translate(-50%, -50%) rotate(36deg) scale(1.14); }
+    62%  { opacity: 1; transform: translate(-68.2%, -8.4%) rotate(36deg) scale(1.14); }
     70%  { opacity: 1; transform: translate(-46%, -44%) rotate(50deg) scale(1.06); }
     84%  { opacity: 0.92; transform: translate(-38%, -30%) rotate(70deg) scale(1.02); }
     100% { opacity: 0; transform: translate(-28%, -16%) rotate(92deg) scale(0.96); }
@@ -1198,7 +1357,7 @@ html.is-mobile .main_menu_image {
     32%  { opacity: 1; transform: translate(-34%, -28%) rotate(66deg) scale(1); }
     46%  { opacity: 1; transform: translate(-42%, -40%) rotate(36deg) scale(1.04); }
     55%  { opacity: 1; transform: translate(-47%, -46%) rotate(14deg) scale(1.08); }
-    62%  { opacity: 1; transform: translate(-50%, -50%) rotate(-4deg) scale(1.14); }
+    62%  { opacity: 1; transform: translate(-22%, -32.3%) rotate(-4deg) scale(1.14); }
     70%  { opacity: 1; transform: translate(-54%, -58%) rotate(-22deg) scale(1.06); }
     84%  { opacity: 0.92; transform: translate(-62%, -72%) rotate(-44deg) scale(1.02); }
     100% { opacity: 0; transform: translate(-72%, -90%) rotate(-68deg) scale(0.96); }
@@ -1212,7 +1371,7 @@ html.is-mobile .main_menu_image {
     40%  { opacity: 1; transform: translate(-43%, -100%) rotate(-50deg) scale(0.98); }
     50%  { opacity: 1; transform: translate(-46%, -82%) rotate(-18deg) scale(1.02); }
     57%  { opacity: 1; transform: translate(-49%, -62%) rotate(22deg) scale(1.08); }
-    62%  { opacity: 1; transform: translate(-50%, -50%) rotate(48deg) scale(1.16); }
+    62%  { opacity: 1; transform: translate(-84%, -8.1%) rotate(48deg) scale(1.16); }
     68%  { opacity: 1; transform: translate(-50%, -46%) rotate(56deg) scale(1.08); }
     82%  { opacity: 0.94; transform: translate(-52%, -24%) rotate(78deg) scale(1.02); }
     100% { opacity: 0; transform: translate(-54%, 4%) rotate(104deg) scale(0.95); }
@@ -1225,7 +1384,7 @@ html.is-mobile .main_menu_image {
     28%  { opacity: 1; transform: translate(-64%, -56%) rotate(-86deg) scale(0.99); }
     42%  { opacity: 1; transform: translate(-58%, -54%) rotate(-48deg) scale(1.03); }
     52%  { opacity: 1; transform: translate(-54%, -52%) rotate(-12deg) scale(1.07); }
-    62%  { opacity: 1; transform: translate(-50%, -50%) rotate(28deg) scale(1.14); }
+    62%  { opacity: 1; transform: translate(-57.8%, -10.5%) rotate(28deg) scale(1.14); }
     72%  { opacity: 0.98; transform: translate(-44%, -48%) rotate(62deg) scale(1.08); }
     86%  { opacity: 0.85; transform: translate(-34%, -44%) rotate(102deg) scale(1.02); }
     100% { opacity: 0; transform: translate(-22%, -40%) rotate(142deg) scale(0.95); }
@@ -1238,7 +1397,7 @@ html.is-mobile .main_menu_image {
     34%  { opacity: 1; transform: translate(-40%, -64%) rotate(22deg) scale(1.02); }
     48%  { opacity: 1; transform: translate(-46%, -56%) rotate(4deg) scale(1.06); }
     58%  { opacity: 1; transform: translate(-49%, -52%) rotate(-10deg) scale(1.1); }
-    62%  { opacity: 1; transform: translate(-50%, -50%) rotate(-16deg) scale(1.14); }
+    62%  { opacity: 1; transform: translate(-12.5%, -45%) rotate(-16deg) scale(1.14); }
     70%  { opacity: 1; transform: translate(-52%, -46%) rotate(-24deg) scale(1.06); }
     84%  { opacity: 0.9; transform: translate(-58%, -38%) rotate(-40deg) scale(1.01); }
     100% { opacity: 0; transform: translate(-66%, -28%) rotate(-58deg) scale(0.96); }
@@ -1280,7 +1439,7 @@ html.is-mobile .main_menu_image {
     }
     62% {
         opacity: 1;
-        transform: translate(-50%, -50%) rotate(52deg) scale(1.22);
+        transform: translate(-89.3%, -8.7%) rotate(52deg) scale(1.22);
     }
     66% {
         opacity: 1;
@@ -2672,10 +2831,10 @@ html.is-mobile .main_menu_image {
 
 .modal-content {
     position: relative;
-    background: linear-gradient(135deg, #D1B892, #B89A6D);
+    background: linear-gradient(135deg, var(--gp-panel-a), var(--gp-panel-b));
     padding: 30px;
     border-radius: 15px;
-    border: 5px solid #8B4513;
+    border: 5px solid var(--gp-frame);
     width: 90%;
     max-width: 600px;
     text-align: center;
@@ -2684,14 +2843,14 @@ html.is-mobile .main_menu_image {
 }
 
 .modal-content h2 {
-    color: #8B4513;
+    color: var(--gp-frame);
     margin-bottom: 10px;
     font-size: 28px;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .modal-subtitle {
-    color: #5C4033;
+    color: var(--gp-subtitle);
     font-size: 18px;
     margin-bottom: 25px;
     font-weight: bold;
@@ -2778,13 +2937,13 @@ html.is-mobile .main_menu_image {
     font-weight: bold;
     font-size: 16px;
     margin-bottom: 8px;
-    color: #5C4033;
+    color: var(--gp-subtitle);
 }
 
 .upgrade-effect {
     font-size: 14px;
     margin-bottom: 8px;
-    color: #8B4513;
+    color: var(--gp-frame);
 }
 
 .upgrade-rarity {
@@ -2828,11 +2987,11 @@ html.is-mobile .main_menu_image {
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.7);
-    border: 3px solid #5a3921;
+    border: 3px solid var(--gp-wood);
     border-radius: 2px;
     overflow: hidden;
-    box-shadow: 
-        0 0 20px rgba(139, 0, 0, 0.5),
+    box-shadow:
+        0 0 20px var(--gp-glow),
         0 0 40px rgba(0, 0, 0, 0.3),
         inset 0 0 10px rgba(0, 0, 0, 0.5);
 	right:22%;	
@@ -2891,8 +3050,8 @@ html.is-mobile .main_menu_image {
     transform: translateY(-50%);
     width: 50px;
     height: 60px;
-    background-color: #5a3921;
-    border: 3px solid #8b4513;
+    background-color: var(--gp-wood);
+    border: 3px solid var(--gp-frame);
     z-index: 2;
     box-shadow: 
         0 0 15px rgba(0, 0, 0, 0.7),
@@ -2928,7 +3087,7 @@ html.is-mobile .main_menu_image {
         -1px -1px 0 #000,
         1px -1px 0 #000,
         -1px 1px 0 #000,
-        0 0 10px rgba(139, 0, 0, 0.8);
+        0 0 10px var(--gp-glow-strong);
     z-index: 3;
     white-space: nowrap;
     opacity: 0.9;
@@ -3114,7 +3273,7 @@ html.is-mobile .main_menu_image {
 .endgame-stats {
     margin: 20px 0;
     font-size: 18px;
-    color: #5C4033;
+    color: var(--gp-subtitle);
     background: rgba(255, 255, 255, 0.3);
     padding: 10px;
     border-radius: 5px;
@@ -3128,7 +3287,7 @@ html.is-mobile .main_menu_image {
 }
 
 .resource-line span, .time-line span {
-    color: #8B4513;
+    color: var(--gp-frame);
     font-size: 20px;
 }
 
@@ -3141,10 +3300,10 @@ html.is-mobile .main_menu_image {
 
 .endgame-button {
     padding: 12px 24px;
-    border: 3px solid #8B4513;
+    border: 3px solid var(--gp-frame);
     border-radius: 8px;
-    background: linear-gradient(135deg, #D1B892, #B89A6D);
-    color: #5C4033;
+    background: linear-gradient(135deg, var(--gp-panel-a), var(--gp-panel-b));
+    color: var(--gp-subtitle);
     font-weight: bold;
     font-size: 16px;
     cursor: pointer;
@@ -3215,7 +3374,7 @@ html.is-mobile .main_menu_image {
 }
 
 .endgame-hero-upgrade-title {
-    color: #5C4033;
+    color: var(--gp-subtitle);
     font-weight: 800;
     font-size: 16px;
     line-height: 1.2;
@@ -3389,9 +3548,9 @@ html.is-mobile .main_menu_image {
 .level-up-spark.spark-6 { right: 32%; bottom: 18%; animation-delay: 200ms; }
 
 @keyframes level-up-panel-impact {
-    0% { transform: scale(1); border-color: #8B4513; }
+    0% { transform: scale(1); border-color: var(--gp-frame); }
     28% { transform: scale(1.006); border-color: #ffe171; box-shadow: inset 0 0 24px rgba(255, 218, 91, 0.75), 0 0 26px rgba(255, 190, 38, 0.85); }
-    100% { transform: scale(1); border-color: #8B4513; }
+    100% { transform: scale(1); border-color: var(--gp-frame); }
 }
 
 @keyframes level-up-hero-impact {

@@ -344,6 +344,7 @@ class Enemy {
         this.hasPausedMidFlight = false;
         this.pauseUntil = 0;
         this.hasTriggeredRush = false;
+        this.hitStopUntil = 0; // короткая заморозка движения в момент мощного попадания (hit-stop)
         // Создаем DOM элемент для отображения врага
         this.element = this.createEnemyElement();
         
@@ -407,6 +408,11 @@ class Enemy {
      */
    update(deltaTime) {
         if (this.isInert || this.isBossDying) {
+            return false;
+        }
+
+        // Hit-stop: короткая заморозка движения/поворота в момент мощного попадания
+        if (this.hitStopUntil > performance.now()) {
             return false;
         }
 
@@ -876,7 +882,7 @@ function resetGame() {
     castleHP.max = GAME_CONFIG.CASTLE_BASE_HP;
     castleHP.level = 1;
     updateCastleHealthDisplay();
-    document.body.style.backgroundColor = '#D1B892';
+    document.body.style.backgroundColor = ''; // возвращаем цвет CSS-переменной --area-bg текущей области
 	stopBossEvents();
 	bossDeathSequenceActive = false;
 	
@@ -2391,7 +2397,12 @@ function applyHeroImpactDamage(enemy, damageResult, isBoss) {
 
     // Фактический урон наносится только в момент визуального контакта.
     enemy.hp -= damageResult.damage;
-	
+
+    // Hit-stop у Еремея: тяжёлый удар на миг "вешает" цель в воздухе.
+    if (isBoss && activeHeroObject?.name === 'eremei') {
+        enemy.hitStopUntil = performance.now() + (damageResult.isCritical ? 110 : 45);
+    }
+
 	//Применение особенностей героев
 	subsDamageEnemy(isBoss, enemy.hp <= 0);
     
@@ -2916,6 +2927,10 @@ function renderEremeiImpactHtml(swingClass, { isMini = false, isCritical = false
         <span class="eremei-club eremei-club-crit-ghost"></span>`
         : '';
     const clubClass = isCritical ? 'eremei-club-crit' : swingClass;
+    // Лёгкий смазанный "хвост" за дубиной на обычных замахах — усиливает ощущение скорости/веса удара.
+    const trail = (!isMini && !isCritical)
+        ? `<span class="eremei-club eremei-club-trail ${swingClass}"></span>`
+        : '';
 
     return `
         ${rings}
@@ -2924,6 +2939,7 @@ function renderEremeiImpactHtml(swingClass, { isMini = false, isCritical = false
         ${debris}
         ${critFx}
         <span class="eremei-impact-spark"></span>
+        ${trail}
         <span class="eremei-club ${clubClass}"></span>
     `;
 }
@@ -2939,6 +2955,18 @@ function triggerEremeiCritScreenShake({ isMini = false } = {}) {
     void gameField.offsetWidth;
     gameField.classList.add(shakeClass);
     window.setTimeout(() => gameField?.classList.remove(shakeClass), durationMs + 40);
+}
+
+// Лёгкий "пуш" экрана на КАЖДЫЙ удар Еремея по боссу (не только крит) —
+// даёт ощущение веса удара без утомительной тряски на каждый чих.
+function triggerEremeiHitPunch() {
+    if (!gameField) return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) return;
+
+    gameField.classList.remove('eremei-screen-punch');
+    void gameField.offsetWidth;
+    gameField.classList.add('eremei-screen-punch');
+    window.setTimeout(() => gameField?.classList.remove('eremei-screen-punch'), 190);
 }
 
 function showEremeiBossImpact(boss, isCritical = false, timing = getHeroAttackTiming(SHOT_INTERVAL)) {
@@ -2961,10 +2989,15 @@ function showEremeiBossImpact(boss, isCritical = false, timing = getHeroAttackTi
     impact.innerHTML = renderEremeiImpactHtml(swingClass, { isCritical });
     enemiesContainer.appendChild(impact);
 
-    if (isCritical) {
-        const shakeAtMs = Math.round(swingDurationMs * 0.62);
-        window.setTimeout(() => triggerEremeiCritScreenShake(), shakeAtMs);
-    }
+    const contactAtMs = Math.round(swingDurationMs * 0.62);
+    window.setTimeout(() => {
+        if (isCritical) {
+            triggerEremeiCritScreenShake();
+        } else {
+            triggerEremeiHitPunch();
+        }
+        playEremeiImpactThud(isCritical);
+    }, contactAtMs);
 
     window.setTimeout(() => impact.remove(), swingDurationMs + 160);
 }
@@ -4104,6 +4137,42 @@ function playDamageSound() {
     const audio = new Audio('sound/damage.wav');
     audio.volume = 0.02; // 30% громкости (0.0 - 1.0)
     audio.play();
+}
+
+// Низкочастотный "утяжеляющий" удар для тяжёлых атак Еремея.
+// Синтезируется на лету (Web Audio), чтобы не тащить новый аудио-файл.
+let eremeiThudAudioCtx = null;
+function playEremeiImpactThud(isCritical = false) {
+    try {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return;
+        eremeiThudAudioCtx = eremeiThudAudioCtx || new Ctx();
+        if (eremeiThudAudioCtx.state === 'suspended') eremeiThudAudioCtx.resume();
+
+        const ctx = eremeiThudAudioCtx;
+        const now = ctx.currentTime;
+        const duration = isCritical ? 0.26 : 0.13;
+        const startFreq = isCritical ? 150 : 115;
+        const endFreq = isCritical ? 42 : 55;
+        const peakGain = isCritical ? 0.32 : 0.16;
+
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(startFreq, now);
+        osc.frequency.exponentialRampToValueAtTime(endFreq, now + duration);
+
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(peakGain, now + 0.008);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + duration + 0.02);
+    } catch (e) {
+        // Звук необязателен для игры — молча игнорируем сбой синтеза
+    }
 }
 
 // ==================== ЗАПУСК ИГРЫ ====================

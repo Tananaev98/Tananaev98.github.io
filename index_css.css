@@ -1,5 +1,9 @@
 /* ========== Меню выбора уровней ========== */
 
+/* Переменные темы области (--area-accent*, --area-tint) определены в main_css.css —
+   он грузится и на этой странице, и на странице геймплея (level.html), поэтому
+   тема области доступна в обоих местах из одного источника. */
+
 /* main_css глушит скролл (overflow/touch-action) под геймплей —
    на экране выбора уровней возвращаем нормальный скролл, иначе 6+ уровни не достать */
 html.is-menu {
@@ -32,10 +36,11 @@ html.is-menu {
     inset: 0;
     pointer-events: none;
     z-index: 0;
+    /* Оттенок области на всю страницу, не только на рамках карточек */
     background:
-        radial-gradient(ellipse 80% 50% at 50% 0%, rgba(92, 64, 51, 0.18), transparent 55%),
-        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(74, 103, 65, 0.12), transparent 50%),
-        radial-gradient(ellipse 50% 35% at 15% 70%, rgba(139, 90, 43, 0.1), transparent 45%);
+        radial-gradient(ellipse 80% 50% at 50% 0%, color-mix(in srgb, var(--area-accent) 18%, transparent), transparent 55%),
+        radial-gradient(ellipse 60% 40% at 80% 80%, color-mix(in srgb, var(--area-accent-mid) 14%, transparent), transparent 50%),
+        radial-gradient(ellipse 50% 35% at 15% 70%, color-mix(in srgb, var(--area-accent-dark) 12%, transparent), transparent 45%);
 }
 
 .menu-topbar {
@@ -211,10 +216,261 @@ html.is-menu {
     opacity: 0.9;
 }
 
+/* ====== Панель области: цельный «резной» блок в тон области ======
+   Рамка + заклёпки по углам — тот же приём, что у статус-бара героя в игре
+   (main_css.css .hero-status-bar), только перекрашен под акцент области.
+   Внутренний узор background-image полностью переопределяется на area,
+   поэтому у каждой области свой заметный мотив, а не просто другой цвет. */
+.area-block {
+    position: relative;
+    box-sizing: border-box;
+    padding: 30px clamp(16px, 4vw, 40px) 34px;
+    border-radius: 14px;
+    border: 6px solid var(--area-accent-darker);
+    outline: 3px solid var(--area-accent);
+    outline-offset: -11px;
+    background-color: #d2b48c;
+    background-repeat: repeat;
+    background-image:
+        repeating-linear-gradient(-8deg, transparent 0 15px, color-mix(in srgb, var(--area-accent-mid) 14%, transparent) 15px 17px),
+        linear-gradient(180deg, rgba(255, 248, 230, 0.35) 0%, transparent 42%),
+        linear-gradient(90deg, color-mix(in srgb, var(--area-accent-mid) 8%, transparent) 0%, transparent 18%, transparent 82%, color-mix(in srgb, var(--area-accent-mid) 8%, transparent) 100%),
+        linear-gradient(135deg, #e8d5b0 0%, #d4bc8a 48%, #c4a574 100%);
+    box-shadow:
+        0 10px 28px rgba(0, 0, 0, 0.35),
+        0 2px 0 var(--area-accent-darker),
+        inset 0 0 0 1px rgba(255, 220, 160, 0.25),
+        inset 0 0 22px color-mix(in srgb, var(--area-accent-dark) 30%, transparent);
+}
+
+.area-block-corner {
+    position: absolute;
+    width: 22px;
+    height: 22px;
+    pointer-events: none;
+    z-index: 2;
+    background: radial-gradient(circle at 40% 35%, #f0d9a8 0 3px, var(--area-accent) 3px 7px, transparent 8px);
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4));
+}
+
+.area-block-corner-tl { top: 10px; left: 10px; }
+.area-block-corner-tr { top: 10px; right: 10px; }
+.area-block-corner-bl { bottom: 10px; left: 10px; }
+.area-block-corner-br { bottom: 10px; right: 10px; }
+
+/* Золотые поля — колосья по диагонали */
+body[data-area="2"] .area-block {
+    background-image:
+        repeating-linear-gradient(70deg, transparent 0 9px, color-mix(in srgb, var(--area-accent) 18%, transparent) 9px 11px, transparent 11px 20px),
+        linear-gradient(180deg, rgba(255, 248, 230, 0.35) 0%, transparent 42%),
+        linear-gradient(90deg, color-mix(in srgb, var(--area-accent-mid) 8%, transparent) 0%, transparent 18%, transparent 82%, color-mix(in srgb, var(--area-accent-mid) 8%, transparent) 100%),
+        linear-gradient(135deg, #e8d5b0 0%, #d4bc8a 48%, #c4a574 100%);
+}
+
+/* Обильный край — плотное плетение сада */
+body[data-area="3"] .area-block {
+    background-image:
+        repeating-linear-gradient(45deg, transparent 0 10px, color-mix(in srgb, var(--area-accent-mid) 18%, transparent) 10px 12px),
+        linear-gradient(180deg, rgba(255, 248, 230, 0.35) 0%, transparent 42%),
+        linear-gradient(90deg, color-mix(in srgb, var(--area-accent-mid) 8%, transparent) 0%, transparent 18%, transparent 82%, color-mix(in srgb, var(--area-accent-mid) 8%, transparent) 100%),
+        linear-gradient(135deg, #e8d5b0 0%, #d4bc8a 48%, #c4a574 100%);
+}
+
+/* Гиблые воды — рябь по воде */
+body[data-area="4"] .area-block {
+    background-image:
+        repeating-radial-gradient(circle at 50% 140%, transparent 0 16px, color-mix(in srgb, var(--area-accent) 16%, transparent) 16px 19px),
+        linear-gradient(180deg, rgba(255, 248, 230, 0.35) 0%, transparent 42%),
+        linear-gradient(90deg, color-mix(in srgb, var(--area-accent-mid) 8%, transparent) 0%, transparent 18%, transparent 82%, color-mix(in srgb, var(--area-accent-mid) 8%, transparent) 100%),
+        linear-gradient(135deg, #e8d5b0 0%, #d4bc8a 48%, #c4a574 100%);
+}
+
+/* Беспокойный двор — плетёная циновка */
+body[data-area="5"] .area-block {
+    background-image:
+        repeating-linear-gradient(0deg, transparent 0 13px, color-mix(in srgb, var(--area-accent-mid) 12%, transparent) 13px 15px),
+        linear-gradient(180deg, rgba(255, 248, 230, 0.35) 0%, transparent 42%),
+        linear-gradient(90deg, color-mix(in srgb, var(--area-accent-mid) 8%, transparent) 0%, transparent 18%, transparent 82%, color-mix(in srgb, var(--area-accent-mid) 8%, transparent) 100%),
+        linear-gradient(135deg, #e8d5b0 0%, #d4bc8a 48%, #c4a574 100%);
+}
+
+/* Глухой край — плотная тёмная чаща */
+body[data-area="6"] .area-block {
+    background-image:
+        repeating-linear-gradient(-8deg, transparent 0 7px, color-mix(in srgb, var(--area-accent-dark) 22%, transparent) 7px 9px),
+        linear-gradient(180deg, rgba(255, 248, 230, 0.35) 0%, transparent 42%),
+        linear-gradient(90deg, color-mix(in srgb, var(--area-accent-mid) 8%, transparent) 0%, transparent 18%, transparent 82%, color-mix(in srgb, var(--area-accent-mid) 8%, transparent) 100%),
+        linear-gradient(135deg, #e8d5b0 0%, #d4bc8a 48%, #c4a574 100%);
+}
+
+/* Тихий погост — редкая пыльная крапинка */
+body[data-area="7"] .area-block {
+    background-image:
+        radial-gradient(circle, color-mix(in srgb, var(--area-accent-mid) 28%, transparent) 1.4px, transparent 1.8px),
+        linear-gradient(180deg, rgba(255, 248, 230, 0.35) 0%, transparent 42%),
+        linear-gradient(90deg, color-mix(in srgb, var(--area-accent-mid) 8%, transparent) 0%, transparent 18%, transparent 82%, color-mix(in srgb, var(--area-accent-mid) 8%, transparent) 100%),
+        linear-gradient(135deg, #e8d5b0 0%, #d4bc8a 48%, #c4a574 100%);
+    background-size: 16px 16px, auto, auto, auto;
+}
+
+/* Снежное царство — падающий снег */
+body[data-area="8"] .area-block {
+    background-image:
+        radial-gradient(circle, color-mix(in srgb, white 60%, var(--area-accent)) 1.6px, transparent 2px),
+        linear-gradient(180deg, rgba(255, 248, 230, 0.35) 0%, transparent 42%),
+        linear-gradient(90deg, color-mix(in srgb, var(--area-accent-mid) 8%, transparent) 0%, transparent 18%, transparent 82%, color-mix(in srgb, var(--area-accent-mid) 8%, transparent) 100%),
+        linear-gradient(135deg, #e8d5b0 0%, #d4bc8a 48%, #c4a574 100%);
+    background-size: 13px 13px, auto, auto, auto;
+}
+
+/* Огненный хребет — жар и искры */
+body[data-area="9"] .area-block {
+    background-image:
+        repeating-linear-gradient(100deg, transparent 0 14px, color-mix(in srgb, var(--area-accent) 18%, transparent) 14px 16px),
+        linear-gradient(180deg, rgba(255, 248, 230, 0.35) 0%, transparent 42%),
+        linear-gradient(90deg, color-mix(in srgb, var(--area-accent-mid) 8%, transparent) 0%, transparent 18%, transparent 82%, color-mix(in srgb, var(--area-accent-mid) 8%, transparent) 100%),
+        linear-gradient(135deg, #e8d5b0 0%, #d4bc8a 48%, #c4a574 100%);
+}
+
+/* Оплот безумия — искажённая рябь трещин */
+body[data-area="10"] .area-block {
+    background-image:
+        radial-gradient(circle, color-mix(in srgb, var(--area-accent) 32%, transparent) 0 1.6px, color-mix(in srgb, var(--area-accent-mid) 18%, transparent) 1.6px 2.3px, transparent 2.5px),
+        linear-gradient(180deg, rgba(255, 248, 230, 0.35) 0%, transparent 42%),
+        linear-gradient(90deg, color-mix(in srgb, var(--area-accent-mid) 8%, transparent) 0%, transparent 18%, transparent 82%, color-mix(in srgb, var(--area-accent-mid) 8%, transparent) 100%),
+        linear-gradient(135deg, #e8d5b0 0%, #d4bc8a 48%, #c4a574 100%);
+    background-size: 12px 12px, auto, auto, auto;
+}
+
+/* ====== Шапка текущей области ====== */
+.area-title {
+    margin: 0 0 10px;
+    font-family: 'Philosopher', Georgia, serif;
+    font-size: clamp(32px, 5.5vw, 50px);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--area-accent-darker);
+    text-shadow: 0 2px 0 rgba(255, 245, 220, 0.45);
+}
+
+.area-emoji {
+    display: inline-block;
+    font-size: 0.85em;
+    filter: drop-shadow(0 2px 0 rgba(255, 245, 220, 0.35));
+}
+
 .levels-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 18px;
+}
+
+/* ====== Уровень-заглушка (ещё не наполнен контентом) ====== */
+.level.locked.stub {
+    cursor: default;
+    filter: grayscale(0.75) brightness(0.82);
+    opacity: 0.62;
+}
+
+.level.locked.stub::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 9px,
+        rgba(62, 42, 28, 0.06) 9px,
+        rgba(62, 42, 28, 0.06) 10px
+    );
+    pointer-events: none;
+}
+
+.level.stub .level-status::before {
+    content: '🔒';
+    font-size: 18px;
+    line-height: 28px;
+}
+
+.level.stub .level-name {
+    color: #5a4a3a;
+    font-style: italic;
+}
+
+.stub-ribbon {
+    position: absolute;
+    top: 10px;
+    right: -30px;
+    z-index: 2;
+    padding: 3px 34px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #f3e6c8;
+    background: var(--area-accent-mid);
+    transform: rotate(28deg);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+    white-space: nowrap;
+}
+
+/* ====== Переход между областями ====== */
+.area-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 2px dashed var(--area-accent-mid);
+}
+
+.area-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 12px 20px;
+    font-family: 'Philosopher', Georgia, serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-decoration: none;
+    color: #e0c9a6;
+    background: linear-gradient(135deg, var(--area-accent-dark), var(--area-accent-darker));
+    border: 3px solid var(--area-accent);
+    border-radius: 8px;
+    box-shadow: 0 4px 0 var(--area-accent-darker), 0 8px 18px rgba(40, 24, 12, 0.3);
+    transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.area-nav-btn.area-nav-placeholder {
+    visibility: hidden;
+}
+
+.area-nav-btn.area-nav-locked {
+    color: #8a7a68;
+    background: linear-gradient(135deg, #6b5a48, #4a3d30);
+    border-color: #6b5a48;
+    box-shadow: 0 4px 0 #3a2f24, 0 8px 18px rgba(40, 24, 12, 0.22);
+    filter: grayscale(0.5);
+    cursor: not-allowed;
+    font-size: 13px;
+}
+
+a.area-nav-btn:hover {
+    transform: translateY(-3px);
+    filter: brightness(1.12);
+}
+
+a.area-nav-btn:active {
+    transform: translateY(-1px);
+}
+
+.area-nav-btn.area-nav-end {
+    color: #5a4a3a;
+    background: transparent;
+    border-style: dashed;
+    box-shadow: none;
+    opacity: 0.75;
 }
 
 .level {
@@ -225,18 +481,20 @@ html.is-menu {
     padding: 18px 16px 18px 14px;
     text-decoration: none;
     border-radius: 10px;
-    border: 3px solid #6b4c35;
+    border: 3px solid var(--area-accent-mid);
     background: linear-gradient(160deg, rgba(232, 214, 176, 0.95), rgba(184, 154, 109, 0.92));
     box-shadow:
-        0 4px 0 #3e2a1c,
+        0 4px 0 var(--area-accent-darker),
         0 10px 24px rgba(40, 24, 12, 0.25);
-    color: #3e2a1c;
+    color: var(--area-accent-darker);
     pointer-events: none;
-    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease, border-color 0.2s ease;
     position: relative;
     overflow: hidden;
 }
 
+/* Декор карточки по умолчанию — тонкая диагональная штриховка (лес/твёрдая земля).
+   Тон уже подстраивается под область через --area-accent-mid. */
 .level::before {
     content: '';
     position: absolute;
@@ -245,10 +503,33 @@ html.is-menu {
         -8deg,
         transparent,
         transparent 11px,
-        rgba(62, 42, 28, 0.03) 11px,
-        rgba(62, 42, 28, 0.03) 12px
+        color-mix(in srgb, var(--area-accent-mid) 6%, transparent) 11px,
+        color-mix(in srgb, var(--area-accent-mid) 6%, transparent) 12px
     );
     pointer-events: none;
+}
+
+/* Гиблые воды — рябь вместо штриховки */
+body[data-area="4"] .level::before {
+    background: repeating-radial-gradient(
+        circle at 50% 120%,
+        transparent 0,
+        transparent 14px,
+        color-mix(in srgb, var(--area-accent-mid) 8%, transparent) 14px,
+        color-mix(in srgb, var(--area-accent-mid) 8%, transparent) 16px
+    );
+}
+
+/* Тихий погост / Снежное царство / Оплот безумия — мелкая крапинка */
+body[data-area="7"] .level::before,
+body[data-area="8"] .level::before,
+body[data-area="10"] .level::before {
+    background-image: radial-gradient(
+        circle,
+        color-mix(in srgb, var(--area-accent-mid) 14%, transparent) 1px,
+        transparent 1.2px
+    );
+    background-size: 9px 9px;
 }
 
 .level-num {
@@ -261,8 +542,8 @@ html.is-menu {
     align-items: center;
     justify-content: center;
     border-radius: 8px;
-    border: 2px solid #8B4513;
-    background: linear-gradient(145deg, #5a3e2b, #3e2a1c);
+    border: 2px solid var(--area-accent);
+    background: linear-gradient(145deg, var(--area-accent-dark), var(--area-accent-darker));
     color: #e0c9a6;
     font-family: 'Philosopher', Georgia, serif;
     font-size: 18px;
@@ -284,7 +565,7 @@ html.is-menu {
     font-size: 11px;
     letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: #6b4c35;
+    color: var(--area-accent-mid);
     font-family: 'Philosopher', Georgia, serif;
 }
 
@@ -342,7 +623,7 @@ html.is-menu {
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    border: 2px solid #8B4513;
+    border: 2px solid var(--area-accent);
     background: linear-gradient(145deg, #2e6b2e, #1e4a1e);
     color: #e8f5e0;
     font-size: 22px;
@@ -411,6 +692,20 @@ html.is-level-navigation-pending .level.unlocked {
     .levels-grid {
         grid-template-columns: 1fr;
         padding-bottom: 24px;
+    }
+
+    .area-nav {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .area-nav-btn {
+        justify-content: center;
+        text-align: center;
+    }
+
+    .area-nav-btn.area-nav-placeholder {
+        display: none;
     }
 }
 

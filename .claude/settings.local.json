@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -m http.server --help)",
+      "Bash(python3 -m http.server 8080)",
+      "Bash(curl -sI http://localhost:8080/index.html)",
+      "Read(//tmp/**)"
+    ]
+  }
+}
