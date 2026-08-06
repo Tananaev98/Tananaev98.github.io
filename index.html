@@ -6,8 +6,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Philosopher:wght@400;700&family=Pangolin&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="main_css.css?v=golden-fields-bg-2026-08-05">
-	<link rel="stylesheet" href="index_css.css?v=area-block-panel-2026-08-05">
+    <link rel="stylesheet" href="main_css.css?v=hp-bars-revert-2026-08-06">
+	<link rel="stylesheet" href="index_css.css?v=restless-village-2026-08-06">
     <title>Выбор уровня</title>
 
 </head>
@@ -111,12 +111,12 @@ function renderNextAreaButton() {
     if (!currentAreaCleared) {
         return `<span class="area-nav-btn area-nav-locked" title="Пройдите все уровни текущей области">🔒 Пройдите уровень ${currentArea.levelEnd}, чтобы открыть</span>`;
     }
-    return `<a class="area-nav-btn area-nav-next" href="index.html?area=${nextArea.id}">${nextArea.preposition} ${nextArea.title} →</a>`;
+    return `<a class="area-nav-btn area-nav-next" href="index.html?area=${nextArea.id}">${nextArea.preposition} ${nextArea.titleAcc || nextArea.title} →</a>`;
 }
 
 areaNavEl.innerHTML = `
     ${prevArea
-        ? `<a class="area-nav-btn area-nav-prev" href="index.html?area=${prevArea.id}">← ${prevArea.preposition} ${prevArea.title}</a>`
+        ? `<a class="area-nav-btn area-nav-prev" href="index.html?area=${prevArea.id}">← ${prevArea.preposition} ${prevArea.titleAcc || prevArea.title}</a>`
         : '<span class="area-nav-btn area-nav-placeholder"></span>'}
     ${renderNextAreaButton()}
 `;
@@ -350,7 +350,7 @@ function openCharacterSelect() {
 		if (!hero) return;
 		if (hero.level >= HERO_MAX_LEVEL) {
 			upgradeBtnInModal.disabled = true;
-			upgradeBtnInModal.style.background = "linear-gradient(135deg, #5a3e2b, #3e2a1c)";
+			upgradeBtnInModal.style.background = ''; // возвращаем цвет CSS (--gp-wood текущей области)
 			upgradeInfoSpan.innerHTML = `Достигнут максимальный уровень (${HERO_MAX_LEVEL})`;
 			return;
 		}
@@ -358,11 +358,11 @@ function openCharacterSelect() {
 		const hasEnough = gameState.zlata >= cost;
 		if (hasEnough) {
 			upgradeBtnInModal.disabled = false;
-			upgradeBtnInModal.style.background = "linear-gradient(135deg, #2e6b2e, #1e4a1e)";
+			upgradeBtnInModal.style.background = "linear-gradient(135deg, #2e6b2e, #1e4a1e)"; // семантика "можно повысить" — зелёный не зависит от области
 			upgradeInfoSpan.innerHTML = `Стоимость повышения: ${cost} <img src="images/other/zlata.webp" class="zlata-icon">`;
 		} else {
 			upgradeBtnInModal.disabled = true;
-			upgradeBtnInModal.style.background = "linear-gradient(135deg, #5a3e2b, #3e2a1c)";
+			upgradeBtnInModal.style.background = ''; // возвращаем цвет CSS (--gp-wood текущей области)
 			const deficit = cost - gameState.zlata;
 			upgradeInfoSpan.innerHTML = `Не хватает ${deficit} <img src="images/other/zlata.webp" class="zlata-icon">`;
 		}

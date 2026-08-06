@@ -570,6 +570,15 @@ class Enemy {
         const widthPct = attack.width;
         const preferLeft = attack.cx <= boss.cx;
 
+        // Помимо обязательного минимума (чтобы не залезать на босса), добавляем сдвиг,
+        // зависящий от исходного xPos атаки: чем дальше атака была от центра босса до
+        // коррекции, тем дальше она уйдёт за его край. Без этого все атаки одной стороны
+        // прилипали ровно к одной и той же точке (boss.left - widthPct / boss.right),
+        // независимо от того, насколько разными были их авторские xPos в gameData —
+        // визуально это выглядело как "снаряды всегда летят в одну и ту же точку".
+        const distanceFromBossCenter = Math.abs(attack.cx - boss.cx);
+        const extraSpread = Math.min(widthPct * 2, distanceFromBossCenter * 0.6);
+
         const tryPlaceX = (leftEdge) => {
             const x = this.clampHorizontal(leftEdge);
             const left = x;
@@ -579,11 +588,11 @@ class Enemy {
         };
 
         const primary = preferLeft
-            ? tryPlaceX(boss.left - widthPct)
-            : tryPlaceX(boss.right);
+            ? tryPlaceX(boss.left - widthPct - extraSpread)
+            : tryPlaceX(boss.right + extraSpread);
         const secondary = preferLeft
-            ? tryPlaceX(boss.right)
-            : tryPlaceX(boss.left - widthPct);
+            ? tryPlaceX(boss.right + extraSpread)
+            : tryPlaceX(boss.left - widthPct - extraSpread);
 
         if (primary.ok) {
             this.x = primary.x;

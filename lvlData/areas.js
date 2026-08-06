@@ -4,22 +4,29 @@
 // Здесь только данные для меню выбора уровня (index.html) — на игровой движок
 // (game.js, level.html, gameDataN.js) этот файл не влияет.
 
-// title — характерное игровое название (в тоне названий уровней).
+// title — характерное игровое название (в тоне названий уровней), в ИМЕНИТЕЛЬНОМ падеже
+// (используется как самостоятельный заголовок страницы области).
+// titleAcc — необязательно; форма ВИНИТЕЛЬНОГО падежа для кнопок навигации
+// («в/на ...» = движение куда-то). Нужна только когда она отличается от именительного —
+// у существительных женского рода на -а/-я (например «деревня» → «деревню») винительный
+// не совпадает с именительным, в отличие от большинства уже использованных существительных
+// (лес/край/воды/погост/царство/хребет/безумие — там именительный и винительный совпадают,
+// поэтому titleAcc для них не задан и код использует title как есть).
 // working — буквальное название из идеи-документа, оставлено в комментарии для сверки.
 // preposition — предлог для навигации («в»/«на»), подобран по русскому словоупотреблению
 // для конкретного существительного (поля/хребет/погост традиционно берут «на», не «в»).
 // emoji — декоративный значок у заголовка области (в тон уже используемых в игре ⚡/⚔️/🔒).
 const AREAS = [
-    { id: 1,  title: 'Смешной лес',      working: 'Смешанный лес',     preposition: 'в',  emoji: '🌲', levelStart: 1,   levelEnd: 15  },
-    { id: 2,  title: 'Золотые поля',     working: 'Золотые поля',      preposition: 'на', emoji: '🌾', levelStart: 16,  levelEnd: 25  },
-    { id: 3,  title: 'Обильный край',    working: 'Плодородные земли', preposition: 'в',  emoji: '🍯', levelStart: 26,  levelEnd: 30  },
-    { id: 4,  title: 'Гиблые воды',      working: 'Реки и озёра',      preposition: 'в',  emoji: '🌊', levelStart: 31,  levelEnd: 40  },
-    { id: 5,  title: 'Беспокойный двор', working: 'Дома и дворики',    preposition: 'в',  emoji: '🧹', levelStart: 41,  levelEnd: 65  },
-    { id: 6,  title: 'Глухой край',      working: 'Засечный лес',      preposition: 'в',  emoji: '🏹', levelStart: 66,  levelEnd: 95  },
-    { id: 7,  title: 'Тихий погост',     working: 'Кладбища',          preposition: 'на', emoji: '⚰️', levelStart: 96,  levelEnd: 110 },
-    { id: 8,  title: 'Снежное царство',  working: 'Зимние земли',      preposition: 'в',  emoji: '❄️', levelStart: 111, levelEnd: 125 },
-    { id: 9,  title: 'Огненный хребет',  working: 'Чёрные горы',       preposition: 'на', emoji: '🔥', levelStart: 126, levelEnd: 135 },
-    { id: 10, title: 'Оплот безумия',    working: 'Оплот безумия',     preposition: 'в',  emoji: '🌀', levelStart: 136, levelEnd: 141 }
+    { id: 1,  title: 'Смешной лес',        working: 'Смешанный лес',     preposition: 'в',  emoji: '🌲', levelStart: 1,   levelEnd: 15  },
+    { id: 2,  title: 'Золотые поля',       working: 'Золотые поля',      preposition: 'на', emoji: '🌾', levelStart: 16,  levelEnd: 25  },
+    { id: 3,  title: 'Обильный край',      working: 'Плодородные земли', preposition: 'в',  emoji: '🍯', levelStart: 26,  levelEnd: 30  },
+    { id: 4,  title: 'Гиблые воды',        working: 'Реки и озёра',      preposition: 'в',  emoji: '🌊', levelStart: 31,  levelEnd: 40  },
+    { id: 5,  title: 'Беспокойная деревня', titleAcc: 'Беспокойную деревню', working: 'Дома и дворики', preposition: 'в',  emoji: '🧹', levelStart: 41,  levelEnd: 65  },
+    { id: 6,  title: 'Глухой край',        working: 'Засечный лес',      preposition: 'в',  emoji: '🏹', levelStart: 66,  levelEnd: 95  },
+    { id: 7,  title: 'Тихий погост',       working: 'Кладбища',          preposition: 'на', emoji: '⚰️', levelStart: 96,  levelEnd: 110 },
+    { id: 8,  title: 'Снежное царство',    working: 'Зимние земли',      preposition: 'в',  emoji: '❄️', levelStart: 111, levelEnd: 125 },
+    { id: 9,  title: 'Огненный хребет',    working: 'Чёрные горы',       preposition: 'на', emoji: '🔥', levelStart: 126, levelEnd: 135 },
+    { id: 10, title: 'Оплот безумия',      working: 'Оплот безумия',     preposition: 'в',  emoji: '🌀', levelStart: 136, levelEnd: 141 }
 ];
 
 // Готовые (иронично-смешные) названия уровней, у которых уже есть реальный gameData + арт.

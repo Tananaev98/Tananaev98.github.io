@@ -84,17 +84,17 @@ html.is-menu {
     position: relative;
     width: min(440px, 100%);
     padding: 32px;
-    color: #3a2418;
+    color: var(--gp-subtitle);
     text-align: center;
-    background: linear-gradient(135deg, #D1B892, #B89A6D);
-    border: 3px solid #8B4513;
+    background: linear-gradient(135deg, var(--gp-panel-a), var(--gp-panel-b));
+    border: 3px solid var(--gp-frame);
     border-radius: 15px;
     box-shadow: 0 18px 50px rgba(0, 0, 0, 0.65);
 }
 
 .debug-unlock-dialog h2 {
     margin: 0 32px 10px;
-    color: #5a2d16;
+    color: var(--gp-frame);
 }
 
 .debug-unlock-dialog p {
@@ -106,7 +106,7 @@ html.is-menu {
     top: 8px;
     right: 12px;
     padding: 0;
-    color: #5a2d16;
+    color: var(--gp-frame);
     font: 700 32px/1 sans-serif;
     background: transparent;
     border: 0;
@@ -130,14 +130,14 @@ html.is-menu {
     font-weight: 700;
     line-height: 1.2;
     background: #f4e4c7;
-    border: 2px solid #74401e;
+    border: 2px solid var(--gp-frame);
     border-radius: 7px;
     outline: none;
 }
 
 .debug-unlock-input:focus {
-    border-color: #b66a28;
-    box-shadow: 0 0 0 3px rgba(139, 69, 19, 0.22);
+    border-color: var(--gp-wood-light);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--gp-frame) 22%, transparent);
 }
 
 .debug-unlock-status {
@@ -165,8 +165,8 @@ html.is-menu {
     color: #f3dfbd;
     font-weight: 700;
     text-transform: uppercase;
-    background: linear-gradient(135deg, #5a3e2b, #3e2a1c);
-    border: 2px solid #8B4513;
+    background: linear-gradient(135deg, var(--gp-wood), var(--gp-wood-dark));
+    border: 2px solid var(--gp-frame);
     border-radius: 6px;
     cursor: pointer;
 }
@@ -285,10 +285,12 @@ body[data-area="4"] .area-block {
         linear-gradient(135deg, #e8d5b0 0%, #d4bc8a 48%, #c4a574 100%);
 }
 
-/* Беспокойный двор — плетёная циновка */
+/* Беспокойная деревня — плетень (перекрёстная изгородь), в отличие от остальных областей
+   узор не однонаправленный, а из двух встречных диагоналей — читается заметно плотнее/суетнее. */
 body[data-area="5"] .area-block {
     background-image:
-        repeating-linear-gradient(0deg, transparent 0 13px, color-mix(in srgb, var(--area-accent-mid) 12%, transparent) 13px 15px),
+        repeating-linear-gradient(45deg, transparent 0 11px, color-mix(in srgb, var(--area-accent-mid) 16%, transparent) 11px 13px),
+        repeating-linear-gradient(-45deg, transparent 0 11px, color-mix(in srgb, var(--area-accent) 12%, transparent) 11px 13px),
         linear-gradient(180deg, rgba(255, 248, 230, 0.35) 0%, transparent 42%),
         linear-gradient(90deg, color-mix(in srgb, var(--area-accent-mid) 8%, transparent) 0%, transparent 18%, transparent 82%, color-mix(in srgb, var(--area-accent-mid) 8%, transparent) 100%),
         linear-gradient(135deg, #e8d5b0 0%, #d4bc8a 48%, #c4a574 100%);
@@ -466,7 +468,7 @@ a.area-nav-btn:active {
 }
 
 .area-nav-btn.area-nav-end {
-    color: #5a4a3a;
+    color: var(--area-accent-darker);
     background: transparent;
     border-style: dashed;
     box-shadow: none;
@@ -518,6 +520,21 @@ body[data-area="4"] .level::before {
         color-mix(in srgb, var(--area-accent-mid) 8%, transparent) 14px,
         color-mix(in srgb, var(--area-accent-mid) 8%, transparent) 16px
     );
+}
+
+/* Беспокойная деревня — тот же плетень, что и в area-block, только мельче */
+body[data-area="5"] .level::before {
+    background-image:
+        repeating-linear-gradient(
+            45deg, transparent, transparent 7px,
+            color-mix(in srgb, var(--area-accent-mid) 7%, transparent) 7px,
+            color-mix(in srgb, var(--area-accent-mid) 7%, transparent) 8px
+        ),
+        repeating-linear-gradient(
+            -45deg, transparent, transparent 7px,
+            color-mix(in srgb, var(--area-accent) 5%, transparent) 7px,
+            color-mix(in srgb, var(--area-accent) 5%, transparent) 8px
+        );
 }
 
 /* Тихий погост / Снежное царство / Оплот безумия — мелкая крапинка */
@@ -588,7 +605,7 @@ body[data-area="10"] .level::before {
 .level.locked {
     filter: grayscale(0.55) brightness(0.88);
     opacity: 0.72;
-    box-shadow: 0 2px 0 #5a3e2b, 0 6px 14px rgba(40, 24, 12, 0.18);
+    box-shadow: 0 2px 0 var(--area-accent-dark), 0 6px 14px rgba(40, 24, 12, 0.18);
 }
 
 .level.locked::after {
@@ -634,7 +651,7 @@ body[data-area="10"] .level::before {
 .level.unlocked:hover {
     transform: translateY(-4px);
     box-shadow:
-        0 6px 0 #3e2a1c,
+        0 6px 0 var(--area-accent-darker),
         0 16px 28px rgba(40, 24, 12, 0.35);
     filter: brightness(1.04);
 }
@@ -714,8 +731,8 @@ html.is-level-navigation-pending .level.unlocked {
     display: inline-block;
     padding: 12px 24px;
     margin: 0;
-    background: linear-gradient(135deg, #5a3e2b, #3e2a1c);
-    border: 3px solid #8B4513;
+    background: linear-gradient(135deg, var(--gp-wood), var(--gp-wood-dark));
+    border: 3px solid var(--gp-frame);
     color: #e0c9a6;
     font-size: 14px;
     font-weight: bold;
@@ -728,7 +745,7 @@ html.is-level-navigation-pending .level.unlocked {
 }
 
 .select-character-button:hover {
-    background: linear-gradient(135deg, #6b4c35, #4f3822);
+    background: linear-gradient(135deg, var(--gp-wood-light), var(--gp-wood));
     transform: translateY(-3px);
     box-shadow: 0 8px 20px rgba(0,0,0,0.7);
     color: #fff;
@@ -749,10 +766,10 @@ html.is-level-navigation-pending .level.unlocked {
 }
 
 .character-select-modal .modal-content {
-    background: linear-gradient(135deg, #D1B892, #B89A6D);
+    background: linear-gradient(135deg, var(--gp-panel-a), var(--gp-panel-b));
     padding: 24px;
     border-radius: 15px;
-    border: 5px solid #8B4513;
+    border: 5px solid var(--gp-frame);
     width: min(1400px, calc(100% - 48px));
 	height: min(90vh, 720px);
     max-width: none;
@@ -777,7 +794,7 @@ html.is-level-navigation-pending .level.unlocked {
     grid-row: 1;
     text-align: center;
     margin: 0 0 10px 0;
-    color: #5C4033;
+    color: var(--gp-frame);
     font-size: 28px;
     text-transform: uppercase;
     letter-spacing: 2px;
@@ -848,9 +865,9 @@ html.is-level-navigation-pending .level.unlocked {
     max-width: 100px;
     aspect-ratio: 5 / 6;
     justify-self: center;
-    border: 3px solid #5C4033;
+    border: 3px solid var(--gp-frame);
     border-radius: 5px;
-    background: #3e2a1c;
+    background: var(--gp-wood-dark);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -884,7 +901,7 @@ html.is-level-navigation-pending .level.unlocked {
 }
 
 .character-portrait:hover:not(.locked) {
-    border-color: #cd7f32;
+    border-color: var(--gp-wood-light);
     transform: scale(1.02);
 }
 
@@ -895,11 +912,11 @@ html.is-level-navigation-pending .level.unlocked {
     height: 100%;
     min-height: 0;
     background: rgba(123, 31, 162, 0.1);
-    border: 3px solid #8B4513;
+    border: 3px solid var(--gp-frame);
     border-radius: 8px;
     padding: 16px;
     box-shadow: inset 0 0 15px rgba(0,0,0,0.7), 0 5px 15px rgba(0,0,0,0.5);
-    color: #5C4033;
+    color: var(--gp-subtitle);
     position: relative;
     grid-column: 2;
     grid-row: 2;
@@ -1062,9 +1079,9 @@ html.is-level-navigation-pending .level.unlocked {
 .level-up-spark.spark-6 { right: 32%; bottom: 18%; animation-delay: 200ms; }
 
 @keyframes level-up-panel-impact {
-    0% { transform: scale(1); border-color: #8B4513; }
+    0% { transform: scale(1); border-color: var(--gp-frame); }
     28% { transform: scale(1.006); border-color: #ffe171; box-shadow: inset 0 0 24px rgba(255, 218, 91, 0.75), 0 0 26px rgba(255, 190, 38, 0.85); }
-    100% { transform: scale(1); border-color: #8B4513; }
+    100% { transform: scale(1); border-color: var(--gp-frame); }
 }
 
 @keyframes level-up-hero-impact {
@@ -1142,7 +1159,7 @@ html.is-level-navigation-pending .level.unlocked {
 }
 
 .character-info h3 {
-    color: #5C4033;
+    color: var(--gp-subtitle);
     margin: 0 0 4px;
     font-size: 24px;
     text-align: center;
@@ -1157,7 +1174,7 @@ html.is-level-navigation-pending .level.unlocked {
     gap: 8px;
     min-height: 24px;
     margin: 0 0 4px;
-    color: #5C4033;
+    color: var(--gp-subtitle);
     font-weight: bold;
 }
 
@@ -1278,14 +1295,14 @@ html.is-level-navigation-pending .level.unlocked {
     max-height: 90%;
     box-sizing: border-box;
     object-fit: contain;
-    border: 2px solid #8B4513;
+    border: 2px solid var(--gp-frame);
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.5);
 }
 
 .info-placeholder {
     text-align: center;
-    color: #8B4513;
+    color: var(--gp-frame);
     font-style: italic;
     padding: 20px;
 }
@@ -1300,8 +1317,8 @@ html.is-level-navigation-pending .level.unlocked {
 /* Кнопка "Выбрать" */
 .select-hero-btn {
     padding: 12px 24px;
-    background: linear-gradient(135deg, #5a3e2b, #3e2a1c);
-    border: 3px solid #8B4513;
+    background: linear-gradient(135deg, var(--gp-wood), var(--gp-wood-dark));
+    border: 3px solid var(--gp-frame);
     color: #e0c9a6;
     font-size: 18px;
     font-weight: bold;
@@ -1317,7 +1334,7 @@ html.is-level-navigation-pending .level.unlocked {
 }
 
 .select-hero-btn:hover:not(:disabled) {
-    background: linear-gradient(135deg, #6b4c35, #4f3822);
+    background: linear-gradient(135deg, var(--gp-wood-light), var(--gp-wood));
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     color: #fff;
@@ -1412,8 +1429,8 @@ body, .main_menu_image, .select-character-button,
 
 .upgrade-hero-btn {
     padding: 12px 20px;
-    background: linear-gradient(135deg, #5a3e2b, #3e2a1c);
-    border: 3px solid #8B4513;
+    background: linear-gradient(135deg, var(--gp-wood), var(--gp-wood-dark));
+    border: 3px solid var(--gp-frame);
     color: #e0c9a6;
     font-size: 16px;
     font-weight: bold;
@@ -1767,10 +1784,10 @@ body, .main_menu_image, .select-character-button,
     align-items: center;
     justify-content: center;
     gap: 5px;
-    background: #2c1a0e;
+    background: var(--gp-wood-dark);
     padding: 6px 12px;
     border-radius: 20px;
-    border: 1px solid #8B4513;
+    border: 1px solid var(--gp-frame);
     font-size: 14px;
     font-weight: bold;
     color: #FFD966;
@@ -1808,8 +1825,8 @@ body, .main_menu_image, .select-character-button,
     display: flex;
     align-items: center;
     gap: 8px;
-    background: linear-gradient(135deg, #2c1a0e, #1f1208);
-    border: 2px solid #8B4513;
+    background: linear-gradient(135deg, var(--gp-wood-dark), var(--gp-track-dark));
+    border: 2px solid var(--gp-frame);
     border-radius: 40px;
     padding: 8px 18px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6);
@@ -1843,7 +1860,7 @@ body, .main_menu_image, .select-character-button,
     border-radius: 30px;
     min-width: 50px;
     text-align: center;
-    border: 1px solid #b87c3a;
+    border: 1px solid var(--gp-wood-light);
     box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
     letter-spacing: 1px;
 }
@@ -1853,8 +1870,8 @@ body, .main_menu_image, .select-character-button,
     position: absolute;
     top: 110%;
     right: 0;
-    background: linear-gradient(135deg, #3e2a1c, #2c1a0e);
-    border: 2px solid #e0c9a6;
+    background: linear-gradient(135deg, var(--gp-wood-dark), var(--gp-track-dark));
+    border: 2px solid var(--gp-frame);
     border-radius: 12px;
     padding: 10px 16px;
     min-width: 200px;
@@ -2074,7 +2091,7 @@ body, .main_menu_image, .select-character-button,
     .hero-stats p {
         transform: none;
         font-size: 13px;
-        color: #5C4033;
+        color: var(--gp-subtitle);
         gap: 4px;
         padding: 1px 0;
     }

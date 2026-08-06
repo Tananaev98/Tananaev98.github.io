@@ -9,8 +9,10 @@
    --area-bg — сплошной цвет БОКОВОГО фона страницы (body, видно по краям на широких
    экранах вокруг игрового поля) — своя, отдельная от --area-tint переменная, так как
    это два разных визуальных слоя и у каждой области они должны настраиваться порознь.
-   База (без переопределения body[data-area]) = Смешной лес, пиксель-в-пиксель
-   совпадает со старыми хардкод-значениями карточек уровня. */
+   :root — ЧИСТО технический фолбэк (на случай если data-area вдруг не выставлен),
+   пиксель-в-пиксель совпадает со старыми хардкод-значениями. Он НЕ считается "дизайном"
+   какой-либо конкретной области — у каждой области, включая Смешной лес (id=1),
+   свой собственный блок body[data-area="N"] ниже. */
 :root {
     --area-accent: #8B4513;
     --area-accent-mid: #6b4c35;
@@ -71,68 +73,175 @@ body[data-area="2"] { /* Золотые поля — тёплая золотис
     --gp-subtitle: #6B4A1A;
 }
 
-body[data-area="3"] { /* Плодородные земли — зеленее, чем Смешной лес */
+body[data-area="3"] { /* Плодородные земли — зеленее, чем Смешной лес. --area-accent нейтральный
+    (карточки меню не трогаем), характерный цвет области — из --area-tint, поэтому --gp-*
+    ниже производим от него же (то же исключение, что и у Смешного леса). */
     --area-accent: #A0522D;
     --area-accent-mid: #7a3d20;
     --area-accent-dark: #5c2e18;
     --area-accent-darker: #3f1f10;
     --area-tint: rgba(80, 150, 60, 0.32);
+    --area-bg: #C7D488;
+
+    --gp-frame: #4F7A1E;
+    --gp-wood: #3A5A16;
+    --gp-wood-light: #6B9A2E;
+    --gp-wood-dark: #24380D;
+    --gp-track-dark: #1A2809;
+    --gp-glow: rgba(80, 150, 60, 0.5);
+    --gp-glow-strong: rgba(80, 150, 60, 0.8);
+    --gp-panel-a: #D9DFA0;
+    --gp-panel-b: #AEB068;
+    --gp-subtitle: #3D4A1A;
 }
 
-body[data-area="4"] { /* Реки и озёра — синеватый */
+body[data-area="4"] { /* Реки и озёра — синеватый. --area-accent (тил) сам по себе тематически
+    подходит для рамок, поэтому --gp-frame/wood/glow берём из него. Панели --gp-panel-a/b
+    держим ближе к пергаменту (холодный оттенок не должен полностью вытеснять тёплую бумагу,
+    иначе текст поверх плохо читается и модалка выбивается из общего стиля игры). */
     --area-accent: #2E7D82;
     --area-accent-mid: #235f63;
     --area-accent-dark: #1a474a;
     --area-accent-darker: #102b2d;
     --area-tint: rgba(60, 110, 150, 0.28);
+    --area-bg: #A9C2C6;
+
+    --gp-frame: #1F6469;
+    --gp-wood: #164A4E;
+    --gp-wood-light: #368F95;
+    --gp-wood-dark: #0D2426;
+    --gp-track-dark: #081A1B;
+    --gp-glow: rgba(46, 125, 130, 0.5);
+    --gp-glow-strong: rgba(46, 125, 130, 0.8);
+    --gp-panel-a: #C9D9D3;
+    --gp-panel-b: #96B0AE;
+    --gp-subtitle: #1F4548;
 }
 
-body[data-area="5"] { /* Дома и дворики — тёплый рустик */
-    --area-accent: #9C5B3B;
-    --area-accent-mid: #7a462d;
-    --area-accent-dark: #5c3520;
-    --area-accent-darker: #3d2415;
-    --area-tint: rgba(150, 100, 70, 0.22);
+body[data-area="5"] { /* Беспокойная деревня — насыщенный медно-терракотовый (глубже и теплее
+    старого "тёплого рустика", чтобы не читаться как обычный дефолтный коричневый). */
+    --area-accent: #A8461E;
+    --area-accent-mid: #833819;
+    --area-accent-dark: #612912;
+    --area-accent-darker: #3F1A0B;
+    --area-tint: rgba(168, 70, 30, 0.24);
+    --area-bg: #DDA06A;
+
+    --gp-frame: #8C3D14;
+    --gp-wood: #6B2D0E;
+    --gp-wood-light: #A85A26;
+    --gp-wood-dark: #431C09;
+    --gp-track-dark: #2E1206;
+    --gp-glow: rgba(168, 70, 30, 0.55);
+    --gp-glow-strong: rgba(168, 70, 30, 0.85);
+    --gp-panel-a: #EAC79A;
+    --gp-panel-b: #C68F52;
+    --gp-subtitle: #5C2A10;
 }
 
-body[data-area="6"] { /* Засечный лес — глубокая тёмная зелень */
+body[data-area="6"] { /* Засечный лес — глубокая тёмная зелень, --area-accent сам по себе подходит для HUD */
     --area-accent: #4B5E3A;
     --area-accent-mid: #3a4a2d;
     --area-accent-dark: #2c3a22;
     --area-accent-darker: #1d2716;
     --area-tint: rgba(60, 90, 55, 0.30);
+    --area-bg: #A8B88E;
+
+    --gp-frame: #3D4C2E;
+    --gp-wood: #2C3A20;
+    --gp-wood-light: #5A7044;
+    --gp-wood-dark: #1A2413;
+    --gp-track-dark: #11190C;
+    --gp-glow: rgba(75, 94, 58, 0.5);
+    --gp-glow-strong: rgba(75, 94, 58, 0.8);
+    --gp-panel-a: #C9D2AC;
+    --gp-panel-b: #9DA875;
+    --gp-subtitle: #2E3A20;
 }
 
-body[data-area="7"] { /* Кладбища — серо-лиловый */
+body[data-area="7"] { /* Кладбища — серо-лиловый. Панели --gp-panel-a/b держим ближе к пергаменту
+    (холодный десатурированный оттенок иначе убивает читаемость текста поверх модалки). */
     --area-accent: #5B5568;
     --area-accent-mid: #46414f;
     --area-accent-dark: #33303b;
     --area-accent-darker: #211f27;
     --area-tint: rgba(110, 100, 120, 0.26);
+    --area-bg: #B3ABBC;
+
+    --gp-frame: #3F3A4A;
+    --gp-wood: #2E2A36;
+    --gp-wood-light: #5C5568;
+    --gp-wood-dark: #1C1A21;
+    --gp-track-dark: #131218;
+    --gp-glow: rgba(91, 85, 104, 0.5);
+    --gp-glow-strong: rgba(91, 85, 104, 0.8);
+    --gp-panel-a: #C9C2CC;
+    --gp-panel-b: #9E96A6;
+    --gp-subtitle: #322D3A;
 }
 
-body[data-area="8"] { /* Зимние земли — бледно-ледяной синий */
+body[data-area="8"] { /* Зимние земли — бледно-ледяной синий. Glow берём из --area-tint (он ярче/чище
+    accent — так свечение полоски босса читается как настоящий лёд, а не тусклая синева). */
     --area-accent: #5C7C99;
     --area-accent-mid: #486277;
     --area-accent-dark: #364a59;
     --area-accent-darker: #24313c;
     --area-tint: rgba(150, 190, 215, 0.26);
+    --area-bg: #C3D6E2;
+
+    --gp-frame: #3E5A72;
+    --gp-wood: #2C4356;
+    --gp-wood-light: #5C82A0;
+    --gp-wood-dark: #1A2A36;
+    --gp-track-dark: #121E26;
+    --gp-glow: rgba(150, 190, 215, 0.5);
+    --gp-glow-strong: rgba(150, 190, 215, 0.8);
+    --gp-panel-a: #DCE8EE;
+    --gp-panel-b: #A8C2CE;
+    --gp-subtitle: #24404E;
 }
 
-body[data-area="9"] { /* Чёрные горы — тёплый красно-огненный */
+body[data-area="9"] { /* Чёрные горы — тёплый красно-огненный. Glow берём из --area-tint (более
+    яркий оранжево-красный, чем тёмный accent — читается как настоящее пламя). */
     --area-accent: #8B2E1F;
     --area-accent-mid: #6b2418;
     --area-accent-dark: #4d1a11;
     --area-accent-darker: #2e0f0a;
     --area-tint: rgba(170, 80, 40, 0.30);
+    --area-bg: #D9905E;
+
+    --gp-frame: #A8431E;
+    --gp-wood: #7A2E12;
+    --gp-wood-light: #C25F2E;
+    --gp-wood-dark: #4A1B0B;
+    --gp-track-dark: #331207;
+    --gp-glow: rgba(170, 80, 40, 0.5);
+    --gp-glow-strong: rgba(170, 80, 40, 0.8);
+    --gp-panel-a: #E8C29A;
+    --gp-panel-b: #C68A54;
+    --gp-subtitle: #5C2A12;
 }
 
-body[data-area="10"] { /* Оплот безумия — искажённый пурпур, тон сильнее остальных */
+body[data-area="10"] { /* Оплот безумия — искажённый пурпур, тон сильнее остальных. Единственная
+    область, где даже панели --gp-panel-a/b намеренно насыщеннее обычного — по замыслу
+    самая интенсивная/"испорченная" область кампании. */
     --area-accent: #7A2E6E;
     --area-accent-mid: #5e2455;
     --area-accent-dark: #451a3f;
     --area-accent-darker: #2c1028;
     --area-tint: rgba(140, 60, 130, 0.34);
+    --area-bg: #B583AC;
+
+    --gp-frame: #6B2A60;
+    --gp-wood: #4A1C42;
+    --gp-wood-light: #8A3F7E;
+    --gp-wood-dark: #2C1028;
+    --gp-track-dark: #1E0A1C;
+    --gp-glow: rgba(140, 60, 130, 0.55);
+    --gp-glow-strong: rgba(140, 60, 130, 0.85);
+    --gp-panel-a: #D6BDD0;
+    --gp-panel-b: #A6789E;
+    --gp-subtitle: #3D1838;
 }
 
 * {
@@ -3037,7 +3146,7 @@ html.is-mobile .main_menu_image {
     );
     /* Красная полоска снимается почти сразу */
     transition: width 0.12s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 
+    box-shadow:
         inset 0 0 10px rgba(255, 255, 255, 0.1),
         0 0 10px rgba(255, 0, 0, 0.3);
 }

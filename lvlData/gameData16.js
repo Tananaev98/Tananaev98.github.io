@@ -95,7 +95,7 @@ const ENEMY_TYPES = {
 		spawnWeight: 15,
 		baseExp: 320,
 		xPos: 36,
-		size: '22%',
+		size: '26%',
         deathAnimation: { preset: 'ashFade', durationMs: 1250 }
 	},
 
@@ -109,7 +109,7 @@ const ENEMY_TYPES = {
 		spawnWeight: 20,
 		baseExp: 430,
 		xPos: 38,
-		size: '18%',
+		size: '26%',
         deathAnimation: { preset: 'spinAway', durationMs: 1200 }
 	},
 
@@ -137,7 +137,7 @@ const ENEMY_TYPES = {
 		spawnWeight: 5,
 		baseExp: 0,
 		xPos: 36,
-		size: '24%',
+		size: '30%',
         deathAnimation: { preset: 'heavySink', durationMs: 1550 }
 	}
 };
