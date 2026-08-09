@@ -861,7 +861,15 @@ function initGame() {
     initBossHealthBar();
 	
     castleImage = document.getElementById('castleImage');
-    
+
+    document.getElementById('statusbarRestartBtn')?.addEventListener('click', () => {
+        location.reload();
+    });
+
+    document.getElementById('statusbarBaseBtn')?.addEventListener('click', () => {
+        window.location.href = 'index.html';
+    });
+
     // Инициализация прицела
     initAim();
     
@@ -2200,6 +2208,19 @@ function showStartModal() {
         window.battleMusic?.start(buildBattleMusicContext(bossM?.[0]));
         resumeGame(); // Снимаем паузу
     });
+}
+
+// Определяет, доступен ли следующий уровень (в рамках контента и уже открытый прогрессом игрока)
+function getNextLevelAvailability() {
+    const nextLevelNumber = Math.floor(Number(lvlNumber)) + 1;
+    const maxContentLevel = (typeof MAX_LEVEL === 'number' && Number.isFinite(MAX_LEVEL))
+        ? MAX_LEVEL
+        : nextLevelNumber - 1;
+    const maxUnlockedLevel = (Number(gameState?.lastCompletedLevel) || 0) + 1;
+    const hasNextLevel = Number.isFinite(nextLevelNumber)
+        && nextLevelNumber <= maxContentLevel
+        && nextLevelNumber <= maxUnlockedLevel;
+    return { nextLevelNumber, hasNextLevel };
 }
 
 // ==================== ФУНКЦИИ ПРИЦЕЛА И УРОНА ====================
@@ -3990,19 +4011,40 @@ function showLevelUpModal() {
 	
     return new Promise((resolve) => {
         // Создаем модальное окно
+        const { nextLevelNumber, hasNextLevel } = getNextLevelAvailability();
+
         const modal = document.createElement('div');
         modal.className = 'level-up-modal';
         modal.innerHTML = `
             <div class="modal-content">
+                <div class="levelup-util-buttons">
+                    <button type="button" class="levelup-util-btn restart" title="Начать уровень заново">⟳</button>
+                    ${hasNextLevel ? '<button type="button" class="levelup-util-btn next-level" title="Следующий уровень">⏭</button>' : ''}
+                    <button type="button" class="levelup-util-btn base" title="Вернуться на базу">🏠</button>
+                </div>
                 <h2>🎉 УРОВЕНЬ ${playerLevel} 🎉</h2>
                 <p class="modal-subtitle">Выберите одно временное улучшение:</p>
                 <div class="upgrade-options" id="upgradeOptions"></div>
             </div>
         `;
-        
+
 		 pauseGame();
         document.body.appendChild(modal);
-        
+
+        modal.querySelector('.levelup-util-btn.restart').addEventListener('click', () => {
+            location.reload();
+        });
+
+        modal.querySelector('.levelup-util-btn.next-level')?.addEventListener('click', () => {
+            const version = typeof GAME_BUILD_VERSION === 'string' ? GAME_BUILD_VERSION : '';
+            const versionQuery = version ? `&v=${encodeURIComponent(version)}` : '';
+            window.location.href = `level.html?level=${nextLevelNumber}${versionQuery}`;
+        });
+
+        modal.querySelector('.levelup-util-btn.base').addEventListener('click', () => {
+            window.location.href = 'index.html';
+        });
+
         // Определяем доступные улучшения
         const availableUpgrades = getAvailableUpgrades();
         
