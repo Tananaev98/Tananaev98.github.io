@@ -89,7 +89,7 @@ const ENEMY_TYPES = {
         baseDamage: 20,                    
         spawnWeight: 5,                   
 		baseExp: 250,                      
-        size: '15%',
+        size: '25%',
         deathAnimation: { preset: 'hopCollapse', durationMs: 1100 }                        
     },
     enem2: {  

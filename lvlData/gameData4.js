@@ -24,13 +24,13 @@ const ENEMY_TYPES = {
 	
 	enem11: {  
         name: 'enem11',                     
-        image: 'images/enemies/regions/1_smesh_les/lvl4/11.webp',  
-        baseHP: 100,                     
-        baseSpeed: 0.020,                  
-        baseDamage: 20,                    
-        spawnWeight: 5,                  
-		baseExp: 0,                     
-        size: '9%'                        
+        image: 'images/enemies/regions/1_smesh_les/lvl4/11.webp',
+        baseHP: 100,
+        baseSpeed: 0.020,
+        baseDamage: 20,
+        spawnWeight: 5,
+		baseExp: 0,
+        size: '6%'
     },
 	
 	enem22: {  

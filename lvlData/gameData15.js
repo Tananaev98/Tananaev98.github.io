@@ -1,25 +1,53 @@
 let lvlNumber = 15;
 let factorChar = (lvlNumber * 5) / 100;
 
-// Финал Смешанного леса. Сложность строится на смене приоритетов и чтении
-// геометрии, а не на одновременном усилении частоты, скорости и урона.
+// Финал Смешанного леса переосмыслен: это больше не пять разных хранителей, а одна
+// Баба-яга, показанная в пяти нарастающих обликах — от ведьмы с посохом до полного
+// слияния с избушкой. Архетипы построены так же, как и обычная пятёрка боссов
+// (иначе движок не читает уровень), но каждый следующий приём — явный шаг её
+// перерождения, а финал сводит воедино приёмы всех четырёх предыдущих обликов.
 const bossCombatConfig = {
 	levelCadence: 0.70, damageMultiplier: 1.25, minWaveDelay: 1950, minShotDelay: 130, minTelegraphMs: 460,
+	// Один и тот же противник от начала и до конца уровня — фоновая музыка
+	// не должна плыть по настроению вслед за архетипами, поэтому здесь задан
+	// единственный, всегда эпичный пул треков (см. правило 14 в lvlData/Правила
+	// создания уровня.txt: явный musicMood полностью отменяет автоподбор).
+	musicMood: 'heroic',
 	phases: [
 		{ phase: 1, minHp: 0.66, cadence: 1.00, speed: 1.02, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.16, maxActiveAttacks: 16 },
 		{ phase: 2, minHp: 0.31, cadence: 0.74, speed: 1.15, damage: 1.16, telegraphMultiplier: 0.89, surpriseChance: 0.30, maxActiveAttacks: 21 },
 		{ phase: 3, minHp: 0.00, cadence: 0.60, speed: 1.28, damage: 1.34, telegraphMultiplier: 0.82, surpriseChance: 0.42, maxActiveAttacks: 24 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'drift', cadence: 1.02, telegraphMs: 820, speedMultiplier: 1.02, damageMultiplier: 0.96, speedVariance: [0.84, 0.94, 1.02, 1.10, 1.18] }, // CENTER_OUT_BELLS: круги сходятся к центру
-		enem2: { movementStyle: 'weave', cadence: 0.92, telegraphMs: 720, speedMultiplier: 1.08, damageMultiplier: 0.84, speedVariance: [0.86, 0.96, 1.06, 1.16, 1.24] }, // PERIMETER_FLIGHT: полёт по дуге периметра
-		enem3: { movementStyle: 'pause', cadence: 1.12, telegraphMs: 960, speedMultiplier: 0.88, damageMultiplier: 1.08, speedVariance: [0.74, 0.84, 0.94, 1.04, 1.14] }, // FOOTSTEPS: редкие тяжёлые шаги
-		enem4: { movementStyle: 'accelerate', cadence: 0.84, telegraphMs: 650, speedMultiplier: 1.12, damageMultiplier: 0.68, speedVariance: [0.88, 0.98, 1.08, 1.18, 1.26] }, // BROOM_SWEEP: направленный пролёт метлы
+		enem1: {
+			movementStyle: 'weave', cadence: 1.05, telegraphMs: 880, speedMultiplier: 0.92, damageMultiplier: 0.92,
+			speedVariance: [0.86, 0.94, 1.02, 1.10, 1.18],
+			phaseMessages: { 2: 'ЯГА ПРИСТУПАЕТ К ДЕЛУ', 3: 'ПОСОХ БЬЁТ БЫСТРЕЕ' }
+		}, // БАБА-ЯГА: зигзаг посоха, испытывает игрока
+		enem2: {
+			movementStyle: 'straight', cadence: 0.90, telegraphMs: 740, speedMultiplier: 1.06, damageMultiplier: 0.90,
+			speedVariance: [0.85, 0.95, 1.05, 1.15, 1.25],
+			appearMessage: 'ВЫ РАЗОЗЛИЛИ БАБУ-ЯГУ!',
+			phaseMessages: { 2: 'ЗЛОСТЬ РАСТЁТ', 3: 'КОГТИ РВУТ ВОЗДУХ' }
+		}, // ЗЛАЯ БАБА-ЯГА: парные когтистые выпады с флангов
+		enem3: {
+			movementStyle: 'pause', cadence: 1.18, telegraphMs: 980, speedMultiplier: 0.85, damageMultiplier: 1.18,
+			speedVariance: [0.76, 0.86, 0.98, 1.10, 1.22],
+			appearMessage: 'БАБА-ЯГА ПРИХОДИТ В ЯРОСТЬ!',
+			phaseMessages: { 2: 'ПРОКЛЯТЬЯ ГУЩЕ', 3: 'ПОСЛЕДНЕЕ ЗАКЛИНАНИЕ' }
+		}, // ОЧЕНЬ ЗЛАЯ БАБА-ЯГА: редкие тяжёлые проклятия, долгие паузы
+		enem4: {
+			movementStyle: 'lateRush', cadence: 0.76, telegraphMs: 610, speedMultiplier: 1.20, damageMultiplier: 0.66,
+			speedVariance: [0.90, 1.03, 1.16, 1.29, 1.42],
+			appearMessage: 'БАБА-ЯГА СОВСЕМ ВЗБЕСИЛАСЬ!',
+			phaseMessages: { 2: 'ПЕЧЬ РАСКАЛЯЕТСЯ', 3: 'ОГОНЬ ВЫРЫВАЕТСЯ ИЗ ВСЕХ ЩЕЛЕЙ' }
+		}, // ВЗБЕШЕННАЯ БАБА-ЯГА: нервные вспышки только из четырёх углов
 		enem5: {
-			movementStyle: 'lateRush', cadence: 0.72, telegraphMs: 650, speedMultiplier: 1.15, damageMultiplier: 1.05,
-			speedVariance: [0.82, 0.94, 1.06, 1.18, 1.30],
-			phaseMessages: { 2: 'БАБА-ЯГА КОЛДУЕТ', 3: 'ПЛЯСКА ИЗБУШКИ' }
-		} // WITCHCRAFT_FINALE: морок, ступа и удары избушки
+			movementStyle: 'accelerate', cadence: 0.72, telegraphMs: 640, speedMultiplier: 1.15, damageMultiplier: 1.10,
+			speedVariance: [0.84, 0.97, 1.10, 1.23, 1.36],
+			appearMessage: 'БАБА-ЯГА ТЕРЯЕТ РАССУДОК!',
+			phaseMessages: { 2: 'ЛЕС СМЫКАЕТСЯ', 3: 'ПОСЛЕДНИЙ ОБЛИК ЯГИ' }
+		} // ОБЕЗУМЕВШАЯ БАБА-ЯГА: полное перерождение, сводит воедино приёмы всех обликов
 	}
 };
 
@@ -86,77 +114,76 @@ const ENEMY_TYPES = {
 
 	enem1: {
 		name: 'enem1',
-		dispName: 'Баюнище',
+		dispName: 'Баба-Яга',
 		image: 'images/enemies/regions/1_smesh_les/lvl15/1.webp',
-		baseHP: 5200 + (5200 * factorChar),
+		baseHP: 2600 + (2600 * factorChar),
 		baseSpeed: 0,
 		baseDamage: 20 + (20 * factorChar),
 		spawnWeight: 5,
-		baseExp: 300,
-		xPos: 36,
+		baseExp: 200,
+		xPos: 50,
 		size: '27%',
         deathAnimation: { preset: 'dissolveRise', durationMs: 1400 }
 	},
 
 	enem2: {
 		name: 'enem2',
-		dispName: 'Каркун-Вещун',
+		dispName: 'Злая Баба-Яга',
 		image: 'images/enemies/regions/1_smesh_les/lvl15/2.webp',
-		baseHP: 20500 + (20500 * factorChar),
+		baseHP: 6500 + (6500 * factorChar),
 		baseSpeed: 0,
 		baseDamage: 22 + (22 * factorChar),
 		spawnWeight: 15,
-		baseExp: 450,
-		xPos: 36,
-		size: '25%',
+		baseExp: 320,
+		xPos: 50,
+		size: '28%',
         deathAnimation: { preset: 'ashFade', durationMs: 1250 }
 	},
 
 	enem3: {
 		name: 'enem3',
-		dispName: 'Топотушка',
+		dispName: 'Очень злая Баба-Яга',
 		image: 'images/enemies/regions/1_smesh_les/lvl15/3.webp',
-		baseHP: 43000 + (43000 * factorChar),
+		baseHP: 11500 + (11500 * factorChar),
 		baseSpeed: 0,
 		baseDamage: 24 + (24 * factorChar),
 		spawnWeight: 20,
-		baseExp: 650,
-		xPos: 36,
-		size: '28%',
-        deathAnimation: { preset: 'heavySink', durationMs: 1500 }
+		baseExp: 430,
+		xPos: 50,
+		size: '29%',
+        deathAnimation: { preset: 'crumbleShake', durationMs: 1400 }
 	},
 
 	enem4: {
 		name: 'enem4',
-		dispName: 'Ступолёт',
+		dispName: 'Взбешенная Баба-Яга',
 		image: 'images/enemies/regions/1_smesh_les/lvl15/4.webp',
-		baseHP: 90000 + (90000 * factorChar),
+		baseHP: 18500 + (18500 * factorChar),
 		baseSpeed: 0,
 		baseDamage: 26 + (26 * factorChar),
 		spawnWeight: 10,
-		baseExp: 850,
-		xPos: 38,
-		size: '23%',
+		baseExp: 560,
+		xPos: 50,
+		size: '30%',
         deathAnimation: { preset: 'spinAway', durationMs: 1300 }
 	},
 
 	enem5: {
 		name: 'enem5',
-		dispName: 'Баба-яга',
+		dispName: 'Обезумевшая Баба-Яга',
 		image: 'images/enemies/regions/1_smesh_les/lvl15/5.webp',
-		baseHP: 146000 + (146000 * factorChar),
+		baseHP: 28000 + (28000 * factorChar),
 		baseSpeed: 0,
 		baseDamage: 28 + (28 * factorChar),
 		spawnWeight: 5,
 		baseExp: 0,
-		xPos: 36,
-		size: '27%',
-        deathAnimation: { preset: 'crumbleShake', durationMs: 1600 }
+		xPos: 50,
+		size: '31%',
+        deathAnimation: { preset: 'heavySink', durationMs: 1600 }
 	}
 };
 
-// Три бюджета урона не дают плотным сериям стать смертельным пулемётом.
-// В первой фазе даже две тяжёлые атаки оставляют самому хрупкому герою шанс.
+// Урон по проверенной лестнице light/medium/heavy — та же, что и на соседних уровнях.
 const attackDamage = {
 	enem1: {
 		light: Math.round(ENEMY_TYPES.enem1.baseDamage * 0.34),
@@ -189,157 +216,157 @@ let bossM = ['enem1', 'enem2', 'enem3', 'enem4', 'enem5'];
 let timeNextBoss = 5;
 const bossInterval = 5;
 
-// Уровень 15 — Избушка и Баба-яга, финал области «Смешанный лес».
-// Архетипы: круги из центра / дуга по периметру / чередующиеся шаги /
-// направленный пролёт / ведьмовской морок с ложным центром. Полной нижней стены нет.
+// Уровень 15 — пять обликов Бабы-яги. Архетипы: зигзаг посоха / парные когтистые
+// выпады с флангов / редкие тяжёлые проклятия с долгой паузой / нервные вспышки
+// только из углов / финальное перерождение, сводящее воедино приёмы всех обликов
+// и впервые перекрывающее всю нижнюю полосу — лес смыкается вокруг героя.
 const bossAbilities = [
-	// ===== Баюнище: CENTER_OUT_BELLS — звон расходится кругами из центра =====
-	{ boss: 'enem1', type: 'enem11', xPos: 50, yPos: 42, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 5 },  //0 центр, медленный звон
-	{ boss: 'enem1', type: 'enem11', xPos: 40, yPos: 34, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 7 },  //1
-	{ boss: 'enem1', type: 'enem11', xPos: 60, yPos: 34, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 8 },  //2
-	{ boss: 'enem1', type: 'enem11', xPos: 30, yPos: 26, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 11 }, //3
-	{ boss: 'enem1', type: 'enem11', xPos: 70, yPos: 26, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 12 }, //4
-	{ boss: 'enem1', type: 'enem11', xPos: 18, yPos: 18, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 14 }, //5
-	{ boss: 'enem1', type: 'enem11', xPos: 82, yPos: 18, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 15 }, //6
-	{ boss: 'enem1', type: 'enem11', xPos: 50, yPos: 14, customHP: 1, customDamage: attackDamage.enem1.heavy,  customSpeed: 15 }, //7 язык колокола
-	{ boss: 'enem1', type: 'enem11', xPos: 36, yPos: 7,  customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 21 }, //8
-	{ boss: 'enem1', type: 'enem11', xPos: 64, yPos: 6,  customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 23 }, //9
-	{ boss: 'enem1', type: 'enem11', xPos: 16, yPos: 48, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 4 },  //10
-	{ boss: 'enem1', type: 'enem11', xPos: 84, yPos: 48, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 6 },  //11
-	{ boss: 'enem1', type: 'enem11', xPos: 50, yPos: 5,  customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 25 }, //12 быстрый бой часов
-	{ boss: 'enem1', type: 'enem11', xPos: 26, yPos: 20, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 13 }, //13
-	{ boss: 'enem1', type: 'enem11', xPos: 74, yPos: 20, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 15 }, //14
-	{ boss: 'enem1', type: 'enem11', xPos: 50, yPos: 30, customHP: 1, customDamage: attackDamage.enem1.heavy,  customSpeed: 9 },  //15 ложный сон → удар
+	// ===== Яга: зигзаг посоха, испытывает игрока =====
+	{ boss: 'enem1', type: 'enem11', xPos: 20, yPos: 44, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 5 },  //0
+	{ boss: 'enem1', type: 'enem11', xPos: 80, yPos: 44, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 6 },  //1
+	{ boss: 'enem1', type: 'enem11', xPos: 32, yPos: 36, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 7 },  //2
+	{ boss: 'enem1', type: 'enem11', xPos: 68, yPos: 36, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 8 },  //3
+	{ boss: 'enem1', type: 'enem11', xPos: 18, yPos: 28, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 10 }, //4
+	{ boss: 'enem1', type: 'enem11', xPos: 82, yPos: 27, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 11 }, //5
+	{ boss: 'enem1', type: 'enem11', xPos: 40, yPos: 19, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 13 }, //6
+	{ boss: 'enem1', type: 'enem11', xPos: 60, yPos: 19, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 13 }, //7
+	{ boss: 'enem1', type: 'enem11', xPos: 25, yPos: 11, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 16 }, //8
+	{ boss: 'enem1', type: 'enem11', xPos: 75, yPos: 11, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 17 }, //9
+	{ boss: 'enem1', type: 'enem11', xPos: 50, yPos: 8,  customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 20 }, //10
+	{ boss: 'enem1', type: 'enem11', xPos: 10, yPos: 48, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 4 },  //11
+	{ boss: 'enem1', type: 'enem11', xPos: 90, yPos: 48, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 4 },  //12
+	{ boss: 'enem1', type: 'enem11', xPos: 50, yPos: 38, customHP: 1, customDamage: attackDamage.enem1.heavy,  customSpeed: 9 },  //13 нежданчик: тяжёлый посох из центра
+	{ boss: 'enem1', type: 'enem11', xPos: 35, yPos: 6,  customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 22 }, //14
+	{ boss: 'enem1', type: 'enem11', xPos: 65, yPos: 5,  customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 23 }, //15
 
-	// ===== Каркун-Вещун: PERIMETER_FLIGHT — одна дуга поля за серию =====
-	{ boss: 'enem2', type: 'enem22', xPos: 14, yPos: 8,  customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 18 }, //0 верх слева
-	{ boss: 'enem2', type: 'enem22', xPos: 42, yPos: 6,  customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 22 }, //1
-	{ boss: 'enem2', type: 'enem22', xPos: 78, yPos: 7,  customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 24 }, //2 верх справа
-	{ boss: 'enem2', type: 'enem22', xPos: 90, yPos: 18, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 15 }, //3
-	{ boss: 'enem2', type: 'enem22', xPos: 90, yPos: 34, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 12 }, //4
-	{ boss: 'enem2', type: 'enem22', xPos: 78, yPos: 48, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 7 },  //5
-	{ boss: 'enem2', type: 'enem22', xPos: 50, yPos: 50, customHP: 1, customDamage: attackDamage.enem2.heavy,  customSpeed: 5 },  //6 низ центра
-	{ boss: 'enem2', type: 'enem22', xPos: 22, yPos: 48, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 8 },  //7
-	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 34, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 13 }, //8
-	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 18, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 15 }, //9
-	{ boss: 'enem2', type: 'enem22', xPos: 30, yPos: 9,  customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 20 }, //10
-	{ boss: 'enem2', type: 'enem22', xPos: 70, yPos: 8,  customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 23 }, //11
-	{ boss: 'enem2', type: 'enem22', xPos: 84, yPos: 28, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 11 }, //12
-	{ boss: 'enem2', type: 'enem22', xPos: 16, yPos: 28, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 14 }, //13
-	{ boss: 'enem2', type: 'enem22', xPos: 50, yPos: 5,  customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 25 }, //14 резкий крик
-	{ boss: 'enem2', type: 'enem22', xPos: 50, yPos: 32, customHP: 1, customDamage: attackDamage.enem2.heavy,  customSpeed: 9 },  //15
+	// ===== Костяница: парные когтистые выпады с флангов =====
+	{ boss: 'enem2', type: 'enem22', xPos: 25, yPos: 38, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 9 },  //0 пара A слева
+	{ boss: 'enem2', type: 'enem22', xPos: 75, yPos: 38, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 9 },  //1 пара A справа
+	{ boss: 'enem2', type: 'enem22', xPos: 20, yPos: 26, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 13 }, //2 пара B слева
+	{ boss: 'enem2', type: 'enem22', xPos: 80, yPos: 26, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 13 }, //3 пара B справа
+	{ boss: 'enem2', type: 'enem22', xPos: 30, yPos: 11, customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 18 }, //4 пара C слева
+	{ boss: 'enem2', type: 'enem22', xPos: 70, yPos: 11, customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 18 }, //5 пара C справа
+	{ boss: 'enem2', type: 'enem22', xPos: 15, yPos: 48, customHP: 1, customDamage: attackDamage.enem2.heavy,  customSpeed: 5 },  //6 редкий тяжёлый коготь слева
+	{ boss: 'enem2', type: 'enem22', xPos: 85, yPos: 48, customHP: 1, customDamage: attackDamage.enem2.heavy,  customSpeed: 5 },  //7 редкий тяжёлый коготь справа
+	{ boss: 'enem2', type: 'enem22', xPos: 50, yPos: 44, customHP: 1, customDamage: attackDamage.enem2.heavy,  customSpeed: 6 },  //8 коготь в центр
+	{ boss: 'enem2', type: 'enem22', xPos: 50, yPos: 6,  customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 25 }, //9 самый резкий центральный
+	{ boss: 'enem2', type: 'enem22', xPos: 40, yPos: 33, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 11 }, //10
+	{ boss: 'enem2', type: 'enem22', xPos: 60, yPos: 33, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 11 }, //11
+	{ boss: 'enem2', type: 'enem22', xPos: 35, yPos: 19, customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 15 }, //12
+	{ boss: 'enem2', type: 'enem22', xPos: 65, yPos: 19, customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 15 }, //13
+	{ boss: 'enem2', type: 'enem22', xPos: 50, yPos: 48, customHP: 1, customDamage: attackDamage.enem2.heavy,  customSpeed: 4 },  //14 самый медленный, глубочайший коготь
+	{ boss: 'enem2', type: 'enem22', xPos: 45, yPos: 8,  customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 22 }, //15
 
-	// ===== Топотушка: FOOTSTEPS — одиночные шаги и редкие тройки, не стена =====
-	{ boss: 'enem3', type: 'enem33', xPos: 24, yPos: 48, customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 4 },  //0 левая нога
-	{ boss: 'enem3', type: 'enem33', xPos: 76, yPos: 48, customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 5 },  //1 правая нога
-	{ boss: 'enem3', type: 'enem33', xPos: 34, yPos: 44, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 6 },  //2
-	{ boss: 'enem3', type: 'enem33', xPos: 66, yPos: 44, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 7 },  //3
-	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 40, customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 8 },  //4 дверь-клюв
-	{ boss: 'enem3', type: 'enem33', xPos: 18, yPos: 28, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 11 }, //5
-	{ boss: 'enem3', type: 'enem33', xPos: 82, yPos: 28, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 12 }, //6
-	{ boss: 'enem3', type: 'enem33', xPos: 38, yPos: 24, customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 14 }, //7
-	{ boss: 'enem3', type: 'enem33', xPos: 62, yPos: 24, customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 15 }, //8
-	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 18, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 15 }, //9
-	{ boss: 'enem3', type: 'enem33', xPos: 22, yPos: 6,  customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 21 }, //10
-	{ boss: 'enem3', type: 'enem33', xPos: 78, yPos: 7,  customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 23 }, //11
-	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 8,  customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 20 }, //12
-	{ boss: 'enem3', type: 'enem33', xPos: 14, yPos: 50, customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 3 },  //13
-	{ boss: 'enem3', type: 'enem33', xPos: 86, yPos: 50, customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 4 },  //14
-	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 30, customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 9 },  //15
+	// ===== Мороковица: редкие тяжёлые проклятия, долгие паузы между ними =====
+	{ boss: 'enem3', type: 'enem33', xPos: 20, yPos: 50, customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 4 },  //0
+	{ boss: 'enem3', type: 'enem33', xPos: 80, yPos: 50, customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 4 },  //1
+	{ boss: 'enem3', type: 'enem33', xPos: 35, yPos: 47, customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 5 },  //2
+	{ boss: 'enem3', type: 'enem33', xPos: 65, yPos: 47, customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 5 },  //3
+	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 44, customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 6 },  //4 самое мощное проклятие, центр
+	{ boss: 'enem3', type: 'enem33', xPos: 15, yPos: 30, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 8 },  //5
+	{ boss: 'enem3', type: 'enem33', xPos: 85, yPos: 30, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 8 },  //6
+	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 22, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 12 }, //7
+	{ boss: 'enem3', type: 'enem33', xPos: 30, yPos: 12, customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 16 }, //8
+	{ boss: 'enem3', type: 'enem33', xPos: 70, yPos: 11, customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 17 }, //9
+	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 8,  customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 20 }, //10
+	{ boss: 'enem3', type: 'enem33', xPos: 40, yPos: 6,  customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 22 }, //11 нежданчик: резкий бросок сразу после паузы
+	{ boss: 'enem3', type: 'enem33', xPos: 60, yPos: 5,  customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 23 }, //12
+	{ boss: 'enem3', type: 'enem33', xPos: 10, yPos: 48, customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 3 },  //13 самое медленное и мощное
+	{ boss: 'enem3', type: 'enem33', xPos: 90, yPos: 48, customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 4 },  //14
+	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 34, customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 9 },  //15
 
-	// ===== Ступолёт: BROOM_SWEEP — серия имеет одно направление и выход =====
-	{ boss: 'enem4', type: 'enem44', xPos: 12, yPos: 18, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 12 }, //0 L→R
-	{ boss: 'enem4', type: 'enem44', xPos: 30, yPos: 15, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 14 }, //1
-	{ boss: 'enem4', type: 'enem44', xPos: 48, yPos: 12, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 17 }, //2
-	{ boss: 'enem4', type: 'enem44', xPos: 66, yPos: 9,  customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 21 }, //3
-	{ boss: 'enem4', type: 'enem44', xPos: 84, yPos: 6,  customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 24 }, //4
-	{ boss: 'enem4', type: 'enem44', xPos: 88, yPos: 20, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 11 }, //5 R→L
-	{ boss: 'enem4', type: 'enem44', xPos: 70, yPos: 16, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 15 }, //6
-	{ boss: 'enem4', type: 'enem44', xPos: 52, yPos: 12, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 18 }, //7
-	{ boss: 'enem4', type: 'enem44', xPos: 34, yPos: 8,  customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 22 }, //8
-	{ boss: 'enem4', type: 'enem44', xPos: 16, yPos: 5,  customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 26 }, //9
-	{ boss: 'enem4', type: 'enem44', xPos: 20, yPos: 46, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 5 },  //10 пыль после пролёта
-	{ boss: 'enem4', type: 'enem44', xPos: 50, yPos: 44, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 6 },  //11
-	{ boss: 'enem4', type: 'enem44', xPos: 80, yPos: 46, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 7 },  //12
-	{ boss: 'enem4', type: 'enem44', xPos: 10, yPos: 28, customHP: 1, customDamage: attackDamage.enem4.heavy,  customSpeed: 10 }, //13 ложный старт
-	{ boss: 'enem4', type: 'enem44', xPos: 90, yPos: 28, customHP: 1, customDamage: attackDamage.enem4.heavy,  customSpeed: 13 }, //14
-	{ boss: 'enem4', type: 'enem44', xPos: 50, yPos: 6,  customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 25 }, //15 быстрый таран
+	// ===== Печевница: нервные вспышки только из четырёх углов =====
+	{ boss: 'enem4', type: 'enem44', xPos: 12, yPos: 8,  customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 23 }, //0 верхний левый угол
+	{ boss: 'enem4', type: 'enem44', xPos: 88, yPos: 7,  customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 24 }, //1 верхний правый угол
+	{ boss: 'enem4', type: 'enem44', xPos: 14, yPos: 11, customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 18 }, //2
+	{ boss: 'enem4', type: 'enem44', xPos: 86, yPos: 10, customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 18 }, //3
+	{ boss: 'enem4', type: 'enem44', xPos: 10, yPos: 6,  customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 26 }, //4 самая резкая вспышка слева
+	{ boss: 'enem4', type: 'enem44', xPos: 90, yPos: 5,  customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 27 }, //5 самая резкая вспышка справа
+	{ boss: 'enem4', type: 'enem44', xPos: 14, yPos: 48, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 6 },  //6 нижний левый угол
+	{ boss: 'enem4', type: 'enem44', xPos: 86, yPos: 48, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 7 },  //7 нижний правый угол
+	{ boss: 'enem4', type: 'enem44', xPos: 18, yPos: 44, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 9 },  //8
+	{ boss: 'enem4', type: 'enem44', xPos: 82, yPos: 44, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 9 },  //9
+	{ boss: 'enem4', type: 'enem44', xPos: 12, yPos: 20, customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 14 }, //10
+	{ boss: 'enem4', type: 'enem44', xPos: 88, yPos: 20, customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 14 }, //11
+	{ boss: 'enem4', type: 'enem44', xPos: 50, yPos: 46, customHP: 1, customDamage: attackDamage.enem4.heavy,  customSpeed: 5 },  //12 редкий контраст: центр вместо угла
+	{ boss: 'enem4', type: 'enem44', xPos: 20, yPos: 9,  customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 22 }, //13
+	{ boss: 'enem4', type: 'enem44', xPos: 80, yPos: 8,  customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 22 }, //14
+	{ boss: 'enem4', type: 'enem44', xPos: 50, yPos: 6,  customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 25 }, //15 нежданчик: второй центральный щелчок
 
-	// ===== Баба-яга: WITCHCRAFT_FINALE — морок, ступа и пляшущая избушка =====
-	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 38, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 5 },  //0 морок в центре
-	{ boss: 'enem5', type: 'enem55', xPos: 28, yPos: 34, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 7 },  //1 внутренняя дуга
-	{ boss: 'enem5', type: 'enem55', xPos: 72, yPos: 34, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 8 },  //2
-	{ boss: 'enem5', type: 'enem55', xPos: 16, yPos: 26, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 11 }, //3 внешний размах
-	{ boss: 'enem5', type: 'enem55', xPos: 84, yPos: 26, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 12 }, //4
-	{ boss: 'enem5', type: 'enem55', xPos: 38, yPos: 20, customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 14 }, //5
-	{ boss: 'enem5', type: 'enem55', xPos: 62, yPos: 20, customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 15 }, //6
-	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 16, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 15 }, //7 удар посохом
-	{ boss: 'enem5', type: 'enem55', xPos: 22, yPos: 7,  customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 21 }, //8
-	{ boss: 'enem5', type: 'enem55', xPos: 78, yPos: 6,  customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 23 }, //9
-	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 5,  customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 25 }, //10 ведьмина вспышка
-	{ boss: 'enem5', type: 'enem55', xPos: 20, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 4 },  //11 шаг избушки
-	{ boss: 'enem5', type: 'enem55', xPos: 80, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 6 },  //12
-	{ boss: 'enem5', type: 'enem55', xPos: 10, yPos: 12, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 16 }, //13 пролёт слева
-	{ boss: 'enem5', type: 'enem55', xPos: 90, yPos: 10, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 18 }, //14 пролёт справа
-	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 28, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 9 },  //15 ложный центр
+	// ===== Лесовладычица: перерождение сводит воедино приёмы всех обликов =====
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 40, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 7 },  //0 эхо Яги: зигзаг-центр
+	{ boss: 'enem5', type: 'enem55', xPos: 25, yPos: 34, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 10 }, //1 эхо Костяницы: пара слева
+	{ boss: 'enem5', type: 'enem55', xPos: 75, yPos: 34, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 10 }, //2 пара справа
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 24, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 13 }, //3 эхо Мороковицы: тяжёлое проклятие
+	{ boss: 'enem5', type: 'enem55', xPos: 20, yPos: 9,  customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 21 }, //4 эхо Печевницы: угловой рывок
+	{ boss: 'enem5', type: 'enem55', xPos: 80, yPos: 8,  customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 22 }, //5
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 5,  customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 26 }, //6 самый резкий финальный рывок
+	{ boss: 'enem5', type: 'enem55', xPos: 35, yPos: 12, customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 17 }, //7
+	{ boss: 'enem5', type: 'enem55', xPos: 65, yPos: 12, customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 17 }, //8
+	{ boss: 'enem5', type: 'enem55', xPos: 11, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //9 нижний ряд: лес смыкается
+	{ boss: 'enem5', type: 'enem55', xPos: 30, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //10
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //11
+	{ boss: 'enem5', type: 'enem55', xPos: 69, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //12
+	{ boss: 'enem5', type: 'enem55', xPos: 89, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //13 конец ряда — лес обступил героя со всех сторон
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 30, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 12 } //14 неожиданный удар из центра после смыкания
 ];
 
 const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 340, bossDelayAbDop: 6000 }, // спокойные круги с передышкой
-	{ boss: 'enem2', bossDelayAb: 300, bossDelayAbDop: 5500 }, // отдельные дуги, не весь периметр
-	{ boss: 'enem3', bossDelayAb: 420, bossDelayAbDop: 6500 }, // тяжёлые шаги и длинная пауза
-	{ boss: 'enem4', bossDelayAb: 290, bossDelayAbDop: 5200 }, // быстрый, но малый урон и одно направление
-	{ boss: 'enem5', bossDelayAb: 300, bossDelayAbDop: 4600 }, // финальные серии плотнее, но каждая атака сохраняет телеграф
+	{ boss: 'enem1', bossDelayAb: 380, bossDelayAbDop: 6200 }, // спокойное испытание, щедрая передышка
+	{ boss: 'enem2', bossDelayAb: 280, bossDelayAbDop: 5000 }, // парные выпады, смена ритма
+	{ boss: 'enem3', bossDelayAb: 440, bossDelayAbDop: 6800 }, // редкие тяжёлые проклятия, самая долгая пауза
+	{ boss: 'enem4', bossDelayAb: 230, bossDelayAbDop: 4600 }, // нервные вспышки из углов
+	{ boss: 'enem5', bossDelayAb: 270, bossDelayAbDop: 4300 }, // финал: плотнее всех, но телеграф честный
 ];
 
 const bossAbilitiesDop = [
-	// Баюнище — CENTER_OUT_BELLS
-	{ boss: 'enem1', indexAbilities: [0, 1, 2] },
-	{ boss: 'enem1', indexAbilities: [1, 2, 3, 4] },
-	{ boss: 'enem1', indexAbilities: [8, 9] },
-	{ boss: 'enem1', indexAbilities: [10, 11] },
-	{ boss: 'enem1', indexAbilities: [15, 7, 12] }, // честный поворот: сон → язык → быстрый бой
-	{ boss: 'enem1', indexAbilities: [3, 5, 8] },
-	{ boss: 'enem1', indexAbilities: [4, 6, 9, 0] },
-	{ boss: 'enem1', indexAbilities: [0, 3, 4, 8, 9] },
+	// Яга
+	{ boss: 'enem1', indexAbilities: [0] },
+	{ boss: 'enem1', indexAbilities: [1] },
+	{ boss: 'enem1', indexAbilities: [0, 1] },
+	{ boss: 'enem1', indexAbilities: [2, 3, 4] },
+	{ boss: 'enem1', indexAbilities: [6, 7, 8, 9] },
+	{ boss: 'enem1', indexAbilities: [11, 9, 12] }, // ритмическая: медленно → быстро → медленно
+	{ boss: 'enem1', indexAbilities: [0, 2, 4, 6, 8, 10] }, // опасная сигнатурная: нарастающий зигзаг к резкому финалу
+	{ boss: 'enem1', indexAbilities: [13, 10, 14, 15] }, // смешанная поздняя: тяжёлый центр → быстрый верх
 
-	// Каркун-Вещун — PERIMETER_FLIGHT
-	{ boss: 'enem2', indexAbilities: [0, 10] },
-	{ boss: 'enem2', indexAbilities: [2, 3, 4] },
-	{ boss: 'enem2', indexAbilities: [5, 6, 7] },
-	{ boss: 'enem2', indexAbilities: [8, 9, 0] },
-	{ boss: 'enem2', indexAbilities: [10, 14] },
-	{ boss: 'enem2', indexAbilities: [4, 12, 15, 14] },
-	{ boss: 'enem2', indexAbilities: [7, 8, 13, 0] },
-	{ boss: 'enem2', indexAbilities: [0, 1, 3, 5, 6] }, // полукруг, противоположная сторона свободна
+	// Костяница
+	{ boss: 'enem2', indexAbilities: [0] },
+	{ boss: 'enem2', indexAbilities: [1] },
+	{ boss: 'enem2', indexAbilities: [0, 1] },
+	{ boss: 'enem2', indexAbilities: [2, 3] },
+	{ boss: 'enem2', indexAbilities: [4, 5] },
+	{ boss: 'enem2', indexAbilities: [6, 10, 7] }, // ритмическая: тяжело → средне → легко
+	{ boss: 'enem2', indexAbilities: [0, 1, 2, 3, 4, 5, 8] }, // опасная сигнатурная: все пары + коготь в центр
+	{ boss: 'enem2', indexAbilities: [9, 12, 13, 15] }, // смешанная поздняя
 
-	// Топотушка — FOOTSTEPS
+	// Мороковица
 	{ boss: 'enem3', indexAbilities: [0] },
 	{ boss: 'enem3', indexAbilities: [1] },
 	{ boss: 'enem3', indexAbilities: [0, 1] },
-	{ boss: 'enem3', indexAbilities: [2, 4, 3] },
-	{ boss: 'enem3', indexAbilities: [5, 6, 9] },
-	{ boss: 'enem3', indexAbilities: [10, 12, 11] },
-	{ boss: 'enem3', indexAbilities: [13, 15, 14] },
-	{ boss: 'enem3', indexAbilities: [0, 5, 10, 1] }, // шаг поднимается по краю и меняет ногу
+	{ boss: 'enem3', indexAbilities: [2, 3, 4] },
+	{ boss: 'enem3', indexAbilities: [5, 6, 7] },
+	{ boss: 'enem3', indexAbilities: [13, 11, 14] }, // ритмическая: самое медленное → резкий рывок → снова медленное
+	{ boss: 'enem3', indexAbilities: [0, 2, 4, 7, 9, 15] }, // опасная сигнатурная
+	{ boss: 'enem3', indexAbilities: [8, 10, 12] }, // смешанная поздняя
 
-	// Ступолёт — BROOM_SWEEP
-	{ boss: 'enem4', indexAbilities: [0, 1, 2] },
-	{ boss: 'enem4', indexAbilities: [5, 6, 7] },
-	{ boss: 'enem4', indexAbilities: [3, 4] },
-	{ boss: 'enem4', indexAbilities: [8, 9] },
-	{ boss: 'enem4', indexAbilities: [10, 11, 12] },
-	{ boss: 'enem4', indexAbilities: [0, 1, 2, 3, 4] },
-	{ boss: 'enem4', indexAbilities: [5, 6, 7, 8, 9] },
-	{ boss: 'enem4', indexAbilities: [13, 14, 15] }, // два ложных старта → таран сверху
+	// Печевница
+	{ boss: 'enem4', indexAbilities: [0] },
+	{ boss: 'enem4', indexAbilities: [1] },
+	{ boss: 'enem4', indexAbilities: [0, 1] },
+	{ boss: 'enem4', indexAbilities: [6, 7] },
+	{ boss: 'enem4', indexAbilities: [2, 3, 10, 11] },
+	{ boss: 'enem4', indexAbilities: [4, 12, 5] }, // ритмическая: резкий щелчок → пауза-тяжесть → резкий щелчок
+	{ boss: 'enem4', indexAbilities: [0, 2, 4, 8, 13, 15] }, // опасная сигнатурная: смешение всех четырёх углов
+	{ boss: 'enem4', indexAbilities: [1, 3, 9, 14] }, // смешанная поздняя
 
-	// Баба-яга — WITCHCRAFT_FINALE. Она смешивает приёмы четырёх хранителей уровня.
-	{ boss: 'enem5', indexAbilities: [1, 0, 2] }, // расходящийся морок Баюнища
-	{ boss: 'enem5', indexAbilities: [8, 14, 12, 9] }, // рваная дуга Каркуна
-	{ boss: 'enem5', indexAbilities: [11, 15, 12] }, // два шага избушки и удар в центре
-	{ boss: 'enem5', indexAbilities: [13, 5, 7, 6, 14] }, // пролёт ступы слева направо
-	{ boss: 'enem5', indexAbilities: [0, 7, 10] }, // морок замирает перед быстрым ударом сверху
-	{ boss: 'enem5', indexAbilities: [1, 3, 5, 10, 8] }, // левая спираль заканчивается встречным выпадом
-	{ boss: 'enem5', indexAbilities: [2, 4, 6, 10, 9] }, // зеркальная правая спираль
-	{ boss: 'enem5', indexAbilities: [15, 5, 6, 3, 4, 10, 7] }, // финал: ложный центр → двойная дуга → удар посохом
+	// Лесовладычица — сводит воедино приёмы всех четырёх предыдущих обликов
+	{ boss: 'enem5', indexAbilities: [0] },
+	{ boss: 'enem5', indexAbilities: [3] },
+	{ boss: 'enem5', indexAbilities: [0, 3] },
+	{ boss: 'enem5', indexAbilities: [1, 2] },
+	{ boss: 'enem5', indexAbilities: [4, 5] },
+	{ boss: 'enem5', indexAbilities: [7, 8, 6] }, // ритмическая: два боковых рывка сверху → резкий центр
+	{ boss: 'enem5', indexAbilities: [9, 10, 11, 12, 13, 14] }, // сигнатура: полное смыкание леса → удар из центра
+	{ boss: 'enem5', indexAbilities: [0, 4, 7, 9, 14] }, // смешанная поздняя: мотивы всех четырёх обликов
 ];

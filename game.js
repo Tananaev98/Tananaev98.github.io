@@ -345,6 +345,7 @@ class Enemy {
         this.pauseUntil = 0;
         this.hasTriggeredRush = false;
         this.hitStopUntil = 0; // короткая заморозка движения в момент мощного попадания (hit-stop)
+        this.currentTiltAngle = 0; // текущий угол покачивания (градусы) — нужен для попадания строго по силуэту
         // Создаем DOM элемент для отображения врага
         this.element = this.createEnemyElement();
         
@@ -361,8 +362,9 @@ class Enemy {
             this.pixelX = (this.x / 100) * this.fieldWidth;
             this.pixelY = (this.y / 100) * this.fieldHeight;
             this.applyPositionTransform(0);
-            // Прогрев маски силуэта для стрел Луки
+            // Прогрев маски силуэта — для стрел Луки и для попадания строго по силуэту
             ensureEnemyOpaqueSamples(this.element);
+            getEnemyHitGrid(this.element);
         });
     }
   
@@ -632,6 +634,7 @@ class Enemy {
 
     /** Позиция на поле; босс всегда горизонтально по центру */
     applyPositionTransform(tiltAngle = 0) {
+        this.currentTiltAngle = tiltAngle; // источник истины для попадания строго по силуэту
         if (!this.isBoss) {
             this.x = this.clampHorizontal(this.x);
         }
@@ -786,19 +789,37 @@ updateWound() {
  
 function getEnemyAtPoint(x, y) {
     const fieldRect = gameField.getBoundingClientRect();
+    const aimClientX = x + fieldRect.left;
+    const aimClientY = y + fieldRect.top;
+
     for (let i = activeEnemies.length - 1; i >= 0; i--) {
         const enemy = activeEnemies[i];
         const enemyElement = enemy.element;
         if (!enemyElement) continue;
 
         const enemyRect = enemyElement.getBoundingClientRect();
+        if (enemyRect.width <= 0 || enemyRect.height <= 0) continue;
+
+        // Быстрый грубый отсев: прицел вообще не над (повёрнутым) прямоугольником спрайта.
+        if (
+            aimClientX < enemyRect.left || aimClientX > enemyRect.right ||
+            aimClientY < enemyRect.top || aimClientY > enemyRect.bottom
+        ) {
+            continue;
+        }
+
+        // Строгая проверка попадания по силуэту (альфа-маска). true/false — силуэт
+        // посчитан и даёт однозначный ответ. null — маска для этой картинки ещё не
+        // готова (первые кадры после спавна) — тогда не оставляем врага совсем
+        // неуязвимым и подстраховываемся старой эллиптической проверкой.
+        const silhouetteHit = isPointOverEnemySilhouette(enemy, aimClientX, aimClientY);
+        if (silhouetteHit === true) return enemy;
+        if (silhouetteHit === false) continue;
+
         const enemyCenterX = enemyRect.left + enemyRect.width / 2;
         const enemyCenterY = enemyRect.top + enemyRect.height / 2;
-        const aimCenterX = x + fieldRect.left;
-        const aimCenterY = y + fieldRect.top;
-
-        const distanceX = Math.abs(aimCenterX - enemyCenterX);
-        const distanceY = Math.abs(aimCenterY - enemyCenterY);
+        const distanceX = Math.abs(aimClientX - enemyCenterX);
+        const distanceY = Math.abs(aimClientY - enemyCenterY);
         const hitRadiusX = enemyRect.width / 2.5;
         const hitRadiusY = enemyRect.height / 2.5;
 
@@ -1107,17 +1128,24 @@ function gameLoop(currentTime) {
         && bossM.length > 0
     ) {
 		bossAliveName = bossM[0];
-		const boss = spawnEnemyWithParams(bossAliveName, 50, 13); 
+		const boss = spawnEnemyWithParams(bossAliveName, 50, 13);
 		// spawnEnemyWithParams('enem4', 40, 20, 1, 200, 40 )
 		bossAlive = true;
 		currentBoss = boss; // Сохраняем ссылку на босса
 		window.battleMusic?.setContext(buildBattleMusicContext(bossAliveName));
-		
+
 		// Показываем полоску здоровья босса
 		if (boss) {
 			showBossHealthBar(boss);
 		}
-		
+
+		// Необязательная реплика при появлении конкретного босса (например,
+		// «Вы разозлили Бабу-Ягу!» между обликами одного и того же противника).
+		const appearMessage = getLevelCombatConfig().bosses[bossAliveName]?.appearMessage;
+		if (appearMessage) {
+			showCenterText(appearMessage, 1600, 'boss');
+		}
+
 		startBossEvents();
 	}
 			
@@ -2776,6 +2804,111 @@ function getEnemyOpaqueSamples(imgEl) {
 function pickOpaqueHitNormFromSamples(samples) {
     if (!samples?.length) return null;
     return samples[Math.floor(Math.random() * samples.length)];
+}
+
+// ==================== Прицеливание строго по силуэту (альфа-маска) ====================
+//
+// Универсальный механизм: попадание засчитывается только по непрозрачным пикселям
+// спрайта, не по всему прямоугольнику вокруг него. Источник силуэта — та же цепочка
+// getEnemyOpaqueSamples/ensureEnemyOpaqueSamples, что уже питает прицеливание стрелы
+// Луки: сперва предпосчитанная маска из enemyAlphaMasks.js (мгновенно, без задержки),
+// при её отсутствии — расчёт по холсту на лету (с тем же кэшем и тем же безопасным
+// поведением при неудаче). Поэтому для НОВОГО противника ничего в этом блоке
+// дописывать не нужно: как только для его картинки появится маска (или хотя бы
+// один раз успешно посчитается холст), точный силуэт заработает сам собой.
+const ENEMY_HIT_GRID_SIZE = 48; // разрешение сетки попадания; не привязано к разрешению маски
+const HIT_GRID_NEIGHBOR_RADIUS = 1; // сглаживает разреженность выборки и края спрайта
+const enemyHitGridCache = new Map(); // src -> Set(cellIndex) | null
+
+function buildEnemyHitGrid(samples) {
+    if (!samples?.length) return null;
+    const size = ENEMY_HIT_GRID_SIZE;
+    const grid = new Set();
+    for (const sample of samples) {
+        const gx = Math.min(size - 1, Math.max(0, Math.floor(sample.x * size)));
+        const gy = Math.min(size - 1, Math.max(0, Math.floor(sample.y * size)));
+        grid.add(gy * size + gx);
+    }
+    return grid;
+}
+
+function getEnemyHitGrid(imgEl) {
+    if (!imgEl || !(imgEl instanceof HTMLImageElement)) return null;
+    const src = imgEl.currentSrc || imgEl.src;
+    if (!src) return null;
+
+    if (enemyHitGridCache.has(src)) return enemyHitGridCache.get(src);
+
+    const samples = getEnemyOpaqueSamples(imgEl);
+    if (samples?.length) {
+        const grid = buildEnemyHitGrid(samples);
+        enemyHitGridCache.set(src, grid);
+        return grid;
+    }
+
+    // Точки силуэта ещё не готовы (первый кадр после спавна, холст не досчитался
+    // и т.п.) — не блокируем попадание насовсем, а досчитываем сетку в фоне и пока
+    // возвращаем null: вызывающий код в этом случае временно подстрахуется старой
+    // эллиптической проверкой (см. getEnemyAtPoint), а не оставит врага неуязвимым.
+    ensureEnemyOpaqueSamples(imgEl).then((asyncSamples) => {
+        enemyHitGridCache.set(src, buildEnemyHitGrid(asyncSamples));
+    });
+    return null;
+}
+
+/**
+ * @returns {boolean|null} true — клик по непрозрачному пикселю силуэта,
+ *   false — точно мимо (силуэт посчитан), null — силуэт для этой картинки
+ *   ещё не готов, решение остаётся за вызывающим кодом.
+ */
+function isPointOverEnemySilhouette(enemy, clientX, clientY) {
+    const imgEl = enemy?.element;
+    if (!(imgEl instanceof HTMLImageElement)) return null;
+
+    const rect = imgEl.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return null;
+
+    const localWidth = imgEl.offsetWidth;
+    const localHeight = imgEl.offsetHeight;
+    if (!(localWidth > 0) || !(localHeight > 0)) return null;
+
+    // Спрайт покачивается через CSS rotate(), поэтому getBoundingClientRect() отдаёт
+    // расширенный AABB уже повёрнутой картинки, а не сами её границы. Разворачиваем
+    // точку клика обратно в локальные координаты спрайта вокруг его геометрического
+    // центра (он же центр вращения по умолчанию) — иначе на наклоне силуэт "уезжает".
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const tiltDeg = Number(enemy.currentTiltAngle) || 0;
+    const angleRad = -tiltDeg * Math.PI / 180;
+    const dx = clientX - centerX;
+    const dy = clientY - centerY;
+    const cos = Math.cos(angleRad);
+    const sin = Math.sin(angleRad);
+    const localDx = dx * cos - dy * sin;
+    const localDy = dx * sin + dy * cos;
+
+    const u = 0.5 + localDx / localWidth;
+    const v = 0.5 + localDy / localHeight;
+    if (u < 0 || u > 1 || v < 0 || v > 1) return false;
+
+    const grid = getEnemyHitGrid(imgEl);
+    if (!grid) return null;
+
+    const size = ENEMY_HIT_GRID_SIZE;
+    const gx = Math.min(size - 1, Math.max(0, Math.floor(u * size)));
+    const gy = Math.min(size - 1, Math.max(0, Math.floor(v * size)));
+
+    for (let ndy = -HIT_GRID_NEIGHBOR_RADIUS; ndy <= HIT_GRID_NEIGHBOR_RADIUS; ndy++) {
+        const ny = gy + ndy;
+        if (ny < 0 || ny >= size) continue;
+        const rowBase = ny * size;
+        for (let ndx = -HIT_GRID_NEIGHBOR_RADIUS; ndx <= HIT_GRID_NEIGHBOR_RADIUS; ndx++) {
+            const nx = gx + ndx;
+            if (nx < 0 || nx >= size) continue;
+            if (grid.has(rowBase + nx)) return true;
+        }
+    }
+    return false;
 }
 
 function syncLukaArrowMount(mount, enemyEl) {

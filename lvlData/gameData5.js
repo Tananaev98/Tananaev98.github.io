@@ -50,19 +50,19 @@ const ENEMY_TYPES = {
 
         name: 'enem22',                     
 
-        image: 'images/enemies/regions/1_smesh_les/lvl5/22.webp',  
+        image: 'images/enemies/regions/1_smesh_les/lvl5/22.webp',
 
-        baseHP: 100,                      
+        baseHP: 100,
 
-        baseSpeed: 0.020,                  
+        baseSpeed: 0.020,
 
-        baseDamage: 20,                    
+        baseDamage: 20,
 
-        spawnWeight: 5,                  
+        spawnWeight: 5,
 
-		baseExp: 0,                      
+		baseExp: 0,
 
-        size: '7%'                        
+        size: '6%'
 
     },
 

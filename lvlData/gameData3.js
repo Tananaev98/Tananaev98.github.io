@@ -24,24 +24,24 @@ const ENEMY_TYPES = {
 	
 	enem11: {  
         name: 'enem11',                     
-        image: 'images/enemies/regions/1_smesh_les/lvl3/11.webp',  
-        baseHP: 100,                     
-        baseSpeed: 0.020,                  
-        baseDamage: 20,                    
-        spawnWeight: 5,                  
-		baseExp: 0,                     
-        size: '7%'                        
+        image: 'images/enemies/regions/1_smesh_les/lvl3/11.webp',
+        baseHP: 100,
+        baseSpeed: 0.020,
+        baseDamage: 20,
+        spawnWeight: 5,
+		baseExp: 0,
+        size: '6%'
     },
 	
 	enem22: {  
         name: 'enem22',                     
-        image: 'images/enemies/regions/1_smesh_les/lvl3/22.webp',  
-        baseHP: 100,                      
-        baseSpeed: 0.020,                  
-        baseDamage: 20,                    
-        spawnWeight: 5,                  
-		baseExp: 0,                      
-        size: '9%'                        
+        image: 'images/enemies/regions/1_smesh_les/lvl3/22.webp',
+        baseHP: 100,
+        baseSpeed: 0.020,
+        baseDamage: 20,
+        spawnWeight: 5,
+		baseExp: 0,
+        size: '6%'
     },
 	
 	enem33: {  
@@ -57,13 +57,13 @@ const ENEMY_TYPES = {
 	
 	enem44: {  
         name: 'enem44',                     
-        image: 'images/enemies/regions/1_smesh_les/lvl3/44.webp',  
-        baseHP: 100,                      
-        baseSpeed: 0.020,                 
-        baseDamage: 20,                    
-        spawnWeight: 5,                  
-		baseExp: 0,                       
-        size: '9%'                       
+        image: 'images/enemies/regions/1_smesh_les/lvl3/44.webp',
+        baseHP: 100,
+        baseSpeed: 0.020,
+        baseDamage: 20,
+        spawnWeight: 5,
+		baseExp: 0,
+        size: '6%'
     },
 	
 	enem55: {  
