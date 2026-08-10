@@ -2125,12 +2125,16 @@ function showEndGameModal(victory, timeSeconds) {
         pauseGame();
     }
 	
+	let firstRegionFinalClear = false;
 	if(victory) {
-		completeLevel();
+		firstRegionFinalClear = completeLevel();
 	}
-	
+
 	const bossCount = Array.isArray(bossM) && bossM.length > 0 ? bossM.length : 5;
-	const zlatP = getLevelZlataPayout(lvlNumber, countDefeatBoss, bossCount);
+	let zlatP = getLevelZlataPayout(lvlNumber, countDefeatBoss, bossCount);
+	if (firstRegionFinalClear && zlatP > 0) {
+		zlatP = zlatP * REGION_FINAL_FIRST_CLEAR_ZLATA_MULTIPLIER;
+	}
 	if(zlatP >0){addZlat(zlatP)};
 
     const nextLevelNumber = Math.floor(Number(lvlNumber)) + 1;

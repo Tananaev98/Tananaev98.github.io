@@ -6,6 +6,7 @@ const MAX_CASTLE_DAMAGE_REDUCTION = 0.60;
 const CAMPAIGN_FINAL_LEVEL = 141;
 const HERO_MAX_LEVEL = 200;
 const LEVEL_REWARD_SCALE = 3;
+const REGION_FINAL_FIRST_CLEAR_ZLATA_MULTIPLIER = 10;
 const HERO_UPGRADE_BASE_COST = 10;
 const HERO_UPGRADE_COST_GROWTH = 1.06;
 const BOSS_DAMAGE_BALANCE = Object.freeze({
@@ -694,31 +695,36 @@ function unlockAllLevelsForDebug(secret, maxAvailableLevel) {
 }
 
 // 5. Обновление уровня
+// Возвращает true, если это первое прохождение финального уровня области
+// (используется для одноразового бонуса x10 к златам — см. showEndGameModal).
 function completeLevel() {
-	
+
 	saveLevelTime(lvlNumber, timeSec2);
+    let firstRegionFinalClear = false;
     if (lvlNumber > gameState.lastCompletedLevel) {
         gameState.lastCompletedLevel = lvlNumber;
 
 		if (typeof levelCompletionConfig !== 'undefined' && levelCompletionConfig.isRegionFinal) {
+			firstRegionFinalClear = true;
 			const completionMessage = levelCompletionConfig.completionMessage || 'Область пройдена!';
 			rowTotal = rowTotal + `<div class="time-line">${completionMessage}</div>`;
 		} else {
 			rowTotal = rowTotal + `<div class="time-line">Разблокирован уровень ${lvlNumber+1}!</div>`;
 		}
-        
+
         gameState.mHero.forEach(heroKey => {
             const hero = gameState[heroKey];
             if (!hero) return;
-            
+
             if (hero.lvlUnlock <= lvlNumber && hero.unlock == false) {
                 hero.unlock = true;
-				rowTotal = rowTotal + `<div class="time-line">Разблокирован новый герой — ${hero.dispName}!</div>`;	
+				rowTotal = rowTotal + `<div class="time-line">Разблокирован новый герой — ${hero.dispName}!</div>`;
             }
         }); // Добавлена закрывающая скобка
-        
+
         saveGameState();
     }
+    return firstRegionFinalClear;
 }
 
 function addZlat(zlatP) {

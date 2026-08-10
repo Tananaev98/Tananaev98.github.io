@@ -1,0 +1,130 @@
+{
+  "base_2": {
+    "size": [
+      512,
+      512
+    ],
+    "margins_ltrb": [
+      90,
+      20,
+      41,
+      27
+    ],
+    "partial_alpha": 22426,
+    "hidden_rgb": 0,
+    "green_partial_edge": 16,
+    "magenta_partial_edge": 18
+  },
+  "medal_22": {
+    "size": [
+      150,
+      150
+    ],
+    "margins_ltrb": [
+      6,
+      5,
+      6,
+      5
+    ],
+    "partial_alpha": 1373,
+    "hidden_rgb": 0,
+    "green_partial_edge": 0,
+    "magenta_partial_edge": 0
+  },
+  "base_3": {
+    "size": [
+      512,
+      512
+    ],
+    "margins_ltrb": [
+      63,
+      25,
+      50,
+      32
+    ],
+    "partial_alpha": 24989,
+    "hidden_rgb": 0,
+    "green_partial_edge": 9,
+    "magenta_partial_edge": 9
+  },
+  "medal_33": {
+    "size": [
+      150,
+      150
+    ],
+    "margins_ltrb": [
+      6,
+      5,
+      6,
+      5
+    ],
+    "partial_alpha": 1373,
+    "hidden_rgb": 0,
+    "green_partial_edge": 0,
+    "magenta_partial_edge": 0
+  },
+  "base_4": {
+    "size": [
+      512,
+      512
+    ],
+    "margins_ltrb": [
+      29,
+      27,
+      84,
+      20
+    ],
+    "partial_alpha": 37724,
+    "hidden_rgb": 0,
+    "green_partial_edge": 3,
+    "magenta_partial_edge": 8
+  },
+  "medal_44": {
+    "size": [
+      150,
+      150
+    ],
+    "margins_ltrb": [
+      6,
+      5,
+      6,
+      5
+    ],
+    "partial_alpha": 1373,
+    "hidden_rgb": 0,
+    "green_partial_edge": 0,
+    "magenta_partial_edge": 0
+  },
+  "base_5": {
+    "size": [
+      512,
+      512
+    ],
+    "margins_ltrb": [
+      20,
+      20,
+      20,
+      20
+    ],
+    "partial_alpha": 58393,
+    "hidden_rgb": 0,
+    "green_partial_edge": 0,
+    "magenta_partial_edge": 1
+  },
+  "medal_55": {
+    "size": [
+      150,
+      150
+    ],
+    "margins_ltrb": [
+      6,
+      5,
+      6,
+      5
+    ],
+    "partial_alpha": 1373,
+    "hidden_rgb": 0,
+    "green_partial_edge": 0,
+    "magenta_partial_edge": 0
+  }
+}

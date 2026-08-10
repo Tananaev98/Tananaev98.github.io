@@ -1,0 +1,32 @@
+{
+  "base_5": {
+    "size": [
+      512,
+      512
+    ],
+    "margins_ltrb": [
+      44,
+      20,
+      45,
+      20
+    ],
+    "partial_alpha": 14730,
+    "hidden_rgb": 0,
+    "green_partial_edge": 6
+  },
+  "medal_55": {
+    "size": [
+      150,
+      150
+    ],
+    "margins_ltrb": [
+      3,
+      3,
+      3,
+      4
+    ],
+    "partial_alpha": 1372,
+    "hidden_rgb": 0,
+    "green_partial_edge": 0
+  }
+}

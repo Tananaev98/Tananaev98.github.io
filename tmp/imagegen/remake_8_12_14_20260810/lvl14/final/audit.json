@@ -1,0 +1,162 @@
+{
+  "base_1": {
+    "size": [
+      512,
+      512
+    ],
+    "margins_ltrb": [
+      41,
+      20,
+      21,
+      29
+    ],
+    "partial_alpha": 14419,
+    "hidden_rgb": 0,
+    "green_partial_edge": 8,
+    "magenta_partial_edge": 3
+  },
+  "medal_11": {
+    "size": [
+      150,
+      150
+    ],
+    "margins_ltrb": [
+      7,
+      7,
+      8,
+      7
+    ],
+    "partial_alpha": 849,
+    "hidden_rgb": 0,
+    "green_partial_edge": 0,
+    "magenta_partial_edge": 0
+  },
+  "base_2": {
+    "size": [
+      512,
+      512
+    ],
+    "margins_ltrb": [
+      25,
+      60,
+      20,
+      113
+    ],
+    "partial_alpha": 15198,
+    "hidden_rgb": 0,
+    "green_partial_edge": 10,
+    "magenta_partial_edge": 10
+  },
+  "medal_22": {
+    "size": [
+      150,
+      150
+    ],
+    "margins_ltrb": [
+      7,
+      7,
+      8,
+      7
+    ],
+    "partial_alpha": 849,
+    "hidden_rgb": 0,
+    "green_partial_edge": 0,
+    "magenta_partial_edge": 0
+  },
+  "base_3": {
+    "size": [
+      512,
+      512
+    ],
+    "margins_ltrb": [
+      22,
+      40,
+      22,
+      73
+    ],
+    "partial_alpha": 11257,
+    "hidden_rgb": 0,
+    "green_partial_edge": 0,
+    "magenta_partial_edge": 1
+  },
+  "medal_33": {
+    "size": [
+      150,
+      150
+    ],
+    "margins_ltrb": [
+      7,
+      7,
+      8,
+      7
+    ],
+    "partial_alpha": 849,
+    "hidden_rgb": 0,
+    "green_partial_edge": 0,
+    "magenta_partial_edge": 0
+  },
+  "base_4": {
+    "size": [
+      512,
+      512
+    ],
+    "margins_ltrb": [
+      101,
+      20,
+      51,
+      28
+    ],
+    "partial_alpha": 7413,
+    "hidden_rgb": 0,
+    "green_partial_edge": 2,
+    "magenta_partial_edge": 0
+  },
+  "medal_44": {
+    "size": [
+      150,
+      150
+    ],
+    "margins_ltrb": [
+      7,
+      7,
+      8,
+      7
+    ],
+    "partial_alpha": 849,
+    "hidden_rgb": 0,
+    "green_partial_edge": 0,
+    "magenta_partial_edge": 0
+  },
+  "base_5": {
+    "size": [
+      512,
+      512
+    ],
+    "margins_ltrb": [
+      65,
+      20,
+      30,
+      34
+    ],
+    "partial_alpha": 10599,
+    "hidden_rgb": 0,
+    "green_partial_edge": 6,
+    "magenta_partial_edge": 1
+  },
+  "medal_55": {
+    "size": [
+      150,
+      150
+    ],
+    "margins_ltrb": [
+      7,
+      7,
+      8,
+      7
+    ],
+    "partial_alpha": 849,
+    "hidden_rgb": 0,
+    "green_partial_edge": 0,
+    "magenta_partial_edge": 0
+  }
+}

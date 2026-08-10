@@ -97,7 +97,7 @@ const ENEMY_TYPES = {
 		spawnWeight: 15,
 		baseExp: 320,
 		xPos: 50,
-		size: '26%',
+		size: '18%',
         deathAnimation: { preset: 'ashFade', durationMs: 1250 }
 	},
 
