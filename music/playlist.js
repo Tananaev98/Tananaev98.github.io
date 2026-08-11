@@ -1,5 +1,4 @@
 window.BATTLE_MUSIC_CONFIG = {
-    masterVolume: 0.12,
     fadeDurationMs: 450,
     shuffle: true,
     recentTrackMemory: 2,
@@ -14,8 +13,7 @@ window.BATTLE_MUSIC_CONFIG = {
             title: 'Russian Folk Kalinka',
             author: 'MuzaProduction',
             moods: ['folk', 'adventure'],
-            weight: 1.05,
-            volume: 0.4
+            weight: 1.05
         },
         {
             id: 'slavic-epic',
@@ -23,8 +21,7 @@ window.BATTLE_MUSIC_CONFIG = {
             title: 'Slavic Epic Loop',
             author: 'Ebunny',
             moods: ['adventure', 'heroic'],
-            weight: 1,
-            volume: 0.4
+            weight: 1
         },
         {
             id: 'war-dance',
@@ -32,8 +29,7 @@ window.BATTLE_MUSIC_CONFIG = {
             title: 'Slavic War Dance — Drums, Stomps & War Pipes',
             author: 'SoundsByAmelia',
             moods: ['heavy', 'chaos', 'heroic'],
-            weight: 0.88,
-            volume: 0.4
+            weight: 0.88
         },
         {
             id: 'forest-horror',
@@ -41,8 +37,7 @@ window.BATTLE_MUSIC_CONFIG = {
             title: 'Slavic Forest Horror — Ritual Drums, Eerie Flutes & Drones',
             author: 'SoundsByAmelia',
             moods: ['cunning', 'heavy'],
-            weight: 0.78,
-            volume: 0.4
+            weight: 0.78
         },
         {
             id: 'fantasy-armies',
@@ -50,8 +45,7 @@ window.BATTLE_MUSIC_CONFIG = {
             title: 'Fantasy Armies',
             author: 'Alexandr Zhelanov',
             moods: ['heroic', 'adventure', 'heavy'],
-            weight: 0.88,
-            volume: 0.4
+            weight: 0.88
         },
         {
             id: 'dvorak-polka',
@@ -60,8 +54,7 @@ window.BATTLE_MUSIC_CONFIG = {
             author: 'Kevin MacLeod',
             moods: ['chaos', 'folk', 'adventure'],
             // Полка должна давать редкий всплеск без превращения всего боя в цирк.
-            weight: 0.42,
-            volume: 0.4
+            weight: 0.42
         }
     ]
 };

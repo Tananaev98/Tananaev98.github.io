@@ -175,6 +175,91 @@ html.is-menu {
     background: linear-gradient(135deg, #347334, #215121) !important;
 }
 
+/* ==================== Окно настроек звука ==================== */
+.settings-dialog {
+    width: min(360px, 100%);
+    text-align: left;
+}
+
+.settings-dialog h2 {
+    margin: 0 32px 18px;
+    text-align: center;
+}
+
+.settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 4px;
+    border-top: 1px solid color-mix(in srgb, var(--gp-frame) 25%, transparent);
+}
+
+.settings-row:first-of-type {
+    border-top: none;
+}
+
+.settings-row-label {
+    font-weight: 700;
+    color: var(--gp-subtitle);
+}
+
+.settings-slider-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1 1 auto;
+    max-width: 210px;
+}
+
+.settings-slider {
+    flex: 1 1 auto;
+    height: 6px;
+    margin: 0;
+    background: linear-gradient(135deg, var(--gp-wood-dark), var(--gp-wood));
+    border: 2px solid var(--gp-frame);
+    border-radius: 999px;
+    outline: none;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.settings-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(135deg, #4CAF50, #2E7D32);
+    border: 2px solid #f3dfbd;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    cursor: pointer;
+}
+
+.settings-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: linear-gradient(135deg, #4CAF50, #2E7D32);
+    border: 2px solid #f3dfbd;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    cursor: pointer;
+}
+
+.settings-slider:focus-visible {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--gp-frame) 35%, transparent);
+}
+
+.settings-slider-value {
+    flex: 0 0 auto;
+    min-width: 2.4em;
+    text-align: right;
+    font-weight: 700;
+    color: var(--gp-subtitle);
+    font-variant-numeric: tabular-nums;
+}
+
 .menu-main {
     position: relative;
     z-index: 1;

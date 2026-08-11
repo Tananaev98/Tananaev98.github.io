@@ -82,26 +82,39 @@ for (const level of [1, 40, 80, 120, 160, 200]) {
     const eremei = buildHeroAtLevel('eremei', level);
     const dunya = buildHeroAtLevel('dunya', level);
     const luka = buildHeroAtLevel('luka', level);
+    const daryana = buildHeroAtLevel('daryana', level);
     const effectiveHp = hero => hero.castleHP / (1 - hero.startCastleDamageReduction);
     const difficulty = {
         eremei: api.calculateHeroDifficulty(eremei),
         dunya: api.calculateHeroDifficulty(dunya),
-        luka: api.calculateHeroDifficulty(luka)
+        luka: api.calculateHeroDifficulty(luka),
+        daryana: api.calculateHeroDifficulty(daryana)
     };
     difficultyRows.push({ level, ...difficulty });
 
     assert.ok(effectiveHp(eremei) > effectiveHp(dunya));
     assert.ok(effectiveHp(dunya) > effectiveHp(luka));
+    assert.ok(effectiveHp(dunya) > effectiveHp(daryana));
+    assert.ok(effectiveHp(daryana) > effectiveHp(luka));
     assert.ok(eremei.startSHOT_INTERVAL > dunya.startSHOT_INTERVAL);
     assert.ok(dunya.startSHOT_INTERVAL > luka.startSHOT_INTERVAL);
+    // Дарьяна намеренно не про скорость (ревизия 3): стартовая скорость всего
+    // 20, растёт максимум до 60 (minShotInterval = 940мс) — Дуня стабильно
+    // быстрее её на всей прокачке, а не только на старте.
+    assert.ok(dunya.startSHOT_INTERVAL < daryana.startSHOT_INTERVAL);
+    assert.ok(daryana.startSHOT_INTERVAL >= 940);
+    assert.ok(daryana.startSHOT_INTERVAL > luka.startSHOT_INTERVAL);
     assert.ok(eremei.startGlobalWoundChance <= dunya.startGlobalWoundChance);
     assert.ok(dunya.startGlobalWoundChance < luka.startGlobalWoundChance);
     assert.ok(eremei.startCastleDamageReduction <= api.getHeroDefenseCap(eremei));
     assert.ok(dunya.startCastleDamageReduction <= api.getHeroDefenseCap(dunya));
     assert.ok(luka.startCastleDamageReduction <= api.getHeroDefenseCap(luka));
+    assert.ok(daryana.startCastleDamageReduction <= api.getHeroDefenseCap(daryana));
     assert.equal(difficulty.eremei, 1);
     assert.ok(difficulty.dunya > difficulty.eremei);
     assert.ok(difficulty.dunya < difficulty.luka);
+    assert.ok(difficulty.daryana > difficulty.dunya);
+    assert.ok(difficulty.daryana < difficulty.luka);
     assert.equal(difficulty.luka, 5);
 }
 

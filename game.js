@@ -214,7 +214,7 @@ const HERO_ATTACK_TIMING = Object.freeze({
     minDeflectCycleMs: 120,
     maxDeflectCycleMs: 220,
     deflectImpactAt: 0.68,
-    animatedHeroes: Object.freeze(['eremei', 'dunya', 'luka'])
+    animatedHeroes: Object.freeze(['eremei', 'dunya', 'luka', 'daryana'])
 });
 const pendingHeroAttackTimers = new Set();
 
@@ -1140,6 +1140,7 @@ function gameLoop(currentTime) {
 		// spawnEnemyWithParams('enem4', 40, 20, 1, 200, 40 )
 		bossAlive = true;
 		currentBoss = boss; // Сохраняем ссылку на босса
+		resetDaryanaWarmup(); // Новая цель — прогрев начинается заново
 		window.battleMusic?.setContext(buildBattleMusicContext(bossAliveName));
 
 		// Показываем полоску здоровья босса
@@ -2083,9 +2084,11 @@ function playEndgameLevelUpAnimation(modal, level) {
 
 const endgameLevelUpSound = new Audio('sound/level_up.wav?v=1');
 endgameLevelUpSound.preload = 'auto';
-endgameLevelUpSound.volume = 0.10;
 
 function playEndgameLevelUpSound() {
+    const volume = window.audioSettings?.getSfxVolumeFactor() ?? 0.10;
+    if (volume <= 0) return;
+    endgameLevelUpSound.volume = volume;
     endgameLevelUpSound.currentTime = 0;
     const playback = endgameLevelUpSound.play();
     if (playback && typeof playback.catch === 'function') {
@@ -2435,10 +2438,12 @@ function damageEnemy(enemy, attackMultiplier = 1, attackKind = 'normal', shotInt
         showEremeiBossImpact(enemy, damageResult.isCritical, timing);
         showDunyaBossImpact(enemy, damageResult.isCritical, attackKind, timing);
         showLukaBossImpact(enemy, damageResult.isCritical, damageResult.isCountShot, timing);
+        showDaryanaBossImpact(enemy, damageResult.isCritical, timing);
     } else if (predictedDestroyed) {
         showEremeiDeflectImpact(enemy, damageResult.isCritical, timing);
         showDunyaDeflectImpact(enemy, damageResult.isCritical, timing);
         showLukaDeflectImpact(enemy, damageResult.isCritical, timing);
+        showDaryanaDeflectImpact(enemy, damageResult.isCritical, timing);
     }
 
     if (!isBoss) {
@@ -2582,6 +2587,11 @@ function calculateDamage(isBoss) {
             damage *= globalCritMultiplier;
             console.log(`Критический удар! Множитель: x${globalCritMultiplier}`);
         }
+
+        // Дарьяна: текущий уровень прогрева применяется к ЭТОМУ удару,
+        // а счётчик увеличивается уже для следующего.
+        damage *= getDaryanaWarmupMultiplier();
+        registerDaryanaWarmupHit();
 
         damage = Math.round(damage);
         return {
@@ -3041,6 +3051,114 @@ function showLukaBossImpact(
 function showLukaDeflectImpact(attackEnemy, isCritical = false, timing = getHeroDeflectTiming()) {
     if (activeHeroObject?.name !== 'luka' || !attackEnemy?.element || !enemiesContainer || !gameField) return;
     showLukaArrowImpact(attackEnemy.element, { isMini: true, isCritical, timing });
+}
+
+// Дарьяна: огонёк летит к цели по спирали (та же схема mount/impact, что у стрелы
+// Луки — синк с покачиванием босса, размещение по силуэту через альфа-маску), но
+// вместо прямого «вонзания» кружит по сужающейся спирали, прежде чем осесть.
+function syncDaryanaFireMount(mount, enemyEl) {
+    if (!mount?.isConnected) return;
+
+    if (enemyEl?.isConnected) {
+        const renderedStyle = getComputedStyle(enemyEl);
+        mount.style.left = enemyEl.style.left || '0%';
+        mount.style.top = enemyEl.style.top || '0%';
+        mount.style.transform = renderedStyle.transform === 'none'
+            ? 'none'
+            : renderedStyle.transform;
+    }
+
+    requestAnimationFrame(() => syncDaryanaFireMount(mount, enemyEl));
+}
+
+function showDaryanaFireImpact(
+    enemyEl,
+    {
+        isMini = false,
+        isCritical = false,
+        timing = isMini ? getHeroDeflectTiming() : getHeroAttackTiming(SHOT_INTERVAL)
+    } = {}
+) {
+    if (!enemyEl || !enemiesContainer) return;
+
+    const spawnAt = (hit) => {
+        if (!hit || !enemyEl.isConnected || !enemiesContainer) return;
+        if (enemyEl.offsetWidth < 2 || enemyEl.offsetHeight < 2) return;
+
+        pruneImpactNodes(isMini ? '.daryana-fire-mount.is-mini' : '.daryana-fire-mount:not(.is-mini)', isMini ? 4 : 12);
+
+        const mount = document.createElement('div');
+        mount.className = `daryana-fire-mount${isMini ? ' is-mini' : ''}${isCritical ? ' is-critical' : ''}`;
+        mount.style.left = enemyEl.style.left || '0%';
+        mount.style.top = enemyEl.style.top || '0%';
+        mount.style.width = `${Math.max(1, enemyEl.offsetWidth)}px`;
+        mount.style.height = `${Math.max(1, enemyEl.offsetHeight)}px`;
+        mount.style.transform = enemyEl.style.transform || 'none';
+        mount.style.transformOrigin = getComputedStyle(enemyEl).transformOrigin || '50% 50%';
+        mount.setAttribute('aria-hidden', 'true');
+
+        const impact = document.createElement('div');
+        impact.className = `daryana-boss-impact${isMini ? ' is-mini' : ''}${isCritical ? ' daryana-boss-impact-critical' : ''}`;
+        impact.style.left = `${(hit.x * 100).toFixed(3)}%`;
+        impact.style.top = `${(hit.y * 100).toFixed(3)}%`;
+        // Сторона, с которой огонёк заходит и в которую сначала качнётся —
+        // иначе все выстрелы летели бы и покачивались одинаково.
+        impact.style.setProperty('--daryana-fly-dir', Math.random() < 0.5 ? '1' : '-1');
+        // Полёт по прямой (по боссу) — неторопливый, с запасом от цикла атаки,
+        // чтобы не выглядел «проматываемым». Отбитие атаки (mini) — по-прежнему
+        // короткое: снаряд гибнет мгновенно, огоньку незачем задерживаться.
+        const fireDurationMs = isMini
+            ? Math.max(420, Math.min(900, Math.round(timing.cycleMs)))
+            : Math.max(700, Math.min(1600, Math.round(timing.cycleMs * 1.3)));
+        impact.style.setProperty('--daryana-fire-duration', `${fireDurationMs}ms`);
+        impact.style.setProperty('--daryana-ring-duration', `${Math.max(150, Math.round(fireDurationMs * 0.22))}ms`);
+        // Вспышка-«прощание» приходится на момент прибытия огонька (~70% полёта),
+        // а не на его старт — иначе кольцо мигнёт ещё в воздухе, до цели.
+        impact.style.setProperty('--daryana-arrival-delay', `${Math.round(fireDurationMs * 0.7)}ms`);
+        if (isMini) {
+            // При отбитии атаки огонёк не должен теряться на фоне снаряда —
+            // высота примерно с саму атаку, даже чуть выше.
+            const miniFireSize = Math.round(Math.max(1, enemyEl.offsetHeight) * 1.15);
+            impact.style.setProperty('--daryana-mini-fire-size', `${miniFireSize}px`);
+        }
+        impact.innerHTML = `
+            <span class="daryana-impact-ring"></span>
+            <span class="daryana-impact-flash"></span>
+            <span class="daryana-fire"></span>
+        `;
+        mount.appendChild(impact);
+        enemiesContainer.appendChild(mount);
+        if (!isMini) {
+            syncDaryanaFireMount(mount, enemyEl);
+        }
+
+        window.setTimeout(() => mount.remove(), fireDurationMs + 200);
+    };
+
+    const ready = pickOpaqueHitNormFromSamples(getEnemyOpaqueSamples(enemyEl));
+    if (ready) {
+        spawnAt(ready);
+        return;
+    }
+
+    ensureEnemyOpaqueSamples(enemyEl).then((samples) => {
+        const hit = pickOpaqueHitNormFromSamples(samples);
+        if (hit) {
+            spawnAt(hit);
+            return;
+        }
+        spawnAt({ x: 0.5, y: 0.45 });
+    });
+}
+
+function showDaryanaBossImpact(boss, isCritical = false, timing = getHeroAttackTiming(SHOT_INTERVAL)) {
+    if (activeHeroObject?.name !== 'daryana' || !boss?.element || !enemiesContainer || !gameField) return;
+    showDaryanaFireImpact(boss.element, { isMini: false, isCritical, timing });
+}
+
+function showDaryanaDeflectImpact(attackEnemy, isCritical = false, timing = getHeroDeflectTiming()) {
+    if (activeHeroObject?.name !== 'daryana' || !attackEnemy?.element || !enemiesContainer || !gameField) return;
+    showDaryanaFireImpact(attackEnemy.element, { isMini: true, isCritical, timing });
 }
 
 // Еремей: цикл двуручных ударов дубиной (горизонталь / overhead / диагонали / sweep / chop).
@@ -3620,7 +3738,19 @@ function fadeOutEnemiesQuick(enemies, durationMs = 350) {
     return Promise.all(tasks);
 }
 
-function finalizeBossDefeatAftermath(enemy, isFinalBoss) {
+// Число гарантированных окон выбора временного улучшения после побед над
+// небоссами-финалами уровня (боссы 1-4 из 5). Не связано с опытом/уровнем
+// игрока — та механика (giveExperienceForKill → processLevelUp) остаётся
+// нетронутой и может пригодиться отдельно для других режимов.
+const BOSS_KILL_UPGRADE_CHOICES = 3;
+
+async function awardBossKillUpgradeChoices(count = BOSS_KILL_UPGRADE_CHOICES) {
+    for (let i = 0; i < count; i++) {
+        await showLevelUpModal('🏆 НАГРАДА ЗА ПОБЕДУ 🏆', 'Выберите одно временное улучшение:');
+    }
+}
+
+async function finalizeBossDefeatAftermath(enemy, isFinalBoss) {
     bossDeathSequenceActive = false;
 
     if (isFinalBoss) {
@@ -3630,7 +3760,11 @@ function finalizeBossDefeatAftermath(enemy, isFinalBoss) {
     }
 
     window.battleMusic?.setContext(buildBattleMusicContext(bossM[0]));
-    giveExperienceForKill(enemy.type);
+    await awardBossKillUpgradeChoices();
+    // giveExperienceForKill здесь намеренно не вызывается — гарантированные
+    // 3 окна полностью заменяют опыт за победу над боссом. Сама функция
+    // (и вся цепочка processLevelUp/handleLevelUps) не тронута и остаётся
+    // доступной для других режимов, где опыт снова понадобится.
     timeNextBoss = timeSec2 + bossInterval;
     enableSpawning();
 }
@@ -3723,8 +3857,34 @@ const EREMEI_CATCH_BACK = Object.freeze({
 
 let eremeiCatchBackUntilMs = 0;
 
+/**
+ * Дарьяна — «Прогревание»: число попаданий подряд по ТЕКУЩЕЙ цели.
+ * Каждый следующий удар усилен на warmupDamagePerHit (0.5% по умолчанию).
+ * Сбрасывается со сменой цели (новый босс) и при рестарте уровня.
+ */
+let daryanaWarmupStacks = 0;
+
+function resetDaryanaWarmup() {
+    daryanaWarmupStacks = 0;
+}
+
+function getDaryanaWarmupPerHit() {
+    return Math.max(0, Number(activeHeroObject?.warmupDamagePerHit) || 0);
+}
+
+function getDaryanaWarmupMultiplier() {
+    if (activeHeroObject?.name !== 'daryana') return 1;
+    return 1 + (daryanaWarmupStacks * getDaryanaWarmupPerHit());
+}
+
+function registerDaryanaWarmupHit() {
+    if (activeHeroObject?.name !== 'daryana') return;
+    daryanaWarmupStacks++;
+}
+
 function resetHeroFeatureCombatState() {
     eremeiCatchBackUntilMs = 0;
+    resetDaryanaWarmup();
 }
 
 function getEremeiCatchBackConfig() {
@@ -4009,13 +4169,16 @@ async function handleLevelUps() {
 // ==================== ОБНОВЛЯЕМ ФУНКЦИЮ showLevelUpModal ====================
 
 let openLevelUpModal = false;
-function showLevelUpModal() {
-	
+function showLevelUpModal(titleHtml, subtitleText) {
+
 	openLevelUpModal = true;
-	
+
     return new Promise((resolve) => {
         // Создаем модальное окно
         const { nextLevelNumber, hasNextLevel } = getNextLevelAvailability();
+
+        const resolvedTitle = titleHtml ?? `🎉 УРОВЕНЬ ${playerLevel} 🎉`;
+        const resolvedSubtitle = subtitleText ?? 'Выберите одно временное улучшение:';
 
         const modal = document.createElement('div');
         modal.className = 'level-up-modal';
@@ -4026,8 +4189,8 @@ function showLevelUpModal() {
                     ${hasNextLevel ? '<button type="button" class="levelup-util-btn next-level" title="Следующий уровень">⏭</button>' : ''}
                     <button type="button" class="levelup-util-btn base" title="Вернуться на базу">🏠</button>
                 </div>
-                <h2>🎉 УРОВЕНЬ ${playerLevel} 🎉</h2>
-                <p class="modal-subtitle">Выберите одно временное улучшение:</p>
+                <h2>${resolvedTitle}</h2>
+                <p class="modal-subtitle">${resolvedSubtitle}</p>
                 <div class="upgrade-options" id="upgradeOptions"></div>
             </div>
         `;
@@ -4156,10 +4319,14 @@ function getAvailableUpgrades() {
             startGlobalWoundChance * TEMPORARY_UPGRADE_BASE_SHARE * woundChanceMultiplier,
             1 - globalWoundChance
         );
+        // "Шанс <родительный падеж>" → "к шансу <родительный падеж>" (падеж
+        // самого существительного в подписи не меняется, склоняется только «шанс»).
+        const woundChanceLabel = activeHeroObject?.woundChanceLabel ?? 'Шанс ранения';
+        const woundChanceNoun = woundChanceLabel.replace(/^Шанс\s+/i, '').toLowerCase();
         upgrades.push({
             id: 'woundChance',
-            name: 'Шанс ранения',
-            description: `+${(woundChanceIncrease * 100).toFixed(2)}% к шансу ранения`,
+            name: woundChanceLabel,
+            description: `+${(woundChanceIncrease * 100).toFixed(2)}% к шансу ${woundChanceNoun}`,
             rarity: woundChanceRarity,
             apply: function() {
                 globalWoundChance = Math.min(1, globalWoundChance + woundChanceIncrease);
@@ -4322,8 +4489,10 @@ function showCenterText(text, duration = 2000, type = 'info') {
 }
 // ==================== Звук ====================
 function playDamageSound() {
+    const volume = window.audioSettings?.getSfxVolumeFactor() ?? 0.10;
+    if (volume <= 0) return;
     const audio = new Audio('sound/damage.wav');
-    audio.volume = 0.02; // 30% громкости (0.0 - 1.0)
+    audio.volume = volume;
     audio.play();
 }
 
@@ -4331,6 +4500,8 @@ function playDamageSound() {
 // Синтезируется на лету (Web Audio), чтобы не тащить новый аудио-файл.
 let eremeiThudAudioCtx = null;
 function playEremeiImpactThud(isCritical = false) {
+    const volume = window.audioSettings?.getSfxVolumeFactor() ?? 0.10;
+    if (volume <= 0) return;
     try {
         const Ctx = window.AudioContext || window.webkitAudioContext;
         if (!Ctx) return;
@@ -4342,7 +4513,9 @@ function playEremeiImpactThud(isCritical = false) {
         const duration = isCritical ? 0.26 : 0.13;
         const startFreq = isCritical ? 150 : 115;
         const endFreq = isCritical ? 42 : 55;
-        const peakGain = isCritical ? 0.32 : 0.16;
+        // Крит звучит вдвое громче обычного удара — соотношение внутри эффекта,
+        // не «фиксированный уровень»: масштаб всё равно задаёт общий ползунок звука.
+        const peakGain = (isCritical ? 0.32 : 0.16) * volume;
 
         const osc = ctx.createOscillator();
         osc.type = 'sine';

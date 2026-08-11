@@ -26,6 +26,7 @@
 
     <div class="menu-actions">
         <div class="select-character-button" id="selectCharacterBtn">Персонажи</div>
+        <button type="button" class="select-character-button" id="openSettingsBtn" aria-label="Настройки звука">⚙ Настройки</button>
         <button type="button" class="select-character-button menu-debug-btn" id="unlockDebugBtn">Разблокировать всё</button>
         <button type="button" class="select-character-button menu-debug-btn" id="clearProgressBtn"
             title="Аварийный сброс локального прогресса">Сбросить всё</button>
@@ -52,6 +53,7 @@
 
 <script src="lvlData/areas.js?v=area-preview-levels-2026-08-05"></script>
 <script src="saveData.js?v=eremei-damage-20-2026-08-04"></script>
+<script src="music/audio-settings.js?v=audio-settings-2026-08-11"></script>
 <script src="music/hub-music.js?v=hub-music-tab-pause-2026-08-04"></script>
 
 <script>
@@ -204,6 +206,68 @@ if (unlockDebugBtn) {
     unlockDebugBtn.addEventListener('click', openDebugUnlockModal);
 }
 
+// ==================== Окно настроек звука ====================
+const openSettingsBtn = document.getElementById('openSettingsBtn');
+
+function openSettingsModal() {
+    const oldModal = document.querySelector('.settings-modal');
+    if (oldModal) oldModal.remove();
+
+    const musicVolume = window.audioSettings?.getMusicVolume() ?? 10;
+    const sfxVolume = window.audioSettings?.getSfxVolume() ?? 10;
+
+    const modal = document.createElement('div');
+    modal.className = 'settings-modal debug-unlock-modal';
+    modal.innerHTML = `
+        <div class="debug-unlock-dialog settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+            <button type="button" class="debug-unlock-close" aria-label="Закрыть">&times;</button>
+            <h2 id="settingsTitle">Настройки</h2>
+            <div class="settings-row">
+                <span class="settings-row-label">Музыка</span>
+                <div class="settings-slider-wrap">
+                    <input type="range" class="settings-slider" id="settingsMusicSlider" min="0" max="100" step="1" value="${musicVolume}">
+                    <span class="settings-slider-value" id="settingsMusicValue">${musicVolume}</span>
+                </div>
+            </div>
+            <div class="settings-row">
+                <span class="settings-row-label">Звуки</span>
+                <div class="settings-slider-wrap">
+                    <input type="range" class="settings-slider" id="settingsSfxSlider" min="0" max="100" step="1" value="${sfxVolume}">
+                    <span class="settings-slider-value" id="settingsSfxValue">${sfxVolume}</span>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const closeModal = () => modal.remove();
+    modal.querySelector('.debug-unlock-close').addEventListener('click', closeModal);
+    modal.addEventListener('click', event => {
+        if (event.target === modal) closeModal();
+    });
+
+    const musicSlider = modal.querySelector('#settingsMusicSlider');
+    const musicValue = modal.querySelector('#settingsMusicValue');
+    musicSlider.addEventListener('input', event => {
+        const value = Number(event.target.value);
+        musicValue.textContent = value;
+        window.audioSettings?.setMusicVolume(value);
+    });
+
+    const sfxSlider = modal.querySelector('#settingsSfxSlider');
+    const sfxValue = modal.querySelector('#settingsSfxValue');
+    sfxSlider.addEventListener('input', event => {
+        const value = Number(event.target.value);
+        sfxValue.textContent = value;
+        window.audioSettings?.setSfxVolume(value);
+    });
+
+    document.body.appendChild(modal);
+}
+
+if (openSettingsBtn) {
+    openSettingsBtn.addEventListener('click', openSettingsModal);
+}
+
 // ==================== Кнопка очистки прогресса ====================
 const clearBtn = document.getElementById('clearProgressBtn');
 
@@ -298,9 +362,11 @@ let upgradeBtnInModal = null;
 let upgradeInfoSpan = null;
 const levelUpSound = new Audio('sound/level_up.wav?v=1');
 levelUpSound.preload = 'auto';
-levelUpSound.volume = 0.10;
 
 function playLevelUpSound() {
+    const volume = window.audioSettings?.getSfxVolumeFactor() ?? 0.10;
+    if (volume <= 0) return;
+    levelUpSound.volume = volume;
     levelUpSound.currentTime = 0;
     const playback = levelUpSound.play();
     if (playback && typeof playback.catch === 'function') {
@@ -426,7 +492,7 @@ function openCharacterSelect() {
                         <p><span>Урон:</span> <span class="value stat-damage">${Math.round(hero.startGlobalDamage)}</span></p>
                         <p><span>Шанс критического урона:</span> <span class="value stat-critChance">${formatPercent(hero.startGlobalCritChance)}</span></p>
                         <p><span>Критический урон:</span> <span class="value stat-critMulti">${Math.round(hero.startGlobalCritMultiplier * 100)}%</span></p>
-                        <p><span>Шанс ранения:</span> <span class="value stat-wound">${formatPercent(hero.startGlobalWoundChance)}</span></p>
+                        <p><span>${hero.woundChanceLabel ?? 'Шанс ранения'}:</span> <span class="value stat-wound">${formatPercent(hero.startGlobalWoundChance)}</span></p>
                         <p><span>Скорость атаки:</span> <span class="value stat-speed">${1000 - hero.startSHOT_INTERVAL}</span></p>
                         <p><span>Здоровье:</span> <span class="value stat-hp">${hero.castleHP}</span></p>
                         <p><span>Защита (снижение урона):</span> <span class="value stat-def">${formatPercent(hero.startCastleDamageReduction)}</span></p>

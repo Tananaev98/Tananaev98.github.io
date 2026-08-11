@@ -3,7 +3,6 @@
 
     const HUB_MUSIC_CONFIG = {
         src: 'music/elerya-calm.mp3',
-        volume: 0.068,
         fadeInMs: 900,
         fadeOutMs: 900,
         positionStorageKey: 'hubMusicPosition:elerya-calm'
@@ -22,6 +21,9 @@
             this.fadeToken = 0;
             this.lastSavedSecond = -1;
             this.navigationStarted = false;
+            this.volumeFactor = window.audioSettings?.getMusicVolumeFactor() ?? 0.10;
+
+            window.audioSettings?.subscribe(({ musicVolume }) => this.handleVolumeChange(musicVolume));
 
             this.audio.addEventListener('loadedmetadata', () => this.restorePosition());
             this.audio.addEventListener('timeupdate', () => this.savePositionPeriodically());
@@ -63,7 +65,30 @@
         }
 
         resumeFromBackground() {
-            if (!this.started || this.navigationStarted || this.isPageInactive()) return;
+            if (!this.started || this.navigationStarted || this.isPageInactive() || this.volumeFactor <= 0) return;
+            this.audio.volume = 0;
+            this.start({ silentFailure: true });
+        }
+
+        handleVolumeChange(musicVolume) {
+            const factor = clamp(Number(musicVolume) / 100, 0, 1);
+            this.volumeFactor = factor;
+
+            if (factor <= 0) {
+                this.fadeToken += 1;
+                this.savePosition();
+                if (!this.audio.paused) this.audio.pause();
+                this.audio.volume = 0;
+                return;
+            }
+
+            if (this.started && !this.audio.paused) {
+                // Уже играет — плавно подстраиваемся под новый уровень.
+                this.fadeTo(factor, 250);
+                return;
+            }
+
+            // Не играло (было выключено или ждало первого действия пользователя).
             this.audio.volume = 0;
             this.start({ silentFailure: true });
         }
@@ -87,13 +112,14 @@
         }
 
         async start({ silentFailure = false } = {}) {
+            if (this.volumeFactor <= 0) return false;
             if (this.started && !this.audio.paused) return true;
             if (this.isPageInactive()) return false;
 
             try {
                 await this.audio.play();
                 this.started = true;
-                this.fadeTo(this.config.volume, this.config.fadeInMs);
+                this.fadeTo(this.volumeFactor, this.config.fadeInMs);
                 return true;
             } catch (error) {
                 if (!silentFailure && error?.name !== 'NotAllowedError' && error?.name !== 'AbortError') {

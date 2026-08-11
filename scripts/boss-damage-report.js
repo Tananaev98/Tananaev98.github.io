@@ -6,11 +6,12 @@ const vm = require('node:vm');
 
 const CAMPAIGN_FINAL_LEVEL = 141;
 const HERO_MAX_LEVEL = 200;
-const HERO_KEYS = ['eremei', 'dunya', 'luka'];
+const HERO_KEYS = ['eremei', 'dunya', 'luka', 'daryana'];
 const HERO_NAMES = {
     eremei: 'Eremey',
     dunya: 'Dunya',
-    luka: 'Luka'
+    luka: 'Luka',
+    daryana: 'Daryana'
 };
 const CHECKPOINTS = [1, 15, 30, 45, 60, 75, 90, 105, 120, 135, 141];
 const STRONGEST_BOSS_BASE_DAMAGE = 28;
@@ -264,6 +265,7 @@ for (const result of allProjectedSurvival) {
 const lukaResults = allProjectedSurvival.filter(result => result.heroKey === 'luka');
 const dunyaResults = allProjectedSurvival.filter(result => result.heroKey === 'dunya');
 const eremeiResults = allProjectedSurvival.filter(result => result.heroKey === 'eremei');
+const daryanaResults = allProjectedSurvival.filter(result => result.heroKey === 'daryana');
 const maxFraction = results => Math.max(...results.map(result => result.hpFraction));
 const maxHitsToDefeat = results => Math.max(...results.map(result => result.hitsToDefeat));
 
@@ -273,6 +275,9 @@ assert.ok(maxFraction(lukaResults) <= 0.75);
 assert.ok(maxFraction(dunyaResults) <= 0.48);
 // Eremey remains the tank, but even he cannot absorb more than seven maximum hits.
 assert.ok(maxHitsToDefeat(eremeiResults) <= 7);
+// Daryana ("slightly below average") sits strictly between Dunya's cushion and Luka's.
+assert.ok(maxFraction(daryanaResults) > maxFraction(dunyaResults));
+assert.ok(maxFraction(daryanaResults) <= 0.65);
 
 const actualLevelRows = [];
 for (const campaignLevel of ACTUAL_LEVEL_NUMBERS) {

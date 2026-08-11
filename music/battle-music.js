@@ -6,7 +6,6 @@
         ? configuredMusic.tracks
         : [];
     const BATTLE_MUSIC_SETTINGS = {
-        volume: Number.isFinite(configuredMusic.masterVolume) ? configuredMusic.masterVolume : 0.12,
         fadeDurationMs: Number.isFinite(configuredMusic.fadeDurationMs) ? configuredMusic.fadeDurationMs : 450,
         shuffle: configuredMusic.shuffle !== false,
         recentTrackMemory: Number.isFinite(configuredMusic.recentTrackMemory)
@@ -48,6 +47,15 @@
             this.pageHidden = document.hidden;
             this.fadeToken = 0;
             this.nextTrackTimer = null;
+            this.volumeFactor = window.audioSettings?.getMusicVolumeFactor() ?? 0.10;
+
+            window.audioSettings?.subscribe(({ musicVolume }) => {
+                this.volumeFactor = clamp(Number(musicVolume) / 100, 0, 1);
+                // syncPlayback сам подстроит громкость уже играющего трека (через
+                // playLoadedTrack → fadeTo) и поставит на паузу/возобновит при
+                // переходе в 0/из 0.
+                this.syncPlayback();
+            });
 
             document.addEventListener('visibilitychange', () => {
                 this.pageHidden = document.hidden;
@@ -74,9 +82,8 @@
             return this.audio;
         }
 
-        getTrackVolume(track) {
-            const trackVolume = Number.isFinite(track?.volume) ? track.volume : 1;
-            return clamp(this.settings.volume * trackVolume, 0, 1);
+        getTrackVolume() {
+            return clamp(this.volumeFactor, 0, 1);
         }
 
         setContext(context = {}) {
@@ -247,7 +254,7 @@
             const track = this.tracks[this.currentTrackIndex];
             try {
                 await this.audio.play();
-                this.fadeTo(this.getTrackVolume(track));
+                this.fadeTo(this.getTrackVolume());
                 return true;
             } catch (error) {
                 // Браузер может блокировать звук до первого действия игрока.
@@ -259,7 +266,7 @@
         }
 
         async syncPlayback() {
-            const shouldPlay = this.requested && !this.gamePaused && !this.pageHidden;
+            const shouldPlay = this.requested && !this.gamePaused && !this.pageHidden && this.volumeFactor > 0;
             if (!shouldPlay) {
                 this.fadePause();
                 return false;

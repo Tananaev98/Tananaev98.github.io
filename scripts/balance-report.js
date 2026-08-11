@@ -59,6 +59,28 @@ const HEROES = {
         defense: 0.015,
         growthProfile: 'marksman',
         guaranteedCritEvery: 5
+    },
+    daryana: {
+        name: 'Дарьяна',
+        // Ревизия 4: прогрев поднят с 0.5% до 1.5% за удар (иначе тонул в шуме
+        // крита/разброса урона), урон снижен так, чтобы DPS остался тем же (~145).
+        // minInterval — личный пол скорострельности: растёт максимум до
+        // скорости 60 (интервал не ниже 940мс), а не до общих 200мс.
+        damage: 117.3,
+        critChance: 0.02,
+        critMultiplier: 2.0,
+        woundChance: 0.02,
+        interval: 980,
+        minInterval: 940,
+        hp: 108,
+        defense: 0.02,
+        growthProfile: 'tempest',
+        featureType: 'damage',
+        // Прогревание: +1.5% за удар по цели. featureMultiplier — ожидаемое
+        // среднее усиление за бой при допущении ~10 средних стаков (тот же
+        // приём, что и catchBackExpectedUptime у Еремея).
+        warmupDamagePerHit: 0.015,
+        featureMultiplier: 1.15
     }
 };
 
@@ -140,7 +162,7 @@ function cloneHeroAtLevel(baseHero, targetLevel) {
             hero.woundChance = Math.min(1, hero.woundChance + growth.woundChanceIncrease);
             hero.upSpecif = 3;
         } else if (hero.upSpecif === 3) {
-            hero.interval = Math.max(200, hero.interval - growth.shotIntervalReduction);
+            hero.interval = Math.max(hero.minInterval ?? 200, hero.interval - growth.shotIntervalReduction);
             hero.upSpecif = 4;
         } else {
             hero.hp += Math.floor(hero.hp * (growth.castleHpMultiplier - 1));
@@ -366,6 +388,7 @@ for (const heroLevel of [1, 40, 80, 120, 160, 200]) {
     const eremei = levelHeroes.eremei;
     const dunya = levelHeroes.dunya;
     const luka = levelHeroes.luka;
+    const daryana = levelHeroes.daryana;
 
     assert.ok(
         eremei.hp / (1 - eremei.defense) > dunya.hp / (1 - dunya.defense)
@@ -383,8 +406,21 @@ for (const heroLevel of [1, 40, 80, 120, 160, 200]) {
         `Превышен классовый предел защиты на уровне героя ${heroLevel}`
     );
 
+    // Дарьяна занимает промежуточную точку живучести между Дуней и Лукой
+    // («чуть ниже среднего») и намеренно уступает Луке по постоянному DPS.
+    assert.ok(
+        daryana.hp / (1 - daryana.defense) < dunya.hp / (1 - dunya.defense)
+        && daryana.hp / (1 - daryana.defense) > luka.hp / (1 - luka.defense),
+        `Дарьяна выпала из промежутка живучести между Дуней и Лукой на уровне героя ${heroLevel}`
+    );
+    assert.ok(
+        daryana.defense <= GROWTH_PROFILES.marksman.defenseCap,
+        `Превышен классовый предел защиты Дарьяны на уровне героя ${heroLevel}`
+    );
+
     const eremeiDps = expectedDps(eremei);
     const lukaDps = expectedDps(luka);
+    const daryanaDps = expectedDps(daryana);
     const eremeiCriticalHit = eremei.damage * eremei.critMultiplier;
     const lukaCriticalHit = luka.damage * luka.critMultiplier;
     const dunyaJackpotCriticalHit = dunya.damage
@@ -405,6 +441,10 @@ for (const heroLevel of [1, 40, 80, 120, 160, 200]) {
     assert.ok(
         lukaDps / eremeiDps <= 1.50,
         `Преимущество Луки по DPS превысило 50% на уровне героя ${heroLevel}`
+    );
+    assert.ok(
+        daryanaDps < lukaDps && daryanaDps / lukaDps >= 0.65 && daryanaDps / lukaDps <= 0.90,
+        `DPS Дарьяны вышел за коридор ~15% ниже Луки на уровне героя ${heroLevel}: ${(daryanaDps / lukaDps).toFixed(3)}`
     );
 
     for (const hero of Object.values(levelHeroes)) {

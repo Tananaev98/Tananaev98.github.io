@@ -296,8 +296,10 @@ function applyHeroPermanentStatUpgrade(hero) {
         );
         hero.upSpecif = 3;
     } else if (hero.upSpecif === 3) {
+        // Личный «пол» интервала (например, у Дарьяны — не про скорость)
+        // может быть строже общего технического минимума 200мс.
         hero.startSHOT_INTERVAL = Math.max(
-            200,
+            hero.minShotInterval ?? 200,
             hero.startSHOT_INTERVAL - growth.shotIntervalReduction
         );
         hero.upSpecif = 4;
@@ -887,7 +889,7 @@ function getDefaultGameState() {
 			levelTimes: {
 	          },
 			skillPoints: 0,			  
-			mHero: ['eremei', 'dunya', 'luka', 'kim', 'vas', 'gen', 'gm', 'kir', 'gam', 'gama','gamb','gamc', 'gamd','game','gamf', 'gamg', 'gamh', ],
+			mHero: ['eremei', 'daryana', 'luka', 'dunya', 'kim', 'vas', 'gen', 'gm', 'kir', 'gam', 'gama','gamb','gamc', 'gamd','game','gamf', 'gamg', 'gamh', ],
 			activeHero: 'eremei',
 			zlata: 0, 
 			eremei: {
@@ -918,7 +920,7 @@ function getDefaultGameState() {
 			
 			dunya: {
 				balanceRevision: 6,
-				name: 'dunya', 
+				name: 'dunya',
 				permanentGrowthProfile: 'tempest',
 				dispName: 'Ветроманка Дуня',
 				image: 'images/hero/1_babka/dunya_min.png',
@@ -931,18 +933,58 @@ function getDefaultGameState() {
 				startCastleDamageReduction : 0.03,
 				startSHOT_INTERVAL : 940,
 				castleHP : 120,
-				lvlUnlock: 2,
+				lvlUnlock: 15,
 				zlataUp: 10,
 				investedZlata: 0,
-				upSpecif: 1, 
-				unlock: true,
+				upSpecif: 1,
+				unlock: false,
 				feature: 'Раскрутилась — <br>10% шанс двойной атаки,<br>3% шанс тройной атаки<br>и 1% шанс: восьмикратного урона!',
 				doubleAttackChance: 0.10,
 				tripleAttackChance: 0.03,
 				jackpotAttackChance: 0.01,
 				jackpotAttackMultiplier: 8,
 			},
-			
+
+			// Дарьяна — «Прогревание»: каждый следующий удар по текущей цели усиливается
+			// на 1.5% вплоть до её гибели (см. warmupDamagePerHit, применяется в game.js
+			// через getDaryanaWarmupMultiplier/registerDaryanaWarmupHit). featureMultiplier
+			// здесь — ожидаемый средний бонус за бой (тот же приём, что и у Еремея
+			// catchBackExpectedUptime): при допущении ~10 средних стаков за бой на боссе
+			// бонус ≈ 10 × 1.5% = 15%. Занимает стартовый слот Дуни — открыта с самого начала.
+			// Ревизия 4: прогрев поднят с 0.5% до 1.5% за удар (иначе тонул в шуме крита
+			// и разброса урона по боссу), урон снижен так, чтобы DPS остался тем же (~145).
+			// Она по-прежнему не про скорость — стартовая скорость 20 (интервал 980мс),
+			// minShotInterval задаёt личный «пол»: скорость растёт максимум до 60
+			// (интервал не опускается ниже 940мс), в отличие от общего минимума 200мс.
+			// Профиль роста tempest — прокачка тоже не про скорость.
+			daryana: {
+				balanceRevision: 4,
+				name: 'daryana',
+				permanentGrowthProfile: 'tempest',
+				dispName: 'Дарьяна Пылкая',
+				image: 'images/hero/4_daryana/daryana_min.webp',
+				fullImage: 'images/hero/4_daryana/daryana_full.webp',
+				level: 1,
+				startGlobalDamage: 117.3,
+				startGlobalCritChance: 0.02,
+				startGlobalCritMultiplier: 2.0,
+				startGlobalWoundChance	: 0.02,
+				// Механика та же (ranение/DoT), но для огненного мага это подпалы —
+				// подпись в UI переименована чисто косметически, без смены логики.
+				woundChanceLabel: 'Шанс поджога',
+				startCastleDamageReduction : 0.02,
+				startSHOT_INTERVAL : 980,
+				minShotInterval: 940,
+				castleHP : 108,
+				lvlUnlock: 1,
+				zlataUp: 10,
+				investedZlata: 0,
+				upSpecif: 1,
+				unlock: true,
+				feature: 'Прогревание — <br>каждый следующий удар по цели<br>усиливается на 1.5%<br>вплоть до её гибели',
+				warmupDamagePerHit: 0.015,
+			},
+
 			luka: {
 				balanceRevision: 6,
 				name: 'luka', 
