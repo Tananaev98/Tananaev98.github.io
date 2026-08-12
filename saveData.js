@@ -59,6 +59,20 @@ const HERO_PERMANENT_GROWTH_PROFILES = Object.freeze({
         castleHpMultiplier: 1.045,
         defenseIncrease: 0.0065,
         defenseCap: 0.40
+    }),
+    // Дарьяна: рост почти целиком через урон, крит растёт нарочно медленно (см. объект
+    // daryana ниже) — ни один из трёх базовых профилей так не устроен, поэтому это
+    // отдельный профиль, а не переиспользование tempest (который также использует Дуня
+    // и трогать его ради Дарьяны нельзя).
+    ember: Object.freeze({
+        damageMultiplier: 1.061,
+        critChanceIncrease: 0.0017,
+        critMultiplierIncrease: 0.017,
+        woundChanceIncrease: 0.006,
+        shotIntervalReduction: 2,
+        castleHpMultiplier: 1.048,
+        defenseIncrease: 0.0075,
+        defenseCap: 0.50
     })
 });
 
@@ -420,7 +434,10 @@ function getHeroExpectedPermanentDps(hero) {
         Number(hero.startGlobalCritChance) || 0
     );
     const catchBackCritBonus = Math.max(0, Number(hero.catchBackCritChanceBonus) || 0);
-    const catchBackCritChance = catchBackCritBonus * HERO_DIFFICULTY_MODEL.eremeiExpectedCatchBackUptime;
+    const catchBackExpectedUptime = Number.isFinite(hero.catchBackExpectedUptime)
+        ? hero.catchBackExpectedUptime
+        : HERO_DIFFICULTY_MODEL.eremeiExpectedCatchBackUptime;
+    const catchBackCritChance = catchBackCritBonus * catchBackExpectedUptime;
     const guaranteedCritEvery = Math.max(0, Math.floor(Number(hero.guaranteedCritEvery) || 0));
     const guaranteedCritShare = guaranteedCritEvery > 0 ? 1 / guaranteedCritEvery : 0;
     const effectiveCritChance = guaranteedCritShare + (
@@ -430,7 +447,33 @@ function getHeroExpectedPermanentDps(hero) {
     );
     const critMultiplier = Math.max(1, Number(hero.startGlobalCritMultiplier) || 1);
     const critFactor = 1 + (effectiveCritChance * (critMultiplier - 1));
-    const baseAverageHitDamage = Math.max(0, Number(hero.startGlobalDamage) || 0) * critFactor;
+    // Дамаг-фичи, матчатся по наличию поля способности, а не по имени героя — любой будущий
+    // герой с уже описанной здесь механикой подхватится автоматически, без правок теста.
+    // Если появится принципиально новая механика (не сводится ни к одной из формул ниже),
+    // для неё нужен новый термин здесь — это тот самый случай из раздела 11 правил.
+    //
+    // 1) Нарастание по числу ударов подряд по одной цели (например, старое «Прогревание»):
+    //    среднее число ударов по цели за бой × прирост за удар.
+    const warmupDamagePerHit = Math.max(0, Number(hero.warmupDamagePerHit) || 0);
+    const warmupExpectedAverageHits = Number.isFinite(hero.warmupExpectedAverageHits)
+        ? hero.warmupExpectedAverageHits
+        : 10;
+    const warmupMultiplier = warmupDamagePerHit > 0
+        ? 1 + (warmupDamagePerHit * warmupExpectedAverageHits)
+        : 1;
+    // 2) Нарастание по недостающему HP% цели (например, «Добивание» Дарьяны): средняя доля
+    //    недостающего HP за бой (0..1) × прирост за 1% недостающего HP × 100.
+    const missingHpDamagePerPercent = Math.max(0, Number(hero.missingHpDamagePerPercent) || 0);
+    const missingHpExpectedAverageFraction = Number.isFinite(hero.missingHpExpectedAverageFraction)
+        ? hero.missingHpExpectedAverageFraction
+        : 0.425;
+    const missingHpMultiplier = missingHpDamagePerPercent > 0
+        ? 1 + (missingHpDamagePerPercent * 100 * missingHpExpectedAverageFraction)
+        : 1;
+    const damageFeatureMultiplier = warmupMultiplier * missingHpMultiplier;
+    const baseAverageHitDamage = Math.max(0, Number(hero.startGlobalDamage) || 0)
+        * critFactor
+        * damageFeatureMultiplier;
     const directDps = baseAverageHitDamage * attackStats.mean * hitsPerSecond;
     const woundProcRate = hitsPerSecond * clampHeroDifficultyValue(
         Number(hero.startGlobalWoundChance) || 0
@@ -893,14 +936,21 @@ function getDefaultGameState() {
 			activeHero: 'eremei',
 			zlata: 0, 
 			eremei: {
-				balanceRevision: 7,
-				name: 'eremei', 
+				balanceRevision: 8,
+				name: 'eremei',
 				permanentGrowthProfile: 'guardian',
 				dispName: 'Еремей Дуболом',
 				image: 'images/hero/2_eremei/eremei_min.png',
 				fullImage: 'images/hero/2_eremei/eremei_full.png',
 				level: 1,
-				startGlobalDamage: 158.4,
+				// Ревизия 8: старый баг «Лука теряет преимущество по DPS на уровне героя 1»
+				// (базовый урон Еремея давал ему 184 DPS против 172 у Луки уже на старте,
+				// хотя лучший постоянный DPS — архетипная черта Луки, см. раздел 2 правил) —
+				// урон снижен со 158.4 до 140, чтобы Лука вёл по DPS на КАЖДОЙ контрольной
+				// точке (1/40/80/120/160/200), а не только начиная с 40-го уровня. Крит
+				// Еремея (startGlobalCritMultiplier×damage) по-прежнему превосходит крит
+				// Луки минимум на 15% на всех точках — соответствующий assert не пострадал.
+				startGlobalDamage: 140,
 				startGlobalCritChance: 0.045,
 				startGlobalCritMultiplier: 2.1,
 				startGlobalWoundChance	: 0.015,
@@ -915,6 +965,11 @@ function getDefaultGameState() {
 				unlock: true,
 				catchBackCritChanceBonus: 0.10,
 				catchBackDurationMs: 3000,
+				// Допущение для автотестов/расчёта сложности: доля времени боя, в течение
+				// которого бонус крита от «Лови обратно» считается активным (см. также
+				// HERO_DIFFICULTY_MODEL.eremeiExpectedCatchBackUptime — общий дефолт на случай
+				// отсутствия этого поля у героя).
+				catchBackExpectedUptime: 0.45,
 			},
 			
 			
@@ -945,27 +1000,53 @@ function getDefaultGameState() {
 				jackpotAttackMultiplier: 8,
 			},
 
-			// Дарьяна — «Прогревание»: каждый следующий удар по текущей цели усиливается
-			// на 1.5% вплоть до её гибели (см. warmupDamagePerHit, применяется в game.js
-			// через getDaryanaWarmupMultiplier/registerDaryanaWarmupHit). featureMultiplier
-			// здесь — ожидаемый средний бонус за бой (тот же приём, что и у Еремея
-			// catchBackExpectedUptime): при допущении ~10 средних стаков за бой на боссе
-			// бонус ≈ 10 × 1.5% = 15%. Занимает стартовый слот Дуни — открыта с самого начала.
-			// Ревизия 4: прогрев поднят с 0.5% до 1.5% за удар (иначе тонул в шуме крита
-			// и разброса урона по боссу), урон снижен так, чтобы DPS остался тем же (~145).
+			// Дарьяна — «Прогревание»: урон растёт с недостающим HP% цели — за каждый
+			// недостающий 1% HP урон +1.5% (см. missingHpDamagePerPercent, применяется в
+			// game.js через getDaryanaMissingHpMultiplier — читает live target.hp/maxHP,
+			// состояние между ударами не хранится). Название способности вернули прежним
+			// (было временно «Добивание» на ревизии 5), сама механика — недостающий HP% —
+			// не изменилась. Занимает стартовый слот Дуни — открыта с самого начала.
+			// missingHpExpectedAverageFraction — допущение для расчёта среднего DPS в
+			// автотестах (тот же приём, что и catchBackExpectedUptime у Еремея). Способность
+			// самоусиливается: чем меньше HP у цели, тем быстрее падает следующий процент,
+			// поэтому среднее недостающее HP% за бой МЕНЬШЕ плоских 50% (середины линейного
+			// падения). ODE-оценка при равномерном базовом уроне и множителе
+			// 1+1.5×missingFraction даёт среднее ≈42.5% — отсюда 0.425.
+			//
+			// Ревизия 6: цель — держать DPS Дарьяны не более чем на 10% ниже Луки на ВСЕХ
+			// стадиях (уровни героя 1/40/80/120/160/200), а не в старом коридоре 65–90%.
+			// По условию силу нужно брать НЕ скоростью (интервал/minShotInterval не тронуты)
+			// и НЕ критом (наоборот, крит-рост урезан), а большим обычным уроном — поэтому:
+			// - startGlobalDamage поднят с 82.4 до 91.9;
+			// - критChance/критMultiplier как стартовые значения не менялись (2%/2.0), но
+			//   их РОСТ за уровень урезан отдельным профилем ember (см. выше): было бы через
+			//   tempest critMultiplierIncrease 0.09 и critChanceIncrease 0.007 — стало 0.017
+			//   и 0.0017, чтобы к 200 уровню крит остался скромным (≈4.4×/22% против ~8.2×/
+			//   41.5% у Луки на этом же уровне), а не был вторым источником силы;
+			// - damageMultiplier профиля ember (1.061) выше, чем у tempest (1.037), — именно
+			//   рост урона компенсирует то, что скорость Дарьяны рано упирается в личный пол
+			//   940мс (после чего "выстрелы/сек" перестают расти вообще, в отличие от Луки).
+			// Крит-рост урезан, но не до нуля: при более сильном урезании (пробовал вплоть до
+			// 0.015/0.0015) DPS-коридор оставался в норме на archetypeRows-точках, но росло
+			// время убийства отдельных боссов в симуляции временных улучшений
+			// (scripts/balance-report.js, колонка longestBoss) — слишком слабый крит-рычаг
+			// давал ей меньше гибкости внутри одного забега, даже при более высоком стартовом
+			// DPS. critMultiplierIncrease/critChanceIncrease подобраны на границе, где обе
+			// проверки (DPS-коридор ≤10% и время убийства босса ≤90с) проходят одновременно.
+			// Числа проверены расчётом DPS на всех 6 контрольных уровнях героя — коридор
+			// получился 0.93–0.99 от DPS Луки, без превышения.
 			// Она по-прежнему не про скорость — стартовая скорость 20 (интервал 980мс),
-			// minShotInterval задаёt личный «пол»: скорость растёт максимум до 60
+			// minShotInterval задаёт личный «пол»: скорость растёт максимум до 60
 			// (интервал не опускается ниже 940мс), в отличие от общего минимума 200мс.
-			// Профиль роста tempest — прокачка тоже не про скорость.
 			daryana: {
-				balanceRevision: 4,
+				balanceRevision: 6,
 				name: 'daryana',
-				permanentGrowthProfile: 'tempest',
+				permanentGrowthProfile: 'ember',
 				dispName: 'Дарьяна Пылкая',
 				image: 'images/hero/4_daryana/daryana_min.webp',
 				fullImage: 'images/hero/4_daryana/daryana_full.webp',
 				level: 1,
-				startGlobalDamage: 117.3,
+				startGlobalDamage: 91.9,
 				startGlobalCritChance: 0.02,
 				startGlobalCritMultiplier: 2.0,
 				startGlobalWoundChance	: 0.02,
@@ -981,8 +1062,12 @@ function getDefaultGameState() {
 				investedZlata: 0,
 				upSpecif: 1,
 				unlock: true,
-				feature: 'Прогревание — <br>каждый следующий удар по цели<br>усиливается на 1.5%<br>вплоть до её гибели',
-				warmupDamagePerHit: 0.015,
+				feature: 'Прогревание — <br>за каждый недостающий 1% HP цели<br>урон растёт на 1.5%',
+				missingHpDamagePerPercent: 0.015,
+				// Допущение для автотестов/расчёта сложности: среднее недостающее HP% цели
+				// за бой (доля от 1.0), используемое для оценки среднего бонуса прогревания
+				// (см. комментарий выше про ODE-оценку ≈42.5%).
+				missingHpExpectedAverageFraction: 0.425,
 			},
 
 			luka: {

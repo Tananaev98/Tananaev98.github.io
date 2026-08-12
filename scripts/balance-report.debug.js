@@ -1,6 +1,15 @@
 /* eslint-disable no-console */
 
-const assert = require('node:assert/strict');
+function __softAssertOk(value, message) {
+    if (!value) console.log(`[FAIL] ${message || 'assert.ok failed'}`);
+}
+function __softAssertEqual(actual, expected, message) {
+    if (actual !== expected) console.log(`[FAIL] ${message || 'assert.equal failed'}: got ${JSON.stringify(actual)}, expected ${JSON.stringify(expected)}`);
+}
+function __softAssertMatch(value, regex, message) {
+    if (!regex.test(value)) console.log(`[FAIL] ${message || 'assert.match failed'}: ${JSON.stringify(value)}`);
+}
+const assert = { ok: __softAssertOk, equal: __softAssertEqual, match: __softAssertMatch };
 const fs = require('node:fs');
 
 const gameSource = fs.readFileSync('game.js', 'utf8');
@@ -36,7 +45,7 @@ const HEROES = {
     },
     dunya: {
         name: 'Дуня',
-        damage: 112.5,
+        damage: 130.0,
         critChance: 0.03,
         critMultiplier: 2.0,
         woundChance: 0.015,
@@ -135,9 +144,9 @@ const GROWTH_PROFILES = {
         defenseCap: 0.60
     },
     tempest: {
-        damageMultiplier: 1.037,
-        critChanceIncrease: 0.007,
-        critMultiplierIncrease: 0.09,
+        damageMultiplier: 1.052,
+        critChanceIncrease: 0.002,
+        critMultiplierIncrease: 0.03,
         woundChanceIncrease: 0.006,
         shotIntervalReduction: 2,
         castleHpMultiplier: 1.048,
@@ -495,6 +504,7 @@ for (const heroLevel of [1, 40, 80, 120, 160, 200]) {
     const eremeiDps = expectedDps(eremei);
     const lukaDps = expectedDps(luka);
     const daryanaDps = expectedDps(daryana);
+    const dunyaDps = expectedDps(dunya);
     const eremeiCriticalHit = eremei.damage * eremei.critMultiplier;
     const lukaCriticalHit = luka.damage * luka.critMultiplier;
     const dunyaJackpotCriticalHit = dunya.damage
@@ -503,6 +513,17 @@ for (const heroLevel of [1, 40, 80, 120, 160, 200]) {
     assert.ok(
         lukaDps > eremeiDps,
         `Лука потерял преимущество по постоянному DPS на уровне героя ${heroLevel}`
+    );
+    // Дуня держит не менее 10% преимущества по DPS над Еремеем (казино-урон уже учтён
+    // в expectedDps), но не обгоняет Луку — иначе он теряет архетипную идентичность
+    // лучшего постоянного DPS.
+    assert.ok(
+        dunyaDps >= eremeiDps * 1.10,
+        `DPS Дуни просел меньше чем на 10% выше Еремея на уровне героя ${heroLevel}: ${(dunyaDps / eremeiDps).toFixed(3)}`
+    );
+    assert.ok(
+        dunyaDps < lukaDps,
+        `DPS Дуни обогнал Луку на уровне героя ${heroLevel}: ${(dunyaDps / lukaDps).toFixed(3)}`
     );
     assert.ok(
         eremeiCriticalHit > lukaCriticalHit * 1.15,

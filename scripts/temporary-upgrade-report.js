@@ -6,8 +6,12 @@ const vm = require('node:vm');
 
 const CAMPAIGN_FINAL_LEVEL = 141;
 const HERO_MAX_LEVEL = 200;
-const HERO_KEYS = ['eremei', 'dunya', 'luka'];
-const HERO_NAMES = { eremei: 'Eremey', dunya: 'Dunya', luka: 'Luka' };
+const HERO_KEYS = ['eremei', 'dunya', 'daryana', 'luka'];
+const HERO_NAMES = { eremei: 'Eremey', dunya: 'Dunya', daryana: 'Daryana', luka: 'Luka' };
+// Порядок ожидаемой живучести (effectiveHP) архетипов по умолчанию, от самого танкового
+// к самому хрупкому. Используется только для сквозной проверки ordering ниже — герой
+// добавляется сюда один раз при создании, а не хардкодится внутри самой проверки.
+const ARCHETYPE_EHP_ORDER = ['eremei', 'dunya', 'daryana', 'luka'];
 const STRATEGIES = ['random', 'offense', 'survival', 'hybrid'];
 const STRATEGY_NAMES = {
     random: 'Random',
@@ -129,8 +133,30 @@ for (let level = 1; level <= CAMPAIGN_FINAL_LEVEL; level++) {
     upgradeChoicesByLevel.set(level, countUpgradeChoices(level));
 }
 
+// Поля способностей, которые должны пережить создание временного состояния героя, чтобы
+// expectedDps/availableUpgradeTypes могли определять способность героя по наличию поля
+// (matching по структуре), а не по hero.heroKey === 'имя'. Любой будущий герой с одной из
+// уже существующих механик подхватится автоматически; герой с принципиально новой
+// механикой потребует нового поля здесь и в expectedDps — это и есть тот момент, когда
+// нужно свериться с новым правилом «проверить автотесты на адекватность» в
+// lvlData/Правила создания героев.txt.
+const HERO_FEATURE_FIELDS = [
+    'guaranteedCritEvery',
+    'catchBackCritChanceBonus',
+    'catchBackExpectedUptime',
+    'doubleAttackChance',
+    'tripleAttackChance',
+    'jackpotAttackChance',
+    'jackpotAttackMultiplier',
+    'warmupDamagePerHit',
+    'warmupExpectedAverageHits',
+    'missingHpDamagePerPercent',
+    'missingHpExpectedAverageFraction',
+    'minShotInterval'
+];
+
 function createTemporaryState(heroKey, permanentHero) {
-    return {
+    const state = {
         heroKey,
         damage: permanentHero.startGlobalDamage,
         critChance: permanentHero.startGlobalCritChance,
@@ -148,23 +174,61 @@ function createTemporaryState(heroKey, permanentHero) {
         startHp: permanentHero.castleHP,
         startDefense: permanentHero.startCastleDamageReduction
     };
+
+    for (const field of HERO_FEATURE_FIELDS) {
+        if (permanentHero[field] !== undefined) state[field] = permanentHero[field];
+    }
+
+    return state;
+}
+
+function getExpectedAttackMultiplier(hero) {
+    const doubleChance = Math.max(0, hero.doubleAttackChance || 0);
+    const tripleChance = Math.max(0, hero.tripleAttackChance || 0);
+    const jackpotChance = Math.max(0, hero.jackpotAttackChance || 0);
+    const jackpotMultiplier = Math.max(1, hero.jackpotAttackMultiplier || 1);
+    // normal*1 + double*2 + triple*3 + jackpot*jackpotMultiplier, normal = 1-double-triple-jackpot
+    return 1 + doubleChance + (2 * tripleChance) + (jackpotChance * (jackpotMultiplier - 1));
 }
 
 function expectedDps(hero) {
     let effectiveCritChance = hero.critChance;
-    if (hero.heroKey === 'luka') {
-        const guaranteedShare = 1 / 5;
-        effectiveCritChance = guaranteedShare + ((1 - guaranteedShare) * hero.critChance);
+
+    const guaranteedCritEvery = Math.max(0, Math.floor(hero.guaranteedCritEvery || 0));
+    if (guaranteedCritEvery > 0) {
+        const guaranteedShare = 1 / guaranteedCritEvery;
+        effectiveCritChance = guaranteedShare + ((1 - guaranteedShare) * effectiveCritChance);
     }
-    if (hero.heroKey === 'eremei') {
-        effectiveCritChance += 0.10 * 0.45;
-        effectiveCritChance = Math.min(1, effectiveCritChance);
+    if (hero.catchBackCritChanceBonus) {
+        const uptime = Number.isFinite(hero.catchBackExpectedUptime)
+            ? hero.catchBackExpectedUptime
+            : 0.45;
+        effectiveCritChance = Math.min(1, effectiveCritChance + (hero.catchBackCritChanceBonus * uptime));
     }
 
     const critFactor = 1 + (effectiveCritChance * (hero.critMultiplier - 1));
-    const attackMultiplierFeature = hero.heroKey === 'dunya' ? 1.23 : 1;
+    const attackMultiplierFeature = getExpectedAttackMultiplier(hero);
+    // Дамаг-фичи: матчатся по наличию своего поля, а не по имени героя, так что любой
+    // будущий герой с уже описанной здесь механикой подхватится автоматически. Новая форма
+    // способности (не сводится к формулам ниже) требует нового терма — см. раздел 11 правил.
+    const warmupDamagePerHit = Math.max(0, hero.warmupDamagePerHit || 0);
+    const warmupExpectedAverageHits = Number.isFinite(hero.warmupExpectedAverageHits)
+        ? hero.warmupExpectedAverageHits
+        : 10;
+    const warmupMultiplier = warmupDamagePerHit > 0
+        ? 1 + (warmupDamagePerHit * warmupExpectedAverageHits)
+        : 1;
+    const missingHpDamagePerPercent = Math.max(0, hero.missingHpDamagePerPercent || 0);
+    const missingHpExpectedAverageFraction = Number.isFinite(hero.missingHpExpectedAverageFraction)
+        ? hero.missingHpExpectedAverageFraction
+        : 0.425;
+    const missingHpMultiplier = missingHpDamagePerPercent > 0
+        ? 1 + (missingHpDamagePerPercent * 100 * missingHpExpectedAverageFraction)
+        : 1;
+    const damageFeature = warmupMultiplier * missingHpMultiplier;
+
     const hitsPerSecond = 1000 / hero.interval;
-    const baseAverageHitDamage = hero.damage * critFactor;
+    const baseAverageHitDamage = hero.damage * critFactor * damageFeature;
     const directDps = baseAverageHitDamage * attackMultiplierFeature * hitsPerSecond;
     const woundProcRate = hitsPerSecond * hero.woundChance;
     const averageWaitForWound = woundProcRate > 0 ? 1 / woundProcRate : Infinity;
@@ -227,7 +291,7 @@ function availableUpgradeTypes(hero) {
     if (hero.woundChance < 1) types.push('wound');
     types.push('hp');
     if (hero.defense < hero.defenseCap) types.push('defense');
-    if (hero.interval > 200) types.push('fireRate');
+    if (hero.interval > (hero.minShotInterval ?? 200)) types.push('fireRate');
     return types;
 }
 
@@ -258,7 +322,10 @@ function applyUpgrade(hero, option) {
         );
     } else if (option.type === 'fireRate') {
         const fireRateDecrease = (1000 - upgraded.startInterval) * share;
-        upgraded.interval = Math.max(200, upgraded.interval - fireRateDecrease);
+        upgraded.interval = Math.max(
+            upgraded.minShotInterval ?? 200,
+            upgraded.interval - fireRateDecrease
+        );
     }
 
     return upgraded;
@@ -364,9 +431,12 @@ function simulateDistribution(campaignLevel, heroKey, strategy, runs) {
     const rawBossHit = maximumRawBossHit(campaignLevel);
     const ownPermanentState = createTemporaryState(heroKey, permanentHero);
     const permanentHits = hitsToDefeat(ownPermanentState, rawBossHit);
+    // Бюджет живучести по архетипу (сколько ударов босса герой обязан пережить), а не по
+    // способности — держим как явную таблицу дизайн-намерения, а не выводим из статов.
     const excessiveHitThreshold = {
         eremei: 10,
         dunya: 6,
+        daryana: 5,
         luka: 4
     }[heroKey];
 
@@ -503,7 +573,7 @@ console.table(detailResults.map(result => ({
     ehpP99: `${result.ehpP99.toFixed(2)}x`
 })));
 
-console.log('\nWorst point for exceeding the role durability budget (Eremey 10 / Dunya 6 / Luka 4 hits):');
+console.log('\nWorst point for exceeding the role durability budget (Eremey 10 / Dunya 6 / Daryana 5 / Luka 4 hits):');
 console.table(durabilityDetailResults.map(result => ({
     hero: HERO_NAMES[result.heroKey],
     strategy: STRATEGY_NAMES[result.strategy],
@@ -547,7 +617,10 @@ for (const campaignLevel of PAIR_CHECKPOINTS) {
                 results[heroKey].dps > results[leader].dps ? heroKey : leader
             ));
 
-            if (!(results.eremei.ehp > results.dunya.ehp && results.dunya.ehp > results.luka.ehp)) {
+            const ehpOrderHolds = ARCHETYPE_EHP_ORDER.every((heroKey, index) => (
+                index === 0 || results[ARCHETYPE_EHP_ORDER[index - 1]].ehp > results[heroKey].ehp
+            ));
+            if (!ehpOrderHolds) {
                 ehpOrderBroken++;
             }
             if (dpsLeader !== permanentDpsLeader) dpsLeaderChanged++;

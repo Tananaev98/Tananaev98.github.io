@@ -1140,7 +1140,6 @@ function gameLoop(currentTime) {
 		// spawnEnemyWithParams('enem4', 40, 20, 1, 200, 40 )
 		bossAlive = true;
 		currentBoss = boss; // Сохраняем ссылку на босса
-		resetDaryanaWarmup(); // Новая цель — прогрев начинается заново
 		window.battleMusic?.setContext(buildBattleMusicContext(bossAliveName));
 
 		// Показываем полоску здоровья босса
@@ -2419,7 +2418,7 @@ function damageEnemy(enemy, attackMultiplier = 1, attackKind = 'normal', shotInt
     if (!enemy?.element || !enemy.element.isConnected) return;
 
 	const isBoss = bossM.includes(enemy.type);
-    const damageResult = calculateDamage(isBoss);
+    const damageResult = calculateDamage(isBoss, enemy);
     const woundBaseDamage = damageResult.damage;
     const multipliedDamage = damageResult.damage * attackMultiplier;
     damageResult.damage = isBoss
@@ -2568,7 +2567,7 @@ function createWoundText(enemy) {
 
 
 //* Рассчитывает урон с учетом шанса критического удара
-function calculateDamage(isBoss) {
+function calculateDamage(isBoss, target) {
     // Базовый урон
     let damage = globalDamage;
     let isCritical = false;
@@ -2588,10 +2587,9 @@ function calculateDamage(isBoss) {
             console.log(`Критический удар! Множитель: x${globalCritMultiplier}`);
         }
 
-        // Дарьяна: текущий уровень прогрева применяется к ЭТОМУ удару,
-        // а счётчик увеличивается уже для следующего.
-        damage *= getDaryanaWarmupMultiplier();
-        registerDaryanaWarmupHit();
+        // Дарьяна: бонус считается от текущей недостающей HP% цели
+        // ПЕРЕД этим ударом — состояние не хранится, только читает target.hp.
+        damage *= getDaryanaMissingHpMultiplier(target);
 
         damage = Math.round(damage);
         return {
@@ -3858,33 +3856,25 @@ const EREMEI_CATCH_BACK = Object.freeze({
 let eremeiCatchBackUntilMs = 0;
 
 /**
- * Дарьяна — «Прогревание»: число попаданий подряд по ТЕКУЩЕЙ цели.
- * Каждый следующий удар усилен на warmupDamagePerHit (0.5% по умолчанию).
- * Сбрасывается со сменой цели (новый босс) и при рестарте уровня.
+ * Дарьяна — «Прогревание»: за каждый недостающий 1% HP цели урон растёт на
+ * missingHpDamagePerPercent (1.5% по умолчанию). Чистая функция от текущего
+ * HP цели — состояние не хранится и ничего не нужно сбрасывать при смене
+ * босса или рестарте уровня.
  */
-let daryanaWarmupStacks = 0;
-
-function resetDaryanaWarmup() {
-    daryanaWarmupStacks = 0;
+function getDaryanaMissingHpPerPercent() {
+    return Math.max(0, Number(activeHeroObject?.missingHpDamagePerPercent) || 0);
 }
 
-function getDaryanaWarmupPerHit() {
-    return Math.max(0, Number(activeHeroObject?.warmupDamagePerHit) || 0);
-}
-
-function getDaryanaWarmupMultiplier() {
+function getDaryanaMissingHpMultiplier(target) {
     if (activeHeroObject?.name !== 'daryana') return 1;
-    return 1 + (daryanaWarmupStacks * getDaryanaWarmupPerHit());
-}
+    if (!target || !Number.isFinite(target.maxHP) || target.maxHP <= 0) return 1;
 
-function registerDaryanaWarmupHit() {
-    if (activeHeroObject?.name !== 'daryana') return;
-    daryanaWarmupStacks++;
+    const missingHpFraction = Math.max(0, Math.min(1, 1 - (target.hp / target.maxHP)));
+    return 1 + (missingHpFraction * 100 * getDaryanaMissingHpPerPercent());
 }
 
 function resetHeroFeatureCombatState() {
     eremeiCatchBackUntilMs = 0;
-    resetDaryanaWarmup();
 }
 
 function getEremeiCatchBackConfig() {
