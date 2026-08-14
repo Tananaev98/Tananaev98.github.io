@@ -4288,12 +4288,20 @@ function showLevelUpModal(titleHtml, subtitleText) {
 
 function getAvailableUpgrades() {
     const upgrades = [];
-    
+    // Множитель силы временных улучшений на конкретном герое (по умолчанию 1 — как
+    // было раньше). Даёт архетипу «стакать» апгрейды сильнее/слабее за одинаковый выбор,
+    // не трогая постоянные статы — см. temporaryUpgradePower у объектов героев в
+    // saveData.js: Дарьяна и Дуня заметно опережают базу (их постоянный DPS нарочно не
+    // про крит/скорость, а временная удача должна давать шанс это компенсировать —
+    // «если повезёт с критами», «если вихри напрокают»), Еремей чуть ниже базы (его сила —
+    // немногочисленные, но огромные постоянные криты, а не стак временных мелких баффов).
+    const temporaryUpgradePower = activeHeroObject?.temporaryUpgradePower ?? 1;
+
     // 1. Урон
     const damageRarity = getRandomRarity();
     const damageMultiplier = getRarityMultiplier(damageRarity);
     const damageIncrease = Math.round(
-        startGlobalDamage * TEMPORARY_UPGRADE_BASE_SHARE * damageMultiplier
+        startGlobalDamage * TEMPORARY_UPGRADE_BASE_SHARE * damageMultiplier * temporaryUpgradePower
     );
     upgrades.push({
         id: 'damage',
@@ -4311,7 +4319,7 @@ function getAvailableUpgrades() {
         const critChanceRarity = getRandomRarity();
         const critChanceMultiplier = getRarityMultiplier(critChanceRarity);
         const critChanceIncrease = Math.min(
-            startGlobalCritChance * TEMPORARY_UPGRADE_BASE_SHARE * critChanceMultiplier,
+            startGlobalCritChance * TEMPORARY_UPGRADE_BASE_SHARE * critChanceMultiplier * temporaryUpgradePower,
             globalCritChanceCap - globalCritChance
         );
         upgrades.push({
@@ -4329,7 +4337,7 @@ function getAvailableUpgrades() {
     // 3. Множитель крита - всегда доступен
     const critMultiplierRarity = getRandomRarity();
     const critMultiplierMultiplier = getRarityMultiplier(critMultiplierRarity);
-    const critMultiplierIncrease = startGlobalCritMultiplier * TEMPORARY_UPGRADE_BASE_SHARE * critMultiplierMultiplier;
+    const critMultiplierIncrease = startGlobalCritMultiplier * TEMPORARY_UPGRADE_BASE_SHARE * critMultiplierMultiplier * temporaryUpgradePower;
     upgrades.push({
         id: 'critMultiplier',
         name: 'Множитель крита',
@@ -4346,7 +4354,7 @@ function getAvailableUpgrades() {
         const woundChanceRarity = getRandomRarity();
         const woundChanceMultiplier = getRarityMultiplier(woundChanceRarity);
         const woundChanceIncrease = Math.min(
-            startGlobalWoundChance * TEMPORARY_UPGRADE_BASE_SHARE * woundChanceMultiplier,
+            startGlobalWoundChance * TEMPORARY_UPGRADE_BASE_SHARE * woundChanceMultiplier * temporaryUpgradePower,
             globalWoundChanceCap - globalWoundChance
         );
         // "Шанс <родительный падеж>" → "к шансу <родительный падеж>" (падеж
@@ -4419,22 +4427,35 @@ function getAvailableUpgrades() {
         });
     }
     
-    // 8. Скорострельность - проверяем, что еще не достиг минимума (200 мс)
-    if (SHOT_INTERVAL > 200) {
+    // 8. Скорострельность - проверяем, что еще не достиг личного пола героя (обычно
+    // 200мс, но у некоторых героев выше — см. minShotInterval; раньше здесь везде было
+    // захардкожено 200, из-за чего герой с личным полом скорости, например Дарьяна
+    // (minShotInterval 940 — она намеренно "не про скорость"), мог временными апгрейдами
+    // разогнаться быстрее своего постоянного предела).
+    const fireRateFloor = activeHeroObject?.minShotInterval ?? 200;
+    if (SHOT_INTERVAL > fireRateFloor) {
         const fireRateRarity = getRandomRarity();
         const fireRateMultiplier = getRarityMultiplier(fireRateRarity);
+        // Раньше — (1000 - startSHOT_INTERVAL) * доля: чем БЫСТРЕЕ герой уже был, тем
+        // БОЛЬШЕ мс отнимала эта формула за апгрейд (у медленного героя ~930мс разница с
+        // 1000 давала гроши, у быстрого ~600мс — почти вдвое больше) — временные апгрейды
+        // награждали уже быстрых героев сильнее, а не давали всем сопоставимую пользу.
+        // Теперь — доля/(1+доля) от СВОЕГО интервала: даёт тот же прирост DPS от ускорения,
+        // что damage-апгрейд с той же долей даёт от урона (симметрично остальным статам,
+        // не зависит от абсолютного стартового интервала конкретного героя).
+        const fireRateShare = TEMPORARY_UPGRADE_BASE_SHARE * fireRateMultiplier * temporaryUpgradePower;
         const fireRateDecrease = Math.min(
-            (1000 - startSHOT_INTERVAL) * TEMPORARY_UPGRADE_BASE_SHARE * fireRateMultiplier,
-            SHOT_INTERVAL - 200
+            startSHOT_INTERVAL * (fireRateShare / (1 + fireRateShare)),
+            SHOT_INTERVAL - fireRateFloor
         );
-        
+
         upgrades.push({
             id: 'fireRate',
             name: 'Скорость атаки',
             description: `Увеличивает скорость атаки на ${fireRateDecrease}`,
             rarity: fireRateRarity,
             apply: function() {
-                SHOT_INTERVAL = Math.max(200, SHOT_INTERVAL - fireRateDecrease);
+                SHOT_INTERVAL = Math.max(fireRateFloor, SHOT_INTERVAL - fireRateDecrease);
                 console.log(`Интервал стрельбы уменьшен до: ${SHOT_INTERVAL} мс (множитель: ${fireRateMultiplier}x)`);
             }
         });
