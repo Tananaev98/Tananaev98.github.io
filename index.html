@@ -51,8 +51,8 @@
     </div>
 </main>
 
-<script src="lvlData/areas.js?v=area-preview-levels-2026-08-05"></script>
-<script src="saveData.js?v=eremei-damage-20-2026-08-04"></script>
+<script src="lvlData/areas.js?v=unlock-stubs-2026-08-14"></script>
+<script src="saveData.js?v=debug-unlock-heroes-2026-08-14"></script>
 <script src="music/audio-settings.js?v=audio-settings-2026-08-11"></script>
 <script src="music/hub-music.js?v=hub-music-tab-pause-2026-08-04"></script>
 
@@ -77,16 +77,21 @@ let levelsMarkup = '';
 for (let levelNumber = currentArea.levelStart; levelNumber <= currentArea.levelEnd; levelNumber++) {
     const paddedNumber = String(levelNumber).padStart(2, '0');
     const title = getLevelDisplayTitle(levelNumber);
+    const stubClass = isLevelStubContent(levelNumber) ? ' stub' : '';
+    const stubRibbon = isLevelStubContent(levelNumber)
+        ? '<span class="stub-ribbon">В разработке</span>'
+        : '';
 
     if (isLevelReady(levelNumber)) {
         levelsMarkup += `
-            <a href="level.html?level=${levelNumber}&v=${LEVEL_LINK_VERSION}" class="level locked" data-level="${levelNumber}">
+            <a href="level.html?level=${levelNumber}&v=${LEVEL_LINK_VERSION}" class="level locked${stubClass}" data-level="${levelNumber}">
                 <span class="level-num">${paddedNumber}</span>
                 <span class="level-body">
                     <span class="level-label">Уровень ${levelNumber}</span>
                     <span class="level-name">${title}</span>
                 </span>
                 <span class="level-status" aria-hidden="true"></span>
+                ${stubRibbon}
             </a>`;
     } else {
         levelsMarkup += `
@@ -125,9 +130,9 @@ areaNavEl.innerHTML = `
 
 // ==================== Работа с localStorage и уровнями ====================
 const lastUnlockLevel = gameState.lastCompletedLevel + 1;
-const levels = document.querySelectorAll('.level:not(.stub)');
+const levels = document.querySelectorAll('a.level[data-level]');
 levels.forEach(link => {
-    const levelNumber = parseInt(link.dataset.level);
+    const levelNumber = parseInt(link.dataset.level, 10);
     if (levelNumber <= lastUnlockLevel) {
         link.classList.remove('locked');
         link.classList.add('unlocked');
@@ -192,7 +197,7 @@ function openDebugUnlockModal() {
         }
 
         status.className = 'debug-unlock-status is-success';
-        status.textContent = `Готово: открыты уровни 1–${result.unlockedThrough}, начислено ${result.reward.toLocaleString('ru-RU')} злат.`;
+        status.textContent = `Готово: открыты уровни 1–${result.unlockedThrough}, герои разблокированы, начислено ${result.reward.toLocaleString('ru-RU')} злат.`;
         input.disabled = true;
         form.querySelector('.debug-unlock-submit').disabled = true;
         setTimeout(() => location.reload(), 900);

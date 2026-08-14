@@ -28,7 +28,6 @@ globalThis.progressionApi = {
     getLevelZlataReward,
     getLevelZlataPayout,
     getHeroInvestedZlata,
-    getBossDamageProgressionMultiplier,
     calculateBossAttackDamage,
     calculateHeroDifficulty,
     getHeroDefenseCap,
@@ -47,10 +46,12 @@ assert.equal(api.heroMaxLevel, 200);
 assert.equal(api.getLevelZlataReward(1), 30);
 assert.equal(api.getLevelZlataPayout(1, 3, 5), 18);
 assert.equal(api.getLevelZlataPayout(1, 5, 5), 30);
-assert.equal(api.getBossDamageProgressionMultiplier(1), 1);
-assert.ok(api.getBossDamageProgressionMultiplier(141) > 6.5);
-assert.ok(api.getBossDamageProgressionMultiplier(141) < 6.7);
-assert.equal(api.calculateBossAttackDamage(28, 1, 1, 1, 1), 28);
+// Ревизия 10: calculateBossAttackDamage больше не содержит скрытой per-level кривой —
+// прогрессия сложности приходит только через bossMultiplier/phaseMultiplier/levelMultiplier
+// (реальные поля из данных уровня). Ревизия 11: убран потолок 2.0 на их произведение.
+assert.equal(api.calculateBossAttackDamage(28, 1, 1, 1), 28);
+assert.equal(api.calculateBossAttackDamage(28, 1.1, 1.2, 1.1), Math.round(28 * 1.1 * 1.2 * 1.1));
+assert.equal(api.calculateBossAttackDamage(28, 2, 2, 2), Math.round(28 * 2 * 2 * 2));
 
 const legacyState = JSON.parse(JSON.stringify(api.state));
 legacyState.schemaVersion = 3;
@@ -59,7 +60,7 @@ legacyState.eremei.balanceRevision = 3;
 delete legacyState.eremei.investedZlata;
 const migratedLegacyState = api.migrateGameState(legacyState);
 assert.equal(migratedLegacyState.eremei.investedZlata, api.getHeroInvestedZlata(10));
-assert.equal(migratedLegacyState.eremei.balanceRevision, 8);
+assert.equal(migratedLegacyState.eremei.balanceRevision, 10);
 assert.equal(migratedLegacyState.eremei.permanentGrowthProfile, 'guardian');
 assert.ok(Math.abs(
     migratedLegacyState.eremei.startGlobalDamage - (140 * Math.pow(1.042, 3))
@@ -104,8 +105,11 @@ for (const level of [1, 40, 80, 120, 160, 200]) {
     assert.ok(dunya.startSHOT_INTERVAL < daryana.startSHOT_INTERVAL);
     assert.ok(daryana.startSHOT_INTERVAL >= 940);
     assert.ok(daryana.startSHOT_INTERVAL > luka.startSHOT_INTERVAL);
-    assert.ok(eremei.startGlobalWoundChance <= dunya.startGlobalWoundChance);
-    assert.ok(dunya.startGlobalWoundChance < luka.startGlobalWoundChance);
+    // Ревизия 8 (dunya): Дуня — архетип «скорость, не ранение», её шанс ранения снят
+    // целиком (см. saveData.js рядом с объектом dunya) — она больше не участвует в
+    // сравнении шансов ранения между героями.
+    assert.equal(dunya.startGlobalWoundChance, 0);
+    assert.ok(eremei.startGlobalWoundChance < luka.startGlobalWoundChance);
     assert.ok(eremei.startCastleDamageReduction <= api.getHeroDefenseCap(eremei));
     assert.ok(dunya.startCastleDamageReduction <= api.getHeroDefenseCap(dunya));
     assert.ok(luka.startCastleDamageReduction <= api.getHeroDefenseCap(luka));
@@ -116,20 +120,23 @@ for (const level of [1, 40, 80, 120, 160, 200]) {
     assert.ok(difficulty.daryana > difficulty.eremei);
     assert.ok(difficulty.daryana < difficulty.luka);
     // С ревизии 6 Дарьяна держит DPS в пределах 10% от Луки (см. saveData.js), а
-    // calculateHeroDifficulty на 85% взвешивает выживаемость и лишь на 8% — DPS: раз её DPS
-    // теперь гораздо ближе к Луке (а не к Дуне), нормализованный DPS-вклад в сложность у неё
-    // ощутимо ниже, чем раньше, и на верхних уровнях героя это перетягивает её итоговую
-    // сложность на уровень Дуни или чуть ниже — она больше не обязана быть строго сложнее
-    // Дуни. EffectiveHP-порядок (Дарьяна между Дуней и Лукой) остаётся жёстким выше по файлу.
-    assert.ok(Math.abs(difficulty.daryana - difficulty.dunya) <= 1);
+    // calculateHeroDifficulty на 85% взвешивает выживаемость и лишь на 8% — DPS. Ревизия 9
+    // (баланс живучести) намеренно развела effectiveHp-порядок шире: Дуня держит
+    // «~9 сильнейших ударов», Дарьяна — «~7» (не «где-то между Дуней и Лукой без чисел», как
+    // раньше) — разрыв сложности между ними закономерно вырос (наблюдается ~1.2-1.4 на всех
+    // 6 контрольных уровнях героя, было ≤1). EffectiveHP-порядок (Дарьяна между Дуней и
+    // Лукой) остаётся жёстким выше по файлу.
+    assert.ok(Math.abs(difficulty.daryana - difficulty.dunya) <= 1.5);
     assert.equal(difficulty.luka, 5);
 }
 
 console.table(difficultyRows);
 
-assert.equal(api.getHeroDefenseCap(buildHeroAtLevel('eremei', 200)), 0.60);
-assert.equal(api.getHeroDefenseCap(buildHeroAtLevel('dunya', 200)), 0.50);
-assert.equal(api.getHeroDefenseCap(buildHeroAtLevel('luka', 200)), 0.40);
+// Ревизия 10 (живучесть): defenseCap снова растёт по кампании вместе с HP.
+assert.equal(api.getHeroDefenseCap(buildHeroAtLevel('eremei', 200)), 0.177);
+assert.equal(api.getHeroDefenseCap(buildHeroAtLevel('dunya', 200)), 0.162);
+assert.equal(api.getHeroDefenseCap(buildHeroAtLevel('luka', 200)), 0.196);
+assert.equal(api.getHeroDefenseCap(buildHeroAtLevel('daryana', 200)), 0.228);
 const defaultDunya = api.getDefaultGameState().dunya;
 assert.equal(defaultDunya.doubleAttackChance, 0.10);
 assert.equal(defaultDunya.tripleAttackChance, 0.03);

@@ -180,16 +180,25 @@ const LEVEL_WORKING_TITLES = {
     141: 'Последняя печать'
 };
 
-const LEVEL_READY_THROUGH = 25; // Обновлять по мере добавления реальных уровней.
+// До какого уровня есть playable gameData*.js (включая заглушки с копией механик).
+// Раньше было 25 + PREVIEW_LEVELS — из‑за этого 26–141 оставались div.stub без ссылки
+// даже после «Разблокировать всё».
+const LEVEL_READY_THROUGH = 141;
+// До какого уровня контент рукописный (не «В разработке»). Остальные playable, но с лентой.
+const LEVEL_HANDCRAFTED_THROUGH = 25;
 
-// Уровни-превью: первый уровень каждой ещё не наполненной области, чтобы сразу
-// увидеть оформление/фон области в реальном бою. Содержимое — целиком копия
-// уровня 1 (Колобок, см. lvlData/gameData26.js и т.д.), без уникального дизайна.
+// Уровни-превью: первый уровень каждой ещё не наполненной области (для фона/оформления).
 // Когда область наполняется по-настоящему — номер убирается отсюда.
 const PREVIEW_LEVELS = [26, 31, 41, 66, 96, 111, 126, 136];
 
 function isLevelReady(levelNumber) {
-    return levelNumber <= LEVEL_READY_THROUGH || PREVIEW_LEVELS.includes(levelNumber);
+    return Number.isInteger(levelNumber)
+        && levelNumber >= 1
+        && levelNumber <= LEVEL_READY_THROUGH;
+}
+
+function isLevelStubContent(levelNumber) {
+    return isLevelReady(levelNumber) && levelNumber > LEVEL_HANDCRAFTED_THROUGH;
 }
 
 function getLevelDisplayTitle(levelNumber) {

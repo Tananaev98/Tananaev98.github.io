@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Панель баланса — чёрный ящик</title>
+<style>
+  :root {
+    --bg: #12161d;
+    --surface: #1a2029;
+    --surface-2: #212836;
+    --ink: #e9e6dd;
+    --muted: #8b93a3;
+    --hairline: #2b3241;
+    --accent: #c9a15a;
+    --good: #52b8ab;
+    --bad: #e5674f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: ui-monospace, "SF Mono", Consolas, monospace;
+    font-size: 14px;
+    margin: 0;
+    padding: 32px 24px 64px;
+  }
+  .page { max-width: 1200px; margin: 0 auto; }
+  h1 {
+    font-family: Georgia, "Iowan Old Style", serif;
+    font-size: 24px;
+    margin: 0 0 6px;
+  }
+  .subhead { color: var(--muted); font-size: 13px; max-width: 80ch; margin: 0 0 24px; }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 8px;
+    padding: 18px 20px;
+    margin-bottom: 20px;
+  }
+  .panel h2 {
+    font-family: Georgia, serif;
+    font-size: 15px;
+    margin: 0 0 12px;
+    color: var(--accent);
+  }
+  button {
+    background: var(--accent);
+    color: #1a1408;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 13.5px;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button.secondary { background: var(--surface-2); color: var(--ink); border: 1px solid var(--hairline); }
+  .run-row { display: flex; align-items: center; gap: 12px; }
+  .status-line { color: var(--muted); font-size: 12.5px; }
+  #log {
+    background: #0d1015;
+    border: 1px solid var(--hairline);
+    border-radius: 6px;
+    padding: 10px 12px;
+    height: 160px;
+    overflow-y: auto;
+    font-size: 12px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+  }
+  .log-ok { color: var(--good); }
+  .log-err { color: var(--bad); }
+  .log-dim { color: var(--muted); }
+  progress { width: 100%; height: 8px; accent-color: var(--accent); }
+  .table-scroll { overflow-x: auto; overflow-y: auto; max-height: 70vh; border: 1px solid var(--hairline); border-radius: 8px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; min-width: 720px; }
+  thead th {
+    position: sticky; top: 0; background: var(--surface);
+    text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--muted); padding: 10px 12px; border-bottom: 1px solid var(--hairline); white-space: nowrap;
+  }
+  tbody td { padding: 8px 12px; border-bottom: 1px solid var(--hairline); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--surface-2); }
+  tbody tr.region-final { background: rgba(201, 161, 90, 0.07); }
+  .hero-name { font-weight: 600; }
+  .num-good { color: var(--good); }
+  .num-bad { color: var(--bad); }
+  iframe.hidden-engine { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; left: -9999px; top: -9999px; }
+  footer { color: var(--muted); font-size: 11.5px; margin-top: 28px; }
+  code { background: var(--surface-2); padding: 1px 5px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Панель баланса — «чёрный ящик»</h1>
+  <p class="subhead">
+    Не пересчитывает формулы — берёт героя, подставляет его в реальные <code>saveData.js</code> и
+    <code>game.js</code> (те же функции, что использует сама игра: <code>applyHeroPermanentStatUpgrade</code>,
+    <code>calculateDamage</code>, <code>calculateBossAttackDamage</code>) и прогоняет тысячи симулированных
+    боёв. Список героев читается из <code>getDefaultGameState().mHero</code> на лету — добавите нового героя
+    в saveData.js, он появится здесь сам. Никаких настроек: страница сама прогоняет каждого героя через
+    каждый из 141 уровня кампании на том уровне героя, на котором игрок примерно окажется к этому месту
+    кампании (та же экономика злата, что в игре) — и запускается сама при открытии.
+  </p>
+
+  <div class="panel">
+    <h2>Ход выполнения</h2>
+    <progress id="progressBar" value="0" max="100"></progress>
+    <div id="log" style="margin:10px 0;"></div>
+    <div class="run-row">
+      <button id="runBtn">Перезапустить</button>
+      <button id="stopBtn" class="secondary" disabled>Остановить</button>
+      <span class="status-line" id="statusLine">Запускается…</span>
+    </div>
+  </div>
+
+  <div class="panel" id="dpsPanel" style="display:none;">
+    <h2>Постоянный DPS на каждом уровне кампании (эмпирический, из реальных боёв)</h2>
+    <div class="table-scroll"><table id="dpsTable"></table></div>
+  </div>
+
+  <div class="panel" id="survivalPanel" style="display:none;">
+    <h2>Живучесть на каждом уровне кампании (сколько случайных настоящих ударов босса подряд герой выдерживает)</h2>
+    <div class="table-scroll"><table id="survivalTable"></table></div>
+  </div>
+
+  <footer>
+    Прогресс-движок: <code>saveData.js</code> в скрытом iframe (getDefaultGameState, applyHeroPermanentStatUpgrade,
+    calculateBossAttackDamage, getBossComboDamageMultiplier, getHeroUpgradeCost, getLevelZlataReward — все настоящие,
+    ни одна формула не продублирована). Боевой движок: <code>level.html</code> в скрытом iframe, в него внедряется
+    маленький скрипт-зонд, который читает/пишет боевые переменные (globalDamage, globalCritChance, activeHeroObject
+    и т.п.) и дёргает настоящий <code>calculateDamage</code> — ровно то, что вызывает сама игра при выстреле героя.
+    Реальное время боя не тратится: <code>performance.now()</code> внутри iframe подменён на управляемые виртуальные
+    часы, поэтому таймер «Лови обратно» у Еремея работает по-настоящему, а тысячи боёв всё равно считаются за секунды.
+    Живучесть берётся из настоящих файлов <code>lvlData/gameData{N}.js</code> — с ревизии, добавившей заглушки для
+    26-141 уровней, у каждого из 141 уровня кампании есть свой файл, фолбэк на ближайший уровень не нужен.
+  </footer>
+</div>
+
+<iframe id="progressionFrame" class="hidden-engine" src="admin-progression-harness.html"></iframe>
+<iframe id="combatFrame" class="hidden-engine"></iframe>
+
+<script>
+'use strict';
+
+// Зашитые параметры симуляции — панель больше не спрашивает их у пользователя. Значения
+// снижены относительно версии с 11 контрольными точками (там было 800/4000): точек стало
+// в ~13 раз больше (все 141 уровня кампании вместо 11), поэтому на каждую точку выделено
+// меньше прогонов, чтобы общее время осталось разумным — совокупная точность (по всем
+// уровням) не страдает от этого так же сильно, как страдала бы точность одной точки.
+const CAMPAIGN_FINAL_LEVEL = 141;
+const FIGHTS_PER_LEVEL = 150;
+const SURVIVAL_RUNS_PER_LEVEL = 300;
+const INCOMING_CADENCE_MS = 2200;
+const BOSS_HP_FOR_DPS_FIGHT = 80000;
+const ALL_LEVELS = Array.from({ length: CAMPAIGN_FINAL_LEVEL }, (_, i) => i + 1);
+
+const $ = (id) => document.getElementById(id);
+const logEl = $('log');
+const progressBar = $('progressBar');
+const statusLine = $('statusLine');
+let stopRequested = false;
+
+function log(text, cls) {
+    const line = document.createElement('div');
+    if (cls) line.className = cls;
+    line.textContent = text;
+    logEl.appendChild(line);
+    logEl.scrollTop = logEl.scrollHeight;
+}
+
+function setProgress(done, total) {
+    progressBar.max = Math.max(1, total);
+    progressBar.value = done;
+    statusLine.textContent = `${done} / ${total}`;
+}
+
+function waitForEvent(target, eventName, timeoutMs, timeoutMessage) {
+    return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error(timeoutMessage || `Таймаут ожидания ${eventName}`)), timeoutMs);
+        target.addEventListener(eventName, () => {
+            clearTimeout(timer);
+            resolve();
+        }, { once: true });
+    });
+}
+
+function waitForCondition(check, timeoutMs, intervalMs, timeoutMessage) {
+    return new Promise((resolve, reject) => {
+        const start = Date.now();
+        let lastError = null;
+        const tick = () => {
+            let ok = false;
+            try { ok = check(); } catch (e) { ok = false; lastError = e; }
+            if (ok) return resolve();
+            if (Date.now() - start > timeoutMs) {
+                const base = timeoutMessage || 'Таймаут ожидания условия';
+                const detail = lastError ? ` (последняя ошибка внутри проверки: ${lastError.message})` : '';
+                return reject(new Error(base + detail));
+            }
+            setTimeout(tick, intervalMs || 20);
+        };
+        tick();
+    });
+}
+
+// ==================== ПРОГРЕСС-ДВИЖОК (saveData.js как чёрный ящик) ====================
+
+const ProgressionEngine = {
+    api: null,
+    campaignToHeroLevel: null,
+
+    async init() {
+        const frame = $('progressionFrame');
+        // src уже стоит в разметке — iframe мог загрузиться ещё до старта симуляции,
+        // поэтому ждём готовности через опрос, а не через событие load (оно могло
+        // случиться раньше, чем мы успели на него подписаться).
+        await waitForCondition(
+            () => typeof frame.contentWindow.getDefaultGameState === 'function',
+            15000,
+            30,
+            'Прогресс-движок (saveData.js) не загрузился за 15с — проверьте, что панель открыта ' +
+            'через http://, а не двойным кликом по файлу, и что admin-progression-harness.html ' +
+            'лежит рядом с saveData.js в корне проекта.'
+        );
+        this.api = frame.contentWindow;
+        this.campaignToHeroLevel = this.buildCampaignToHeroLevelMap(CAMPAIGN_FINAL_LEVEL);
+        log('Прогресс-движок (saveData.js) загружен.', 'log-ok');
+    },
+
+    discoverHeroes() {
+        const state = this.api.getDefaultGameState();
+        const keys = state.mHero.filter((key) => this.api.isHeroEligibleForDifficulty(state[key]));
+        return keys.map((key) => ({ key, dispName: state[key].dispName || key }));
+    },
+
+    buildHeroAtLevel(heroKey, targetLevel) {
+        const state = this.api.getDefaultGameState();
+        const hero = JSON.parse(JSON.stringify(state[heroKey]));
+        const normalizedLevel = Math.min(200, Math.max(1, Math.floor(targetLevel)));
+        for (let level = 1; level < normalizedLevel; level++) {
+            this.api.applyHeroPermanentStatUpgrade(hero);
+        }
+        hero.level = normalizedLevel;
+        hero.defenseCap = this.api.getHeroDefenseCap(hero);
+        return hero;
+    },
+
+    // Настоящая опорная прокачка: сколько злата за уровни кампании 1..N,
+    // и на каком уровне героя игрок стоит перед стартом уровня кампании.
+    buildCampaignToHeroLevelMap(campaignFinalLevel) {
+        const map = new Map();
+        let heroLevel = 1;
+        let zlata = 0;
+        for (let level = 1; level <= campaignFinalLevel; level++) {
+            map.set(level, heroLevel);
+            zlata += this.api.getLevelZlataReward(level);
+            while (heroLevel < 200 && zlata >= this.api.getHeroUpgradeCost(heroLevel)) {
+                zlata -= this.api.getHeroUpgradeCost(heroLevel);
+                heroLevel++;
+            }
+        }
+        return map;
+    },
+
+    calculateBossAttackDamage(...args) {
+        return this.api.calculateBossAttackDamage(...args);
+    },
+
+    getBossComboDamageMultiplier(...args) {
+        return this.api.getBossComboDamageMultiplier(...args);
+    }
+};
+
+// ==================== БОЕВОЙ ДВИЖОК (game.js через level.html как чёрный ящик) ====================
+
+const PROBE_SCRIPT_SOURCE = `
+(function () {
+    var __virtualNow = 0;
+    try {
+        window.performance.now = function () { return __virtualNow; };
+    } catch (e) {
+        Object.defineProperty(window.performance, 'now', {
+            value: function () { return __virtualNow; },
+            configurable: true
+        });
+    }
+    // Ранение (DoT) — методы Enemy.prototype.applyWound/updateWound и функция
+    // checkForWound — читают реальное время через Date.now(), а не performance.now(),
+    // поэтому подменяем и его тем же виртуальным таймером.
+    try {
+        Date.now = function () { return __virtualNow; };
+    } catch (e) {
+        Object.defineProperty(Date, 'now', {
+            value: function () { return __virtualNow; },
+            configurable: true
+        });
+    }
+    // Отключаем визуальные побочные эффекты (тосты, всплывающий текст урона от
+    // ранения и т.п.) — не мешают расчёту, но экономят время, не засоряют DOM за
+    // тысячи симулированных ударов и не падают на null-цели без DOM-элемента.
+    window.showCenterText = function () {};
+    Enemy.prototype.showWoundDamage = function () {};
+
+    window.__probe = {
+        setClock: function (ms) { __virtualNow = ms; },
+        setCombatState: function (patch) {
+            if (patch.damage !== undefined) globalDamage = patch.damage;
+            if (patch.critChance !== undefined) globalCritChance = patch.critChance;
+            if (patch.critMultiplier !== undefined) globalCritMultiplier = patch.critMultiplier;
+            if (patch.woundChance !== undefined) globalWoundChance = patch.woundChance;
+            if (patch.interval !== undefined) SHOT_INTERVAL = patch.interval;
+            if (patch.castleDefense !== undefined) castleDamageReduction = patch.castleDefense;
+            if (patch.heroFields) Object.assign(activeHeroObject, patch.heroFields);
+        },
+        resetCombat: function () { resetHeroFeatureCombatState(); },
+        // Настоящий Enemy без DOM/спрайта — approach borrowed from Object.create(Enemy.prototype),
+        // так applyWound/updateWound/removeWound работают ровно как в игре.
+        makeTarget: function (hp) {
+            const target = Object.create(Enemy.prototype);
+            target.hp = hp;
+            target.maxHP = hp;
+            target.isWounded = false;
+            target.element = null;
+            target.woundDamagePerSecond = 0;
+            target.woundEndTime = 0;
+            target.lastWoundTick = 0;
+            return target;
+        },
+        // damageEnemy() в реальной игре умножает результат calculateDamage() на
+        // rollHeroAttackMultiplier(true).multiplier ОТДЕЛЬНО (для Дуни — казино-атака;
+        // для остальных героев функция сама возвращает multiplier:1) — повторяем ровно
+        // ту же цепочку вызовов, иначе казино-урон потеряется.
+        hit: function (target) {
+            const base = calculateDamage(true, target);
+            const roll = rollHeroAttackMultiplier(true);
+            const damage = Math.round(base.damage * roll.multiplier);
+            return { damage: damage, isCritical: base.isCritical, attackKind: roll.kind };
+        },
+        checkWound: function (target, damage) { checkForWound(target, damage); },
+        tickWound: function (target) {
+            if (!target.isWounded) return false;
+            return target.updateWound();
+        },
+        notifyDamage: function (amount) { notifyHeroTookDamage(amount); },
+        getActiveHeroName: function () { return activeHeroObject ? activeHeroObject.name : null; }
+    };
+    window.__probeReady = true;
+})();
+`;
+
+const CombatEngine = {
+    frameEl: null,
+
+    async loadHero(heroKey, attempt) {
+        attempt = attempt || 1;
+        // activeHeroObject фиксируется один раз при разборе game.js из
+        // gameState[gameState.activeHero] в localStorage — поэтому герой
+        // меняется только через полную перезагрузку iframe.
+        const defaults = ProgressionEngine.api.getDefaultGameState();
+        const seedState = JSON.parse(JSON.stringify(defaults));
+        seedState.activeHero = heroKey;
+        seedState.schemaVersion = defaults.schemaVersion;
+        localStorage.setItem('gameState', JSON.stringify(seedState));
+
+        this.frameEl = $('combatFrame');
+        try {
+            // level.html — тяжёлая страница (звук, картинки, реальные игровые циклы
+            // initGame()); при простой смене src их остатки от предыдущего героя иногда
+            // не успевают освободиться к следующей загрузке. Полный сброс в about:blank
+            // с небольшой паузой перед следующей загрузкой снимает эту деградацию.
+            if (this.frameEl.src && this.frameEl.src !== 'about:blank') {
+                this.frameEl.src = 'about:blank';
+                await new Promise((resolve) => setTimeout(resolve, 300));
+            }
+            const loadPromise = waitForEvent(this.frameEl, 'load', 35000, `level.html не загрузился для ${heroKey}`);
+            this.frameEl.src = 'level.html?level=1&admin=1&t=' + Date.now();
+            await loadPromise;
+
+            const win = this.frameEl.contentWindow;
+            // activeHeroObject — const на верхнем уровне game.js, поэтому НЕ становится
+            // свойством window (в отличие от объявлений function/var) — проверяем
+            // готовность только по calculateDamage, а активного героя читаем позже
+            // через сам зонд.
+            await waitForCondition(
+                () => typeof win.calculateDamage === 'function',
+                15000,
+                30,
+                `game.js не подгрузился для ${heroKey} за 15с внутри level.html — проверьте, что панель ` +
+                'открыта через http://, а не файлом напрямую.'
+            );
+
+            const doc = this.frameEl.contentDocument;
+            const scriptEl = doc.createElement('script');
+            scriptEl.textContent = PROBE_SCRIPT_SOURCE;
+            doc.body.appendChild(scriptEl);
+            await waitForCondition(() => win.__probeReady === true, 5000, 20);
+
+            const activeName = win.__probe.getActiveHeroName();
+            if (activeName !== heroKey) {
+                throw new Error(`Ожидали активного героя ${heroKey}, получили ${activeName}`);
+            }
+            return win.__probe;
+        } catch (error) {
+            // Полная перезагрузка тяжёлой страницы с ассетами иногда просто не укладывается
+            // в таймаут — несколько повторных попыток снимают почти все такие случаи.
+            if (attempt >= 3) throw error;
+            log(`   ...не удалось (попытка ${attempt}: ${error.message}), пробую снова.`, 'log-dim');
+            await new Promise((resolve) => setTimeout(resolve, 500));
+            return this.loadHero(heroKey, attempt + 1);
+        }
+    },
+
+    // Один симулированный бой: герой бьёт цель до её гибели (или до потолка ударов),
+    // параллельно с реалистичным интервалом прилетают удары по герою (двигают таймер
+    // «Лови обратно» у Еремея по-настоящему, через notifyHeroTookDamage).
+    simulateFight(probe, heroStats, options) {
+        probe.resetCombat();
+        probe.setClock(0);
+        probe.setCombatState({
+            damage: heroStats.startGlobalDamage,
+            critChance: heroStats.startGlobalCritChance,
+            critMultiplier: heroStats.startGlobalCritMultiplier,
+            woundChance: heroStats.startGlobalWoundChance,
+            interval: heroStats.startSHOT_INTERVAL,
+            castleDefense: heroStats.startCastleDamageReduction,
+            heroFields: {
+                guaranteedCritEvery: heroStats.guaranteedCritEvery,
+                catchBackCritChanceBonus: heroStats.catchBackCritChanceBonus,
+                catchBackDurationMs: heroStats.catchBackDurationMs,
+                catchBackExpectedUptime: heroStats.catchBackExpectedUptime,
+                doubleAttackChance: heroStats.doubleAttackChance,
+                tripleAttackChance: heroStats.tripleAttackChance,
+                jackpotAttackChance: heroStats.jackpotAttackChance,
+                jackpotAttackMultiplier: heroStats.jackpotAttackMultiplier,
+                missingHpDamagePerPercent: heroStats.missingHpDamagePerPercent,
+                missingHpExpectedAverageFraction: heroStats.missingHpExpectedAverageFraction,
+                minShotInterval: heroStats.minShotInterval
+            }
+        });
+
+        const target = probe.makeTarget(options.bossHp);
+        const interval = Math.max(1, heroStats.startSHOT_INTERVAL);
+        const incomingEvery = options.incomingCadenceMs > 0 ? options.incomingCadenceMs : Infinity;
+        const WOUND_TICK_MS = 300;
+
+        let elapsed = 0;
+        let hits = 0;
+        let nextShotAt = 0;
+        let nextIncomingAt = incomingEvery;
+        let nextWoundTickAt = WOUND_TICK_MS;
+        const maxHits = options.maxHits || 4000;
+        const initialHp = target.hp;
+
+        // Дискретно-событийный цикл: свои выстрелы, входящие удары босса (двигают таймер
+        // «Лови обратно» через notifyDamage) и тики ранения (Enemy.prototype.updateWound,
+        // раз в 300мс реального времени, здесь — виртуального) продвигаются по единому
+        // таймлайну, а не изолированно, ровно как в настоящем бою.
+        while (target.hp > 0 && hits < maxHits) {
+            elapsed = Math.min(nextShotAt, nextIncomingAt, nextWoundTickAt);
+            probe.setClock(elapsed);
+
+            if (elapsed === nextWoundTickAt) {
+                const diedFromWound = probe.tickWound(target);
+                nextWoundTickAt += WOUND_TICK_MS;
+                if (diedFromWound || target.hp <= 0) break;
+                continue;
+            }
+            if (elapsed === nextIncomingAt) {
+                probe.notifyDamage(1);
+                // Пуассоновский поток входящих ударов (случайные интервалы со средним
+                // incomingCadenceMs), а не жёсткий метроном: при фиксированном шаге
+                // короче catchBackDurationMs (3000мс) баф Еремея не успевал бы истекать
+                // между ударами и держался бы ~100% времени вместо реалистичной доли —
+                // экспоненциальное распределение даёт настоящий разброс пауз.
+                nextIncomingAt += -Math.log(1 - Math.random()) * incomingEvery;
+                continue;
+            }
+
+            const result = probe.hit(target);
+            target.hp -= result.damage;
+            probe.checkWound(target, result.damage);
+            nextShotAt += interval;
+            hits++;
+        }
+
+        // Суммарный урон = сколько HP цели фактически ушло (прямые попадания + тики
+        // ранения) — считаем через разницу HP, а не отдельным счётчиком, чтобы ранение
+        // автоматически попадало в DPS без риска задвоить или забыть его источник.
+        const totalDamage = initialHp - target.hp;
+        return { dps: elapsed > 0 ? totalDamage / (elapsed / 1000) : 0, hits, elapsedMs: elapsed };
+    },
+
+    async simulateManyFights(probe, heroStats, options, count) {
+        const dpsValues = [];
+        for (let i = 0; i < count; i++) {
+            dpsValues.push(this.simulateFight(probe, heroStats, options).dps);
+            // Каждый бой — тысячи синхронных вызовов через границу iframe; без точки
+            // возврата в event loop вкладка выглядит подвисшей на весь батч сразу.
+            if (i % 20 === 19) await new Promise((resolve) => setTimeout(resolve, 0));
+        }
+        dpsValues.sort((a, b) => a - b);
+        const sum = dpsValues.reduce((total, value) => total + value, 0);
+        return {
+            mean: sum / dpsValues.length,
+            median: dpsValues[Math.floor(dpsValues.length / 2)],
+            p10: dpsValues[Math.floor(dpsValues.length * 0.10)],
+            p90: dpsValues[Math.floor(dpsValues.length * 0.90)]
+        };
+    }
+};
+
+// ==================== ДВИЖОК ЖИВУЧЕСТИ (реальные данные уровней + calculateBossAttackDamage) ====================
+
+const SurvivalEngine = {
+    cache: new Map(),
+
+    async fetchLevelFile(levelNumber) {
+        const response = await fetch(`lvlData/gameData${levelNumber}.js?t=${Date.now()}`);
+        if (!response.ok) return null;
+        const source = await response.text();
+        const factory = new Function(`${source}\nreturn { lvlNumber: lvlNumber, bossCombatConfig: bossCombatConfig, ENEMY_TYPES: ENEMY_TYPES, bossM: bossM, bossAbilities: bossAbilities, bossAbilitiesDop: bossAbilitiesDop };`);
+        return factory();
+    },
+
+    // С ревизии, добавившей заглушки уровней 26-141, у каждого уровня кампании есть свой
+    // файл — но фолбэк на ближайший уровень оставлен на случай, если файла всё же не
+    // найдётся (не падать молча без данных).
+    async loadLevelData(levelNumber) {
+        if (this.cache.has(levelNumber)) return this.cache.get(levelNumber);
+
+        let data = await this.fetchLevelFile(levelNumber);
+        if (!data) {
+            for (let back = levelNumber - 1; back >= 1 && !data; back--) {
+                data = await this.fetchLevelFile(back);
+            }
+        }
+        if (!data) {
+            for (let forward = levelNumber + 1; forward <= CAMPAIGN_FINAL_LEVEL && !data; forward++) {
+                data = await this.fetchLevelFile(forward);
+            }
+        }
+        this.cache.set(levelNumber, data || null);
+        return data || null;
+    },
+
+    // Монте-Карло «прогон уровня»: несколько десятков реальных ударов/комбо босса подряд,
+    // случайно выбранных из настоящих данных уровня, применяются к герою по формуле
+    // (1 - защита); считаем долю прогонов, где HP героя уходит в ноль до конца прогона,
+    // и средний остаток HP% там, где герой выжил.
+    // Сколько случайных настоящих ударов босса (из реального пула этого уровня)
+    // подряд выдерживает герой, прежде чем HP замка уйдёт в ноль — и какую долю HP
+    // забирает худший из этих ударов сам по себе (соответствует проверке «не гибнет
+    // от одного удара» в scripts/boss-damage-report.js).
+    simulateRun(levelData, hero, maxAttacks, random) {
+        const finalPhase = levelData.bossCombatConfig.phases.reduce(
+            (strongest, phase) => (phase.damage > strongest.damage ? phase : strongest)
+        );
+        const pool = levelData.bossAbilities.filter((attack) => levelData.bossCombatConfig.bosses[attack.boss]);
+        if (pool.length === 0) return null;
+
+        let hp = hero.castleHP;
+        const defense = Math.min(hero.defenseCap ?? 0.9, hero.startCastleDamageReduction);
+        let worstHitFraction = 0;
+
+        for (let i = 0; i < maxAttacks; i++) {
+            const attack = pool[Math.floor(random() * pool.length)];
+            const profile = levelData.bossCombatConfig.bosses[attack.boss];
+            const rawDamage = ProgressionEngine.calculateBossAttackDamage(
+                attack.customDamage,
+                profile.damageMultiplier,
+                finalPhase.damage,
+                levelData.bossCombatConfig.damageMultiplier,
+                levelData.lvlNumber
+            );
+            const taken = Math.floor(rawDamage * (1 - defense));
+            worstHitFraction = Math.max(worstHitFraction, taken / hero.castleHP);
+            hp -= taken;
+            if (hp <= 0) return { hitsToDefeat: i + 1, worstHitFraction, oneShot: i === 0 };
+        }
+
+        return { hitsToDefeat: Infinity, worstHitFraction, oneShot: false };
+    },
+
+    async simulateHeroAtCampaignLevel(heroKey, campaignLevel, heroLevel, runs) {
+        const levelData = await this.loadLevelData(campaignLevel);
+        if (!levelData) return null;
+        const hero = ProgressionEngine.buildHeroAtLevel(heroKey, heroLevel);
+        let random = mulberry32(hashSeed(heroKey, campaignLevel));
+        const hitsSamples = [];
+        let oneShots = 0;
+        let worstFractionSeen = 0;
+
+        for (let i = 0; i < runs; i++) {
+            const outcome = this.simulateRun(levelData, hero, 40, random);
+            if (!outcome) continue;
+            hitsSamples.push(outcome.hitsToDefeat);
+            if (outcome.oneShot) oneShots++;
+            worstFractionSeen = Math.max(worstFractionSeen, outcome.worstHitFraction);
+            if (i % 500 === 499) await new Promise((resolve) => setTimeout(resolve, 0));
+        }
+        if (hitsSamples.length === 0) return null;
+
+        hitsSamples.sort((a, b) => a - b);
+        return {
+            medianHitsToDefeat: hitsSamples[Math.floor(hitsSamples.length / 2)],
+            p10HitsToDefeat: hitsSamples[Math.floor(hitsSamples.length * 0.10)],
+            oneShotRate: oneShots / hitsSamples.length,
+            worstSingleHitFraction: worstFractionSeen
+        };
+    }
+};
+
+function mulberry32(seed) {
+    let value = seed >>> 0;
+    return function random() {
+        value += 0x6D2B79F5;
+        let result = value;
+        result = Math.imul(result ^ (result >>> 15), result | 1);
+        result ^= result + Math.imul(result ^ (result >>> 7), result | 61);
+        return ((result ^ (result >>> 14)) >>> 0) / 4294967296;
+    };
+}
+
+function hashSeed(text, extra) {
+    let hash = 2166136261 ^ extra;
+    for (let i = 0; i < text.length; i++) {
+        hash = Math.imul(hash ^ text.charCodeAt(i), 16777619);
+    }
+    return hash >>> 0;
+}
+
+// ==================== ОРКЕСТРАТОР ====================
+
+function isRegionFinalLevel(level) {
+    return level % 15 === 0 || level === CAMPAIGN_FINAL_LEVEL;
+}
+
+function renderDpsTable(heroes, results) {
+    const table = $('dpsTable');
+    const thead = `<thead><tr><th>Ур. кампании</th><th>Ур. героя</th>${heroes.map((h) => `<th>${h.dispName}</th>`).join('')}</tr></thead>`;
+    const rows = ALL_LEVELS.map((level) => {
+        const heroLevel = ProgressionEngine.campaignToHeroLevel.get(level) || 1;
+        const cells = heroes.map((h) => {
+            const cell = results[h.key] && results[h.key][level];
+            if (!cell) return '<td>—</td>';
+            return `<td>${Math.round(cell.mean)} <span style="color:var(--muted);font-size:11px;">(P10 ${Math.round(cell.p10)} / P90 ${Math.round(cell.p90)})</span></td>`;
+        }).join('');
+        const rowCls = isRegionFinalLevel(level) ? ' class="region-final"' : '';
+        return `<tr${rowCls}><td>${level}</td><td>${heroLevel}</td>${cells}</tr>`;
+    }).join('');
+    table.innerHTML = `${thead}<tbody>${rows}</tbody>`;
+    $('dpsPanel').style.display = '';
+}
+
+function renderSurvivalTable(heroes, results) {
+    const table = $('survivalTable');
+    const thead = `<thead><tr><th>Ур. кампании</th><th>Ур. героя</th>${heroes.map((h) => `<th>${h.dispName}</th>`).join('')}</tr></thead>`;
+    const rows = ALL_LEVELS.map((level) => {
+        const heroLevel = ProgressionEngine.campaignToHeroLevel.get(level) || 1;
+        const cells = heroes.map((h) => {
+            const cell = results[h.key] && results[h.key][level];
+            if (!cell) return '<td>—</td>';
+            const oneShotPct = (cell.oneShotRate * 100).toFixed(1);
+            const cls = cell.oneShotRate > 0 ? 'num-bad' : 'num-good';
+            const hitsLabel = Number.isFinite(cell.medianHitsToDefeat) ? cell.medianHitsToDefeat : '40+';
+            return `<td>${hitsLabel} уд. до гибели (медиана) · худший удар ${(cell.worstSingleHitFraction * 100).toFixed(0)}% HP · <span class="${cls}">ваншот ${oneShotPct}%</span></td>`;
+        }).join('');
+        const rowCls = isRegionFinalLevel(level) ? ' class="region-final"' : '';
+        return `<tr${rowCls}><td>${level}</td><td>${heroLevel}</td>${cells}</tr>`;
+    }).join('');
+    table.innerHTML = `${thead}<tbody>${rows}</tbody>`;
+    $('survivalPanel').style.display = '';
+}
+
+async function runAll() {
+    stopRequested = false;
+    $('runBtn').disabled = true;
+    $('stopBtn').disabled = false;
+    logEl.innerHTML = '';
+    $('dpsPanel').style.display = 'none';
+    $('survivalPanel').style.display = 'none';
+
+    try {
+        if (location.protocol === 'file:') {
+            throw new Error(
+                'Страница открыта напрямую как файл (file://) — браузер считает каждый локальный ' +
+                'файл отдельным изолированным источником и блокирует доступ к содержимому iframe. ' +
+                'Нужно открыть панель через локальный сервер: например, из корня проекта запустить ' +
+                '"node scripts/serve-admin-panel.js" и открыть http://localhost:8843/admin-balance-panel.html'
+            );
+        }
+        const survivalOnly = new URLSearchParams(location.search).has('survivalOnly');
+        await ProgressionEngine.init();
+        const heroes = ProgressionEngine.discoverHeroes();
+        log(`Найдено героев: ${heroes.length} (${heroes.map((h) => h.dispName).join(', ')})`, 'log-ok');
+        if (survivalOnly) {
+            log(`Режим survivalOnly: только живучесть (${SURVIVAL_RUNS_PER_LEVEL} прогонов/уровень), DPS пропускаю.`, 'log-dim');
+        } else {
+            log(`Прогоняю все ${CAMPAIGN_FINAL_LEVEL} уровней кампании для каждого героя (DPS: ${FIGHTS_PER_LEVEL} боёв/уровень, живучесть: ${SURVIVAL_RUNS_PER_LEVEL} прогонов/уровень).`, 'log-dim');
+        }
+
+        const dpsResults = {};
+        const survivalResults = {};
+        const totalSteps = heroes.length * ALL_LEVELS.length * (survivalOnly ? 1 : 2);
+        let doneSteps = 0;
+        setProgress(0, totalSteps);
+
+        for (const hero of heroes) {
+            if (stopRequested) break;
+
+            if (!survivalOnly) {
+                dpsResults[hero.key] = {};
+                log(`— ${hero.dispName}: загружаю боевой движок...`, 'log-dim');
+                const probe = await CombatEngine.loadHero(hero.key);
+                log(`— ${hero.dispName}: боевой движок готов, симулирую DPS на всех уровнях.`, 'log-ok');
+
+                for (const level of ALL_LEVELS) {
+                    if (stopRequested) break;
+                    const heroLevel = ProgressionEngine.campaignToHeroLevel.get(level) || 1;
+                    const heroStats = ProgressionEngine.buildHeroAtLevel(hero.key, heroLevel);
+                    const agg = await CombatEngine.simulateManyFights(
+                        probe,
+                        heroStats,
+                        { bossHp: BOSS_HP_FOR_DPS_FIGHT, incomingCadenceMs: INCOMING_CADENCE_MS, maxHits: 4000 },
+                        FIGHTS_PER_LEVEL
+                    );
+                    dpsResults[hero.key][level] = agg;
+                    doneSteps++;
+                    if (level % 15 === 0 || level === 1 || level === CAMPAIGN_FINAL_LEVEL) {
+                        setProgress(doneSteps, totalSteps);
+                        log(`   уровень кампании ${level} (герой ур. ${heroLevel}): DPS ≈ ${Math.round(agg.mean)}`, 'log-dim');
+                    }
+                }
+                renderDpsTable(heroes, dpsResults);
+                log(`— ${hero.dispName}: DPS посчитан на всех уровнях.`, 'log-ok');
+            }
+
+            survivalResults[hero.key] = {};
+            for (const level of ALL_LEVELS) {
+                if (stopRequested) break;
+                const heroLevel = ProgressionEngine.campaignToHeroLevel.get(level) || 1;
+                const survival = await SurvivalEngine.simulateHeroAtCampaignLevel(
+                    hero.key, level, heroLevel, SURVIVAL_RUNS_PER_LEVEL
+                );
+                if (survival) survivalResults[hero.key][level] = survival;
+                doneSteps++;
+                if (level % 15 === 0) setProgress(doneSteps, totalSteps);
+            }
+            setProgress(doneSteps, totalSteps);
+            renderSurvivalTable(heroes, survivalResults);
+            log(`— ${hero.dispName}: живучесть посчитана на всех уровнях.`, 'log-ok');
+        }
+
+        statusLine.textContent = stopRequested ? 'Остановлено' : 'Готово';
+        log(stopRequested ? 'Остановлено пользователем.' : 'Симуляция завершена.', 'log-ok');
+    } catch (error) {
+        log(`Ошибка: ${error.message}`, 'log-err');
+        console.error(error);
+        statusLine.textContent = 'Ошибка';
+    } finally {
+        $('runBtn').disabled = false;
+        $('stopBtn').disabled = true;
+    }
+}
+
+$('runBtn').addEventListener('click', runAll);
+$('stopBtn').addEventListener('click', () => { stopRequested = true; });
+
+// Никаких настроек и кнопки для старта — панель прогоняет всё сама сразу при открытии.
+runAll();
+</script>
+</body>
+</html>

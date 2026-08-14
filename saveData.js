@@ -9,12 +9,20 @@ const LEVEL_REWARD_SCALE = 3;
 const REGION_FINAL_FIRST_CLEAR_ZLATA_MULTIPLIER = 10;
 const HERO_UPGRADE_BASE_COST = 10;
 const HERO_UPGRADE_COST_GROWTH = 1.06;
-const BOSS_DAMAGE_BALANCE = Object.freeze({
-    progressionScale: 1.25,
-    progressionExponent: 1.70,
-    legacyLinearGrowthPerLevel: 0.05,
-    maxCombatMultiplier: 2.00
-});
+// Ревизия 10: убран движковый хак «погасить легаси +5%/уровень, наложить свою кривую
+// поверх» — он делил РЕАЛЬНЫЙ configuredAttackDamage (customDamage/baseDamage из lvlData)
+// на растущий множитель, хотя в самих файлах уровней никакого «уже заложенного +5%/уровень»
+// на самом деле нет: baseDamage — константа (напр. 20) хоть на 1 уровне, хоть на 26-м, не
+// растёт вообще. Легаси-деление было пустым домыслом и на практике просто искусственно
+// душило реальный урон с ростом levelNumber, а add-on кривая (getBossDamageProgressionMultiplier)
+// частично это компенсировала — суммарно давало почти нечитаемую, случайно почти-плоскую
+// кривую урона, не имеющую отношения к тому, что реально в данных. Настоящая прогрессия
+// сложности УЖЕ живёт в данных уровня: bossCombatConfig.damageMultiplier (level-wide),
+// bossCombatConfig.bosses[x].damageMultiplier (per-boss) и phase.damage (per-phase) — они
+// подаются сюда как bossMultiplier/phaseMultiplier/levelMultiplier и честно перемножаются
+// (см. calculateBossAttackDamage).
+// Ревизия 11: убран maxCombatMultiplier (потолок 2.0) — он глушил рост damageMultiplier
+// в данных примерно с ~26–35 уровня кампании, хотя в lvlData множитель продолжал расти.
 const DEBUG_UNLOCK_SECRET = 'tda98';
 const DEBUG_ZLATA_REWARD = 10_000_000;
 
@@ -30,26 +38,39 @@ const DEFAULT_HERO_PERMANENT_GROWTH = Object.freeze({
 });
 
 const HERO_PERMANENT_GROWTH_PROFILES = Object.freeze({
+    // Ревизия 10 (живучесть): HP/защита растут всю кампанию вместе с uncapped
+    // damageMultiplier боссов, чтобы держать ~12/9/7/5 сильнейших ударов (см. fit-survivability.js).
     guardian: Object.freeze({
         damageMultiplier: 1.042,
         critChanceIncrease: 0.003,
         critMultiplierIncrease: 0.10,
         woundChanceIncrease: 0.003,
         shotIntervalReduction: 1,
-        castleHpMultiplier: 1.0525,
-        defenseIncrease: 0.01,
-        defenseCap: 0.60
+        castleHpMultiplier: 1.049,
+        defenseIncrease: 0.002,
+        defenseCap: 0.177
     }),
+    // С ревизии на которой Дарьяна перешла на профиль ember, tempest используется только
+    // Дуней — модифицировать его напрямую безопасно, отдельный профиль не нужен.
+    // Ревизия 8: Дуня переведена на архетип «скорость, не разовый урон» — см. подробное
+    // обоснование у объекта dunya. shotIntervalReduction поднят с 2 до 4.7 (у Луки — 5,
+    // это и есть «почти как у Луки»), damageMultiplier опущен с 1.052 до 1.030 (разовый
+    // урон растёт заметно медленнее). critChanceIncrease/woundChanceIncrease теперь ни на
+    // что не влияют (см. critChanceCap/woundChanceCap у dunya — оба совпадают со стартом,
+    // поэтому редиректы применяются с 1 же прокачки) — оставлены только для читаемости.
+    // Ревизия 10 (живучесть): см. guardian выше.
     tempest: Object.freeze({
-        damageMultiplier: 1.037,
-        critChanceIncrease: 0.007,
-        critMultiplierIncrease: 0.09,
-        woundChanceIncrease: 0.006,
-        shotIntervalReduction: 2,
-        castleHpMultiplier: 1.048,
-        defenseIncrease: 0.0075,
-        defenseCap: 0.50
+        damageMultiplier: 1.030,
+        critChanceIncrease: 0.0035,
+        critMultiplierIncrease: 0.012,
+        woundChanceIncrease: 0,
+        shotIntervalReduction: 4.7,
+        castleHpMultiplier: 1.049,
+        defenseIncrease: 0.001,
+        defenseCap: 0.162
     }),
+    // Ревизия 10 (живучесть): Лука снова растёт по HP/защите (раньше был заморожен),
+    // чтобы держать ~5 сильнейших ударов на фоне uncapped урона боссов.
     marksman: Object.freeze({
         damageMultiplier: 1.029,
         critChanceIncrease: 0.008,
@@ -57,8 +78,8 @@ const HERO_PERMANENT_GROWTH_PROFILES = Object.freeze({
         woundChanceIncrease: 0.012,
         shotIntervalReduction: 5,
         castleHpMultiplier: 1.045,
-        defenseIncrease: 0.0065,
-        defenseCap: 0.40
+        defenseIncrease: 0.002,
+        defenseCap: 0.196
     }),
     // Дарьяна: рост почти целиком через урон, крит растёт нарочно медленно (см. объект
     // daryana ниже) — ни один из трёх базовых профилей так не устроен, поэтому это
@@ -70,9 +91,10 @@ const HERO_PERMANENT_GROWTH_PROFILES = Object.freeze({
         critMultiplierIncrease: 0.017,
         woundChanceIncrease: 0.006,
         shotIntervalReduction: 2,
-        castleHpMultiplier: 1.048,
-        defenseIncrease: 0.0075,
-        defenseCap: 0.50
+        // Ревизия 10 (живучесть): см. guardian выше.
+        castleHpMultiplier: 1.047,
+        defenseIncrease: 0.002,
+        defenseCap: 0.228
     })
 });
 
@@ -88,6 +110,23 @@ function getHeroDefenseCap(hero) {
     );
 }
 
+// Потолки на % и HP-статы героя — в отличие от defenseCap (общий на архетип/профиль),
+// это поля НА САМОМ герое: разным героям одного профиля можно задать разные потолки.
+// Герой без явного поля (например, служебные заглушки kim/vas/gam... в mHero) остаётся
+// без потолка — 1 для шансов, Infinity для HP — чтобы не ломать то, что раньше росло
+// свободно.
+function getHeroCritChanceCap(hero) {
+    return Number.isFinite(hero?.critChanceCap) ? Math.min(1, hero.critChanceCap) : 1;
+}
+
+function getHeroWoundChanceCap(hero) {
+    return Number.isFinite(hero?.woundChanceCap) ? Math.min(1, hero.woundChanceCap) : 1;
+}
+
+function getHeroCastleHpCap(hero) {
+    return Number.isFinite(hero?.castleHpCap) && hero.castleHpCap > 0 ? hero.castleHpCap : Infinity;
+}
+
 function getHeroUpgradeCost(heroLevel) {
     const normalizedLevel = Math.min(
         HERO_MAX_LEVEL,
@@ -101,56 +140,24 @@ function getHeroUpgradeCost(heroLevel) {
     ));
 }
 
-function getBossDamageProgressionMultiplier(levelNumber) {
-    const normalizedLevel = Math.min(
-        CAMPAIGN_FINAL_LEVEL,
-        Math.max(1, Math.floor(Number(levelNumber) || 1))
-    );
-    const campaignProgress = (
-        normalizedLevel - 1
-    ) / (CAMPAIGN_FINAL_LEVEL - 1);
-
-    return 1 + (
-        BOSS_DAMAGE_BALANCE.progressionScale
-        * (
-            Math.exp(
-                BOSS_DAMAGE_BALANCE.progressionExponent * campaignProgress
-            ) - 1
-        )
-    );
-}
-
+// Ревизия 10: levelNumber больше не используется (см. комментарий ревизии 10 выше у
+// прежнего BOSS_DAMAGE_BALANCE) — параметр оставлен в сигнатуре, чтобы не трогать вызовы
+// в game.js/скриптах, которые продолжают его передавать; вся прогрессия сложности
+// приходит через bossMultiplier/phaseMultiplier/levelMultiplier — то есть напрямую из
+// данных уровня.
+// Ревизия 11: без потолка на произведение множителей.
 function calculateBossAttackDamage(
     configuredAttackDamage,
     bossMultiplier,
     phaseMultiplier,
-    levelMultiplier,
-    levelNumber
+    levelMultiplier
 ) {
-    const normalizedLevel = Math.max(1, Math.floor(Number(levelNumber) || 1));
-    // gameData2..N уже содержат старый множитель +5% за номер уровня.
-    // Сначала убираем его, чтобы новая кривая не накладывалась поверх старой.
-    const legacyProgressionMultiplier = normalizedLevel === 1
-        ? 1
-        : 1 + (
-            BOSS_DAMAGE_BALANCE.legacyLinearGrowthPerLevel * normalizedLevel
-        );
-    const normalizedAttackDamage = Math.max(
-        0,
-        Number(configuredAttackDamage) || 0
-    ) / legacyProgressionMultiplier;
-    const combatMultiplier = Math.min(
-        // Сочетание «сильный босс + третья фаза + сложный уровень»
-        // не должно превращать читаемую атаку в случайный ваншот.
-        BOSS_DAMAGE_BALANCE.maxCombatMultiplier,
-        Math.max(0, Number(bossMultiplier) || 0)
+    const combatMultiplier = Math.max(0, Number(bossMultiplier) || 0)
         * Math.max(0, Number(phaseMultiplier) || 0)
-        * Math.max(0, Number(levelMultiplier) || 0)
-    );
+        * Math.max(0, Number(levelMultiplier) || 0);
 
     return Math.max(1, Math.round(
-        normalizedAttackDamage
-        * getBossDamageProgressionMultiplier(normalizedLevel)
+        Math.max(0, Number(configuredAttackDamage) || 0)
         * combatMultiplier
     ));
 }
@@ -292,22 +299,41 @@ function persistGameState(state) {
     }
 }
 
+// Каждый шаг качает пару статов. Если один из пары уже упёрся в свой потолок
+// (critChanceCap/woundChanceCap/castleHpCap на герое, defenseCap по профилю), прирост
+// этого шага не пропадает впустую — второй стат пары получает его ЕЩЁ РАЗ. Так героя
+// нельзя "перекачать" сверх задуманного по одной оси ценой недокачки по другой —
+// вместо этого рост перетекает туда, где ещё есть куда расти.
 function applyHeroPermanentStatUpgrade(hero) {
     const growth = getHeroPermanentGrowth(hero);
 
     if (hero.upSpecif === 1) {
+        const critChanceCap = getHeroCritChanceCap(hero);
+        const critChanceCapped = hero.startGlobalCritChance >= critChanceCap;
+
         hero.startGlobalDamage *= growth.damageMultiplier;
-        hero.startGlobalCritChance = Math.min(
-            1,
-            hero.startGlobalCritChance + growth.critChanceIncrease
-        );
+        if (!critChanceCapped) {
+            hero.startGlobalCritChance = Math.min(
+                critChanceCap,
+                hero.startGlobalCritChance + growth.critChanceIncrease
+            );
+        } else {
+            hero.startGlobalDamage *= growth.damageMultiplier;
+        }
         hero.upSpecif = 2;
     } else if (hero.upSpecif === 2) {
+        const woundChanceCap = getHeroWoundChanceCap(hero);
+        const woundChanceCapped = hero.startGlobalWoundChance >= woundChanceCap;
+
         hero.startGlobalCritMultiplier += growth.critMultiplierIncrease;
-        hero.startGlobalWoundChance = Math.min(
-            1,
-            hero.startGlobalWoundChance + growth.woundChanceIncrease
-        );
+        if (!woundChanceCapped) {
+            hero.startGlobalWoundChance = Math.min(
+                woundChanceCap,
+                hero.startGlobalWoundChance + growth.woundChanceIncrease
+            );
+        } else {
+            hero.startGlobalCritMultiplier += growth.critMultiplierIncrease;
+        }
         hero.upSpecif = 3;
     } else if (hero.upSpecif === 3) {
         // Личный «пол» интервала (например, у Дарьяны — не про скорость)
@@ -318,13 +344,34 @@ function applyHeroPermanentStatUpgrade(hero) {
         );
         hero.upSpecif = 4;
     } else if (hero.upSpecif === 4) {
-        hero.castleHP += Math.floor(
-            hero.castleHP * (growth.castleHpMultiplier - 1)
-        );
-        hero.startCastleDamageReduction = Math.min(
-            getHeroDefenseCap(hero),
-            hero.startCastleDamageReduction + growth.defenseIncrease
-        );
+        const castleHpCap = getHeroCastleHpCap(hero);
+        const defenseCap = getHeroDefenseCap(hero);
+        const castleHpCapped = hero.castleHP >= castleHpCap;
+        const defenseCapped = hero.startCastleDamageReduction >= defenseCap;
+
+        if (!castleHpCapped) {
+            hero.castleHP = Math.min(
+                castleHpCap,
+                hero.castleHP + Math.floor(hero.castleHP * (growth.castleHpMultiplier - 1))
+            );
+        }
+        if (!defenseCapped) {
+            hero.startCastleDamageReduction = Math.min(
+                defenseCap,
+                hero.startCastleDamageReduction + growth.defenseIncrease
+            );
+        }
+        if (castleHpCapped && !defenseCapped) {
+            hero.startCastleDamageReduction = Math.min(
+                defenseCap,
+                hero.startCastleDamageReduction + growth.defenseIncrease
+            );
+        } else if (defenseCapped && !castleHpCapped) {
+            hero.castleHP = Math.min(
+                castleHpCap,
+                hero.castleHP + Math.floor(hero.castleHP * (growth.castleHpMultiplier - 1))
+            );
+        }
         hero.upSpecif = 1;
     }
 }
@@ -646,6 +693,15 @@ function migrateGameState(savedState) {
                 migrated[heroKey].feature = defaultHero.feature;
             }
 
+            // Пути к картинкам — игровой ассет, а не прогресс игрока: старое
+            // сохранение не должно навсегда фиксировать устаревший путь/формат.
+            if (typeof defaultHero.image === 'string') {
+                migrated[heroKey].image = defaultHero.image;
+            }
+            if (typeof defaultHero.fullImage === 'string') {
+                migrated[heroKey].fullImage = defaultHero.fullImage;
+            }
+
             migrated[heroKey].startCastleDamageReduction = Math.min(
                 getHeroDefenseCap(migrated[heroKey]),
                 Math.max(0, migrated[heroKey].startCastleDamageReduction)
@@ -721,19 +777,37 @@ function unlockAllLevelsForDebug(secret, maxAvailableLevel) {
 
     const previousCompletedLevel = gameState.lastCompletedLevel;
     const previousZlata = gameState.zlata;
+    const previousHeroUnlocks = {};
 
     gameState.lastCompletedLevel = Math.max(gameState.lastCompletedLevel, normalizedMaxLevel);
     gameState.zlata += DEBUG_ZLATA_REWARD;
 
+    let unlockedHeroes = 0;
+    gameState.mHero.forEach(heroKey => {
+        const hero = gameState[heroKey];
+        if (!hero || typeof hero !== 'object') return;
+        previousHeroUnlocks[heroKey] = hero.unlock;
+        if (hero.unlock !== true) {
+            hero.unlock = true;
+            unlockedHeroes++;
+        }
+    });
+
     if (!saveGameState()) {
         gameState.lastCompletedLevel = previousCompletedLevel;
         gameState.zlata = previousZlata;
+        Object.keys(previousHeroUnlocks).forEach(heroKey => {
+            if (gameState[heroKey]) {
+                gameState[heroKey].unlock = previousHeroUnlocks[heroKey];
+            }
+        });
         return { success: false, reason: 'save-failed' };
     }
 
     return {
         success: true,
         unlockedThrough: normalizedMaxLevel,
+        unlockedHeroes,
         reward: DEBUG_ZLATA_REWARD,
         totalZlata: gameState.zlata
     };
@@ -936,12 +1010,12 @@ function getDefaultGameState() {
 			activeHero: 'eremei',
 			zlata: 0, 
 			eremei: {
-				balanceRevision: 8,
+				balanceRevision: 10,
 				name: 'eremei',
 				permanentGrowthProfile: 'guardian',
 				dispName: 'Еремей Дуболом',
-				image: 'images/hero/2_eremei/eremei_min.png',
-				fullImage: 'images/hero/2_eremei/eremei_full.png',
+				image: 'images/hero/2_eremei/eremei_min.webp',
+				fullImage: 'images/hero/2_eremei/eremei_full.webp',
 				level: 1,
 				// Ревизия 8: старый баг «Лука теряет преимущество по DPS на уровне героя 1»
 				// (базовый урон Еремея давал ему 184 DPS против 172 у Луки уже на старте,
@@ -954,13 +1028,17 @@ function getDefaultGameState() {
 				startGlobalCritChance: 0.045,
 				startGlobalCritMultiplier: 2.1,
 				startGlobalWoundChance	: 0.015,
-				startCastleDamageReduction : 0.075,
+				// Ревизия 10 (живучесть): HP/защита растут всю кампанию вслед за uncapped
+				// уроном боссов. Цель — ~12 сильнейших ударов на каждом уровне кампании
+				// при focused-прокачке (см. scripts/fit-survivability.js). На 1 уровне
+				// допускается 11 вместо 12 из‑за округления.
+				startCastleDamageReduction : 0.097,
 				startSHOT_INTERVAL : 970,
-				castleHP : 188,
+				castleHP : 336,
 				lvlUnlock: 1,
 				zlataUp: 10,
 				investedZlata: 0,
-				upSpecif: 1, 	
+				upSpecif: 1,
 				feature: 'Лови обратно — <br>после получения урона<br>шанс крита +10%<br>на следующие 3 секунды',
 				unlock: true,
 				catchBackCritChanceBonus: 0.10,
@@ -970,24 +1048,60 @@ function getDefaultGameState() {
 				// HERO_DIFFICULTY_MODEL.eremeiExpectedCatchBackUptime — общий дефолт на случай
 				// отсутствия этого поля у героя).
 				catchBackExpectedUptime: 0.45,
+				critChanceCap: 0.19,
+				woundChanceCap: 0.155,
+				// Потолок чуть выше HP на герое 200 при focused-кривой — постоянная
+				// прокачка не упирается раньше конца. Временные HP-апгрейды ограничены
+				// отдельно в game.js (~+25% от старта забега), чтобы высокий cap не
+				// раздувал живучесть внутри одного уровня.
+				castleHpCap: 3500,
 			},
 			
 			
+			// Ревизия 8: архетип пересобран под «скорость вместо разового урона» — казино-
+			// джекпот остаётся её фирменной чертой, но фоновый бой теперь строится на частых
+			// слабых ударах, а не на сильных редких. startGlobalDamage опущен со 132.5 до 97
+			// (разовый удар заметно ниже, чем был), startSHOT_INTERVAL — с 940 до 808мс
+			// (почти вплотную к стартовым 800мс Луки). critChanceCap опущен до 0.03 — это
+			// ровно стартовый шанс крита, поэтому крит-чанс у неё вообще не растёт: любая
+			// прокачка, которая шла бы в крит-шанс, с 1 же прокачки редиректится во второй
+			// прямой урон (см. applyHeroPermanentStatUpgrade) — компенсирует низкий
+			// startGlobalDamage не критом, а стабильным приростом самого удара. Новый
+			// профиль tempest (shotIntervalReduction 4.7 против прежних 2, почти как 5 у
+			// Луки) — интервал продолжает падать весь забег и к 200 уровню доходит до пола
+			// minShotInterval 585мс (у Луки на 200 уровне интервал естественно ~550мс, т.е.
+			// без искусственного пола) — Дуня быстрее почти как Лука, но не быстрее.
+			// Цель ревизии: DPS Дуни ~90% (примерно на 10% ниже) DPS Дарьяны на всех
+			// контрольных уровнях героя (1/40/80/120/160/200). Аналитическим расчётом
+			// (та же формула, что в scripts/balance-report.js/expectedDps) коридор получился
+			// 89.3–94.4% от DPS Дарьяны — без выхода за пределы ни на одной точке.
+			// startGlobalDamage 95 не подошёл: на 135 уровне кампании (герой ур. 153)
+			// suvival-время убийства самого жирного босса в scripts/balance-report.js
+			// (симуляция временных улучшений, RUNS=5000) стабильно доходило до 91с — за
+			// пределами дизайн-коридора «любой босс ≤90с» (row.longestBoss). Причина —
+			// critChanceCap==старту убирает у Дуни весь тип временного апгрейда «шанс
+			// крита» на весь забег, снижая гибкость внутри одного прохождения (тот же
+			// эффект, что раньше не позволял урезать крит-рост Дарьяны ниже некоторого
+			// предела — см. её комментарий). 97 держит это время на стабильных 89с.
+			// woundChanceCap уже 0 (ревизия 7 сняла ранение целиком) — оставлено, редирект
+			// по этой оси идёт в critMultiplier с самого начала, см. tempest.
 			dunya: {
-				balanceRevision: 6,
+				balanceRevision: 10,
 				name: 'dunya',
 				permanentGrowthProfile: 'tempest',
 				dispName: 'Ветроманка Дуня',
-				image: 'images/hero/1_babka/dunya_min.png',
-				fullImage: 'images/hero/1_babka/dunya_full.png',
+				image: 'images/hero/1_babka/dunya_min.webp',
+				fullImage: 'images/hero/1_babka/dunya_full.webp',
 				level: 1,
-				startGlobalDamage: 112.5,
+				startGlobalDamage: 97,
 				startGlobalCritChance: 0.03,
 				startGlobalCritMultiplier: 2.0,
-				startGlobalWoundChance	: 0.015,
-				startCastleDamageReduction : 0.03,
-				startSHOT_INTERVAL : 940,
-				castleHP : 120,
+				startGlobalWoundChance	: 0,
+				// Ревизия 10 (живучесть): цель ~9 сильнейших ударов по всей кампании.
+				startCastleDamageReduction : 0.122,
+				startSHOT_INTERVAL : 808,
+				minShotInterval: 585,
+				castleHP : 248,
 				lvlUnlock: 15,
 				zlataUp: 10,
 				investedZlata: 0,
@@ -998,6 +1112,11 @@ function getDefaultGameState() {
 				tripleAttackChance: 0.03,
 				jackpotAttackChance: 0.01,
 				jackpotAttackMultiplier: 8,
+				// Потолки % и HP-статов — см. подробное обоснование у объекта eremei.
+				// critChanceCap == стартовому крит-шансу (см. комментарий выше про редирект).
+				critChanceCap: 0.03,
+				woundChanceCap: 0,
+				castleHpCap: 2600,
 			},
 
 			// Дарьяна — «Прогревание»: урон растёт с недостающим HP% цели — за каждый
@@ -1039,7 +1158,7 @@ function getDefaultGameState() {
 			// minShotInterval задаёт личный «пол»: скорость растёт максимум до 60
 			// (интервал не опускается ниже 940мс), в отличие от общего минимума 200мс.
 			daryana: {
-				balanceRevision: 6,
+				balanceRevision: 10,
 				name: 'daryana',
 				permanentGrowthProfile: 'ember',
 				dispName: 'Дарьяна Пылкая',
@@ -1053,10 +1172,11 @@ function getDefaultGameState() {
 				// Механика та же (ranение/DoT), но для огненного мага это подпалы —
 				// подпись в UI переименована чисто косметически, без смены логики.
 				woundChanceLabel: 'Шанс поджога',
-				startCastleDamageReduction : 0.02,
+				// Ревизия 10 (живучесть): цель ~7 сильнейших ударов по всей кампании.
+				startCastleDamageReduction : 0.148,
 				startSHOT_INTERVAL : 980,
 				minShotInterval: 940,
-				castleHP : 108,
+				castleHP : 188,
 				lvlUnlock: 1,
 				zlataUp: 10,
 				investedZlata: 0,
@@ -1068,23 +1188,30 @@ function getDefaultGameState() {
 				// за бой (доля от 1.0), используемое для оценки среднего бонуса прогревания
 				// (см. комментарий выше про ODE-оценку ≈42.5%).
 				missingHpExpectedAverageFraction: 0.425,
+				// Потолки % и HP-статов — см. подробное обоснование у объекта eremei. Сила
+				// Дарьяны — «Прогревание» и большой обычный урон, не крит.
+				critChanceCap: 0.103,
+				woundChanceCap: 0.30,
+				castleHpCap: 1750,
 			},
 
 			luka: {
-				balanceRevision: 6,
-				name: 'luka', 
+				balanceRevision: 10,
+				name: 'luka',
 				permanentGrowthProfile: 'marksman',
 				dispName: 'Лука стрелок',
-				image: 'images/hero/3_luka/luka_min.png',
-				fullImage: 'images/hero/3_luka/luka_full.png',
+				image: 'images/hero/3_luka/luka_min.webp',
+				fullImage: 'images/hero/3_luka/luka_full.webp',
 				level: 1,
 				startGlobalDamage: 105,
 				startGlobalCritChance: 0.015,
 				startGlobalCritMultiplier: 2.2,
 				startGlobalWoundChance	: 0.03,
-				startCastleDamageReduction : 0.015,
+				// Ревизия 10 (живучесть): цель ~5 сильнейших ударов. Временные HP не
+				// раздуваются через высокий castleHpCap — см. потолок забега в game.js.
+				startCastleDamageReduction : 0.116,
 				startSHOT_INTERVAL : 800,
-				castleHP : 75,
+				castleHP : 144,
 				lvlUnlock: 3,
 				zlataUp: 10,
 				investedZlata: 0,
@@ -1092,12 +1219,17 @@ function getDefaultGameState() {
 				unlock: true,
 				feature: 'Считалочка — <br>каждый 5-й выстрел по боссу<br> гарантированно критический',
 				guaranteedCritEvery: 5,
+				// Потолки % и HP-статов — см. подробное обоснование у объекта eremei. Крит —
+				// его архетипная черта, поэтому cap заметно выше, чем у остальных героев.
+				critChanceCap: 0.39,
+				woundChanceCap: 0.59,
+				castleHpCap: 1200,
 			},
 			
 			kim: {
 				name: 'luka', 
 				dispName: 'Лука стрелок',
-				image: 'images/hero/3_luka/luka_min.png',
+				image: 'images/hero/3_luka/luka_min.webp',
 				startGlobalDamage: 300,
 				startGlobalCritChance: 0.25,
 				startGlobalCritMultiplier: 1.8,
@@ -1113,7 +1245,7 @@ function getDefaultGameState() {
 			vas: {
 				name: 'luka', 
 				dispName: 'Лука стрелок',
-				image: 'images/hero/3_luka/luka_min.png',
+				image: 'images/hero/3_luka/luka_min.webp',
 				startGlobalDamage: 25,
 				startGlobalCritChance: 0.25,
 				startGlobalCritMultiplier: 1.8,
@@ -1129,7 +1261,7 @@ function getDefaultGameState() {
 			gen: {
 				name: 'luka', 
 				dispName: 'Лука стрелок',
-				image: 'images/hero/3_luka/luka_min.png',
+				image: 'images/hero/3_luka/luka_min.webp',
 				startGlobalDamage: 25,
 				startGlobalCritChance: 0.25,
 				startGlobalCritMultiplier: 1.8,
@@ -1144,7 +1276,7 @@ function getDefaultGameState() {
 			gm: {
 				name: 'luka', 
 				dispName: 'Лука стрелок',
-				image: 'images/hero/3_luka/luka_min.png',
+				image: 'images/hero/3_luka/luka_min.webp',
 				startGlobalDamage: 25,
 				startGlobalCritChance: 0.25,
 				startGlobalCritMultiplier: 1.8,
@@ -1159,7 +1291,7 @@ function getDefaultGameState() {
 			kir: {
 				name: 'luka', 
 				dispName: 'Лука стрелок',
-				image: 'images/hero/3_luka/luka_min.png',
+				image: 'images/hero/3_luka/luka_min.webp',
 				startGlobalDamage: 25,
 				startGlobalCritChance: 0.25,
 				startGlobalCritMultiplier: 1.8,
@@ -1174,7 +1306,7 @@ function getDefaultGameState() {
 			gam: {
 				name: 'luka', 
 				dispName: 'Лука стрелок',
-				image: 'images/hero/3_luka/luka_min.png',
+				image: 'images/hero/3_luka/luka_min.webp',
 				startGlobalDamage: 25,
 				startGlobalCritChance: 0.25,
 				startGlobalCritMultiplier: 1.8,
@@ -1189,7 +1321,7 @@ function getDefaultGameState() {
 			gama: {
 				name: 'luka', 
 				dispName: 'Лука стрелок',
-				image: 'images/hero/3_luka/luka_min.png',
+				image: 'images/hero/3_luka/luka_min.webp',
 				startGlobalDamage: 25,
 				startGlobalCritChance: 0.25,
 				startGlobalCritMultiplier: 1.8,
@@ -1204,7 +1336,7 @@ function getDefaultGameState() {
 			gamb: {
 				name: 'luka', 
 				dispName: 'Лука стрелок',
-				image: 'images/hero/3_luka/luka_min.png',
+				image: 'images/hero/3_luka/luka_min.webp',
 				startGlobalDamage: 25,
 				startGlobalCritChance: 0.25,
 				startGlobalCritMultiplier: 1.8,
@@ -1219,7 +1351,7 @@ function getDefaultGameState() {
 			gamc: {
 				name: 'luka', 
 				dispName: 'Лука стрелок',
-				image: 'images/hero/3_luka/luka_min.png',
+				image: 'images/hero/3_luka/luka_min.webp',
 				startGlobalDamage: 25,
 				startGlobalCritChance: 0.25,
 				startGlobalCritMultiplier: 1.8,
@@ -1234,7 +1366,7 @@ function getDefaultGameState() {
 			gamd: {
 				name: 'luka', 
 				dispName: 'Лука стрелок',
-				image: 'images/hero/3_luka/luka_min.png',
+				image: 'images/hero/3_luka/luka_min.webp',
 				startGlobalDamage: 25,
 				startGlobalCritChance: 0.25,
 				startGlobalCritMultiplier: 1.8,
@@ -1249,7 +1381,7 @@ function getDefaultGameState() {
 			gamf: {
 				name: 'luka', 
 				dispName: 'Лука стрелок',
-				image: 'images/hero/3_luka/luka_min.png',
+				image: 'images/hero/3_luka/luka_min.webp',
 				startGlobalDamage: 25,
 				startGlobalCritChance: 0.25,
 				startGlobalCritMultiplier: 1.8,
@@ -1264,7 +1396,7 @@ function getDefaultGameState() {
 			gamg: {
 				name: 'luka', 
 				dispName: 'Лука стрелок',
-				image: 'images/hero/3_luka/luka_min.png',
+				image: 'images/hero/3_luka/luka_min.webp',
 				startGlobalDamage: 25,
 				startGlobalCritChance: 0.25,
 				startGlobalCritMultiplier: 1.8,
@@ -1279,7 +1411,7 @@ function getDefaultGameState() {
 			gamh: {
 				name: 'luka', 
 				dispName: 'Лука стрелок',
-				image: 'images/hero/3_luka/luka_min.png',
+				image: 'images/hero/3_luka/luka_min.webp',
 				startGlobalDamage: 25,
 				startGlobalCritChance: 0.25,
 				startGlobalCritMultiplier: 1.8,

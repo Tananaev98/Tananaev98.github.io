@@ -52,6 +52,9 @@ globalThis.temporaryUpgradeApi = {
     getHeroUpgradeCost,
     getLevelZlataReward,
     getHeroDefenseCap,
+    getHeroCritChanceCap,
+    getHeroWoundChanceCap,
+    getHeroCastleHpCap,
     calculateBossAttackDamage,
     applyHeroPermanentStatUpgrade
 };`;
@@ -166,6 +169,9 @@ function createTemporaryState(heroKey, permanentHero) {
         hp: permanentHero.castleHP,
         defense: permanentHero.startCastleDamageReduction,
         defenseCap: api.getHeroDefenseCap(permanentHero),
+        critChanceCap: api.getHeroCritChanceCap(permanentHero),
+        woundChanceCap: api.getHeroWoundChanceCap(permanentHero),
+        hpCap: api.getHeroCastleHpCap(permanentHero),
         startDamage: permanentHero.startGlobalDamage,
         startCritChance: permanentHero.startGlobalCritChance,
         startCritMultiplier: permanentHero.startGlobalCritMultiplier,
@@ -246,17 +252,11 @@ function effectiveHp(hero) {
     return hero.hp / (1 - hero.defense);
 }
 
-function maximumRawBossHit(campaignLevel) {
-    const legacyMultiplier = campaignLevel === 1
-        ? 1
-        : 1 + (campaignLevel * 0.05);
-    return api.calculateBossAttackDamage(
-        28 * legacyMultiplier,
-        2,
-        1,
-        1,
-        campaignLevel
-    );
+// Ревизия 10: calculateBossAttackDamage больше не зависит от levelNumber — легаси-множитель
+// убран. Ревизия 11: убран потолок 2.0; для оценки живучести временных улучшений берём
+// сильный, но не «финальный», синтетический удар (enem5-ish × mid campaign multiplier).
+function maximumRawBossHit() {
+    return api.calculateBossAttackDamage(28, 1.10, 1.14, 1.75);
 }
 
 function hitsToDefeat(hero, rawDamage) {
@@ -286,10 +286,10 @@ function rarityMultiplier(random) {
 
 function availableUpgradeTypes(hero) {
     const types = ['damage'];
-    if (hero.critChance < 1) types.push('critChance');
+    if (hero.critChance < (hero.critChanceCap ?? 1)) types.push('critChance');
     types.push('critMultiplier');
-    if (hero.woundChance < 1) types.push('wound');
-    types.push('hp');
+    if (hero.woundChance < (hero.woundChanceCap ?? 1)) types.push('wound');
+    if (hero.hp < (hero.hpCap ?? Infinity)) types.push('hp');
     if (hero.defense < hero.defenseCap) types.push('defense');
     if (hero.interval > (hero.minShotInterval ?? 200)) types.push('fireRate');
     return types;
@@ -303,18 +303,21 @@ function applyUpgrade(hero, option) {
         upgraded.damage += Math.round(upgraded.startDamage * share);
     } else if (option.type === 'critChance') {
         upgraded.critChance = Math.min(
-            1,
+            hero.critChanceCap ?? 1,
             upgraded.critChance + (upgraded.startCritChance * share)
         );
     } else if (option.type === 'critMultiplier') {
         upgraded.critMultiplier += upgraded.startCritMultiplier * share;
     } else if (option.type === 'wound') {
         upgraded.woundChance = Math.min(
-            1,
+            hero.woundChanceCap ?? 1,
             upgraded.woundChance + (upgraded.startWoundChance * share)
         );
     } else if (option.type === 'hp') {
-        upgraded.hp += Math.round(upgraded.startHp * share);
+        upgraded.hp = Math.min(
+            hero.hpCap ?? Infinity,
+            upgraded.hp + Math.round(upgraded.startHp * share)
+        );
     } else if (option.type === 'defense') {
         upgraded.defense = Math.min(
             upgraded.defenseCap,
@@ -428,16 +431,16 @@ function simulateDistribution(campaignLevel, heroKey, strategy, runs) {
     let wildTank = 0;
     let extraHit = 0;
     let excessiveDurability = 0;
-    const rawBossHit = maximumRawBossHit(campaignLevel);
+    const rawBossHit = maximumRawBossHit();
     const ownPermanentState = createTemporaryState(heroKey, permanentHero);
     const permanentHits = hitsToDefeat(ownPermanentState, rawBossHit);
     // Бюджет живучести по архетипу (сколько ударов босса герой обязан пережить), а не по
     // способности — держим как явную таблицу дизайн-намерения, а не выводим из статов.
     const excessiveHitThreshold = {
-        eremei: 10,
-        dunya: 6,
-        daryana: 5,
-        luka: 4
+        eremei: 15,
+        dunya: 12,
+        daryana: 10,
+        luka: 8
     }[heroKey];
 
     for (let run = 0; run < runs; run++) {
@@ -573,7 +576,7 @@ console.table(detailResults.map(result => ({
     ehpP99: `${result.ehpP99.toFixed(2)}x`
 })));
 
-console.log('\nWorst point for exceeding the role durability budget (Eremey 10 / Dunya 6 / Daryana 5 / Luka 4 hits):');
+console.log('\nWorst point for exceeding the role durability budget (Eremey 15 / Dunya 12 / Daryana 10 / Luka 8 hits with temps):');
 console.table(durabilityDetailResults.map(result => ({
     hero: HERO_NAMES[result.heroKey],
     strategy: STRATEGY_NAMES[result.strategy],

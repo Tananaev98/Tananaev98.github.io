@@ -575,7 +575,7 @@ body {
 	color: white;
 	font-size: clamp(13px, 1.8vw, 18px);
 	line-height: 1;
-	cursor: pointer;
+	cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><polygon points="2,2 30,12 16,20 12,30 2,2" fill="%23e0c9a6" stroke="%238B4513" stroke-width="2" stroke-linejoin="round"/></svg>') 2 2, auto;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -713,12 +713,17 @@ body {
 }
 
 
-/* ====== КАСТОМНЫЙ КУРСОР ДЛЯ ВСЕЙ СТРАНИЦЫ ====== */
-* {
-    cursor: url('images/aim/1.png') 30 30, auto !important;
+/* ====== СТИЛИЗОВАННЫЙ КУРСОР ПО УМОЛЧАНИЮ (везде, кроме поля боя) ======
+   Универсальный селектор с !important, а не наследование через body:
+   по всему проекту (main_css.css, index_css.css) у множества кнопок
+   задан собственный cursor: pointer/not-allowed — без !important
+   унаследованное значение с body они бы просто перебивали. Прицел —
+   исключение только для #enemies-container (реальное поле боя) ниже. */
+@media (hover: hover) and (pointer: fine) {
+    * {
+        cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><polygon points="2,2 30,12 16,20 12,30 2,2" fill="%23e0c9a6" stroke="%238B4513" stroke-width="2" stroke-linejoin="round"/></svg>') 2 2, auto !important;
+    }
 }
-
-/* ====== ИСКЛЮЧЕНИЯ ДЛЯ ЭЛЕМЕНТОВ, ГДЕ НЕ НУЖЕН КАСТОМНЫЙ КУРСОР ====== */
 
 /* Для элементов информации (левая панель) */
 .info-panel,
@@ -772,7 +777,11 @@ body {
     100% { opacity: 1; transform: translateY(-70px) scale(1.7); }
 }
 
-/* Для контейнера врагов */
+/* Для контейнера врагов — реальное поле боя: прицел живёт только здесь.
+   !important обязателен: без него проиграет универсальному стилизованному
+   курсору выше (тоже !important — специфичность там не решает, важность
+   сравнивается раньше). Статус-бар всё равно перебивает это инлайн-стилем
+   с приоритетом important (см. game.js setStatusBarCursorOverride). */
 #enemies-container {
     cursor: url('images/aim/1.png') 30 30, auto !important;
 }
@@ -805,20 +814,11 @@ body {
     }
 }
 
-/* Для ПК используем кастомный курсор */
+/* Для ПК прицел — это DOM-элемент только для мобильной имитации курсора,
+   на десктопе он не нужен: там прицел — это сам курсор на #enemies-container. */
 @media (hover: hover) and (pointer: fine) {
     .aim {
         display: none; /* Скрываем элемент прицела на ПК */
-    }
-    
-    /* Кастомный курсор для ПК */
-    body, .main_menu_image {
-        cursor: url('images/aim/1.png') 30 30, auto !important;
-    }
-    
-    /* Убираем курсор по умолчанию на игровом поле */
-    .main_menu_image {
-        cursor: url('images/aim/1.png') 30 30, auto !important;
     }
 }
 
@@ -1125,7 +1125,7 @@ html.is-mobile .main_menu_image {
     top: 50%;
     width: 88%;
     aspect-ratio: 1;
-    background: url('images/effects/eremei-club.webp') center / contain no-repeat;
+    background: url('images/hero/2_eremei/weapon.webp') center / contain no-repeat;
     filter: drop-shadow(0 4px 3px rgba(35, 12, 3, 0.5));
     /* Рукоять у спрайта справа снизу — крутим вокруг неё */
     transform-origin: 78% 84%;
@@ -1831,7 +1831,7 @@ html.is-mobile .main_menu_image {
     content: '';
     position: absolute;
     inset: 0;
-    background: url('images/effects/dunya-broom.webp') center / contain no-repeat;
+    background: url('images/hero/1_babka/weapon.webp') center / contain no-repeat;
     filter: drop-shadow(0 3px 4px rgba(20, 40, 55, 0.45));
     z-index: 1;
     pointer-events: none;
@@ -2529,7 +2529,7 @@ html.is-mobile .main_menu_image {
     top: 50%;
     width: 100%;
     aspect-ratio: 1;
-    background: url('images/effects/luka-arrow.webp') center / contain no-repeat;
+    background: url('images/hero/3_luka/weapon.webp') center / contain no-repeat;
     filter: drop-shadow(0 2px 1px rgba(20, 8, 2, 0.5));
     opacity: 0;
     /* Верх спрайта — остриё; оно остаётся в точке прокола. */
@@ -2896,7 +2896,7 @@ html.is-mobile .main_menu_image {
     top: 50%;
     width: 100%;
     aspect-ratio: 1;
-    background: url('images/effects/daryana-fire.webp') center / contain no-repeat;
+    background: url('images/hero/4_daryana/weapon.webp') center / contain no-repeat;
     filter: drop-shadow(0 2px 3px rgba(60, 4, 0, 0.55)) drop-shadow(0 0 5px rgba(255, 110, 20, 0.65));
     opacity: 0;
     /* Полёт прямой (без спирали): огонёк летит по прямой к цели, уменьшаясь,

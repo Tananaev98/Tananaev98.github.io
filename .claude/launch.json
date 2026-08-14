@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "static-server",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["scripts/serve-admin-panel.js"],
+      "port": 8843,
+      "autoPort": true
+    }
+  ]
+}

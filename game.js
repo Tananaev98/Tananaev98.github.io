@@ -197,6 +197,14 @@ let lastTouchAimTime = 0;
 
 let castleDamageReduction = startCastleDamageReduction;
 const castleDamageReductionCap = getHeroDefenseCap(activeHeroObject);
+// Потолки крит-шанса/шанса ранения/HP замка (см. одноимённые поля на герое в
+// saveData.js) — как и castleDamageReductionCap, читаются один раз при заходе на
+// уровень: после потолка временные улучшения этого стата больше не предлагаются
+// (getAvailableUpgrades), а в постоянной прокачке рост уходит в парный стат шага
+// (applyHeroPermanentStatUpgrade).
+const globalCritChanceCap = getHeroCritChanceCap(activeHeroObject);
+const globalWoundChanceCap = getHeroWoundChanceCap(activeHeroObject);
+const castleHpCap = getHeroCastleHpCap(activeHeroObject);
 
 // Таймер для стрельбы
 let lastShotTime = 0;
@@ -2330,6 +2338,31 @@ function initAim() {
 }
 
 /**
+ * Проверяет, попадает ли точка (в клиентских координатах) в статус-бар
+ * героя — над ним не должно быть прицела и тапы там не должны считаться
+ * прицеливанием/выстрелом.
+ */
+function isPointOverStatusBar(clientX, clientY) {
+    const bar = document.querySelector('.hero-status-bar');
+    if (!bar) return false;
+    const rect = bar.getBoundingClientRect();
+    return clientX >= rect.left && clientX <= rect.right &&
+        clientY >= rect.top && clientY <= rect.bottom;
+}
+
+/**
+ * Включает/выключает обычный курсор поверх статус-бара, перебивая
+ * инлайн-стилем кастомный прицел, заданный в CSS через !important.
+ */
+const STYLIZED_MENU_CURSOR = 'url(\'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><polygon points="2,2 30,12 16,20 12,30 2,2" fill="%23e0c9a6" stroke="%238B4513" stroke-width="2" stroke-linejoin="round"/></svg>\') 2 2, auto';
+
+function setStatusBarCursorOverride(active) {
+    const value = active ? STYLIZED_MENU_CURSOR : '';
+    if (gameField) gameField.style.setProperty('cursor', value, active ? 'important' : '');
+    if (enemiesContainer) enemiesContainer.style.setProperty('cursor', value, active ? 'important' : '');
+}
+
+/**
  * Настраивает прицел для компьютеров (следует за курсором)
  */
 function setupDesktopAim() {
@@ -2337,6 +2370,9 @@ function setupDesktopAim() {
     gameField.addEventListener('mousemove', function(e) {
         // На мобилке цель ведёт только touch; после тапа игнорируем синтетическую мышь
         if (isMobileDevice || Date.now() - lastTouchAimTime < 500) return;
+        const overStatusBar = isPointOverStatusBar(e.clientX, e.clientY);
+        setStatusBarCursorOverride(overStatusBar);
+        if (overStatusBar) return;
         setAimFromClient(e.clientX, e.clientY, { showAim: false });
     });
 
@@ -2362,10 +2398,14 @@ function setupMobileAim() {
 
     function handleTouchAim(e) {
         if (!e.touches || e.touches.length === 0) return;
+        const touch = e.touches[0];
+        // Тап по статус-бару (кнопки «заново» / «на базу», хп-бар) — не
+        // прицеливание. Не трогаем preventDefault, чтобы дошёл нативный
+        // клик по кнопке, и не двигаем туда прицел.
+        if (isPointOverStatusBar(touch.clientX, touch.clientY)) return;
         // Не перехватываем жесты на модалках вне поля — слушаем только gameField
         e.preventDefault();
         lastTouchAimTime = Date.now();
-        const touch = e.touches[0];
         setAimFromClient(touch.clientX, touch.clientY, {
             fingerOffset: true,
             showAim: true
@@ -4266,13 +4306,13 @@ function getAvailableUpgrades() {
         }
     });
     
-    // 2. Шанс крита - проверяем, что еще не достиг максимума (1 = 100%)
-    if (globalCritChance < 1) {
+    // 2. Шанс крита - проверяем, что еще не достиг потолка героя (не общих 100%)
+    if (globalCritChance < globalCritChanceCap) {
         const critChanceRarity = getRandomRarity();
         const critChanceMultiplier = getRarityMultiplier(critChanceRarity);
         const critChanceIncrease = Math.min(
             startGlobalCritChance * TEMPORARY_UPGRADE_BASE_SHARE * critChanceMultiplier,
-            1 - globalCritChance
+            globalCritChanceCap - globalCritChance
         );
         upgrades.push({
             id: 'critChance',
@@ -4280,7 +4320,7 @@ function getAvailableUpgrades() {
             description: `+${(critChanceIncrease * 100).toFixed(2)}% к шансу крита`,
             rarity: critChanceRarity,
             apply: function() {
-                globalCritChance = Math.min(1, globalCritChance + critChanceIncrease);
+                globalCritChance = Math.min(globalCritChanceCap, globalCritChance + critChanceIncrease);
                 console.log(`Шанс крита увеличен до: ${(globalCritChance * 100).toFixed(2)}% (множитель: ${critChanceMultiplier}x)`);
             }
         });
@@ -4301,13 +4341,13 @@ function getAvailableUpgrades() {
         }
     });
     
-    // 4. Шанс ранения - проверяем, что еще не достиг максимума
-    if (globalWoundChance < 1) {
+    // 4. Шанс ранения - проверяем, что еще не достиг потолка героя
+    if (globalWoundChance < globalWoundChanceCap) {
         const woundChanceRarity = getRandomRarity();
         const woundChanceMultiplier = getRarityMultiplier(woundChanceRarity);
         const woundChanceIncrease = Math.min(
             startGlobalWoundChance * TEMPORARY_UPGRADE_BASE_SHARE * woundChanceMultiplier,
-            1 - globalWoundChance
+            globalWoundChanceCap - globalWoundChance
         );
         // "Шанс <родительный падеж>" → "к шансу <родительный падеж>" (падеж
         // самого существительного в подписи не меняется, склоняется только «шанс»).
@@ -4319,31 +4359,42 @@ function getAvailableUpgrades() {
             description: `+${(woundChanceIncrease * 100).toFixed(2)}% к шансу ${woundChanceNoun}`,
             rarity: woundChanceRarity,
             apply: function() {
-                globalWoundChance = Math.min(1, globalWoundChance + woundChanceIncrease);
+                globalWoundChance = Math.min(globalWoundChanceCap, globalWoundChance + woundChanceIncrease);
                 console.log(`Шанс ранения увеличен до: ${(globalWoundChance * 100).toFixed(2)}% (множитель: ${woundChanceMultiplier}x)`);
             }
         });
     }
-    
-    
-    // 6. Здоровье  - всегда доступно
-    const castleHpRarity = getRandomRarity();
-    const castleHpMultiplier = getRarityMultiplier(castleHpRarity);
-    const castleHpIncrease = Math.round(
-        startGlobalCastleHp * TEMPORARY_UPGRADE_BASE_SHARE * castleHpMultiplier
+
+
+    // 6. Здоровье — временный потолок от старта забега (~+25%), а не от постоянного
+    // castleHpCap: иначе высокий permanent-cap (нужен для роста по кампании) позволял
+    // раздувать HP внутри одного уровня далеко за дизайн «временные апгрейды ≤~20%».
+    const temporaryCastleHpCeiling = Math.min(
+        castleHpCap,
+        Math.round(startGlobalCastleHp * 1.25)
     );
-    upgrades.push({
-        id: 'castleHP',
-        name: 'Здоровье',
-        description: `+${castleHpIncrease} к здоровью`,
-        rarity: castleHpRarity,
-        apply: function() {
-            castleHP.max += castleHpIncrease;
-            castleHP.current += castleHpIncrease;
-            updateCastleHealthDisplay();
-            console.log(`Здоровье увеличено до: ${castleHP.max} (множитель: ${castleHpMultiplier}x)`);
+    if (castleHP.max < temporaryCastleHpCeiling) {
+        const castleHpRarity = getRandomRarity();
+        const castleHpMultiplier = getRarityMultiplier(castleHpRarity);
+        const castleHpIncrease = Math.min(
+            Math.round(startGlobalCastleHp * TEMPORARY_UPGRADE_BASE_SHARE * castleHpMultiplier),
+            temporaryCastleHpCeiling - castleHP.max
+        );
+        if (castleHpIncrease > 0) {
+            upgrades.push({
+                id: 'castleHP',
+                name: 'Здоровье',
+                description: `+${castleHpIncrease} к здоровью`,
+                rarity: castleHpRarity,
+                apply: function() {
+                    castleHP.max = Math.min(temporaryCastleHpCeiling, castleHP.max + castleHpIncrease);
+                    castleHP.current = Math.min(castleHP.max, castleHP.current + castleHpIncrease);
+                    updateCastleHealthDisplay();
+                    console.log(`Здоровье увеличено до: ${castleHP.max} (множитель: ${castleHpMultiplier}x)`);
+                }
+            });
         }
-    });
+    }
     
     // 7. Защита — после достижения 60% больше не предлагается
     if (castleDamageReduction < castleDamageReductionCap) {

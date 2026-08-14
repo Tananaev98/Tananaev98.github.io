@@ -311,8 +311,8 @@ excludedDangerousCombos: 2. Во второй и третьей фазах сн�
 - legacyDamageMultiplier = level === 1 ? 1 : 1 + 0.05 × level.
 - normalizedCustomDamage = customDamage / legacyDamageMultiplier.
 - damageCurve = 1 + 1.25 × (exp(1.70 × campaignProgress) − 1).
-- combatMultiplier = min(2.00, level.damageMultiplier × boss.damageMultiplier × phase.damage).
-- effectiveDamage = round(normalizedCustomDamage × damageCurve × combatMultiplier).
+- combatMultiplier = level.damageMultiplier × boss.damageMultiplier × phase.damage.
+- effectiveDamage = round(customDamage × combatMultiplier).
 - effectiveShotDelay = max(minShotDelay, bossDelayAb × boss.cadence × phase.cadence).
 - effectiveWaveDelay = max(minWaveDelay, bossDelayAbDop × boss.cadence × phase.cadence × levelCadence × jitter).
 - effectiveTelegraph = max(minTelegraphMs, boss.telegraphMs × phase.telegraphMultiplier).
@@ -433,8 +433,8 @@ configuredBaseDamage = baseDamage × (1 + factorChar)
 на legacyDamageMultiplier, тем самым убирает старые +5% за уровень, а затем применяет новую кривую:
 
 damageCurve = 1 + 1.25 × (exp(1.70 × campaignProgress) − 1)
-combatMultiplier = min(2.00, level.damageMultiplier × boss.damageMultiplier × phase.damage)
-effectiveDamage = round((customDamage / legacyDamageMultiplier) × damageCurve × combatMultiplier)
+combatMultiplier = level.damageMultiplier × boss.damageMultiplier × phase.damage
+effectiveDamage = round(customDamage × combatMultiplier)
 
 На первом уровне legacyDamageMultiplier равен 1. Начиная со второго он равен 1 + 0.05 × level.
 Нельзя дополнительно умножать customDamage на damageCurve вручную: это даст двойное скалирование.
@@ -466,20 +466,9 @@ damageMultiplier в записи bossAbilitiesDop, но значение всё 
 две атаки получают до 0.80, три — около 0.70, четыре — около 0.60. Быстрые плотные
 серии дополнительно ослабляются, но не ниже 0.55. Одиночный редкий удар не масштабируется.
 
-Абсолютный стресс-потолок — полный базовый урон enem5 при combatMultiplier = 2.00:
-
-Уровень кампании | Максимальный сырой удар
-1                | 56
-15               | 69
-30               | 86
-60               | 129
-90               | 192
-105              | 233
-120              | 283
-135              | 342
-141              | 369
-
-Этот потолок нужен для проверки безопасности, а не как целевой урон каждой атаки.
+Абсолютный стресс-потолок больше не зашит в движок (раньше был combatMultiplier ≤ 2.00).
+Смотри реальный максимум удара по данным уровня: customDamage × boss × phase × level.damageMultiplier.
+Этот расчёт нужен для проверки безопасности, а не как целевой урон каждой атаки.
 
 
 13.3. КОРИДОР ВЫЖИВАЕМОСТИ ТРЁХ ОПОРНЫХ ГЕРОЕВ

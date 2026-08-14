@@ -32,15 +32,26 @@ const HEROES = {
         growthProfile: 'guardian',
         featureType: 'catchBackCrit',
         catchBackCritChanceBonus: 0.10,
-        catchBackExpectedUptime: 0.45
+        catchBackExpectedUptime: 0.45,
+        // См. одноимённые поля и подробное обоснование в saveData.js рядом с eremei.
+        critChanceCap: 0.19,
+        woundChanceCap: 0.155,
+        hpCap: 1970
     },
     dunya: {
         name: 'Дуня',
-        damage: 112.5,
+        // Ревизия 8: архетип «скорость, не разовый урон» — damage опущен со 132.5 до 97,
+        // interval с 940 до 808 (почти вплотную к Луке), минимальный интервал 585 —
+        // добавлен, шанс ранения убран (ревизия 7), critChanceCap == стартовому крит-шансу
+        // (крит-шанс вообще не растёт). Цель: DPS ~90% (примерно на 10% ниже) DPS Дарьяны
+        // на всех уровнях героя. Подробное обоснование и коридор — в saveData.js рядом с
+        // объектом dunya.
+        damage: 97,
         critChance: 0.03,
         critMultiplier: 2.0,
-        woundChance: 0.015,
-        interval: 940,
+        woundChance: 0,
+        interval: 808,
+        minInterval: 585,
         hp: 120,
         defense: 0.03,
         growthProfile: 'tempest',
@@ -49,7 +60,11 @@ const HEROES = {
         doubleAttackChance: 0.10,
         tripleAttackChance: 0.03,
         jackpotAttackChance: 0.01,
-        jackpotAttackMultiplier: 8
+        jackpotAttackMultiplier: 8,
+        // См. одноимённые поля и подробное обоснование в saveData.js рядом с dunya.
+        critChanceCap: 0.03,
+        woundChanceCap: 0,
+        hpCap: 1000
     },
     luka: {
         name: 'Лука',
@@ -61,7 +76,11 @@ const HEROES = {
         hp: 75,
         defense: 0.015,
         growthProfile: 'marksman',
-        guaranteedCritEvery: 5
+        guaranteedCritEvery: 5,
+        // См. одноимённые поля и подробное обоснование в saveData.js рядом с luka.
+        critChanceCap: 0.39,
+        woundChanceCap: 0.59,
+        hpCap: 515
     },
     daryana: {
         name: 'Дарьяна',
@@ -97,7 +116,11 @@ const HEROES = {
         // вывод в saveData.js рядом с объектом daryana).
         missingHpDamagePerPercent: 0.015,
         missingHpExpectedAverageFraction: 0.425,
-        featureMultiplier: 1.6375
+        featureMultiplier: 1.6375,
+        // См. одноимённые поля и подробное обоснование в saveData.js рядом с daryana.
+        critChanceCap: 0.103,
+        woundChanceCap: 0.30,
+        hpCap: 900
     }
 };
 
@@ -134,12 +157,14 @@ const GROWTH_PROFILES = {
         defenseIncrease: 0.01,
         defenseCap: 0.60
     },
+    // tempest используется только Дуней (Дарьяна теперь на ember) — см. saveData.js рядом
+    // с объектом dunya для обоснования чисел.
     tempest: {
-        damageMultiplier: 1.037,
-        critChanceIncrease: 0.007,
-        critMultiplierIncrease: 0.09,
-        woundChanceIncrease: 0.006,
-        shotIntervalReduction: 2,
+        damageMultiplier: 1.030,
+        critChanceIncrease: 0.0035,
+        critMultiplierIncrease: 0.012,
+        woundChanceIncrease: 0,
+        shotIntervalReduction: 4.7,
         castleHpMultiplier: 1.048,
         defenseIncrease: 0.0075,
         defenseCap: 0.50
@@ -182,25 +207,49 @@ const daryanaExpectedDamageFeatureMultiplier = 1 + (
 );
 assert.ok(Math.abs(daryanaExpectedDamageFeatureMultiplier - HEROES.daryana.featureMultiplier) < 1e-12);
 
+// Как и applyHeroPermanentStatUpgrade в saveData.js: если один стат пары уже упёрся в
+// свой потолок (critChanceCap/woundChanceCap/hpCap на герое, defenseCap по профилю),
+// прирост этого шага уходит парному стату ещё раз, а не пропадает впустую.
 function cloneHeroAtLevel(baseHero, targetLevel) {
     const hero = { ...baseHero, upSpecif: 1 };
     const growth = GROWTH_PROFILES[baseHero.growthProfile];
+    const critChanceCap = baseHero.critChanceCap ?? 1;
+    const woundChanceCap = baseHero.woundChanceCap ?? 1;
+    const hpCap = baseHero.hpCap ?? Infinity;
+    const defenseCap = growth.defenseCap;
 
     for (let level = 1; level < targetLevel; level++) {
         if (hero.upSpecif === 1) {
+            const critChanceCapped = hero.critChance >= critChanceCap;
             hero.damage *= growth.damageMultiplier;
-            hero.critChance = Math.min(1, hero.critChance + growth.critChanceIncrease);
+            if (!critChanceCapped) {
+                hero.critChance = Math.min(critChanceCap, hero.critChance + growth.critChanceIncrease);
+            } else {
+                hero.damage *= growth.damageMultiplier;
+            }
             hero.upSpecif = 2;
         } else if (hero.upSpecif === 2) {
+            const woundChanceCapped = hero.woundChance >= woundChanceCap;
             hero.critMultiplier += growth.critMultiplierIncrease;
-            hero.woundChance = Math.min(1, hero.woundChance + growth.woundChanceIncrease);
+            if (!woundChanceCapped) {
+                hero.woundChance = Math.min(woundChanceCap, hero.woundChance + growth.woundChanceIncrease);
+            } else {
+                hero.critMultiplier += growth.critMultiplierIncrease;
+            }
             hero.upSpecif = 3;
         } else if (hero.upSpecif === 3) {
             hero.interval = Math.max(hero.minInterval ?? 200, hero.interval - growth.shotIntervalReduction);
             hero.upSpecif = 4;
         } else {
-            hero.hp += Math.floor(hero.hp * (growth.castleHpMultiplier - 1));
-            hero.defense = Math.min(growth.defenseCap, hero.defense + growth.defenseIncrease);
+            const hpCapped = hero.hp >= hpCap;
+            const defenseCapped = hero.defense >= defenseCap;
+            if (!hpCapped) hero.hp += Math.floor(hero.hp * (growth.castleHpMultiplier - 1));
+            if (!defenseCapped) hero.defense = Math.min(defenseCap, hero.defense + growth.defenseIncrease);
+            if (hpCapped && !defenseCapped) {
+                hero.defense = Math.min(defenseCap, hero.defense + growth.defenseIncrease);
+            } else if (defenseCapped && !hpCapped) {
+                hero.hp += Math.floor(hero.hp * (growth.castleHpMultiplier - 1));
+            }
             hero.upSpecif = 1;
         }
     }
@@ -287,7 +336,17 @@ function randomRarityMultiplier() {
 }
 
 function createUpgradeOptions(hero) {
-    const types = ['damage', 'critChance', 'critMultiplier', 'wound', 'hp', 'defense', 'fireRate'];
+    const critChanceCap = hero.critChanceCap ?? 1;
+    const woundChanceCap = hero.woundChanceCap ?? 1;
+    const hpCap = hero.hpCap ?? Infinity;
+    const defenseCap = GROWTH_PROFILES[hero.growthProfile].defenseCap;
+
+    const types = ['damage', 'critMultiplier', 'fireRate'];
+    if (hero.critChance < critChanceCap) types.push('critChance');
+    if (hero.woundChance < woundChanceCap) types.push('wound');
+    if (hero.hp < hpCap) types.push('hp');
+    if (hero.defense < defenseCap) types.push('defense');
+
     const shuffled = types
         .map(type => ({ type, order: Math.random(), rarity: randomRarityMultiplier() }))
         .sort((a, b) => a.order - b.order)
@@ -298,10 +357,12 @@ function createUpgradeOptions(hero) {
         const share = TEMPORARY_UPGRADE_BASE_SHARE * option.rarity;
 
         if (option.type === 'damage') upgraded.damage += hero.startDamage * share;
-        if (option.type === 'critChance') upgraded.critChance = Math.min(1, upgraded.critChance + (hero.startCritChance * share));
+        if (option.type === 'critChance') upgraded.critChance = Math.min(critChanceCap, upgraded.critChance + (hero.startCritChance * share));
         if (option.type === 'critMultiplier') upgraded.critMultiplier += hero.startCritMultiplier * share;
-        if (option.type === 'wound') upgraded.woundChance = Math.min(1, upgraded.woundChance + (hero.startWoundChance * share));
-        if (option.type === 'fireRate') upgraded.interval = Math.max(200, upgraded.interval - (hero.startFireRate * share));
+        if (option.type === 'wound') upgraded.woundChance = Math.min(woundChanceCap, upgraded.woundChance + (hero.startWoundChance * share));
+        if (option.type === 'hp') upgraded.hp = Math.min(hpCap, upgraded.hp + Math.round(hero.startHp * share));
+        if (option.type === 'defense') upgraded.defense = Math.min(defenseCap, upgraded.defense + (hero.startDefense * share));
+        if (option.type === 'fireRate') upgraded.interval = Math.max(hero.minInterval ?? 200, upgraded.interval - (hero.startFireRate * share));
 
         return upgraded;
     });
@@ -322,6 +383,8 @@ function simulateRun(baseHero, heroLevel) {
         startCritChance: permanentHero.critChance,
         startCritMultiplier: permanentHero.critMultiplier,
         startWoundChance: permanentHero.woundChance,
+        startHp: permanentHero.hp,
+        startDefense: permanentHero.defense,
         startFireRate: 1000 - permanentHero.interval
     };
     const bossDps = [];
@@ -488,13 +551,14 @@ for (const heroLevel of [1, 40, 80, 120, 160, 200]) {
         `Дарьяна выпала из промежутка живучести между Дуней и Лукой на уровне героя ${heroLevel}`
     );
     assert.ok(
-        daryana.defense <= GROWTH_PROFILES.marksman.defenseCap,
+        daryana.defense <= GROWTH_PROFILES.ember.defenseCap,
         `Превышен классовый предел защиты Дарьяны на уровне героя ${heroLevel}`
     );
 
     const eremeiDps = expectedDps(eremei);
     const lukaDps = expectedDps(luka);
     const daryanaDps = expectedDps(daryana);
+    const dunyaDps = expectedDps(dunya);
     const eremeiCriticalHit = eremei.damage * eremei.critMultiplier;
     const lukaCriticalHit = luka.damage * luka.critMultiplier;
     const dunyaJackpotCriticalHit = dunya.damage
@@ -515,6 +579,18 @@ for (const heroLevel of [1, 40, 80, 120, 160, 200]) {
     assert.ok(
         lukaDps / eremeiDps <= 1.50,
         `Преимущество Луки по DPS превысило 50% на уровне героя ${heroLevel}`
+    );
+    // Ревизия 8: Дуня держится примерно на 10% ниже DPS Дарьяны (не более скоростной архетип,
+    // а «частые слабые удары» — см. подробное обоснование в saveData.js рядом с dunya) на
+    // каждой контрольной точке, без превышения. Аналитический коридор — 89.3–94.4%, берём
+    // запас 0.85–0.95.
+    assert.ok(
+        dunyaDps < daryanaDps && dunyaDps / daryanaDps >= 0.85 && dunyaDps / daryanaDps <= 0.95,
+        `DPS Дуни вышел за коридор «примерно на 10% ниже Дарьяны» на уровне героя ${heroLevel}: ${(dunyaDps / daryanaDps).toFixed(3)}`
+    );
+    assert.ok(
+        dunyaDps < lukaDps,
+        `DPS Дуни обогнал Луку на уровне героя ${heroLevel}: ${(dunyaDps / lukaDps).toFixed(3)}`
     );
     // Ревизия 6: Дарьяна держится не более чем на 10% ниже Луки по DPS, но не обгоняет
     // его (иначе он теряет архетипную идентичность лучшего постоянного DPS).
