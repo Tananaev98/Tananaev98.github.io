@@ -1016,6 +1016,10 @@ function getDefaultGameState() {
 				dispName: 'Еремей Дуболом',
 				image: 'images/hero/2_eremei/eremei_min.webp',
 				fullImage: 'images/hero/2_eremei/eremei_full.webp',
+				// Спрайт оружия/атаки в анимации — та же картинка, что зашита в main_css.css
+				// у .eremei-club. Отдельное поле, чтобы экран загрузки уровня (game.js/
+				// preloadLevelAssets) мог предзагрузить её как обычную картинку.
+				weaponImage: 'images/hero/2_eremei/weapon.webp',
 				level: 1,
 				// Ревизия 8: старый баг «Лука теряет преимущество по DPS на уровне героя 1»
 				// (базовый урон Еремея давал ему 184 DPS против 172 у Луки уже на старте,
@@ -1121,6 +1125,7 @@ function getDefaultGameState() {
 				dispName: 'Ветроманка Дуня',
 				image: 'images/hero/1_babka/dunya_min.webp',
 				fullImage: 'images/hero/1_babka/dunya_full.webp',
+				weaponImage: 'images/hero/1_babka/weapon.webp',
 				level: 1,
 				startGlobalDamage: 97,
 				startGlobalCritChance: 0.03,
@@ -1214,6 +1219,7 @@ function getDefaultGameState() {
 				dispName: 'Дарьяна Пылкая',
 				image: 'images/hero/4_daryana/daryana_min.webp',
 				fullImage: 'images/hero/4_daryana/daryana_full.webp',
+				weaponImage: 'images/hero/4_daryana/weapon.webp',
 				level: 1,
 				startGlobalDamage: 91.9,
 				startGlobalCritChance: 0.02,
@@ -1262,6 +1268,7 @@ function getDefaultGameState() {
 				dispName: 'Лука стрелок',
 				image: 'images/hero/3_luka/luka_min.webp',
 				fullImage: 'images/hero/3_luka/luka_full.webp',
+				weaponImage: 'images/hero/3_luka/weapon.webp',
 				level: 1,
 				startGlobalDamage: 105,
 				startGlobalCritChance: 0.015,

@@ -2243,6 +2243,12 @@ function getLevelPreloadImagePaths() {
             if (enemyType?.image) paths.add(enemyType.image);
         });
     }
+    // Портрет героя и спрайт оружия/атаки, участвующий в анимации (см. weaponImage
+    // у объектов героев в saveData.js — та же картинка, что зашита в main_css.css у
+    // .eremei-club/.dunya-broom/.luka-arrow/.daryana-fire) — раньше не ждали загрузки
+    // и могли мигнуть пустотой на первом ударе.
+    if (activeHeroObject?.image) paths.add(activeHeroObject.image);
+    if (activeHeroObject?.weaponImage) paths.add(activeHeroObject.weaponImage);
     paths.add('images/background/1.png');
     return [...paths];
 }
@@ -2263,8 +2269,7 @@ function showLevelLoadingScreen() {
     modal.className = 'level-up-modal level-loading-modal';
     modal.innerHTML = `
         <div class="modal-content">
-            <h2>⏳ ЗАГРУЗКА УРОВНЯ ⏳</h2>
-            <p class="modal-subtitle">Готовим картинки, звуки и музыку боя…</p>
+            <h2>⏳ ЗАГРУЗКА ⏳</h2>
             <div class="level-loading-bar-track">
                 <div class="level-loading-bar-fill" id="levelLoadingBar"></div>
             </div>
