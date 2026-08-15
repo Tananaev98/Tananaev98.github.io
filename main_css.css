@@ -3278,6 +3278,29 @@ html.is-mobile .main_menu_image {
     font-weight: bold;
 }
 
+/* Экран загрузки уровня — прогресс-бар предзагрузки картинок/звуков/первого трека */
+.level-loading-bar-track {
+    width: 100%;
+    height: 14px;
+    border-radius: 7px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 2px solid var(--gp-frame);
+    overflow: hidden;
+}
+
+.level-loading-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--gp-panel-a), var(--gp-frame));
+    transition: width 0.2s ease;
+}
+
+.level-loading-label {
+    color: var(--gp-subtitle);
+    font-size: 13px;
+    margin: 10px 0 0;
+}
+
 /* Контейнер для опций улучшений */
 .upgrade-options {
     display: grid;

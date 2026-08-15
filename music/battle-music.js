@@ -248,10 +248,52 @@
             return true;
         }
 
+        // Ждёт, пока у audio наберётся буфер для воспроизведения без пауз на подгрузку
+        // (readyState >= HAVE_FUTURE_DATA), вместо того чтобы дёргать play() сразу после
+        // load() — на медленном/нестабильном соединении именно это и вызывало заикание
+        // трека посреди боя (preload='metadata' качает только заголовок, дальше данные
+        // догружаются по ходу воспроизведения). Таймаут — чтобы зависшая догрузка не
+        // блокировала музыку вечно, просто пробуем play() как есть после него.
+        waitUntilPlayable(audio, timeoutMs = 6000) {
+            if (!audio) return Promise.resolve(false);
+            if (audio.readyState >= 3) return Promise.resolve(true); // HAVE_FUTURE_DATA
+            return new Promise(resolve => {
+                let settled = false;
+                const finish = ready => {
+                    if (settled) return;
+                    settled = true;
+                    audio.removeEventListener('canplay', onReady);
+                    audio.removeEventListener('canplaythrough', onReady);
+                    audio.removeEventListener('error', onError);
+                    clearTimeout(timer);
+                    resolve(ready);
+                };
+                const onReady = () => finish(true);
+                const onError = () => finish(false);
+                const timer = setTimeout(() => finish(false), timeoutMs);
+                audio.addEventListener('canplay', onReady);
+                audio.addEventListener('canplaythrough', onReady);
+                audio.addEventListener('error', onError);
+            });
+        }
+
+        // Выбирает и начинает грузить (но не проигрывает) трек, который иначе выбрал бы
+        // start() — используется экраном загрузки уровня, чтобы первый боевой трек уже
+        // был готов к моменту, когда игрок нажмёт «Вперёд!». Дальнейший start()/syncPlayback()
+        // увидит уже выставленный currentTrackIndex/audio и не будет перевыбирать трек.
+        preloadFirstTrack(context) {
+            if (context) this.setContext(context);
+            if (this.tracks.length === 0) return Promise.resolve(false);
+            const index = this.chooseNextTrackIndex();
+            if (index < 0 || !this.loadTrack(index)) return Promise.resolve(false);
+            return this.waitUntilPlayable(this.audio);
+        }
+
         async playLoadedTrack() {
             if (!this.audio || this.currentTrackIndex < 0) return false;
 
             const track = this.tracks[this.currentTrackIndex];
+            await this.waitUntilPlayable(this.audio);
             try {
                 await this.audio.play();
                 this.fadeTo(this.getTrackVolume());

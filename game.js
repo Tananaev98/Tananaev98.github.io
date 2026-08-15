@@ -890,12 +890,18 @@ function initGame() {
     
     // Запускаем игровой цикл
     requestAnimationFrame(gameLoop);
-	
-	showStartModal();
-	
-    
+
+    // Пауза сразу, а не только внутри showStartModal() — иначе враги/таймеры боссов
+    // могли бы начать работать, пока на экране ещё только загрузка ассетов.
+    pauseGame();
+    showLevelLoadingScreen();
+    preloadLevelAssets().then(() => {
+        hideLevelLoadingScreen();
+        showStartModal();
+    });
+
     console.log('Игра запущена!');
-	
+
 	 gameField.addEventListener('click', function(e) {
         if (isGameOver || isGamePaused) return;
         // На мобилке / после тапа подсказка не нужна — тап двигает прицел
@@ -2193,6 +2199,101 @@ function showEndGameModal(victory, timeSeconds) {
 	modal.querySelector('.base').addEventListener('click', () => {
         window.location.href = 'index.html';
     });
+}
+
+// ==================== ЭКРАН ЗАГРУЗКИ УРОВНЯ ====================
+// Раньше бой мог начаться (и нанести урон) раньше, чем реально догрузились картинки
+// атак — img.src выставлялся при спавне, но урон считался по таймеру независимо от
+// того, успела ли картинка отрисоваться. Теперь перед стартовой модалкой «Готовы к
+// битве?» ждём: все картинки врагов/боссов этого уровня, оба звуковых эффекта и первый
+// боевой трек (готовый к плавному проигрыванию, не просто «начал качаться»). Остальные
+// треки, как и раньше, догружаются по ходу боя в фоне.
+
+function preloadImageAsset(src) {
+    return new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => resolve(true);
+        img.onerror = () => resolve(false);
+        img.src = src;
+    });
+}
+
+function preloadSoundAsset(src) {
+    return new Promise(resolve => {
+        const audio = new Audio();
+        let settled = false;
+        const finish = ready => {
+            if (settled) return;
+            settled = true;
+            resolve(ready);
+        };
+        audio.addEventListener('canplaythrough', () => finish(true), { once: true });
+        audio.addEventListener('error', () => finish(false), { once: true });
+        audio.preload = 'auto';
+        audio.src = src;
+        // Маленькие wav-эффекты — на случай, если canplaythrough почему-то не придёт.
+        setTimeout(() => finish(true), 4000);
+    });
+}
+
+function getLevelPreloadImagePaths() {
+    const paths = new Set();
+    if (typeof ENEMY_TYPES === 'object' && ENEMY_TYPES) {
+        Object.values(ENEMY_TYPES).forEach(enemyType => {
+            if (enemyType?.image) paths.add(enemyType.image);
+        });
+    }
+    paths.add('images/background/1.png');
+    return [...paths];
+}
+
+const LEVEL_PRELOAD_SOUND_PATHS = ['sound/damage.wav', 'sound/level_up.wav?v=1'];
+
+function updateLoadingScreenProgress(done, total) {
+    const bar = document.getElementById('levelLoadingBar');
+    const label = document.getElementById('levelLoadingLabel');
+    if (bar) bar.style.width = `${total > 0 ? Math.round((done / total) * 100) : 100}%`;
+    if (label) label.textContent = `${done} / ${total}`;
+}
+
+function showLevelLoadingScreen() {
+    if (document.querySelector('.level-loading-modal')) return;
+
+    const modal = document.createElement('div');
+    modal.className = 'level-up-modal level-loading-modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <h2>⏳ ЗАГРУЗКА УРОВНЯ ⏳</h2>
+            <p class="modal-subtitle">Готовим картинки, звуки и музыку боя…</p>
+            <div class="level-loading-bar-track">
+                <div class="level-loading-bar-fill" id="levelLoadingBar"></div>
+            </div>
+            <p class="level-loading-label" id="levelLoadingLabel">0 / 0</p>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function hideLevelLoadingScreen() {
+    document.querySelector('.level-loading-modal')?.remove();
+}
+
+async function preloadLevelAssets() {
+    const imagePaths = getLevelPreloadImagePaths();
+    const tasks = [
+        ...imagePaths.map(src => () => preloadImageAsset(src)),
+        ...LEVEL_PRELOAD_SOUND_PATHS.map(src => () => preloadSoundAsset(src)),
+        () => window.battleMusic?.preloadFirstTrack(buildBattleMusicContext(bossM?.[0])) ?? Promise.resolve(true)
+    ];
+
+    const total = tasks.length;
+    let done = 0;
+    updateLoadingScreenProgress(done, total);
+
+    await Promise.all(tasks.map(task => task().finally(() => {
+        done++;
+        updateLoadingScreenProgress(done, total);
+    })));
 }
 
 function showStartModal() {
