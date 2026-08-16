@@ -7,18 +7,18 @@ let factorChar = (lvlNumber * 5) / 100;
 // пролёт перегруженного воза / финал смешивает почерк всех четверых и впервые
 // перекрывает всю нижнюю полосу разом.
 const bossCombatConfig = {
-	levelCadence: 0.86, damageMultiplier: 1.09, minWaveDelay: 2040, minShotDelay: 144, minTelegraphMs: 530,
+	levelCadence: 0.86, damageMultiplier: 1.599, minWaveDelay: 2040, minShotDelay: 144, minTelegraphMs: 530,
 	phases: [
 		{ phase: 1, minHp: 0.64, cadence: 1.00, speed: 1.00, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.16, maxActiveAttacks: 16 },
 		{ phase: 2, minHp: 0.30, cadence: 0.81, speed: 1.12, damage: 1.17, telegraphMultiplier: 0.89, surpriseChance: 0.27, maxActiveAttacks: 18 },
 		{ phase: 3, minHp: 0.00, cadence: 0.68, speed: 1.21, damage: 1.29, telegraphMultiplier: 0.81, surpriseChance: 0.37, maxActiveAttacks: 21 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'weave',      cadence: 1.03, telegraphMs: 860, speedMultiplier: 0.93, damageMultiplier: 0.93, speedVariance: [0.87, 0.94, 1.01, 1.08, 1.15] }, // КОСМАЛЬ: зигзаг косы, без нижней стены
-		enem2: { movementStyle: 'straight',   cadence: 0.89, telegraphMs: 730, speedMultiplier: 1.07, damageMultiplier: 0.89, speedVariance: [0.84, 0.94, 1.04, 1.14, 1.24] }, // ВОРОШЕНЬ: симметричные взмахи грабельных рук
-		enem3: { movementStyle: 'pause',      cadence: 1.19, telegraphMs: 990, speedMultiplier: 0.84, damageMultiplier: 1.19, speedVariance: [0.75, 0.85, 0.97, 1.09, 1.21] }, // КОПНУША: редкие тяжёлые удары, долгая пауза
-		enem4: { movementStyle: 'accelerate', cadence: 0.85, telegraphMs: 645, speedMultiplier: 1.14, damageMultiplier: 0.66, speedVariance: [0.88, 0.99, 1.10, 1.21, 1.32] }, // ВОЗИЛО: направленный пролёт с чёткой стороной входа и выхода
-		enem5: { movementStyle: 'lateRush',   cadence: 0.73, telegraphMs: 625, speedMultiplier: 1.16, damageMultiplier: 1.09, speedVariance: [0.81, 0.94, 1.07, 1.20, 1.33] }  // ДВУКОС: смешивает почерк всех четверых, впервые перекрывает низ поля разом
+		enem1: { movementStyle: 'straight',      cadence: 1.03, telegraphMs: 860, speedMultiplier: 0.93, damageMultiplier: 0.93, speedVariance: [0.87, 0.94, 1.01, 1.08, 1.15] }, // КОСМАЛЬ: зигзаг косы, без нижней стены
+		enem2: { movementStyle: 'weave',   cadence: 0.89, telegraphMs: 730, speedMultiplier: 1.07, damageMultiplier: 0.89, speedVariance: [0.84, 0.94, 1.04, 1.14, 1.24] }, // ВОРОШЕНЬ: симметричные взмахи грабельных рук
+		enem3: { movementStyle: 'lateRush',      cadence: 1.19, telegraphMs: 990, speedMultiplier: 0.84, damageMultiplier: 1.19, speedVariance: [0.75, 0.85, 0.97, 1.09, 1.21] }, // КОПНУША: редкие тяжёлые удары, долгая пауза
+		enem4: { movementStyle: 'pause', cadence: 0.85, telegraphMs: 645, speedMultiplier: 1.14, damageMultiplier: 0.66, speedVariance: [0.88, 0.99, 1.10, 1.21, 1.32] }, // ВОЗИЛО: направленный пролёт с чёткой стороной входа и выхода
+		enem5: { movementStyle: 'drift',   cadence: 0.73, telegraphMs: 625, speedMultiplier: 1.16, damageMultiplier: 1.09, speedVariance: [0.81, 0.94, 1.07, 1.20, 1.33] }  // ДВУКОС: две косы вместо одной — переносит направленный заход Возила сразу на оба фланга
 	}
 };
 

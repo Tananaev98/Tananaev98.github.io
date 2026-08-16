@@ -6,18 +6,18 @@ let factorChar = (lvlNumber * 5) / 100;
 // тройные уколы вил / асимметричные грабли, давящие с одного бока / частый дождь
 // сноповязки сверху / финал скрещивает высоты флангов и впервые перекрывает низ разом.
 const bossCombatConfig = {
-	levelCadence: 0.90, damageMultiplier: 1.06, minWaveDelay: 2100, minShotDelay: 150, minTelegraphMs: 545,
+	levelCadence: 0.90, damageMultiplier: 1.908, minWaveDelay: 2100, minShotDelay: 150, minTelegraphMs: 545,
 	phases: [
 		{ phase: 1, minHp: 0.64, cadence: 1.00, speed: 1.00, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.14, maxActiveAttacks: 13 },
 		{ phase: 2, minHp: 0.30, cadence: 0.84, speed: 1.10, damage: 1.14, telegraphMultiplier: 0.91, surpriseChance: 0.24, maxActiveAttacks: 16 },
 		{ phase: 3, minHp: 0.00, cadence: 0.71, speed: 1.19, damage: 1.26, telegraphMultiplier: 0.84, surpriseChance: 0.34, maxActiveAttacks: 19 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'weave',      cadence: 1.02, telegraphMs: 860, speedMultiplier: 0.93, damageMultiplier: 0.94, speedVariance: [0.87, 0.94, 1.01, 1.08, 1.15] }, // КРИВОЗУБ: серп качается зигзагом от края к краю, без стены снизу
-		enem2: { movementStyle: 'accelerate', cadence: 0.86, telegraphMs: 730, speedMultiplier: 1.07, damageMultiplier: 0.87, speedVariance: [0.85, 0.95, 1.05, 1.15, 1.25] }, // ТРОЙЧАТКА: вилы бьют тройными уколами, каждый следующий сет — выше и резче
-		enem3: { movementStyle: 'straight',   cadence: 1.22, telegraphMs: 960, speedMultiplier: 0.84, damageMultiplier: 1.13, speedVariance: [0.79, 0.89, 0.99, 1.09, 1.19] }, // ЧЕСАЛКА: грабли давят почти всегда с правого бока, левый — редкий укол
-		enem4: { movementStyle: 'drift',      cadence: 0.76, telegraphMs: 610, speedMultiplier: 1.20, damageMultiplier: 0.63, speedVariance: [0.91, 1.03, 1.15, 1.27, 1.39] }, // СКРИПУХА: сноповязка сыплет обрывками сверху, частый нервный дождь
-		enem5: { movementStyle: 'pause',      cadence: 0.73, telegraphMs: 630, speedMultiplier: 1.11, damageMultiplier: 1.06, speedVariance: [0.87, 0.98, 1.10, 1.22, 1.34] }  // ШЕСТЕРИЛО: машина скрещивает высоты флангов и впервые перекрывает низ поля разом
+		enem1: { movementStyle: 'accelerate',      cadence: 1.02, telegraphMs: 860, speedMultiplier: 0.93, damageMultiplier: 0.94, speedVariance: [0.87, 0.94, 1.01, 1.08, 1.15] }, // КРИВОЗУБ: серп качается зигзагом от края к краю, без стены снизу
+		enem2: { movementStyle: 'lateRush', cadence: 0.86, telegraphMs: 730, speedMultiplier: 1.07, damageMultiplier: 0.87, speedVariance: [0.85, 0.95, 1.05, 1.15, 1.25] }, // ТРОЙЧАТКА: вилы бьют тройными уколами, каждый следующий сет — выше и резче
+		enem3: { movementStyle: 'pause',   cadence: 1.22, telegraphMs: 960, speedMultiplier: 0.84, damageMultiplier: 1.13, speedVariance: [0.79, 0.89, 0.99, 1.09, 1.19] }, // ЧЕСАЛКА: грабли давят почти всегда с правого бока, левый — редкий укол
+		enem4: { movementStyle: 'straight',      cadence: 0.76, telegraphMs: 610, speedMultiplier: 1.20, damageMultiplier: 0.63, speedVariance: [0.91, 1.03, 1.15, 1.27, 1.39] }, // СКРИПУХА: сноповязка сыплет обрывками сверху, частый нервный дождь
+		enem5: { movementStyle: 'weave',      cadence: 0.73, telegraphMs: 630, speedMultiplier: 1.11, damageMultiplier: 1.06, speedVariance: [0.87, 0.98, 1.10, 1.22, 1.34] }  // ШЕСТЕРИЛО: машина скрещивает высоты флангов и впервые перекрывает низ поля разом
 	}
 };
 

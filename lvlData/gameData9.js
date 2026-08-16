@@ -11,11 +11,11 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.68, speed: 1.18, damage: 1.22, telegraphMultiplier: 0.86, surpriseChance: 0.28, maxActiveAttacks: 19 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'weave', cadence: 0.94, telegraphMs: 740, speedMultiplier: 1.10, damageMultiplier: 1.02, speedVariance: [0.84, 0.96, 1.08, 1.20, 1.30] }, // ALT_WHIP: хлёсткая смена флангов
+		enem1: { movementStyle: 'pause', cadence: 0.94, telegraphMs: 740, speedMultiplier: 1.10, damageMultiplier: 1.02, speedVariance: [0.84, 0.96, 1.08, 1.20, 1.30] }, // ALT_WHIP: хлёсткая смена флангов
 		enem2: { movementStyle: 'drift', cadence: 1.02, telegraphMs: 820, speedMultiplier: 1.04, damageMultiplier: 1.08, speedVariance: [0.86, 0.98, 1.10, 1.20, 1.28] }, // CORNERS_BURST: сходится из углов
-		enem3: { movementStyle: 'accelerate', cadence: 0.78, telegraphMs: 570, speedMultiplier: 1.22, damageMultiplier: 1.10, speedVariance: [0.94, 1.04, 1.14, 1.24, 1.32] }, // TWIN_JETS_MID: частые ускоряющиеся струи
-		enem4: { movementStyle: 'lateRush', cadence: 0.88, telegraphMs: 680, speedMultiplier: 1.16, damageMultiplier: 1.14, speedVariance: [0.76, 0.90, 1.06, 1.22, 1.34] }, // RIGHT_STABS: колющий выпад справа
-		enem5: { movementStyle: 'pause', cadence: 0.80, telegraphMs: 650, speedMultiplier: 1.14, damageMultiplier: 1.20, speedVariance: [0.82, 0.94, 1.06, 1.20, 1.32] } // SEQ_WRAP: пауза между обхватами
+		enem3: { movementStyle: 'straight', cadence: 0.78, telegraphMs: 570, speedMultiplier: 1.22, damageMultiplier: 1.10, speedVariance: [0.94, 1.04, 1.14, 1.24, 1.32] }, // TWIN_JETS_MID: частые ускоряющиеся струи
+		enem4: { movementStyle: 'weave', cadence: 0.88, telegraphMs: 680, speedMultiplier: 1.16, damageMultiplier: 1.14, speedVariance: [0.76, 0.90, 1.06, 1.22, 1.34] }, // RIGHT_STABS: колющий выпад справа
+		enem5: { movementStyle: 'lateRush', cadence: 0.80, telegraphMs: 650, speedMultiplier: 1.14, damageMultiplier: 1.20, speedVariance: [0.82, 0.94, 1.06, 1.20, 1.32] } // SEQ_WRAP: пауза между обхватами
 	}
 };
 

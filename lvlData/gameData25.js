@@ -8,7 +8,7 @@ let factorChar = (lvlNumber * 5) / 100;
 // и тот же противник, но эпитет перед ним меняется по явлению, а не по
 // формуле «злая / очень злая / взбешенная» (зной → марево → угли → венец).
 const bossCombatConfig = {
-	levelCadence: 0.72, damageMultiplier: 1.20, minWaveDelay: 1950, minShotDelay: 132, minTelegraphMs: 500,
+	levelCadence: 0.72, damageMultiplier: 1.440, minWaveDelay: 1950, minShotDelay: 132, minTelegraphMs: 500,
 	musicMood: 'heroic',
 	phases: [
 		{ phase: 1, minHp: 0.65, cadence: 1.00, speed: 1.00, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.16, maxActiveAttacks: 16 },
@@ -17,33 +17,33 @@ const bossCombatConfig = {
 	],
 	bosses: {
 		enem1: {
-			movementStyle: 'weave', cadence: 1.00, telegraphMs: 900, speedMultiplier: 0.90, damageMultiplier: 0.95,
+			movementStyle: 'drift', cadence: 1.00, telegraphMs: 900, speedMultiplier: 0.90, damageMultiplier: 0.95,
 			speedVariance: [0.86, 0.94, 1.02, 1.10, 1.18],
-			phaseMessages: { 2: 'ЗНОЙ СГУЩАЕТСЯ', 3: 'БОРОЗДЫ ДРОЖАТ ОТ ЖАРЫ' }
+			phaseMessages: { 2: 'ЗНОЙ СВОДИТ С УМА', 3: 'МАРЕВО ГУСТЕЕТ УГРОЗОЙ' }
 		}, // ЗНОЙНАЯ ПОЛУДНИЦА: зигзаг марева над бороздой, без нижней стены
 		enem2: {
-			movementStyle: 'straight', cadence: 0.88, telegraphMs: 730, speedMultiplier: 1.08, damageMultiplier: 0.92,
+			movementStyle: 'weave', cadence: 0.88, telegraphMs: 730, speedMultiplier: 1.08, damageMultiplier: 0.92,
 			speedVariance: [0.84, 0.95, 1.06, 1.17, 1.28],
-			appearMessage: 'ВОЗДУХ НАЧИНАЕТ ДВОИТЬСЯ',
-			phaseMessages: { 2: 'МАРЕВО МНОЖИТСЯ', 3: 'НИ ОДНО ОТРАЖЕНИЕ НЕ ЛОЖЬ' }
+			appearMessage: 'ДВОИТСЯ ОТ ЗЛОБЫ',
+			phaseMessages: { 2: 'ОТРАЖЕНИЯ ОБЕЗУМЕЛИ', 3: 'МАРЕВО ЖАЖДЕТ ДОБЫЧИ' }
 		}, // МАРЕВАЯ ПОЛУДНИЦА: парные удары-двойники с флангов, симметричный мираж
 		enem3: {
-			movementStyle: 'pause', cadence: 1.22, telegraphMs: 990, speedMultiplier: 0.82, damageMultiplier: 1.22,
+			movementStyle: 'accelerate', cadence: 1.22, telegraphMs: 990, speedMultiplier: 0.82, damageMultiplier: 1.22,
 			speedVariance: [0.74, 0.85, 0.98, 1.11, 1.24],
-			appearMessage: 'ГДЕ-ТО В КОЛОСЬЯХ ЗАТЛЕЛО',
-			phaseMessages: { 2: 'УГЛИ РАЗГОРАЮТСЯ', 3: 'ПОСЛЕДНЯЯ ВСПЫШКА' }
+			appearMessage: 'УГЛИ ПЫШУТ ЖАРОМ',
+			phaseMessages: { 2: 'УГЛИ РАЗГОРАЮТСЯ СИЛЬНЕЕ', 3: 'ГОРИТ БЕЗ ПОЩАДЫ' }
 		}, // ЖАРОВАЯ ПОЛУДНИЦА: редкие тяжёлые вспышки углей, долгая пауза
 		enem4: {
 			movementStyle: 'lateRush', cadence: 0.74, telegraphMs: 590, speedMultiplier: 1.24, damageMultiplier: 0.68,
 			speedVariance: [0.93, 1.07, 1.21, 1.35, 1.49],
-			appearMessage: 'НАД ГОЛОВОЙ ВСПЫХНУЛ ВЕНЕЦ',
-			phaseMessages: { 2: 'ВЕНЕЦ РАСКАЛЯЕТСЯ', 3: 'ЛУЧИ БЬЮТ СО ВСЕХ УГЛОВ' }
+			appearMessage: 'ВЕНЕЦ ПЫЛАЕТ ЗЛОБОЙ',
+			phaseMessages: { 2: 'ВЕНЕЦ ПЫШЕТ ЖАРОМ', 3: 'ВЕНЕЦ ГОРИТ БЕЗ ПОЩАДЫ' }
 		}, // ВЕНЦЕНОСНАЯ ПОЛУДНИЦА: нервные вспышки лучей только из четырёх углов
 		enem5: {
-			movementStyle: 'accelerate', cadence: 0.68, telegraphMs: 610, speedMultiplier: 1.22, damageMultiplier: 1.16,
+			movementStyle: 'pause', cadence: 0.68, telegraphMs: 610, speedMultiplier: 1.22, damageMultiplier: 1.16,
 			speedVariance: [0.80, 0.94, 1.08, 1.22, 1.36],
-			appearMessage: 'ПОЛУДНИЦА ЯВЛЯЕТ ИСТИННЫЙ ОБЛИК',
-			phaseMessages: { 2: 'ПОЛЕ ЗАМИРАЕТ В ПОЛДЕНЬ', 3: 'ПОСЛЕДНИЙ ЗНОЙНЫЙ УДАР' }
+			appearMessage: 'ЯВИЛА ИСТИННЫЙ ГНЕВ',
+			phaseMessages: { 2: 'ЗНОЙ СТАНОВИТСЯ НЕСТЕРПИМЫМ', 3: 'ПОЛДЕНЬ ПЫЛАЕТ БЕЗ ПОЩАДЫ' }
 		} // ИСТИННАЯ ПОЛУДНИЦА: сводит воедино приёмы всех четырёх и впервые перекрывает низ поля разом
 	}
 };
@@ -107,7 +107,7 @@ const ENEMY_TYPES = {
 
 	enem1: {
 		name: 'enem1',
-		dispName: 'Знойная Полудница',
+		dispName: 'Полудница',
 		image: 'images/enemies/regions/2_zolot_polya/lvl25/1.webp',
 		baseHP: 2600 + (2600 * factorChar),
 		baseSpeed: 0,

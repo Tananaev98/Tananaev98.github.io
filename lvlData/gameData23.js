@@ -7,18 +7,18 @@ let factorChar = (lvlNumber * 5) / 100;
 // только из углов / финал смешивает почерк всех четверых и впервые
 // перекрывает всю нижнюю полосу разом.
 const bossCombatConfig = {
-	levelCadence: 0.83, damageMultiplier: 1.11, minWaveDelay: 2000, minShotDelay: 140, minTelegraphMs: 520,
+	levelCadence: 0.83, damageMultiplier: 1.702, minWaveDelay: 2000, minShotDelay: 140, minTelegraphMs: 520,
 	phases: [
 		{ phase: 1, minHp: 0.64, cadence: 1.00, speed: 1.00, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.17, maxActiveAttacks: 16 },
 		{ phase: 2, minHp: 0.29, cadence: 0.79, speed: 1.14, damage: 1.19, telegraphMultiplier: 0.88, surpriseChance: 0.29, maxActiveAttacks: 19 },
 		{ phase: 3, minHp: 0.00, cadence: 0.66, speed: 1.23, damage: 1.31, telegraphMultiplier: 0.80, surpriseChance: 0.39, maxActiveAttacks: 22 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'weave',      cadence: 1.02, telegraphMs: 850, speedMultiplier: 0.94, damageMultiplier: 0.94, speedVariance: [0.86, 0.94, 1.02, 1.10, 1.18] }, // ХЛЫСТЕНЬ: зигзаг цепа без нижней стены
-		enem2: { movementStyle: 'straight',   cadence: 0.91, telegraphMs: 745, speedMultiplier: 1.05, damageMultiplier: 0.91, speedVariance: [0.85, 0.95, 1.05, 1.15, 1.25] }, // РЕШЕТЕНЬ: симметричные когтистые выпады с флангов
+		enem1: { movementStyle: 'accelerate',      cadence: 1.02, telegraphMs: 850, speedMultiplier: 0.94, damageMultiplier: 0.94, speedVariance: [0.86, 0.94, 1.02, 1.10, 1.18] }, // ХЛЫСТЕНЬ: зигзаг цепа без нижней стены
+		enem2: { movementStyle: 'lateRush',   cadence: 0.91, telegraphMs: 745, speedMultiplier: 1.05, damageMultiplier: 0.91, speedVariance: [0.85, 0.95, 1.05, 1.15, 1.25] }, // РЕШЕТЕНЬ: симметричные когтистые выпады с флангов
 		enem3: { movementStyle: 'drift',      cadence: 0.86, telegraphMs: 615, speedMultiplier: 1.19, damageMultiplier: 0.63, speedVariance: [0.91, 1.04, 1.17, 1.30, 1.43] }, // ПЫЛЮГА: нервный дождь мякины сверху
-		enem4: { movementStyle: 'lateRush',   cadence: 1.03, telegraphMs: 620, speedMultiplier: 1.02, damageMultiplier: 1.13, speedVariance: [0.83, 0.93, 1.03, 1.13, 1.23] }, // КОЛОСЕНЬ: щелчки серпов только из четырёх углов
-		enem5: { movementStyle: 'pause',      cadence: 0.71, telegraphMs: 610, speedMultiplier: 1.18, damageMultiplier: 1.11, speedVariance: [0.79, 0.92, 1.05, 1.18, 1.31] }  // ОВИННИК: смешивает почерк всех четверых, впервые перекрывает низ поля разом
+		enem4: { movementStyle: 'straight',   cadence: 1.03, telegraphMs: 620, speedMultiplier: 1.02, damageMultiplier: 1.13, speedVariance: [0.83, 0.93, 1.03, 1.13, 1.23] }, // КОЛОСЕНЬ: щелчки серпов только из четырёх углов
+		enem5: { movementStyle: 'weave',      cadence: 0.71, telegraphMs: 610, speedMultiplier: 1.18, damageMultiplier: 1.11, speedVariance: [0.79, 0.92, 1.05, 1.18, 1.31] }  // ОВИННИК: мечется меж снопами змейкой — сплетает дождь мякины сверху с когтями с флангов в одну ловушку
 	}
 };
 

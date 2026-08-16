@@ -13,10 +13,10 @@ const bossCombatConfig = {
 	],
 	bosses: {
 		enem1: { movementStyle: 'drift', cadence: 0.96, telegraphMs: 780, speedMultiplier: 1.04, damageMultiplier: 0.98, speedVariance: [0.86, 0.96, 1.06, 1.16, 1.24] }, // TOP_FEATHER: перья сносит в сторону
-		enem2: { movementStyle: 'pause', cadence: 1.10, telegraphMs: 940, speedMultiplier: 0.88, damageMultiplier: 1.05, speedVariance: [0.78, 0.88, 0.98, 1.08, 1.16] }, // BOTTOM_CROUCH: выжидание перед прыжком
-		enem3: { movementStyle: 'lateRush', cadence: 1.14, telegraphMs: 1020, speedMultiplier: 0.84, damageMultiplier: 1.20, speedVariance: [0.76, 0.88, 1.00, 1.14, 1.26] }, // BOTTOM_WALL: тяжёлый кабаний разгон
+		enem2: { movementStyle: 'straight', cadence: 1.10, telegraphMs: 940, speedMultiplier: 0.88, damageMultiplier: 1.05, speedVariance: [0.78, 0.88, 0.98, 1.08, 1.16] }, // BOTTOM_CROUCH: выжидание перед прыжком
+		enem3: { movementStyle: 'weave', cadence: 1.14, telegraphMs: 1020, speedMultiplier: 0.84, damageMultiplier: 1.20, speedVariance: [0.76, 0.88, 1.00, 1.14, 1.26] }, // BOTTOM_WALL: тяжёлый кабаний разгон
 		enem4: { movementStyle: 'accelerate', cadence: 0.82, telegraphMs: 620, speedMultiplier: 1.16, damageMultiplier: 1.07, speedVariance: [0.94, 1.04, 1.14, 1.22, 1.28] }, // LEFT_SCRATCH: частые ускоряющиеся царапины
-		enem5: { movementStyle: 'weave', cadence: 0.78, telegraphMs: 680, speedMultiplier: 1.12, damageMultiplier: 1.15, speedVariance: [0.86, 0.98, 1.10, 1.20, 1.28] } // CONVERGE_FLANKS: волчье схождение флангов
+		enem5: { movementStyle: 'lateRush', cadence: 0.78, telegraphMs: 680, speedMultiplier: 1.12, damageMultiplier: 1.15, speedVariance: [0.86, 0.98, 1.10, 1.20, 1.28] } // CONVERGE_FLANKS: волчье схождение флангов
 	}
 };
 

@@ -4,18 +4,18 @@ let factorChar = (lvlNumber * 5) / 100;
 const bossCombatConfig = {
 	scaleLongComboDamage: true,
 	scaleShortComboDamage: true,
-	levelCadence: 0.83, damageMultiplier: 1.14, minWaveDelay: 2280, minShotDelay: 148, minTelegraphMs: 500,
+	levelCadence: 0.83, damageMultiplier: 0.608, minWaveDelay: 2280, minShotDelay: 148, minTelegraphMs: 500,
 	phases: [
 		{ phase: 1, minHp: 0.66, cadence: 1.00, speed: 0.99, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.11, maxActiveAttacks: 14 },
 		{ phase: 2, minHp: 0.31, cadence: 0.80, speed: 1.10, damage: 1.12, telegraphMultiplier: 0.91, surpriseChance: 0.21, maxActiveAttacks: 18 },
 		{ phase: 3, minHp: 0.00, cadence: 0.67, speed: 1.19, damage: 1.23, telegraphMultiplier: 0.85, surpriseChance: 0.29, maxActiveAttacks: 20 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'accelerate', cadence: 0.98, telegraphMs: 760, speedMultiplier: 1.08, damageMultiplier: 1.04, speedVariance: [0.84, 0.96, 1.08, 1.20, 1.30] }, // CLIMB_UP: ускоряется по мере подъёма
-		enem2: { movementStyle: 'lateRush', cadence: 0.86, telegraphMs: 640, speedMultiplier: 1.16, damageMultiplier: 1.08, speedVariance: [0.74, 0.90, 1.06, 1.22, 1.36] }, // SPARSE_HOPS: редкий прыжок → рывок
-		enem3: { movementStyle: 'pause', cadence: 1.20, telegraphMs: 980, speedMultiplier: 0.86, damageMultiplier: 1.26, speedVariance: [0.76, 0.86, 0.96, 1.06, 1.16] }, // BOTTOM_DENSE: вязкое плотное дно
-		enem4: { movementStyle: 'weave', cadence: 0.82, telegraphMs: 600, speedMultiplier: 1.20, damageMultiplier: 1.12, speedVariance: [0.94, 1.04, 1.14, 1.24, 1.32] }, // H_PAIRS_MID: режущие пары меняют траекторию
-		enem5: { movementStyle: 'drift', cadence: 0.74, telegraphMs: 630, speedMultiplier: 1.18, damageMultiplier: 1.20, speedVariance: [0.90, 1.02, 1.14, 1.26, 1.34] } // UNEVEN_REEDS: асимметричные камыши
+		enem1: { movementStyle: 'drift', cadence: 0.98, telegraphMs: 760, speedMultiplier: 1.08, damageMultiplier: 1.04, speedVariance: [0.84, 0.96, 1.08, 1.20, 1.30] }, // CLIMB_UP: ускоряется по мере подъёма
+		enem2: { movementStyle: 'straight', cadence: 0.86, telegraphMs: 640, speedMultiplier: 1.16, damageMultiplier: 1.08, speedVariance: [0.74, 0.90, 1.06, 1.22, 1.36] }, // SPARSE_HOPS: редкий прыжок → рывок
+		enem3: { movementStyle: 'weave', cadence: 1.20, telegraphMs: 980, speedMultiplier: 0.86, damageMultiplier: 1.26, speedVariance: [0.76, 0.86, 0.96, 1.06, 1.16] }, // BOTTOM_DENSE: вязкое плотное дно
+		enem4: { movementStyle: 'accelerate', cadence: 0.82, telegraphMs: 600, speedMultiplier: 1.20, damageMultiplier: 1.12, speedVariance: [0.94, 1.04, 1.14, 1.24, 1.32] }, // H_PAIRS_MID: режущие пары меняют траекторию
+		enem5: { movementStyle: 'pause', cadence: 0.74, telegraphMs: 630, speedMultiplier: 1.18, damageMultiplier: 1.20, speedVariance: [0.90, 1.02, 1.14, 1.26, 1.34] } // UNEVEN_REEDS: асимметричные камыши
 	}
 };
 

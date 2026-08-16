@@ -7,7 +7,7 @@ let factorChar = (lvlNumber * 5) / 100;
 // (иначе движок не читает уровень), но каждый следующий приём — явный шаг её
 // перерождения, а финал сводит воедино приёмы всех четырёх предыдущих обликов.
 const bossCombatConfig = {
-	levelCadence: 0.70, damageMultiplier: 1.25, minWaveDelay: 1950, minShotDelay: 130, minTelegraphMs: 460,
+	levelCadence: 0.70, damageMultiplier: 1.750, minWaveDelay: 1950, minShotDelay: 130, minTelegraphMs: 460,
 	// Один и тот же противник от начала и до конца уровня — фоновая музыка
 	// не должна плыть по настроению вслед за архетипами, поэтому здесь задан
 	// единственный, всегда эпичный пул треков (см. правило 14 в lvlData/Правила
@@ -20,33 +20,33 @@ const bossCombatConfig = {
 	],
 	bosses: {
 		enem1: {
-			movementStyle: 'weave', cadence: 1.05, telegraphMs: 880, speedMultiplier: 0.92, damageMultiplier: 0.92,
+			movementStyle: 'drift', cadence: 1.05, telegraphMs: 880, speedMultiplier: 0.92, damageMultiplier: 0.92,
 			speedVariance: [0.86, 0.94, 1.02, 1.10, 1.18],
-			phaseMessages: { 2: 'ЯГА ПРИСТУПАЕТ К ДЕЛУ', 3: 'ПОСОХ БЬЁТ БЫСТРЕЕ' }
+			phaseMessages: { 2: 'ПОСОХ ЖАЖДЕТ КРОВИ', 3: 'ПОСОХ НЕ ЗНАЕТ ПОЩАДЫ' }
 		}, // БАБА-ЯГА: зигзаг посоха, испытывает игрока
 		enem2: {
 			movementStyle: 'straight', cadence: 0.90, telegraphMs: 740, speedMultiplier: 1.06, damageMultiplier: 0.90,
 			speedVariance: [0.85, 0.95, 1.05, 1.15, 1.25],
-			appearMessage: 'ВЫ РАЗОЗЛИЛИ БАБУ-ЯГУ!',
-			phaseMessages: { 2: 'ЗЛОСТЬ РАСТЁТ', 3: 'КОГТИ РВУТ ВОЗДУХ' }
+			appearMessage: 'ВЗБЕСИЛАСЬ ОТ ЗЛОСТИ',
+			phaseMessages: { 2: 'КОГТИ РВУТСЯ В БОЙ', 3: 'КОГТИ ЖАЖДУТ КРОВИ' }
 		}, // ЗЛАЯ БАБА-ЯГА: парные когтистые выпады с флангов
 		enem3: {
-			movementStyle: 'pause', cadence: 1.18, telegraphMs: 980, speedMultiplier: 0.85, damageMultiplier: 1.18,
+			movementStyle: 'weave', cadence: 1.18, telegraphMs: 980, speedMultiplier: 0.85, damageMultiplier: 1.18,
 			speedVariance: [0.76, 0.86, 0.98, 1.10, 1.22],
-			appearMessage: 'БАБА-ЯГА ПРИХОДИТ В ЯРОСТЬ!',
-			phaseMessages: { 2: 'ПРОКЛЯТЬЯ ГУЩЕ', 3: 'ПОСЛЕДНЕЕ ЗАКЛИНАНИЕ' }
+			appearMessage: 'ПРОКЛЯТЬЯ КЛОКОЧУТ В ГОРЛЕ',
+			phaseMessages: { 2: 'ПРОКЛЯТЬЯ КИПЯТ', 3: 'ОХВАЧЕНА БЕЗУМИЕМ' }
 		}, // ОЧЕНЬ ЗЛАЯ БАБА-ЯГА: редкие тяжёлые проклятия, долгие паузы
 		enem4: {
 			movementStyle: 'lateRush', cadence: 0.76, telegraphMs: 610, speedMultiplier: 1.20, damageMultiplier: 0.66,
 			speedVariance: [0.90, 1.03, 1.16, 1.29, 1.42],
-			appearMessage: 'БАБА-ЯГА СОВСЕМ ВЗБЕСИЛАСЬ!',
-			phaseMessages: { 2: 'ПЕЧЬ РАСКАЛЯЕТСЯ', 3: 'ОГОНЬ ВЫРЫВАЕТСЯ ИЗ ВСЕХ ЩЕЛЕЙ' }
+			appearMessage: 'ВЗОРВАЛАСЬ ЯРОСТЬЮ',
+			phaseMessages: { 2: 'ПЫШЕТ ОГНЁМ', 3: 'ПЫЛАЕТ ЯРОСТЬЮ' }
 		}, // ВЗБЕШЕННАЯ БАБА-ЯГА: нервные вспышки только из четырёх углов
 		enem5: {
-			movementStyle: 'accelerate', cadence: 0.72, telegraphMs: 640, speedMultiplier: 1.15, damageMultiplier: 1.10,
+			movementStyle: 'pause', cadence: 0.72, telegraphMs: 640, speedMultiplier: 1.15, damageMultiplier: 1.10,
 			speedVariance: [0.84, 0.97, 1.10, 1.23, 1.36],
-			appearMessage: 'БАБА-ЯГА ТЕРЯЕТ РАССУДОК!',
-			phaseMessages: { 2: 'ЛЕС СМЫКАЕТСЯ', 3: 'ПОСЛЕДНИЙ ОБЛИК ЯГИ' }
+			appearMessage: 'ОБЕЗУМЕЛА ОКОНЧАТЕЛЬНО',
+			phaseMessages: { 2: 'БЕЗУМИЕ РАСТЁТ', 3: 'БЕЗУМИЕ БЕЗ ГРАНИЦ' }
 		} // ОБЕЗУМЕВШАЯ БАБА-ЯГА: полное перерождение, сводит воедино приёмы всех обликов
 	}
 };

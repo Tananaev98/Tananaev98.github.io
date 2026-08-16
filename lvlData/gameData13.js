@@ -4,18 +4,18 @@ let factorChar = (lvlNumber * 5) / 100;
 const bossCombatConfig = {
 	scaleLongComboDamage: true,
 	scaleShortComboDamage: true,
-	levelCadence: 0.79, damageMultiplier: 1.18, minWaveDelay: 2230, minShotDelay: 145, minTelegraphMs: 480,
+	levelCadence: 0.79, damageMultiplier: 0.629, minWaveDelay: 2230, minShotDelay: 145, minTelegraphMs: 480,
 	phases: [
 		{ phase: 1, minHp: 0.66, cadence: 1.00, speed: 1.00, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.12, maxActiveAttacks: 15 },
 		{ phase: 2, minHp: 0.31, cadence: 0.78, speed: 1.12, damage: 1.14, telegraphMultiplier: 0.90, surpriseChance: 0.23, maxActiveAttacks: 19 },
 		{ phase: 3, minHp: 0.00, cadence: 0.64, speed: 1.22, damage: 1.26, telegraphMultiplier: 0.84, surpriseChance: 0.32, maxActiveAttacks: 21 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'straight', cadence: 1.02, telegraphMs: 780, speedMultiplier: 1.04, damageMultiplier: 1.04, speedVariance: [0.88, 0.96, 1.04, 1.12, 1.20] }, // RIGHT_DESCENT: спокойный спуск справа
+		enem1: { movementStyle: 'lateRush', cadence: 1.02, telegraphMs: 780, speedMultiplier: 1.04, damageMultiplier: 1.04, speedVariance: [0.88, 0.96, 1.04, 1.12, 1.20] }, // RIGHT_DESCENT: спокойный спуск справа
 		enem2: { movementStyle: 'pause', cadence: 0.96, telegraphMs: 700, speedMultiplier: 1.08, damageMultiplier: 1.06, speedVariance: [0.82, 0.94, 1.06, 1.16, 1.26] }, // CORNER_WHISPER: углы с паузой
-		enem3: { movementStyle: 'lateRush', cadence: 1.14, telegraphMs: 900, speedMultiplier: 0.90, damageMultiplier: 1.28, speedVariance: [0.76, 0.88, 1.00, 1.12, 1.22] }, // LANE_CLOSE: редкие тяжёлые закрытия
-		enem4: { movementStyle: 'accelerate', cadence: 0.88, telegraphMs: 620, speedMultiplier: 1.14, damageMultiplier: 0.72, speedVariance: [0.92, 1.00, 1.08, 1.16, 1.24] }, // LEFT_COLUMN: частая колонна, дробный урон
-		enem5: { movementStyle: 'weave', cadence: 0.70, telegraphMs: 610, speedMultiplier: 1.16, damageMultiplier: 1.20, speedVariance: [0.84, 0.98, 1.12, 1.24, 1.34] } // FAN_THEN_BOOM: веер + удар
+		enem3: { movementStyle: 'drift', cadence: 1.14, telegraphMs: 900, speedMultiplier: 0.90, damageMultiplier: 1.28, speedVariance: [0.76, 0.88, 1.00, 1.12, 1.22] }, // LANE_CLOSE: редкие тяжёлые закрытия
+		enem4: { movementStyle: 'weave', cadence: 0.88, telegraphMs: 620, speedMultiplier: 1.14, damageMultiplier: 0.72, speedVariance: [0.92, 1.00, 1.08, 1.16, 1.24] }, // LEFT_COLUMN: частая колонна, дробный урон
+		enem5: { movementStyle: 'accelerate', cadence: 0.70, telegraphMs: 610, speedMultiplier: 1.16, damageMultiplier: 1.20, speedVariance: [0.84, 0.98, 1.12, 1.24, 1.34] } // FAN_THEN_BOOM: веер + удар
 	}
 };
 

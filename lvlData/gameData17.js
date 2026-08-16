@@ -6,18 +6,18 @@ let factorChar = (lvlNumber * 5) / 100;
 // давление снизу редкими тяжёлыми ударами / только четыре угла поля / финал смешивает
 // мотивы всех четверых и впервые на уровне закрывает всю нижнюю полосу разом.
 const bossCombatConfig = {
-	levelCadence: 0.92, damageMultiplier: 1.05, minWaveDelay: 2150, minShotDelay: 152, minTelegraphMs: 550,
+	levelCadence: 0.92, damageMultiplier: 1.960, minWaveDelay: 2150, minShotDelay: 152, minTelegraphMs: 550,
 	phases: [
 		{ phase: 1, minHp: 0.65, cadence: 1.00, speed: 1.00, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.13, maxActiveAttacks: 13 },
 		{ phase: 2, minHp: 0.31, cadence: 0.85, speed: 1.09, damage: 1.13, telegraphMultiplier: 0.92, surpriseChance: 0.23, maxActiveAttacks: 16 },
 		{ phase: 3, minHp: 0.00, cadence: 0.72, speed: 1.18, damage: 1.25, telegraphMultiplier: 0.85, surpriseChance: 0.33, maxActiveAttacks: 19 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'pause',    cadence: 1.05, telegraphMs: 900, speedMultiplier: 0.90, damageMultiplier: 0.93, speedVariance: [0.88, 0.95, 1.02, 1.09, 1.16] }, // ПРИТАЙКА: перепёлка выжидает в бороздах, редкие одиночные вылазки
-		enem2: { movementStyle: 'drift',    cadence: 0.85, telegraphMs: 720, speedMultiplier: 1.08, damageMultiplier: 0.88, speedVariance: [0.84, 0.94, 1.04, 1.14, 1.24] }, // ЩЕКАН: хомяк волочит мешки колонной с одного бока
-		enem3: { movementStyle: 'straight', cadence: 1.25, telegraphMs: 980, speedMultiplier: 0.82, damageMultiplier: 1.15, speedVariance: [0.78, 0.88, 0.98, 1.08, 1.18] }, // СТОЛБИК: суслик держит стойку у норы и бьёт редко, но давит снизу
-		enem4: { movementStyle: 'lateRush', cadence: 0.75, telegraphMs: 600, speedMultiplier: 1.22, damageMultiplier: 0.62, speedVariance: [0.90, 1.02, 1.14, 1.26, 1.38] }, // ТРЕЩОТНИК: трещотка щёлкает нервно из всех четырёх углов поля
-		enem5: { movementStyle: 'weave',    cadence: 0.72, telegraphMs: 620, speedMultiplier: 1.10, damageMultiplier: 1.05, speedVariance: [0.86, 0.97, 1.09, 1.21, 1.33] }  // ШУРШАЛО: чучело смешивает почерк всех четверых и закрывает зоны одну за другой
+		enem1: { movementStyle: 'weave',    cadence: 1.05, telegraphMs: 900, speedMultiplier: 0.90, damageMultiplier: 0.93, speedVariance: [0.88, 0.95, 1.02, 1.09, 1.16] }, // ПРИТАЙКА: перепёлка выжидает в бороздах, редкие одиночные вылазки
+		enem2: { movementStyle: 'accelerate',    cadence: 0.85, telegraphMs: 720, speedMultiplier: 1.08, damageMultiplier: 0.88, speedVariance: [0.84, 0.94, 1.04, 1.14, 1.24] }, // ЩЕКАН: хомяк волочит мешки колонной с одного бока
+		enem3: { movementStyle: 'lateRush', cadence: 1.25, telegraphMs: 980, speedMultiplier: 0.82, damageMultiplier: 1.15, speedVariance: [0.78, 0.88, 0.98, 1.08, 1.18] }, // СТОЛБИК: суслик держит стойку у норы и бьёт редко, но давит снизу
+		enem4: { movementStyle: 'drift', cadence: 0.75, telegraphMs: 600, speedMultiplier: 1.22, damageMultiplier: 0.62, speedVariance: [0.90, 1.02, 1.14, 1.26, 1.38] }, // ТРЕЩОТНИК: трещотка щёлкает нервно из всех четырёх углов поля
+		enem5: { movementStyle: 'straight',    cadence: 0.72, telegraphMs: 620, speedMultiplier: 1.10, damageMultiplier: 1.05, speedVariance: [0.86, 0.97, 1.09, 1.21, 1.33] }  // ШУРШАЛО: чучело смешивает почерк всех четверых и закрывает зоны одну за другой
 	}
 };
 

@@ -11,11 +11,11 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.75, speed: 1.11, damage: 1.15, telegraphMultiplier: 0.89, surpriseChance: 0.21, maxActiveAttacks: 16 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'straight', cadence: 1.10, telegraphMs: 950, speedMultiplier: 0.90, damageMultiplier: 0.95, speedVariance: [0.82, 0.90, 0.98, 1.06, 1.14] }, // LEFT_COLUMN: ровное давление колонной
-		enem2: { movementStyle: 'drift', cadence: 0.98, telegraphMs: 820, speedMultiplier: 1.02, damageMultiplier: 1.00, speedVariance: [0.88, 0.97, 1.05, 1.13, 1.20] }, // RIGHT_SPILL: растекается с правого края
-		enem3: { movementStyle: 'weave', cadence: 1.06, telegraphMs: 900, speedMultiplier: 0.96, damageMultiplier: 1.08, speedVariance: [0.84, 0.94, 1.04, 1.14, 1.22] }, // RING_PAIRS: раскачивающиеся пары
-		enem4: { movementStyle: 'accelerate', cadence: 0.90, telegraphMs: 710, speedMultiplier: 1.10, damageMultiplier: 1.04, speedVariance: [0.90, 1.00, 1.10, 1.18, 1.24] }, // DUAL_ASCENT: ускоряющийся подъём
-		enem5: { movementStyle: 'lateRush', cadence: 0.80, telegraphMs: 740, speedMultiplier: 1.08, damageMultiplier: 1.12, speedVariance: [0.80, 0.92, 1.04, 1.16, 1.26] } // WAVE_TOP: дождь с поздним рывком
+		enem1: { movementStyle: 'accelerate', cadence: 1.10, telegraphMs: 950, speedMultiplier: 0.90, damageMultiplier: 0.95, speedVariance: [0.82, 0.90, 0.98, 1.06, 1.14] }, // LEFT_COLUMN: ровное давление колонной
+		enem2: { movementStyle: 'lateRush', cadence: 0.98, telegraphMs: 820, speedMultiplier: 1.02, damageMultiplier: 1.00, speedVariance: [0.88, 0.97, 1.05, 1.13, 1.20] }, // RIGHT_SPILL: растекается с правого края
+		enem3: { movementStyle: 'pause', cadence: 1.06, telegraphMs: 900, speedMultiplier: 0.96, damageMultiplier: 1.08, speedVariance: [0.84, 0.94, 1.04, 1.14, 1.22] }, // RING_PAIRS: раскачивающиеся пары
+		enem4: { movementStyle: 'drift', cadence: 0.90, telegraphMs: 710, speedMultiplier: 1.10, damageMultiplier: 1.04, speedVariance: [0.90, 1.00, 1.10, 1.18, 1.24] }, // DUAL_ASCENT: ускоряющийся подъём
+		enem5: { movementStyle: 'straight', cadence: 0.80, telegraphMs: 740, speedMultiplier: 1.08, damageMultiplier: 1.12, speedVariance: [0.80, 0.92, 1.04, 1.16, 1.26] } // WAVE_TOP: дождь с поздним рывком
 	}
 };
 

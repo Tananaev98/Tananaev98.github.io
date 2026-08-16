@@ -55,13 +55,18 @@ let bossCombatPhase = 1;
 
 // Кривая синхронизирована со свободной прокачкой одного выбранного героя:
 // без дополнительного фарма он подходит к финалу примерно на 159-м уровне.
+// Ревизия 13: baseByType поднят на 40% (было 2600/6500/11500/18500/28000) — Дарьяна
+// (и вообще сильный постоянный DPS) сносила боссов до того, как игрок успевал увидеть
+// механики уровня (замечено на уровне 26). Централизованная правка одним числом на
+// каждый тип — не трогает урон по герою (calculateBossAttackDamage — отдельная формула),
+// только время боя/DPS-бюджет, ровно то, что и нужно было поднять.
 const BOSS_HEALTH_BALANCE = Object.freeze({
     baseByType: Object.freeze({
-        enem1: 2600,
-        enem2: 6500,
-        enem3: 11500,
-        enem4: 18500,
-        enem5: 28000
+        enem1: 3640,
+        enem2: 9100,
+        enem3: 16100,
+        enem4: 25900,
+        enem5: 39200
     }),
     progressionScale: 2.25,
     progressionExponent: 2.1,
@@ -353,6 +358,12 @@ class Enemy {
         this.pauseUntil = 0;
         this.hasTriggeredRush = false;
         this.hitStopUntil = 0; // короткая заморозка движения в момент мощного попадания (hit-stop)
+        // Параметры движения 'wave' — задаются per-атаку из bossAbilities (см. ниже, спавн),
+        // а не хардкодятся в движке. Значения по умолчанию используются, только если
+        // атака не передала свои (например, спавн без указания amplitude/frequency/phase).
+        this.waveAmplitude = 6;
+        this.waveFrequency = 1.2;
+        this.wavePhase = 0;
         this.currentTiltAngle = 0; // текущий угол покачивания (градусы) — нужен для попадания строго по силуэту
         // Создаем DOM элемент для отображения врага
         this.element = this.createEnemyElement();
@@ -477,6 +488,13 @@ class Enemy {
             this.swayTime += this.swaySpeed * deltaSeconds;
             if (this.isCustom && this.movementStyle === 'weave') {
                 this.x = this.clampHorizontal(this.movementOriginX + Math.sin(this.swayTime * 1.35) * 5.5);
+            } else if (this.isCustom && this.movementStyle === 'wave') {
+                // В отличие от 'weave' (фиксированная амплитуда/частота), у 'wave' траектория
+                // задаётся per-атаку из данных уровня — см. spawnEnemyWithParams/executeBossEvent.
+                this.x = this.clampHorizontal(
+                    this.movementOriginX
+                    + Math.sin(this.swayTime * this.waveFrequency + this.wavePhase) * this.waveAmplitude
+                );
             } else if (this.isCustom && this.movementStyle === 'drift') {
                 const driftDirection = this.movementOriginX < 50 ? 1 : -1;
                 this.x = this.clampHorizontal(this.movementOriginX + driftDirection * travelProgress * 10);
@@ -1024,8 +1042,8 @@ function getRandomXPosition() {
  */
 
 
-function spawnEnemyWithParams(type, xPos, yPos, customHP, customDamage, customSpeed, isCustom=false, movementStyle='straight') {
-    
+function spawnEnemyWithParams(type, xPos, yPos, customHP, customDamage, customSpeed, isCustom=false, movementStyle='straight', waveOptions=null) {
+
     if(!bossAlive && !bossM.includes(type)){return};
     
     try {
@@ -1046,7 +1064,15 @@ function spawnEnemyWithParams(type, xPos, yPos, customHP, customDamage, customSp
         enemy.isCustom = isCustom;
         enemy.movementStyle = movementStyle;
         enemy.movementOriginX = spawnX;
-        
+
+        // Траектория 'wave' — параметры приходят из данных уровня (per-атака), а не хардкод.
+        // Если атака не указала своё значение, остаётся дефолт из конструктора Enemy.
+        if (movementStyle === 'wave' && waveOptions) {
+            if (Number.isFinite(waveOptions.waveAmplitude)) enemy.waveAmplitude = waveOptions.waveAmplitude;
+            if (Number.isFinite(waveOptions.waveFrequency)) enemy.waveFrequency = waveOptions.waveFrequency;
+            if (Number.isFinite(waveOptions.wavePhase)) enemy.wavePhase = waveOptions.wavePhase;
+        }
+
         // Переопределяем Y позицию
         enemy.y = yPos;
         enemy.pixelY = (yPos / 100) * enemy.fieldHeight;
@@ -1628,7 +1654,10 @@ function executeBossEvent() {
                     damage,
                     speed,
                     true,
-                    movementStyle
+                    movementStyle,
+                    movementStyle === 'wave'
+                        ? { waveAmplitude: attack.waveAmplitude, waveFrequency: attack.waveFrequency, wavePhase: attack.wavePhase }
+                        : null
                 );
             }, telegraphMs);
         }, attackScheduleOffsets[shotIndex]);

@@ -4,7 +4,7 @@ let factorChar = (lvlNumber * 5) / 100;
 // Открытие Области II «Золотые поля». Свежий старт региона, поэтому темп чуть
 // мягче финала Смешанного леса, но геометрия и почерк каждого босса — новые.
 const bossCombatConfig = {
-	levelCadence: 0.94, damageMultiplier: 1.04, minWaveDelay: 2200, minShotDelay: 155, minTelegraphMs: 560,
+	levelCadence: 0.94, damageMultiplier: 1.941, minWaveDelay: 2200, minShotDelay: 155, minTelegraphMs: 560,
 	phases: [
 		{ phase: 1, minHp: 0.66, cadence: 1.00, speed: 1.00, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.12, maxActiveAttacks: 13 },
 		{ phase: 2, minHp: 0.31, cadence: 0.86, speed: 1.08, damage: 1.12, telegraphMultiplier: 0.93, surpriseChance: 0.22, maxActiveAttacks: 16 },
@@ -12,10 +12,10 @@ const bossCombatConfig = {
 	],
 	bosses: {
 		enem1: { movementStyle: 'straight',    cadence: 1.00, telegraphMs: 880, speedMultiplier: 0.95, damageMultiplier: 0.95, speedVariance: [0.86, 0.94, 1.02, 1.10, 1.18] }, // SOWER_STRIDE: сеятель ровным шагом бросает горстями
-		enem2: { movementStyle: 'accelerate',  cadence: 0.88, telegraphMs: 740, speedMultiplier: 1.10, damageMultiplier: 0.85, speedVariance: [0.88, 0.98, 1.08, 1.18, 1.26] }, // GRAIN_FAN: веерный разброс зерна со сменой ритма
-		enem3: { movementStyle: 'pause',       cadence: 1.20, telegraphMs: 980, speedMultiplier: 0.85, damageMultiplier: 1.12, speedVariance: [0.76, 0.86, 0.96, 1.06, 1.16] }, // LARK_STOOP: редкие тяжёлые пикирования жаворонка
-		enem4: { movementStyle: 'lateRush',    cadence: 0.78, telegraphMs: 620, speedMultiplier: 1.20, damageMultiplier: 0.65, speedVariance: [0.92, 1.02, 1.12, 1.22, 1.30] }, // OVERSEER_URGENCY: нервная скороговорка распорядителя сева
-		enem5: { movementStyle: 'weave',       cadence: 0.75, telegraphMs: 640, speedMultiplier: 1.08, damageMultiplier: 1.06, speedVariance: [0.84, 0.96, 1.08, 1.20, 1.32] }  // HARROW_RECKONING: борона проходит финальным рядом, смешивая почерк всех четверых
+		enem2: { movementStyle: 'weave',  cadence: 0.88, telegraphMs: 740, speedMultiplier: 1.10, damageMultiplier: 0.85, speedVariance: [0.88, 0.98, 1.08, 1.18, 1.26] }, // GRAIN_FAN: веерный разброс зерна со сменой ритма
+		enem3: { movementStyle: 'accelerate',       cadence: 1.20, telegraphMs: 980, speedMultiplier: 0.85, damageMultiplier: 1.12, speedVariance: [0.76, 0.86, 0.96, 1.06, 1.16] }, // LARK_STOOP: редкие тяжёлые пикирования жаворонка
+		enem4: { movementStyle: 'pause',    cadence: 0.78, telegraphMs: 620, speedMultiplier: 1.20, damageMultiplier: 0.65, speedVariance: [0.92, 1.02, 1.12, 1.22, 1.30] }, // OVERSEER_URGENCY: нервная скороговорка распорядителя сева
+		enem5: { movementStyle: 'drift',       cadence: 0.75, telegraphMs: 640, speedMultiplier: 1.08, damageMultiplier: 1.06, speedVariance: [0.84, 0.96, 1.08, 1.20, 1.32] }  // HARROW_RECKONING: борона проходит финальным рядом, смешивая почерк всех четверых
 	}
 };
 

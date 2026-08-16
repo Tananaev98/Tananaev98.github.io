@@ -421,7 +421,8 @@ body {
 }
 
 .boss-attack-telegraph.telegraph-weave,
-.boss-attack-telegraph.telegraph-drift {
+.boss-attack-telegraph.telegraph-drift,
+.boss-attack-telegraph.telegraph-wave {
     border-style: dashed;
 }
 

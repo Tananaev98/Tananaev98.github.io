@@ -11,10 +11,10 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.69, speed: 1.17, damage: 1.21, telegraphMultiplier: 0.86, surpriseChance: 0.27, maxActiveAttacks: 19 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'straight', cadence: 1.04, telegraphMs: 830, speedMultiplier: 1.00, damageMultiplier: 1.03, speedVariance: [0.84, 0.95, 1.06, 1.16, 1.24] }, // RIGHT_COLUMN: ровная жарящая колонна
-		enem2: { movementStyle: 'drift', cadence: 0.92, telegraphMs: 720, speedMultiplier: 1.12, damageMultiplier: 1.06, speedVariance: [0.90, 1.00, 1.10, 1.20, 1.28] }, // LEFT_SLIDE: скользит с левого края
-		enem3: { movementStyle: 'pause', cadence: 1.18, telegraphMs: 1000, speedMultiplier: 0.86, damageMultiplier: 1.24, speedVariance: [0.76, 0.86, 0.96, 1.06, 1.14] }, // BOTTOM_CRUSH: тяжёлое хлебное давление
-		enem4: { movementStyle: 'lateRush', cadence: 0.80, telegraphMs: 600, speedMultiplier: 1.20, damageMultiplier: 1.10, speedVariance: [0.78, 0.92, 1.08, 1.22, 1.34] }, // HIGH_BOUNCE: зависание → падение
+		enem1: { movementStyle: 'lateRush', cadence: 1.04, telegraphMs: 830, speedMultiplier: 1.00, damageMultiplier: 1.03, speedVariance: [0.84, 0.95, 1.06, 1.16, 1.24] }, // RIGHT_COLUMN: ровная жарящая колонна
+		enem2: { movementStyle: 'pause', cadence: 0.92, telegraphMs: 720, speedMultiplier: 1.12, damageMultiplier: 1.06, speedVariance: [0.90, 1.00, 1.10, 1.20, 1.28] }, // LEFT_SLIDE: скользит с левого края
+		enem3: { movementStyle: 'drift', cadence: 1.18, telegraphMs: 1000, speedMultiplier: 0.86, damageMultiplier: 1.24, speedVariance: [0.76, 0.86, 0.96, 1.06, 1.14] }, // BOTTOM_CRUSH: тяжёлое хлебное давление
+		enem4: { movementStyle: 'straight', cadence: 0.80, telegraphMs: 600, speedMultiplier: 1.20, damageMultiplier: 1.10, speedVariance: [0.78, 0.92, 1.08, 1.22, 1.34] }, // HIGH_BOUNCE: зависание → падение
 		enem5: { movementStyle: 'accelerate', cadence: 0.76, telegraphMs: 650, speedMultiplier: 1.16, damageMultiplier: 1.18, speedVariance: [0.92, 1.02, 1.12, 1.22, 1.30] } // H_PAIRS: ритмичные щелчки парами
 	}
 };

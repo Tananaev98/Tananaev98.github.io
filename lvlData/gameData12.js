@@ -4,18 +4,18 @@ let factorChar = (lvlNumber * 5) / 100;
 const bossCombatConfig = {
 	scaleLongComboDamage: true,
 	scaleShortComboDamage: true,
-	levelCadence: 0.80, damageMultiplier: 1.17, minWaveDelay: 2250, minShotDelay: 145, minTelegraphMs: 480,
+	levelCadence: 0.80, damageMultiplier: 0.702, minWaveDelay: 2250, minShotDelay: 145, minTelegraphMs: 480,
 	phases: [
 		{ phase: 1, minHp: 0.66, cadence: 1.00, speed: 1.00, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.12, maxActiveAttacks: 15 },
 		{ phase: 2, minHp: 0.31, cadence: 0.78, speed: 1.11, damage: 1.13, telegraphMultiplier: 0.90, surpriseChance: 0.23, maxActiveAttacks: 19 },
 		{ phase: 3, minHp: 0.00, cadence: 0.64, speed: 1.21, damage: 1.25, telegraphMultiplier: 0.84, surpriseChance: 0.32, maxActiveAttacks: 21 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'straight', cadence: 0.96, telegraphMs: 720, speedMultiplier: 1.08, damageMultiplier: 1.06, speedVariance: [0.88, 0.98, 1.08, 1.18, 1.28] }, // PACK_LEFT_THEN_RIGHT: строевой залп
+		enem1: { movementStyle: 'weave', cadence: 0.96, telegraphMs: 720, speedMultiplier: 1.08, damageMultiplier: 1.06, speedVariance: [0.88, 0.98, 1.08, 1.18, 1.28] }, // PACK_LEFT_THEN_RIGHT: строевой залп
 		enem2: { movementStyle: 'accelerate', cadence: 0.98, telegraphMs: 760, speedMultiplier: 0.94, damageMultiplier: 0.62, speedVariance: [0.82, 0.90, 0.98, 1.06, 1.14] }, // TOP_RAIN: частый, но дробный дождь; не складывать скорость+плотность+урон
-		enem3: { movementStyle: 'pause', cadence: 1.18, telegraphMs: 920, speedMultiplier: 0.88, damageMultiplier: 1.30, speedVariance: [0.76, 0.86, 0.96, 1.08, 1.18] }, // HEAVY_MID: замах дубиной
-		enem4: { movementStyle: 'weave', cadence: 0.94, telegraphMs: 700, speedMultiplier: 1.05, damageMultiplier: 0.58, speedVariance: [0.84, 0.92, 1.00, 1.08, 1.16] }, // FAST_ZIG_HIGH: быстрая серия с одной доминирующей стороной
-		enem5: { movementStyle: 'drift', cadence: 0.68, telegraphMs: 600, speedMultiplier: 1.22, damageMultiplier: 1.24, speedVariance: [0.86, 1.00, 1.14, 1.28, 1.40] } // RHYTHM_PULSE: барабанный пульс L/R
+		enem3: { movementStyle: 'lateRush', cadence: 1.18, telegraphMs: 920, speedMultiplier: 0.88, damageMultiplier: 1.30, speedVariance: [0.76, 0.86, 0.96, 1.08, 1.18] }, // HEAVY_MID: замах дубиной
+		enem4: { movementStyle: 'pause', cadence: 0.94, telegraphMs: 700, speedMultiplier: 1.05, damageMultiplier: 0.58, speedVariance: [0.84, 0.92, 1.00, 1.08, 1.16] }, // FAST_ZIG_HIGH: быстрая серия с одной доминирующей стороной
+		enem5: { movementStyle: 'straight', cadence: 0.68, telegraphMs: 600, speedMultiplier: 1.22, damageMultiplier: 1.24, speedVariance: [0.86, 1.00, 1.14, 1.28, 1.40] } // RHYTHM_PULSE: барабанный пульс L/R
 	}
 };
 

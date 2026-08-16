@@ -8,18 +8,18 @@ let factorChar = (lvlNumber * 5) / 100;
 const bossCombatConfig = {
 	scaleLongComboDamage: true,
 	scaleShortComboDamage: true,
-	levelCadence: 0.72, damageMultiplier: 1.20, minWaveDelay: 2000, minShotDelay: 135, minTelegraphMs: 470,
+	levelCadence: 0.72, damageMultiplier: 1.760, minWaveDelay: 2000, minShotDelay: 135, minTelegraphMs: 470,
 	phases: [
 		{ phase: 1, minHp: 0.66, cadence: 1.00, speed: 1.00, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.14, maxActiveAttacks: 15 },
 		{ phase: 2, minHp: 0.31, cadence: 0.77, speed: 1.13, damage: 1.15, telegraphMultiplier: 0.90, surpriseChance: 0.27, maxActiveAttacks: 19 },
 		{ phase: 3, minHp: 0.00, cadence: 0.63, speed: 1.25, damage: 1.30, telegraphMultiplier: 0.83, surpriseChance: 0.38, maxActiveAttacks: 22 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'drift',    cadence: 1.02, telegraphMs: 820, speedMultiplier: 1.02, damageMultiplier: 0.96, speedVariance: [0.84, 0.94, 1.02, 1.10, 1.18] }, // БАЮНИЩЕ: CENTER_OUT_BELLS — круги расходятся из центра
-		enem2: { movementStyle: 'weave',    cadence: 0.92, telegraphMs: 720, speedMultiplier: 1.08, damageMultiplier: 0.84, speedVariance: [0.86, 0.96, 1.06, 1.16, 1.24] }, // КАРКУН-ВЕЩУН: PERIMETER_FLIGHT — одна дуга поля за серию
-		enem3: { movementStyle: 'lateRush', cadence: 1.05, telegraphMs: 780, speedMultiplier: 0.98, damageMultiplier: 1.10, speedVariance: [0.82, 0.92, 1.02, 1.12, 1.22] }, // ЦЕПНЯК: CHAIN_CHARGE — низкий забег с одного бока, редкий центр
+		enem1: { movementStyle: 'pause',    cadence: 1.02, telegraphMs: 820, speedMultiplier: 1.02, damageMultiplier: 0.96, speedVariance: [0.84, 0.94, 1.02, 1.10, 1.18] }, // БАЮНИЩЕ: CENTER_OUT_BELLS — круги расходятся из центра
+		enem2: { movementStyle: 'drift',    cadence: 0.92, telegraphMs: 720, speedMultiplier: 1.08, damageMultiplier: 0.84, speedVariance: [0.86, 0.96, 1.06, 1.16, 1.24] }, // КАРКУН-ВЕЩУН: PERIMETER_FLIGHT — одна дуга поля за серию
+		enem3: { movementStyle: 'straight', cadence: 1.05, telegraphMs: 780, speedMultiplier: 0.98, damageMultiplier: 1.10, speedVariance: [0.82, 0.92, 1.02, 1.12, 1.22] }, // ЦЕПНЯК: CHAIN_CHARGE — низкий забег с одного бока, редкий центр
 		enem4: { movementStyle: 'accelerate', cadence: 0.84, telegraphMs: 650, speedMultiplier: 1.12, damageMultiplier: 0.68, speedVariance: [0.88, 0.98, 1.08, 1.18, 1.26] }, // СТУПОЛЁТ: BROOM_SWEEP — направленный пролёт метлы
-		enem5: { movementStyle: 'pause',    cadence: 0.75, telegraphMs: 640, speedMultiplier: 1.14, damageMultiplier: 1.08, speedVariance: [0.80, 0.94, 1.08, 1.22, 1.36] }  // ИЗБАЧ: HOUSE_CONVERGE — хранитель порога, смешивает почерк всех четверых и впервые перекрывает низ поля разом
+		enem5: { movementStyle: 'lateRush',    cadence: 0.75, telegraphMs: 640, speedMultiplier: 1.14, damageMultiplier: 1.08, speedVariance: [0.80, 0.94, 1.08, 1.22, 1.36] }  // ИЗБАЧ: HOUSE_CONVERGE — хранитель порога, смешивает почерк всех четверых и впервые перекрывает низ поля разом
 	}
 };
 

@@ -1,343 +1,272 @@
-// ЗАГЛУШКА уровня 39 — контент ещё не написан, это ПОЛНАЯ КОПИЯ механик
-// gameData1.js (расстановка атак, комбо, спрайты — всё как на уровне 1). Единственное,
-// что реально отличается от уровня 1 — damageMultiplier и HP боссов ниже: они посчитаны
-// по формулам, уже используемым в проекте для этой цели (см. scripts/balance-report.js
-// bossHealthMultiplier для HP и историю getBossDamageProgressionMultiplier в saveData.js
-// для урона — revision 9 убрала эту кривую из движка и перенесла в данные, здесь она и
-// применена). Уровень безопасно проходим (числа посчитаны, не взяты с потолка), но
-// ИГРОВОГО ДИЗАЙНА тут нет — просто более сильная версия уровня 1.
-//
-// ПОМЕТКА ДЛЯ ТОГО, КТО (человек или ИИ) будет переписывать механики этого уровня:
-// при замене расстановки атак/комбо НЕ меняйте баланс сложности произвольно — сверяйтесь
-// с тем, на каком уровне героя игрок примерно окажется к этой точке кампании (см.
-// buildFocusedHeroProgression / focusedProgression в scripts/boss-damage-report.js,
-// scripts/temporary-upgrade-report.js — экономика злата уже посчитана) и с его текущими
-// HP/защитой/DPS на этом уровне героя (scripts/balance-report.js, admin-balance-panel.html
-// — там реальная симуляция боя). Итоговый урон удара считается как
-// customDamage × bossMultiplier × phaseMultiplier × damageMultiplier (см.
-// calculateBossAttackDamage в saveData.js) — если поднимаете урон конкретной атаки/босса/фазы, проверяйте, что герой всё ещё
-// не гибнет от одного удара и не тонет в комбо на своём типичном для этого уровня HP,
-// иначе уровень станет непроходимым.
-let lvlNumber = 39; 
+let lvlNumber = 39;
+let factorChar = (lvlNumber * 5) / 100;
 
-// Полный профиль боя уровня: движок только исполняет эти настройки.
+// Уровень 39 — «Исполнение желаний», предфинальный уровень Области IV «Реки и озёра»
+// (финал области — 40-й, Водяной). Это не пять разных боссов, а одна Русалка —
+// Щучья ведьма — в пяти нарастающих обликах (тот же приём, что Баба-яга/Полудница/
+// Царь Горох), НЕ регион-финал сама по себе (isRegionFinal не ставится, x10-бонус
+// не положен), но по прямому требованию должна быть по-настоящему сложным,
+// небанальным боем — не рядовым уровнем с одним боссом вместо пяти.
+//
+// Картинка сверена напрямую (см. §12): одна голова, две руки, один цельный длинный
+// щучий хвост без самопересечений и петель ни в одной из 5 фаз — длина хвоста
+// постоянна, меняются изгиб/сжатие/направление удара; ссадины, порванная одежда
+// и шипы на хвосте нарастают от фазы к фазе. Пять обликов — пять РАЗНЫХ понятий
+// сказочного мотива «исполнения желаний», а не лестница «злее предыдущей» (см. §1.1):
+// ЗАЗЫВ → ОБЕЩАНИЕ → ОБМАН → ПРОКЛЯТИЕ → ИСТИННЫЙ ЛИК.
+//
+// Большая часть обликов — 'wave' (хвост русалки создан для этого архетипа), но
+// НЕ пять одинаковых волн: Зазывная качает широко и медленно, Сулящая — короче и
+// быстрее, Обманная переключается на 'weave' (зигзаг как символ двуличия),
+// Проклятая — 'pause' (проклятие буквально замораживает её на миг), Щучья Ведьма —
+// снова 'wave', но с НАРАСТАЮЩИМ градиентом скорости внутри одной серии (не единая
+// плоская стена — урок с Царём Горохом, см. gameData30.js) и с нежданчиком сразу
+// после кульминационной серии, чтобы расслабляться было нельзя.
 const bossCombatConfig = {
 	scaleLongComboDamage: true,
 	scaleShortComboDamage: true,
-	levelCadence: 1.00,
-	damageMultiplier: 1.733,
-	minWaveDelay: 2600,
-	minShotDelay: 175,
-	minTelegraphMs: 600,
+	levelCadence: 0.80, damageMultiplier: 2.30, minWaveDelay: 1950, minShotDelay: 134, minTelegraphMs: 505,
+	musicMood: 'cunning',
 	phases: [
-		{ phase: 1, minHp: 0.66, cadence: 1.00, speed: 0.94, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.06, maxActiveAttacks: 11, excludedDangerousCombos: 2 },
-		{ phase: 2, minHp: 0.31, cadence: 0.88, speed: 1.03, damage: 1.07, telegraphMultiplier: 0.96, surpriseChance: 0.12, maxActiveAttacks: 13 },
-		{ phase: 3, minHp: 0.00, cadence: 0.76, speed: 1.10, damage: 1.14, telegraphMultiplier: 0.90, surpriseChance: 0.20, maxActiveAttacks: 15 }
+		{ phase: 1, minHp: 0.65, cadence: 1.00, speed: 1.00, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.16, maxActiveAttacks: 16 },
+		{ phase: 2, minHp: 0.30, cadence: 0.78, speed: 1.17, damage: 1.20, telegraphMultiplier: 0.86, surpriseChance: 0.31, maxActiveAttacks: 20 },
+		{ phase: 3, minHp: 0.00, cadence: 0.62, speed: 1.31, damage: 1.36, telegraphMultiplier: 0.77, surpriseChance: 0.43, maxActiveAttacks: 25 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'lateRush', cadence: 1.03, telegraphMs: 920, speedMultiplier: 0.94, damageMultiplier: 0.92, speedVariance: [0.78, 0.88, 0.98, 1.08, 1.18] }, // TOP_HOPS: спокойный прыжок → рывок
-		enem2: { movementStyle: 'drift', cadence: 1.00, telegraphMs: 860, speedMultiplier: 0.98, damageMultiplier: 0.97, speedVariance: [0.90, 0.96, 1.02, 1.08, 1.14] }, // PACK_PAIRS: пары сходятся к центру
-		enem3: { movementStyle: 'pause', cadence: 1.18, telegraphMs: 1080, speedMultiplier: 0.78, damageMultiplier: 1.18, speedVariance: [0.80, 0.86, 0.93, 1.00, 1.08] }, // HEAVY_PRESS: тяжёлые остановки
-		enem4: { movementStyle: 'accelerate', cadence: 0.90, telegraphMs: 720, speedMultiplier: 1.08, damageMultiplier: 1.02, speedVariance: [0.88, 0.98, 1.08, 1.16, 1.22] }, // ASYM_FOX: резкая смена давления
-		enem5: { movementStyle: 'weave', cadence: 0.82, telegraphMs: 780, speedMultiplier: 1.05, damageMultiplier: 1.10, speedVariance: [0.86, 0.94, 1.03, 1.12, 1.20] } // EDGE_ROLL: катится вдоль краёв
+		enem1: {
+			movementStyle: 'wave', cadence: 0.95, telegraphMs: 900, speedMultiplier: 0.92, damageMultiplier: 0.85,
+			speedVariance: [0.84, 0.93, 1.02, 1.11, 1.20],
+			appearMessage: 'ПОДНИМАЕТ ВОЛНЫ'
+		}, // ЗАЗЫВНАЯ РУСАЛКА: широкая медленная манящая волна, самый честный телеграф уровня
+		enem2: {
+			movementStyle: 'wave', cadence: 1.02, telegraphMs: 820, speedMultiplier: 1.00, damageMultiplier: 0.95,
+			speedVariance: [0.85, 0.95, 1.05, 1.15, 1.25],
+			appearMessage: 'СКАЛИТ ЗУБЫ'
+		}, // СУЛЯЩАЯ РУСАЛКА: волна короче и быстрее, ложная щедрость
+		enem3: {
+			movementStyle: 'weave', cadence: 1.10, telegraphMs: 780, speedMultiplier: 1.05, damageMultiplier: 1.05,
+			speedVariance: [0.83, 0.94, 1.05, 1.16, 1.27],
+			appearMessage: 'ВЗБЕСИЛАСЬ ОТ ОБМАНА'
+		}, // ОБМАННАЯ РУСАЛКА: zигзаг вместо волны — символ двуличия, честная смена архетипа
+		enem4: {
+			movementStyle: 'pause', cadence: 0.90, telegraphMs: 760, speedMultiplier: 1.08, damageMultiplier: 1.12,
+			speedVariance: [0.82, 0.94, 1.07, 1.20, 1.33], minFastSideSwitchMs: 800,
+			appearMessage: 'ГЛАЗА ГОРЯТ ПРОКЛЯТЬЕМ'
+		}, // ПРОКЛЯТАЯ РУСАЛКА: проклятие буквально замораживает её на миг перед рывком
+		enem5: {
+			movementStyle: 'wave', cadence: 0.80, telegraphMs: 680, speedMultiplier: 1.15, damageMultiplier: 0.85,
+			healthMultiplier: 1.15,
+			speedVariance: [0.85, 0.99, 1.13, 1.27, 1.41],
+			appearMessage: 'ХВОСТ ХЛЕЩЕТ БЕЗ ПОЩАДЫ'
+		} // ЩУЧЬЯ ВЕДЬМА: истинный лик, катящийся хлёст хвоста с нарастающей скоростью
+		  // внутри серии + нежданчик сразу после кульминации — не единая плоская стена
 	}
 };
 
 const ENEMY_TYPES = {
-	
-	enem11: {  
-        name: 'enem11',                     
-        image: 'images/enemies/regions/1_smesh_les/lvl1/11.webp',  
-        baseHP: 100,                     
-        baseSpeed: 0.020,                  
-        baseDamage: 20,                    
-        spawnWeight: 5,                  
-		baseExp: 0,                     
-        size: '6%'                        
-    },
-	
-	enem22: {  
-        name: 'enem22',                     
-        image: 'images/enemies/regions/1_smesh_les/lvl1/22.webp',  
-        baseHP: 100,                      
-        baseSpeed: 0.020,                  
-        baseDamage: 20,                    
-        spawnWeight: 5,                  
-		baseExp: 0,                      
-        size: '6%'                        
-    },
-	
-	enem33: {  
-        name: 'enem33',                     
-        image: 'images/enemies/regions/1_smesh_les/lvl1/33.webp',  
-        baseHP: 100,                      
-        baseSpeed: 0.020,                 
-        baseDamage: 20,                    
-        spawnWeight: 5,                  
-		baseExp: 0,                     
-        size: '6%'                        
-    },
-	
-	enem44: {  
-        name: 'enem44',                     
-        image: 'images/enemies/regions/1_smesh_les/lvl1/44.webp',  
-        baseHP: 100,                      
-        baseSpeed: 0.020,                 
-        baseDamage: 20,                    
-        spawnWeight: 5,                  
-		baseExp: 0,                       
-        size: '6%'                       
-    },
-	
-	enem55: {  
-        name: 'enem55',                     
-        image: 'images/enemies/regions/1_smesh_les/lvl1/55.webp',  
-        baseHP: 100,                      
-        baseSpeed: 0.020,                 
-        baseDamage: 20,                    
-        spawnWeight: 5,                  
-		baseExp: 0,                      
-        size: '6%'                       
-    },
-	
-    enem1: {  
-        name: 'enem1',                   
-		dispName:  'Побегайчик',
-        image: 'images/enemies/regions/1_smesh_les/lvl1/1.webp',  
-        baseHP: 6822,                      
-        baseSpeed: 0,                  
-        baseDamage: 20,                    
-        spawnWeight: 5,                   
-		baseExp: 250,                      
-        size: '25%',
-        deathAnimation: { preset: 'hopCollapse', durationMs: 1100 }                        
-    },
-    enem2: {  
-        name: 'enem2',
-		dispName:  'Любитель бочков',
-        image: 'images/enemies/regions/1_smesh_les/lvl1/2.webp',
-        baseHP: 40929,
-        baseSpeed: 0,
-        baseDamage: 22,
-        spawnWeight: 15,                  
-		baseExp: 400, 
-        size: '25%',
-        deathAnimation: { preset: 'packBurst', durationMs: 1000 }
-    },
-    enem3: {  
-        name: 'enem3',
-		dispName:  'Косолапый',
-        image: 'images/enemies/regions/1_smesh_les/lvl1/3.webp',
-        baseHP: 54572,
-        baseSpeed: 0,
-        baseDamage: 24,
-        spawnWeight: 20,
-		baseExp: 600, 
-        size: '25%',
-        deathAnimation: { preset: 'heavySink', durationMs: 1400 }                        
-    }, 
-	
-	enem4: {  
-        name: 'enem4',
-		dispName:  'Сестричка',
-        image: 'images/enemies/regions/1_smesh_les/lvl1/4.webp',
-        baseHP: 163716,
-        baseSpeed: 0,
-        baseDamage: 26,
-        spawnWeight: 10,
-		baseExp: 800, 
-        size: '25%',
-        deathAnimation: { preset: 'spinAway', durationMs: 1200 }                        
-    },
-	
-	enem5: {  
-        name: 'enem5',
-		dispName:  'Колобок',
-        image: 'images/enemies/regions/1_smesh_les/lvl1/5.webp',
-        baseHP: 204645,
-        baseSpeed: 0,
-        baseDamage: 28,
-        spawnWeight: 5,
-		baseExp: 0, 
-        size: '25%',
-        deathAnimation: { preset: 'rollOff', durationMs: 1300 }                        
-    },
 
-	
+	enem11: { image: 'images/enemies/regions/4_rech_ozer/lvl39/11.webp', baseHP: 100, baseSpeed: 0.020, baseDamage: 20, spawnWeight: 5, baseExp: 0, size: '6%' },
+	enem22: { image: 'images/enemies/regions/4_rech_ozer/lvl39/22.webp', baseHP: 100, baseSpeed: 0.020, baseDamage: 20, spawnWeight: 5, baseExp: 0, size: '6%' },
+	enem33: { image: 'images/enemies/regions/4_rech_ozer/lvl39/33.webp', baseHP: 100, baseSpeed: 0.020, baseDamage: 20, spawnWeight: 5, baseExp: 0, size: '6%' },
+	enem44: { image: 'images/enemies/regions/4_rech_ozer/lvl39/44.webp', baseHP: 100, baseSpeed: 0.020, baseDamage: 20, spawnWeight: 5, baseExp: 0, size: '6%' },
+	enem55: { image: 'images/enemies/regions/4_rech_ozer/lvl39/55.webp', baseHP: 100, baseSpeed: 0.020, baseDamage: 20, spawnWeight: 5, baseExp: 0, size: '6%' },
+
+	enem1: {
+		name: 'enem1', dispName: 'Русалка', image: 'images/enemies/regions/4_rech_ozer/lvl39/1.webp',
+		baseHP: 2600 + (2600 * factorChar), baseSpeed: 0, baseDamage: 20 + (20 * factorChar),
+		spawnWeight: 5, baseExp: 340, xPos: 50, size: '26%',
+		deathAnimation: { preset: 'ripplesDissolve', durationMs: 1250 }
+	},
+	enem2: {
+		name: 'enem2', dispName: 'Сулящая Русалка', image: 'images/enemies/regions/4_rech_ozer/lvl39/2.webp',
+		baseHP: 6500 + (6500 * factorChar), baseSpeed: 0, baseDamage: 22 + (22 * factorChar),
+		spawnWeight: 15, baseExp: 480, xPos: 50, size: '26%',
+		deathAnimation: { preset: 'tailCoilFade', durationMs: 1250 }
+	},
+	enem3: {
+		name: 'enem3', dispName: 'Обманная Русалка', image: 'images/enemies/regions/4_rech_ozer/lvl39/3.webp',
+		baseHP: 11500 + (11500 * factorChar), baseSpeed: 0, baseDamage: 24 + (24 * factorChar),
+		spawnWeight: 20, baseExp: 600, xPos: 50, size: '27%',
+		deathAnimation: { preset: 'clawSlash', durationMs: 1400 }
+	},
+	enem4: {
+		name: 'enem4', dispName: 'Проклятая Русалка', image: 'images/enemies/regions/4_rech_ozer/lvl39/4.webp',
+		baseHP: 18500 + (18500 * factorChar), baseSpeed: 0, baseDamage: 26 + (26 * factorChar),
+		spawnWeight: 10, baseExp: 740, xPos: 50, size: '28%',
+		deathAnimation: { preset: 'curseShatter', durationMs: 1450 }
+	},
+	enem5: {
+		name: 'enem5', dispName: 'Щучья Ведьма', image: 'images/enemies/regions/4_rech_ozer/lvl39/5.webp',
+		baseHP: 28000 + (28000 * factorChar), baseSpeed: 0, baseDamage: 28 + (28 * factorChar),
+		spawnWeight: 5, baseExp: 0, xPos: 50, size: '31%',
+		deathAnimation: { preset: 'scaleWitherSink', durationMs: 1700 }
+	}
 };
 
- let bossM = ['enem1', 'enem2', 'enem3', 'enem4', 'enem5'];
- let timeNextBoss = 5;
- const bossInterval = 5;
- 
-  //spawnEnemyWithParams(type, xPos, yPos, customHP, customDamage, customSpeed)
- //spawnEnemyWithParams('enem4', 40, 20, 1, 200, 40 )
- 
- 
- 
- // Уровень 1 — звери и Колобок
- // Атаки по краям (x≤18 / x≥78) или ниже босса; быстрые (speed≥16) — y≤12.
- // У каждого босса свой архетип под образ.
+const attackDamage = {
+	enem1: { light: Math.round(ENEMY_TYPES.enem1.baseDamage * 0.28), medium: Math.round(ENEMY_TYPES.enem1.baseDamage * 0.40), heavy: Math.round(ENEMY_TYPES.enem1.baseDamage * 0.54) },
+	enem2: { light: Math.round(ENEMY_TYPES.enem2.baseDamage * 0.26), medium: Math.round(ENEMY_TYPES.enem2.baseDamage * 0.36), heavy: Math.round(ENEMY_TYPES.enem2.baseDamage * 0.50) },
+	enem3: { light: Math.round(ENEMY_TYPES.enem3.baseDamage * 0.24), medium: Math.round(ENEMY_TYPES.enem3.baseDamage * 0.34), heavy: Math.round(ENEMY_TYPES.enem3.baseDamage * 0.56) },
+	enem4: { light: Math.round(ENEMY_TYPES.enem4.baseDamage * 0.22), medium: Math.round(ENEMY_TYPES.enem4.baseDamage * 0.32), heavy: Math.round(ENEMY_TYPES.enem4.baseDamage * 0.46) },
+	enem5: { light: Math.round(ENEMY_TYPES.enem5.baseDamage * 0.24), medium: Math.round(ENEMY_TYPES.enem5.baseDamage * 0.34), heavy: Math.round(ENEMY_TYPES.enem5.baseDamage * 0.58) }
+};
 
- const bossAbilities = [
-	// ===== Побегайчик: TOP_HOPS — заячьи скачки сверху с краёв =====
-	{ boss: 'enem1', type: 'enem11', xPos: 10, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 5 },  //0
-	{ boss: 'enem1', type: 'enem11', xPos: 14, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 4 },  //1
-	{ boss: 'enem1', type: 'enem11', xPos: 90, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 5 },  //2
-	{ boss: 'enem1', type: 'enem11', xPos: 86, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 4 },  //3
-	{ boss: 'enem1', type: 'enem11', xPos: 8,  yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 3 },  //4
-	{ boss: 'enem1', type: 'enem11', xPos: 92, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 3 },  //5
-	// быстрые скачки — 5 сверху
-	{ boss: 'enem1', type: 'enem11', xPos: 8,  yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 22 }, //6
-	{ boss: 'enem1', type: 'enem11', xPos: 14, yPos: 7,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 26 }, //7
-	{ boss: 'enem1', type: 'enem11', xPos: 18, yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 20 }, //8
-	{ boss: 'enem1', type: 'enem11', xPos: 86, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 24 }, //9
-	{ boss: 'enem1', type: 'enem11', xPos: 92, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 28 }, //10
-	// микс: лапка + рывок
-	{ boss: 'enem1', type: 'enem11', xPos: 10, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, //11
-	{ boss: 'enem1', type: 'enem11', xPos: 90, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 14 }, //12
-	{ boss: 'enem1', type: 'enem11', xPos: 12, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 24 }, //13
-	{ boss: 'enem1', type: 'enem11', xPos: 88, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 22 }, //14
-	{ boss: 'enem1', type: 'enem11', xPos: 10, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 4 },  //15
+let bossM = ['enem1', 'enem2', 'enem3', 'enem4', 'enem5'];
+let timeNextBoss = 5;
+const bossInterval = 5;
 
-	// ===== Любитель бочков: PACK_PAIRS — волчья стая, пары L+R на одной Y =====
-	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 12, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 4 },  //0
-	{ boss: 'enem2', type: 'enem22', xPos: 90, yPos: 12, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 5 },  //1
-	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 24, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 3 },  //2
-	{ boss: 'enem2', type: 'enem22', xPos: 90, yPos: 24, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 4 },  //3
-	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 36, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 5 },  //4
-	{ boss: 'enem2', type: 'enem22', xPos: 90, yPos: 36, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 3 },  //5
-	{ boss: 'enem2', type: 'enem22', xPos: 8,  yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 4 },  //6
-	{ boss: 'enem2', type: 'enem22', xPos: 92, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 5 },  //7
-	// рывок стаи — 3 быстрых сверху с обоих краёв
-	{ boss: 'enem2', type: 'enem22', xPos: 12, yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 22 }, //8
-	{ boss: 'enem2', type: 'enem22', xPos: 88, yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 26 }, //9
-	{ boss: 'enem2', type: 'enem22', xPos: 16, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 20 }, //10
-	// микс: пара + рывок
-	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 12 }, //11
-	{ boss: 'enem2', type: 'enem22', xPos: 90, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 14 }, //12
-	{ boss: 'enem2', type: 'enem22', xPos: 14, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 24 }, //13
-	{ boss: 'enem2', type: 'enem22', xPos: 86, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 24 }, //14
-	{ boss: 'enem2', type: 'enem22', xPos: 90, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 4 },  //15
+const bossAbilities = [
+	// ===== Зазывная Русалка: 'wave', широкая медленная манящая волна =====
+	{ boss: 'enem1', type: 'enem11', xPos: 16, yPos: 38, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 6,  waveAmplitude: 9,  waveFrequency: 0.6 },  //0
+	{ boss: 'enem1', type: 'enem11', xPos: 84, yPos: 37, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 6,  waveAmplitude: 10, waveFrequency: 0.5 },  //1
+	{ boss: 'enem1', type: 'enem11', xPos: 24, yPos: 28, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 8,  waveAmplitude: 7,  waveFrequency: 0.8 },  //2
+	{ boss: 'enem1', type: 'enem11', xPos: 76, yPos: 27, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 9,  waveAmplitude: 8,  waveFrequency: 0.7 },  //3
+	{ boss: 'enem1', type: 'enem11', xPos: 12, yPos: 14, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 13, waveAmplitude: 11, waveFrequency: 0.4 }, //4
+	{ boss: 'enem1', type: 'enem11', xPos: 88, yPos: 13, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 14, waveAmplitude: 12, waveFrequency: 0.4 }, //5
+	{ boss: 'enem1', type: 'enem11', xPos: 40, yPos: 6,  customHP: 1, customDamage: attackDamage.enem1.heavy,  customSpeed: 18, waveAmplitude: 6,  waveFrequency: 1.1 },  //6
+	{ boss: 'enem1', type: 'enem11', xPos: 60, yPos: 5,  customHP: 1, customDamage: attackDamage.enem1.heavy,  customSpeed: 19, waveAmplitude: 7,  waveFrequency: 1.0 },  //7
+	{ boss: 'enem1', type: 'enem11', xPos: 20, yPos: 45, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 5,  waveAmplitude: 6,  waveFrequency: 0.5 },  //8
+	{ boss: 'enem1', type: 'enem11', xPos: 80, yPos: 45, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 5,  waveAmplitude: 6,  waveFrequency: 0.5 },  //9
+	{ boss: 'enem1', type: 'enem11', xPos: 45, yPos: 19, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 12, waveAmplitude: 7,  waveFrequency: 0.9 },  //10
+	{ boss: 'enem1', type: 'enem11', xPos: 55, yPos: 18, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 12, waveAmplitude: 8,  waveFrequency: 0.8 },  //11
+	{ boss: 'enem1', type: 'enem11', xPos: 50, yPos: 46, customHP: 1, customDamage: attackDamage.enem1.heavy,  customSpeed: 4,  waveAmplitude: 13, waveFrequency: 0.35 }, //12 самая широкая манящая волна, честный долгий телеграф
+	{ boss: 'enem1', type: 'enem11', xPos: 38, yPos: 15, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 13, waveAmplitude: 7,  waveFrequency: 1.0 },  //13
+	{ boss: 'enem1', type: 'enem11', xPos: 62, yPos: 14, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 13, waveAmplitude: 8,  waveFrequency: 0.9 },  //14
+	{ boss: 'enem1', type: 'enem11', xPos: 30, yPos: 6,  customHP: 1, customDamage: attackDamage.enem1.heavy,  customSpeed: 20, waveAmplitude: 6,  waveFrequency: 1.2 }   //15 нежданчик: первый намёк, что зов манит не к добру
 
-	// ===== Косолапый: HEAVY_PRESS — тяжёлые лапы снизу + редкий рык сверху =====
-	{ boss: 'enem3', type: 'enem33', xPos: 12, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 2 },  //0
-	{ boss: 'enem3', type: 'enem33', xPos: 28, yPos: 52, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3 },  //1
-	{ boss: 'enem3', type: 'enem33', xPos: 44, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 2 },  //2
-	{ boss: 'enem3', type: 'enem33', xPos: 60, yPos: 52, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3 },  //3
-	{ boss: 'enem3', type: 'enem33', xPos: 76, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 2 },  //4
-	{ boss: 'enem3', type: 'enem33', xPos: 8,  yPos: 22, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 4 },  //5
-	{ boss: 'enem3', type: 'enem33', xPos: 92, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 5 },  //6
-	{ boss: 'enem3', type: 'enem33', xPos: 10, yPos: 36, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3 },  //7
-	// рык — 2 быстрых сверху
-	{ boss: 'enem3', type: 'enem33', xPos: 10, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 20 }, //8
-	{ boss: 'enem3', type: 'enem33', xPos: 90, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 24 }, //9
-	// микс: лапа + рык
-	{ boss: 'enem3', type: 'enem33', xPos: 36, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3 },  //10
-	{ boss: 'enem3', type: 'enem33', xPos: 12, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 22 }, //11
-	{ boss: 'enem3', type: 'enem33', xPos: 72, yPos: 52, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 2 },  //12
-	{ boss: 'enem3', type: 'enem33', xPos: 88, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 22 }, //13
-	{ boss: 'enem3', type: 'enem33', xPos: 8,  yPos: 40, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 4 },  //14
-	{ boss: 'enem3', type: 'enem33', xPos: 92, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 5 },  //15
+	,
+	// ===== Сулящая Русалка: 'wave', волна короче и быстрее — ложная щедрость =====
+	{ boss: 'enem2', type: 'enem22', xPos: 18, yPos: 30, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 9,  waveAmplitude: 7,  waveFrequency: 1.3 },  //0
+	{ boss: 'enem2', type: 'enem22', xPos: 82, yPos: 29, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 10, waveAmplitude: 8,  waveFrequency: 1.2 },  //1
+	{ boss: 'enem2', type: 'enem22', xPos: 26, yPos: 20, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 13, waveAmplitude: 5,  waveFrequency: 1.7 },  //2
+	{ boss: 'enem2', type: 'enem22', xPos: 74, yPos: 19, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 14, waveAmplitude: 6,  waveFrequency: 1.6 },  //3
+	{ boss: 'enem2', type: 'enem22', xPos: 12, yPos: 10, customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 18, waveAmplitude: 9,  waveFrequency: 1.0 },  //4
+	{ boss: 'enem2', type: 'enem22', xPos: 88, yPos: 9,  customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 19, waveAmplitude: 10, waveFrequency: 0.9 },  //5
+	{ boss: 'enem2', type: 'enem22', xPos: 40, yPos: 6,  customHP: 1, customDamage: attackDamage.enem2.heavy,  customSpeed: 23, waveAmplitude: 5,  waveFrequency: 2.0 },  //6
+	{ boss: 'enem2', type: 'enem22', xPos: 60, yPos: 5,  customHP: 1, customDamage: attackDamage.enem2.heavy,  customSpeed: 24, waveAmplitude: 6,  waveFrequency: 1.9 },  //7
+	{ boss: 'enem2', type: 'enem22', xPos: 20, yPos: 44, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 6,  waveAmplitude: 5,  waveFrequency: 0.8 },  //8
+	{ boss: 'enem2', type: 'enem22', xPos: 80, yPos: 44, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 6,  waveAmplitude: 5,  waveFrequency: 0.9 },  //9
+	{ boss: 'enem2', type: 'enem22', xPos: 32, yPos: 33, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 11, waveAmplitude: 7,  waveFrequency: 1.4 },  //10
+	{ boss: 'enem2', type: 'enem22', xPos: 68, yPos: 32, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 11, waveAmplitude: 8,  waveFrequency: 1.3 },  //11
+	{ boss: 'enem2', type: 'enem22', xPos: 50, yPos: 46, customHP: 1, customDamage: attackDamage.enem2.heavy,  customSpeed: 5,  waveAmplitude: 6,  waveFrequency: 0.7 },  //12 «щедрый» медленный дар в центре — обманчиво честный
+	{ boss: 'enem2', type: 'enem22', xPos: 16, yPos: 16, customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 16, waveAmplitude: 9,  waveFrequency: 1.5 },  //13
+	{ boss: 'enem2', type: 'enem22', xPos: 84, yPos: 15, customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 16, waveAmplitude: 8,  waveFrequency: 1.6 },  //14
+	{ boss: 'enem2', type: 'enem22', xPos: 50, yPos: 6,  customHP: 1, customDamage: attackDamage.enem2.heavy,  customSpeed: 25, waveAmplitude: 6,  waveFrequency: 2.1 }   //15 нежданчик: обещание срывается в резкий укол
 
-	// ===== Сестричка: ASYM_FOX — хитрая: густо слева, сюрприз справа =====
-	{ boss: 'enem4', type: 'enem44', xPos: 8,  yPos: 10, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 4 },  //0
-	{ boss: 'enem4', type: 'enem44', xPos: 10, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 5 },  //1
-	{ boss: 'enem4', type: 'enem44', xPos: 12, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 3 },  //2
-	{ boss: 'enem4', type: 'enem44', xPos: 8,  yPos: 34, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 4 },  //3
-	{ boss: 'enem4', type: 'enem44', xPos: 14, yPos: 42, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 5 },  //4
-	{ boss: 'enem4', type: 'enem44', xPos: 10, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 3 },  //5
-	// редкие «обманки» справа
-	{ boss: 'enem4', type: 'enem44', xPos: 90, yPos: 22, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 4 },  //6
-	{ boss: 'enem4', type: 'enem44', xPos: 92, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 5 },  //7
-	// сюрприз-рывки — 4 справа сверху
-	{ boss: 'enem4', type: 'enem44', xPos: 88, yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 24 }, //8
-	{ boss: 'enem4', type: 'enem44', xPos: 92, yPos: 7,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 28 }, //9
-	{ boss: 'enem4', type: 'enem44', xPos: 86, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 22 }, //10
-	{ boss: 'enem4', type: 'enem44', xPos: 90, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 26 }, //11
-	// микс: левый хвост + правый рывок
-	{ boss: 'enem4', type: 'enem44', xPos: 10, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 12 }, //12
-	{ boss: 'enem4', type: 'enem44', xPos: 90, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 24 }, //13
-	{ boss: 'enem4', type: 'enem44', xPos: 8,  yPos: 40, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 4 },  //14
-	{ boss: 'enem4', type: 'enem44', xPos: 92, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 20 }, //15
+	,
+	// ===== Обманная Русалка: 'weave', зигзаг вместо волны — символ двуличия =====
+	{ boss: 'enem3', type: 'enem33', xPos: 18, yPos: 24, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 10 }, //0  Row A: «щедрый дар» (same-start)
+	{ boss: 'enem3', type: 'enem33', xPos: 82, yPos: 23, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 10 }, //1  Row A
+	{ boss: 'enem3', type: 'enem33', xPos: 26, yPos: 33, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 6 },  //2  Row A → мягкий финал («дар» сдержан)
+	{ boss: 'enem3', type: 'enem33', xPos: 74, yPos: 32, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 6 },  //3  Row A → мягкий финал
+	{ boss: 'enem3', type: 'enem33', xPos: 12, yPos: 12, customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 22 }, //4  Row B → тот же старт, но обман: резкий укол вместо дара
+	{ boss: 'enem3', type: 'enem33', xPos: 88, yPos: 11, customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 23 }, //5  Row B
+	{ boss: 'enem3', type: 'enem33', xPos: 40, yPos: 7,  customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 21 }, //6
+	{ boss: 'enem3', type: 'enem33', xPos: 60, yPos: 6,  customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 22 }, //7
+	{ boss: 'enem3', type: 'enem33', xPos: 20, yPos: 45, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 5 },  //8
+	{ boss: 'enem3', type: 'enem33', xPos: 80, yPos: 45, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 5 },  //9
+	{ boss: 'enem3', type: 'enem33', xPos: 45, yPos: 19, customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 14 }, //10
+	{ boss: 'enem3', type: 'enem33', xPos: 55, yPos: 18, customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 14 }, //11
+	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 45, customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 4 },  //12
+	{ boss: 'enem3', type: 'enem33', xPos: 32, yPos: 15, customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 16 }, //13
+	{ boss: 'enem3', type: 'enem33', xPos: 68, yPos: 14, customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 16 }, //14
+	{ boss: 'enem3', type: 'enem33', xPos: 30, yPos: 5,  customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 24 }  //15 нежданчик
 
-	// ===== Колобок: EDGE_ROLL — катится по периметру флангов =====
-	{ boss: 'enem5', type: 'enem55', xPos: 8,  yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 5 },  //0
-	{ boss: 'enem5', type: 'enem55', xPos: 8,  yPos: 20, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //1
-	{ boss: 'enem5', type: 'enem55', xPos: 8,  yPos: 32, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 5 },  //2
-	{ boss: 'enem5', type: 'enem55', xPos: 8,  yPos: 44, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 3 },  //3
-	{ boss: 'enem5', type: 'enem55', xPos: 92, yPos: 12, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //4
-	{ boss: 'enem5', type: 'enem55', xPos: 92, yPos: 24, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 5 },  //5
-	{ boss: 'enem5', type: 'enem55', xPos: 92, yPos: 36, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 3 },  //6
-	{ boss: 'enem5', type: 'enem55', xPos: 92, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //7
-	// ускорение качения — 3 быстрых сверху
-	{ boss: 'enem5', type: 'enem55', xPos: 10, yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 22 }, //8
-	{ boss: 'enem5', type: 'enem55', xPos: 90, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 26 }, //9
-	{ boss: 'enem5', type: 'enem55', xPos: 14, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 24 }, //10
-	// микс: оборот + рывок
-	{ boss: 'enem5', type: 'enem55', xPos: 8,  yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 12 }, //11
-	{ boss: 'enem5', type: 'enem55', xPos: 92, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14 }, //12
-	{ boss: 'enem5', type: 'enem55', xPos: 12, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 20 }, //13
-	{ boss: 'enem5', type: 'enem55', xPos: 88, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 24 }, //14
-	{ boss: 'enem5', type: 'enem55', xPos: 10, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //15
+	,
+	// ===== Проклятая Русалка: 'pause', проклятие замораживает на миг перед рывком =====
+	{ boss: 'enem4', type: 'enem44', xPos: 16, yPos: 30, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 7 },  //0
+	{ boss: 'enem4', type: 'enem44', xPos: 84, yPos: 29, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 7 },  //1
+	{ boss: 'enem4', type: 'enem44', xPos: 24, yPos: 20, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 10 }, //2
+	{ boss: 'enem4', type: 'enem44', xPos: 76, yPos: 19, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 10 }, //3
+	{ boss: 'enem4', type: 'enem44', xPos: 12, yPos: 10, customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 15 }, //4
+	{ boss: 'enem4', type: 'enem44', xPos: 88, yPos: 9,  customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 15 }, //5
+	{ boss: 'enem4', type: 'enem44', xPos: 40, yPos: 6,  customHP: 1, customDamage: attackDamage.enem4.heavy,  customSpeed: 22 }, //6
+	{ boss: 'enem4', type: 'enem44', xPos: 60, yPos: 5,  customHP: 1, customDamage: attackDamage.enem4.heavy,  customSpeed: 23 }, //7
+	{ boss: 'enem4', type: 'enem44', xPos: 20, yPos: 44, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 5 },  //8
+	{ boss: 'enem4', type: 'enem44', xPos: 80, yPos: 44, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 5 },  //9
+	{ boss: 'enem4', type: 'enem44', xPos: 45, yPos: 18, customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 13 }, //10
+	{ boss: 'enem4', type: 'enem44', xPos: 55, yPos: 17, customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 13 }, //11
+	{ boss: 'enem4', type: 'enem44', xPos: 10, yPos: 46, customHP: 1, customDamage: attackDamage.enem4.heavy,  customSpeed: 4 },  //12
+	{ boss: 'enem4', type: 'enem44', xPos: 90, yPos: 46, customHP: 1, customDamage: attackDamage.enem4.heavy,  customSpeed: 4 },  //13
+	{ boss: 'enem4', type: 'enem44', xPos: 50, yPos: 7,  customHP: 1, customDamage: attackDamage.enem4.heavy,  customSpeed: 24 }, //14
+	{ boss: 'enem4', type: 'enem44', xPos: 30, yPos: 6,  customHP: 1, customDamage: attackDamage.enem4.heavy,  customSpeed: 25 }  //15 нежданчик
+
+	,
+	// ===== Щучья Ведьма: 'wave', хлёст хвоста — растущая скорость внутри серии, финал =====
+	{ boss: 'enem5', type: 'enem55', xPos: 14, yPos: 28, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 7,  waveAmplitude: 8,  waveFrequency: 1.2 },  //0  Труба прибоя (2-sync герольд)
+	{ boss: 'enem5', type: 'enem55', xPos: 26, yPos: 28, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 7,  waveAmplitude: 8,  waveFrequency: 1.2 },  //1  герольд
+	{ boss: 'enem5', type: 'enem55', xPos: 5,  yPos: 36, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4,  waveAmplitude: 6,  waveFrequency: 1.0 },  //2  ХЛЁСТ ХВОСТА — старт волны, медленно
+	{ boss: 'enem5', type: 'enem55', xPos: 17, yPos: 36, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 5,  waveAmplitude: 6,  waveFrequency: 1.1 },  //3  хлёст
+	{ boss: 'enem5', type: 'enem55', xPos: 29, yPos: 36, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 6,  waveAmplitude: 7,  waveFrequency: 1.3 },  //4  хлёст
+	{ boss: 'enem5', type: 'enem55', xPos: 41, yPos: 36, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 7,  waveAmplitude: 7,  waveFrequency: 1.4 },  //5  хлёст
+	{ boss: 'enem5', type: 'enem55', xPos: 53, yPos: 36, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 8,  waveAmplitude: 8,  waveFrequency: 1.6 },  //6  хлёст
+	{ boss: 'enem5', type: 'enem55', xPos: 65, yPos: 36, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 9,  waveAmplitude: 8,  waveFrequency: 1.7 },  //7  хлёст
+	{ boss: 'enem5', type: 'enem55', xPos: 77, yPos: 36, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 10, waveAmplitude: 9,  waveFrequency: 1.9 },  //8  хлёст
+	{ boss: 'enem5', type: 'enem55', xPos: 89, yPos: 36, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 11, waveAmplitude: 9,  waveFrequency: 2.0 },  //9  хлёст — конец ряда, самый быстрый край
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 47, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 7,  waveAmplitude: 12, waveFrequency: 0.7 }, //10 solo — по-настоящему тяжёлый одиночный удар, честный долгий телеграф
+	{ boss: 'enem5', type: 'enem55', xPos: 38, yPos: 11, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 22, waveAmplitude: 6,  waveFrequency: 2.3 },  //11 нежданчик: бьёт сразу после хлёста, асимметрично
+	{ boss: 'enem5', type: 'enem55', xPos: 63, yPos: 10, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 23, waveAmplitude: 7,  waveFrequency: 2.4 },  //12 второй асимметричный нежданчик
+	{ boss: 'enem5', type: 'enem55', xPos: 20, yPos: 13, customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 16, waveAmplitude: 7,  waveFrequency: 1.8 },  //13
+	{ boss: 'enem5', type: 'enem55', xPos: 80, yPos: 12, customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 17, waveAmplitude: 8,  waveFrequency: 1.9 },  //14
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 6,  customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 27, waveAmplitude: 6,  waveFrequency: 2.6 }   //15 финальный самый резкий выстрел, чистый центр
 ];
 
- const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 280, bossDelayAbDop: 5200 }, // скачет часто
-	{ boss: 'enem2', bossDelayAb: 320, bossDelayAbDop: 5600 }, // стая давит ритмом
-	{ boss: 'enem3', bossDelayAb: 380, bossDelayAbDop: 6400 }, // тяжёлый, длинная пауза
-	{ boss: 'enem4', bossDelayAb: 260, bossDelayAbDop: 5000 }, // хитрая вспышка
-	{ boss: 'enem5', bossDelayAb: 240, bossDelayAbDop: 4800 }, // катится без остановки
+const mBossDelayAb = [
+	{ boss: 'enem1', bossDelayAb: 380, bossDelayAbDop: 6000 }, // манящая широкая волна, щедрая передышка
+	{ boss: 'enem2', bossDelayAb: 260, bossDelayAbDop: 4500 }, // ложная щедрость, темп чуть плотнее
+	{ boss: 'enem3', bossDelayAb: 220, bossDelayAbDop: 4000 }, // двуличный зигзаг, самый быстрый темп уровня
+	{ boss: 'enem4', bossDelayAb: 400, bossDelayAbDop: 6300 }, // проклятие-заморозка, долгая пауза перед рывком
+	{ boss: 'enem5', bossDelayAb: 200, bossDelayAbDop: 6600 }, // внутри хлёста плотно, отдых после кульминации — самый долгий во всём уровне
 ];
 
- const bossAbilitiesDop = [
-	// Побегайчик
-	{ boss: 'enem1', indexAbilities: [0, 1, 2, 3] },
-	{ boss: 'enem1', indexAbilities: [6, 7, 8, 9, 10] },
-	{ boss: 'enem1', indexAbilities: [6, 8, 10, 7, 9] },
-	{ boss: 'enem1', indexAbilities: [0, 6, 2, 9] },
-	{ boss: 'enem1', indexAbilities: [4, 5, 13, 14] },
-	{ boss: 'enem1', indexAbilities: [11, 13, 12, 14, 15] },
+const bossAbilitiesDop = [
+	// Зазывная Русалка
 	{ boss: 'enem1', indexAbilities: [0, 1] },
-	{ boss: 'enem1', indexAbilities: [2, 3] },
+	{ boss: 'enem1', indexAbilities: [6, 7] },
+	{ boss: 'enem1', indexAbilities: [2, 3, 10] },
+	{ boss: 'enem1', indexAbilities: [4, 5, 11] },
+	{ boss: 'enem1', indexAbilities: [0, 2, 4, 6] }, // ритмическая
+	{ boss: 'enem1', indexAbilities: [0, 1, 8, 9] }, // опасная сигнатурная — same-start с [0,1]
+	{ boss: 'enem1', indexAbilities: [0, 1] }, // chunk-break
+	{ boss: 'enem1', indexAbilities: [12, 13, 14, 15] }, // смешанная поздняя
 
-	// Любитель бочков
-	{ boss: 'enem2', indexAbilities: [0, 1, 2, 3, 4, 5] },
-	{ boss: 'enem2', indexAbilities: [0, 1, 6, 7] },
-	{ boss: 'enem2', indexAbilities: [8, 9, 10] },
-	{ boss: 'enem2', indexAbilities: [8, 10, 9] },
-	{ boss: 'enem2', indexAbilities: [2, 8, 3, 9] },
-	{ boss: 'enem2', indexAbilities: [11, 13, 12, 14, 15] },
-	{ boss: 'enem2', indexAbilities: [0, 2, 4] },
-	{ boss: 'enem2', indexAbilities: [1, 3, 5] },
+	// Сулящая Русалка
+	{ boss: 'enem2', indexAbilities: [0, 1] },
+	{ boss: 'enem2', indexAbilities: [6, 7] },
+	{ boss: 'enem2', indexAbilities: [2, 3, 10] },
+	{ boss: 'enem2', indexAbilities: [4, 5, 11] },
+	{ boss: 'enem2', indexAbilities: [8, 9, 0, 1] }, // ритмическая
+	{ boss: 'enem2', indexAbilities: [0, 1, 6, 7] }, // опасная сигнатурная — same-start с [0,1]
+	{ boss: 'enem2', indexAbilities: [0, 1] }, // chunk-break
+	{ boss: 'enem2', indexAbilities: [12, 13, 14, 15] }, // смешанная поздняя
 
-	// Косолапый
-	{ boss: 'enem3', indexAbilities: [0, 1, 2, 3, 4] },
-	{ boss: 'enem3', indexAbilities: [0, 2, 4, 5, 6] },
+	// Обманная Русалка — «одинаковое начало, разный конец» как буквальное воплощение обмана
+	{ boss: 'enem3', indexAbilities: [0, 1] }, // герольд-пара
 	{ boss: 'enem3', indexAbilities: [8, 9] },
-	{ boss: 'enem3', indexAbilities: [5, 8, 6, 9] },
-	{ boss: 'enem3', indexAbilities: [10, 11, 12, 13] },
-	{ boss: 'enem3', indexAbilities: [1, 7, 11, 14, 15] },
-	{ boss: 'enem3', indexAbilities: [0, 2, 4] },
-	{ boss: 'enem3', indexAbilities: [5, 7] },
+	{ boss: 'enem3', indexAbilities: [0, 1, 2, 3] }, // «щедрый дар»: тот же старт, мягкий финал
+	{ boss: 'enem3', indexAbilities: [0, 1, 4, 5] }, // «обман»: тот же старт [0,1], но резкий укол вместо дара — опасная сигнатурная
+	{ boss: 'enem3', indexAbilities: [6, 7, 12] },
+	{ boss: 'enem3', indexAbilities: [10, 11, 13, 14] },
+	{ boss: 'enem3', indexAbilities: [0, 1] }, // chunk-break
+	{ boss: 'enem3', indexAbilities: [12, 13, 14, 15] }, // смешанная поздняя
 
-	// Сестричка
-	{ boss: 'enem4', indexAbilities: [0, 1, 2, 3, 4, 5] },
-	{ boss: 'enem4', indexAbilities: [0, 2, 4, 6] },
-	{ boss: 'enem4', indexAbilities: [8, 9, 10, 11] },
-	{ boss: 'enem4', indexAbilities: [8, 10, 9, 11] },
-	{ boss: 'enem4', indexAbilities: [1, 8, 5, 11] },
-	{ boss: 'enem4', indexAbilities: [12, 13, 14, 15] },
-	{ boss: 'enem4', indexAbilities: [0, 1, 2] },
-	{ boss: 'enem4', indexAbilities: [6, 7] },
+	// Проклятая Русалка
+	{ boss: 'enem4', indexAbilities: [0, 1] },
+	{ boss: 'enem4', indexAbilities: [2, 3] },
+	{ boss: 'enem4', indexAbilities: [4, 5, 8, 9] },
+	{ boss: 'enem4', indexAbilities: [10, 11, 12, 13] },
+	{ boss: 'enem4', indexAbilities: [0, 1, 2, 3] }, // ритмическая
+	{ boss: 'enem4', indexAbilities: [0, 1, 6, 7] }, // опасная сигнатурная — same-start с [0,1]
+	{ boss: 'enem4', indexAbilities: [0, 1] }, // chunk-break
+	{ boss: 'enem4', indexAbilities: [12, 13, 14, 15] }, // смешанная поздняя
 
-	// Колобок
-	{ boss: 'enem5', indexAbilities: [0, 1, 2, 3] },
-	{ boss: 'enem5', indexAbilities: [4, 5, 6, 7] },
-	{ boss: 'enem5', indexAbilities: [0, 1, 2, 3, 4, 5, 6, 7] },
-	{ boss: 'enem5', indexAbilities: [8, 9, 10] },
-	{ boss: 'enem5', indexAbilities: [0, 8, 4, 9] },
-	{ boss: 'enem5', indexAbilities: [11, 13, 12, 14, 15] },
-	{ boss: 'enem5', indexAbilities: [0, 1, 2] },
-	{ boss: 'enem5', indexAbilities: [4, 5, 6] },
+	// Щучья Ведьма — «Хлёст хвоста», кульминация уровня (2-sync герольд → 8-sync хлёст → мгновенный нежданчик)
+	{ boss: 'enem5', indexAbilities: [0, 1] }, // Труба прибоя (2-sync)
+	{ boss: 'enem5', indexAbilities: [10] }, // solo — по-настоящему тяжёлый одиночный удар
+	{ boss: 'enem5', indexAbilities: [13, 14] }, // асимметричная пара — опасность не только по краям
+	{ boss: 'enem5', indexAbilities: [0, 1, 2, 3, 4] }, // хвост начинает собираться (5-sync, промежуточная)
+	{ boss: 'enem5', indexAbilities: [0, 1, 2, 3, 4, 10] }, // ритмическая: сборка → тяжёлый одиночный
+	{ boss: 'enem5', indexAbilities: [2, 3, 4, 5, 6, 7, 8, 9, 11] }, // ХЛЁСТ ХВОСТА + мгновенный нежданчик сразу после (опасная сигнатурная, кульминация уровня)
+	{ boss: 'enem5', indexAbilities: [2, 3, 4, 5] }, // chunk-break: обрывается на середине хлёста
+	{ boss: 'enem5', indexAbilities: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 15] }, // смешанная поздняя: герольд + полный хлёст + оба нежданчика, самая длинная связка уровня
 ];

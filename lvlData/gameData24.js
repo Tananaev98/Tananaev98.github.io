@@ -7,18 +7,18 @@ let factorChar = (lvlNumber * 5) / 100;
 // только из четырёх углов / финал смешивает почерк всех четверых и впервые
 // перекрывает всю нижнюю полосу разом.
 const bossCombatConfig = {
-	levelCadence: 0.81, damageMultiplier: 1.12, minWaveDelay: 1980, minShotDelay: 138, minTelegraphMs: 515,
+	levelCadence: 0.81, damageMultiplier: 1.568, minWaveDelay: 1980, minShotDelay: 138, minTelegraphMs: 515,
 	phases: [
 		{ phase: 1, minHp: 0.63, cadence: 1.00, speed: 1.00, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.17, maxActiveAttacks: 17 },
 		{ phase: 2, minHp: 0.29, cadence: 0.78, speed: 1.15, damage: 1.20, telegraphMultiplier: 0.87, surpriseChance: 0.30, maxActiveAttacks: 19 },
 		{ phase: 3, minHp: 0.00, cadence: 0.65, speed: 1.24, damage: 1.32, telegraphMultiplier: 0.80, surpriseChance: 0.40, maxActiveAttacks: 22 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'pause',      cadence: 1.21, telegraphMs: 1000, speedMultiplier: 0.82, damageMultiplier: 1.20, speedVariance: [0.74, 0.84, 0.96, 1.08, 1.20] }, // МЕШКАЧ: редкие тяжёлые удары мешка, долгая пауза
-		enem2: { movementStyle: 'straight',   cadence: 1.03, telegraphMs: 815, speedMultiplier: 0.94, damageMultiplier: 0.93, speedVariance: [0.87, 0.94, 1.02, 1.10, 1.18] }, // ЖЕРНОВЕНЬ: давление снизу катящегося жёрнова
-		enem3: { movementStyle: 'weave',      cadence: 0.91, telegraphMs: 720, speedMultiplier: 1.04, damageMultiplier: 0.92, speedVariance: [0.84, 0.94, 1.04, 1.14, 1.24] }, // МУЧЕНЬ: зигзаг ковша без нижней стены
-		enem4: { movementStyle: 'lateRush',   cadence: 0.77, telegraphMs: 605, speedMultiplier: 1.21, damageMultiplier: 0.62, speedVariance: [0.92, 1.05, 1.18, 1.31, 1.44] }, // КРЫЛОРЕЗ: щелчки лопастей только из четырёх углов
-		enem5: { movementStyle: 'accelerate', cadence: 0.70, telegraphMs: 600, speedMultiplier: 1.19, damageMultiplier: 1.12, speedVariance: [0.78, 0.91, 1.04, 1.17, 1.30] }  // БЕЛОРУЧКА: смешивает почерк всех четверых, впервые перекрывает низ поля разом
+		enem1: { movementStyle: 'lateRush',      cadence: 1.21, telegraphMs: 1000, speedMultiplier: 0.82, damageMultiplier: 1.20, speedVariance: [0.74, 0.84, 0.96, 1.08, 1.20] }, // МЕШКАЧ: редкие тяжёлые удары мешка, долгая пауза
+		enem2: { movementStyle: 'pause',   cadence: 1.03, telegraphMs: 815, speedMultiplier: 0.94, damageMultiplier: 0.93, speedVariance: [0.87, 0.94, 1.02, 1.10, 1.18] }, // ЖЕРНОВЕНЬ: давление снизу катящегося жёрнова
+		enem3: { movementStyle: 'straight',      cadence: 0.91, telegraphMs: 720, speedMultiplier: 1.04, damageMultiplier: 0.92, speedVariance: [0.84, 0.94, 1.04, 1.14, 1.24] }, // МУЧЕНЬ: зигзаг ковша без нижней стены
+		enem4: { movementStyle: 'weave',   cadence: 0.77, telegraphMs: 605, speedMultiplier: 1.21, damageMultiplier: 0.62, speedVariance: [0.92, 1.05, 1.18, 1.31, 1.44] }, // КРЫЛОРЕЗ: щелчки лопастей только из четырёх углов
+		enem5: { movementStyle: 'accelerate', cadence: 0.70, telegraphMs: 600, speedMultiplier: 1.19, damageMultiplier: 1.12, speedVariance: [0.78, 0.91, 1.04, 1.17, 1.30] }  // БЕЛОРУЧКА: разгоняется, только когда деваться некуда — а к финалу собирает жерновой вес в один рывок
 	}
 };
 

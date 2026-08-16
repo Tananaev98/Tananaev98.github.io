@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Архив паттернов боссов — живой</title>
+<style>
+  :root {
+    --bg: #12161d;
+    --surface: #1a2029;
+    --surface-2: #212836;
+    --ink: #e9e6dd;
+    --muted: #8b93a3;
+    --hairline: #2b3241;
+    --accent: #c9a15a;
+    --good: #52b8ab;
+    --bad: #e5674f;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: ui-monospace, "SF Mono", Consolas, monospace;
+    font-size: 13px; margin: 0; padding: 32px 24px 64px;
+  }
+  .page { max-width: 1400px; margin: 0 auto; }
+  h1 { font-family: Georgia, "Iowan Old Style", serif; font-size: 22px; margin: 0 0 6px; }
+  .subhead { color: var(--muted); font-size: 12.5px; max-width: 90ch; margin: 0 0 20px; }
+  .panel { background: var(--surface); border: 1px solid var(--hairline); border-radius: 8px; padding: 16px 18px; margin-bottom: 18px; }
+  .panel h2 { font-family: Georgia, serif; font-size: 14px; margin: 0 0 10px; color: var(--accent); }
+  .status-line { color: var(--muted); font-size: 12px; }
+  .table-scroll { overflow-x: auto; overflow-y: auto; max-height: 65vh; border: 1px solid var(--hairline); border-radius: 8px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; min-width: 900px; }
+  thead th {
+    position: sticky; top: 0; background: var(--surface);
+    text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--hairline); white-space: nowrap;
+  }
+  tbody td { padding: 6px 10px; border-bottom: 1px solid var(--hairline); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  tbody tr:hover { background: var(--surface-2); }
+  tbody tr.stat-warn td:first-child { box-shadow: inset 3px 0 0 var(--bad); }
+  .num-bad { color: var(--bad); font-weight: 600; }
+  .num-ok { color: var(--good); }
+  code { background: var(--surface-2); padding: 1px 5px; border-radius: 3px; }
+  .dist-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+  .dist-card { background: var(--surface-2); border: 1px solid var(--hairline); border-radius: 6px; padding: 10px 12px; }
+  .dist-card h3 { margin: 0 0 6px; font-size: 12px; color: var(--accent); }
+  .dist-row { display: flex; justify-content: space-between; font-size: 12px; padding: 2px 0; }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Архив паттернов боссов — живой источник</h1>
+  <p class="subhead">
+    Ничего не хранит и не дублирует: при каждом открытии страница заново скачивает и
+    ИСПОЛНЯЕТ (<code>new Function</code>, реальные значения объектов, не переизобретённые)
+    каждый <code>lvlData/gameDataN.js</code> от 1 до <code>LEVEL_HANDCRAFTED_THROUGH</code>
+    (читается из <code>lvlData/areas.js</code> — этот порог сам растёт по мере наполнения
+    уровней). Архетип-комментарии и нежданчики — единственное, что не является исполняемым
+    JS (комментарии), поэтому вытаскиваются простым regex по сырому тексту файла; всё
+    остальное (movementStyle, cadence, telegraphMs, множители, диапазон customSpeed) —
+    настоящие значения из настоящего объекта уровня.
+  </p>
+
+  <div class="panel">
+    <h2>Ход загрузки</h2>
+    <div class="status-line" id="statusLine">Загружается…</div>
+  </div>
+
+  <div class="panel" id="distPanel" style="display:none;">
+    <h2>Распределение movementStyle по роли (вся загруженная кампания)</h2>
+    <p class="subhead" style="margin:0 0 12px;">
+      Красным — стиль, взявший больше 30% для этой роли (статистический перекос,
+      см. lvlData/Правила создания уровня.txt §1.1). Перед добавлением/правкой уровня
+      избегать красных стилей для соответствующей роли без явной причины.
+    </p>
+    <div class="dist-grid" id="distGrid"></div>
+  </div>
+
+  <div class="panel" id="tablePanel" style="display:none;">
+    <h2>Таблица по каждому боссу каждого уровня</h2>
+    <div class="table-scroll"><table id="mainTable"></table></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+
+const ROLE_LABEL = {
+    enem1: 'enem1 (знакомство)', enem2: 'enem2 (быстрые серии)', enem3: 'enem3 (тяжёлые)',
+    enem4: 'enem4 (нервный)', enem5: 'enem5 (финал)'
+};
+const ALL_STYLES = ['straight', 'weave', 'accelerate', 'lateRush', 'pause', 'drift', 'wave'];
+
+async function fetchText(path) {
+    const res = await fetch(`${path}?t=${Date.now()}`);
+    if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`);
+    return res.text();
+}
+
+// Достаёт архетип-комментарий и сигнатурные/нежданчик-заметки простым regex —
+// это единственное, что не является исполняемым JS (комментарии стираются парсером).
+function extractComments(source) {
+    const bossesIdx = source.indexOf('bosses:');
+    const braceStart = source.indexOf('{', bossesIdx);
+    let depth = 0, endIdx = -1;
+    for (let i = braceStart; i < source.length; i++) {
+        if (source[i] === '{') depth++;
+        else if (source[i] === '}') { depth--; if (depth === 0) { endIdx = i; break; } }
+    }
+    const bossesBlock = braceStart >= 0 && endIdx > 0 ? source.slice(braceStart, endIdx + 1) : '';
+    const archetypes = {};
+    const archRe = /(enem[1-5]):\s*\{[^}]*\}\s*,?\s*(?:\/\/\s*([^\n\r]*))?/g;
+    let m;
+    while ((m = archRe.exec(bossesBlock))) {
+        archetypes[m[1]] = (m[2] || '').trim();
+    }
+
+    const dopIdx = source.indexOf('const bossAbilitiesDop');
+    const notes = {};
+    if (dopIdx >= 0) {
+        const block = source.slice(dopIdx);
+        const noteRe = /boss:\s*'(enem[1-5])'[^}]*\}\s*,?\s*(?:\/\/\s*([^\n\r]*))?/g;
+        let nm;
+        while ((nm = noteRe.exec(block))) {
+            const comment = (nm[2] || '').trim();
+            if (comment && /сигнатур|нежданчик|опасн|same-start|chunk-break/i.test(comment)) {
+                (notes[nm[1]] ||= []).push(comment);
+            }
+        }
+    }
+    return { archetypes, notes };
+}
+
+// Исполняет реальный gameDataN.js в изолированном контексте и возвращает реальные
+// объекты (bossCombatConfig, ENEMY_TYPES, bossAbilities) — не переизобретённые регексом.
+function evalLevel(source) {
+    const sandbox = {};
+    const fn = new Function('sandbox', `
+        ${source}
+        sandbox.lvlNumber = lvlNumber;
+        sandbox.bossCombatConfig = bossCombatConfig;
+        sandbox.ENEMY_TYPES = ENEMY_TYPES;
+        sandbox.bossAbilities = typeof bossAbilities !== 'undefined' ? bossAbilities : [];
+    `);
+    fn(sandbox);
+    return sandbox;
+}
+
+function speedRangeByBoss(bossAbilities) {
+    const out = {};
+    for (const a of bossAbilities) {
+        (out[a.boss] ||= []).push(a.customSpeed);
+    }
+    const result = {};
+    for (const [boss, list] of Object.entries(out)) {
+        const uniq = [...new Set(list)].sort((a, b) => a - b);
+        result[boss] = { min: uniq[0], max: uniq[uniq.length - 1], distinctCount: uniq.length };
+    }
+    return result;
+}
+
+async function loadLevelRow(level) {
+    const source = await fetchText(`lvlData/gameData${level}.js`);
+    const { bossCombatConfig, ENEMY_TYPES } = evalLevel(source);
+    const { archetypes, notes } = extractComments(source);
+    const speeds = speedRangeByBoss(evalLevel(source).bossAbilities);
+
+    return ['enem1', 'enem2', 'enem3', 'enem4', 'enem5'].map((boss) => {
+        const profile = bossCombatConfig?.bosses?.[boss] || {};
+        const s = speeds[boss] || {};
+        const bossNotes = notes[boss] || [];
+        const sig = bossNotes.find((c) => /сигнатур|опасн/i.test(c)) || '';
+        const twist = bossNotes.find((c) => /нежданчик|chunk-break|same-start/i.test(c)) || '';
+        return {
+            level, boss, role: ROLE_LABEL[boss],
+            name: ENEMY_TYPES?.[boss]?.dispName || '',
+            movementStyle: profile.movementStyle || '',
+            archetype: archetypes[boss] || '',
+            cadence: profile.cadence ?? '',
+            telegraphMs: profile.telegraphMs ?? '',
+            speedMultiplier: profile.speedMultiplier ?? '',
+            damageMultiplier: profile.damageMultiplier ?? '',
+            healthMultiplier: profile.healthMultiplier ?? '',
+            speedRange: s.min !== undefined ? `${s.min}-${s.max} (${s.distinctCount})` : '',
+            signature: sig, twist
+        };
+    });
+}
+
+function renderDistribution(rows) {
+    const byRole = {};
+    for (const r of rows) {
+        (byRole[r.boss] ||= {});
+        byRole[r.boss][r.movementStyle] = (byRole[r.boss][r.movementStyle] || 0) + 1;
+    }
+    const grid = $('distGrid');
+    grid.innerHTML = Object.entries(byRole).map(([boss, dist]) => {
+        const total = Object.values(dist).reduce((a, b) => a + b, 0);
+        const rowsHtml = ALL_STYLES.map((style) => {
+            const count = dist[style] || 0;
+            const pct = total > 0 ? (count / total * 100) : 0;
+            const cls = pct > 30 ? 'num-bad' : '';
+            return `<div class="dist-row"><span>${style}</span><span class="${cls}">${count} (${pct.toFixed(0)}%)</span></div>`;
+        }).join('');
+        return `<div class="dist-card"><h3>${ROLE_LABEL[boss] || boss}</h3>${rowsHtml}</div>`;
+    }).join('');
+    $('distPanel').style.display = '';
+}
+
+function renderTable(rows) {
+    const table = $('mainTable');
+    const thead = `<thead><tr>
+        <th>Ур.</th><th>Босс</th><th>Роль</th><th>Имя</th><th>movementStyle</th>
+        <th>Архетип</th><th>cadence</th><th>telegraphMs</th><th>speedMult</th>
+        <th>dmgMult</th><th>hpMult</th><th>customSpeed</th><th>Сигнатура</th><th>Нежданчик</th>
+    </tr></thead>`;
+    const byRole = {};
+    for (const r of rows) {
+        (byRole[r.boss] ||= {});
+        byRole[r.boss][r.movementStyle] = (byRole[r.boss][r.movementStyle] || 0) + 1;
+    }
+    const totalByRole = {};
+    for (const [boss, dist] of Object.entries(byRole)) totalByRole[boss] = Object.values(dist).reduce((a, b) => a + b, 0);
+
+    const body = rows.map((r) => {
+        const total = totalByRole[r.boss] || 1;
+        const count = byRole[r.boss]?.[r.movementStyle] || 0;
+        const warn = (count / total) > 0.30 && total >= 5;
+        return `<tr class="${warn ? 'stat-warn' : ''}">
+            <td>${r.level}</td><td>${r.boss}</td><td>${r.role}</td><td>${r.name}</td>
+            <td class="${warn ? 'num-bad' : ''}">${r.movementStyle}</td>
+            <td>${r.archetype}</td><td>${r.cadence}</td><td>${r.telegraphMs}</td>
+            <td>${r.speedMultiplier}</td><td>${r.damageMultiplier}</td><td>${r.healthMultiplier}</td>
+            <td>${r.speedRange}</td><td>${r.signature}</td><td>${r.twist}</td>
+        </tr>`;
+    }).join('');
+    table.innerHTML = thead + `<tbody>${body}</tbody>`;
+    $('tablePanel').style.display = '';
+}
+
+async function run() {
+    try {
+        const areasSource = await fetchText('lvlData/areas.js');
+        const areasSandbox = {};
+        new Function('sandbox', `${areasSource}\nsandbox.LEVEL_HANDCRAFTED_THROUGH = LEVEL_HANDCRAFTED_THROUGH;`)(areasSandbox);
+        const through = areasSandbox.LEVEL_HANDCRAFTED_THROUGH || 25;
+
+        const allRows = [];
+        for (let level = 1; level <= through; level++) {
+            $('statusLine').textContent = `Загружаю уровень ${level} / ${through}…`;
+            try {
+                const rows = await loadLevelRow(level);
+                allRows.push(...rows);
+            } catch (err) {
+                console.warn(`Уровень ${level} пропущен:`, err.message);
+            }
+        }
+        $('statusLine').textContent = `Готово: ${allRows.length} строк, уровни 1-${through} (LEVEL_HANDCRAFTED_THROUGH из lvlData/areas.js).`;
+        renderDistribution(allRows);
+        renderTable(allRows);
+    } catch (err) {
+        $('statusLine').textContent = `Ошибка: ${err.message}`;
+        console.error(err);
+    }
+}
+
+run();
+</script>
+</body>
+</html>

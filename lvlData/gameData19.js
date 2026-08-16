@@ -6,18 +6,18 @@ let factorChar = (lvlNumber * 5) / 100;
 // одиночные вылазки из нор по углам / горизонтальные пары с одного бока /
 // финал смешивает почерк всех четверых и впервые перекрывает низ поля разом.
 const bossCombatConfig = {
-	levelCadence: 0.89, damageMultiplier: 1.07, minWaveDelay: 2080, minShotDelay: 148, minTelegraphMs: 540,
+	levelCadence: 0.89, damageMultiplier: 1.997, minWaveDelay: 2080, minShotDelay: 148, minTelegraphMs: 540,
 	phases: [
 		{ phase: 1, minHp: 0.65, cadence: 1.00, speed: 1.00, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.15, maxActiveAttacks: 15 },
 		{ phase: 2, minHp: 0.30, cadence: 0.83, speed: 1.10, damage: 1.15, telegraphMultiplier: 0.90, surpriseChance: 0.25, maxActiveAttacks: 17 },
 		{ phase: 3, minHp: 0.00, cadence: 0.70, speed: 1.19, damage: 1.27, telegraphMultiplier: 0.83, surpriseChance: 0.35, maxActiveAttacks: 20 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'weave',      cadence: 1.00, telegraphMs: 720, speedMultiplier: 1.05, damageMultiplier: 0.86, speedVariance: [0.86, 0.96, 1.06, 1.16, 1.26] }, // ПРОЖОРЕНЬ: плотный рой сыплется сверху
-		enem2: { movementStyle: 'accelerate', cadence: 0.90, telegraphMs: 780, speedMultiplier: 0.98, damageMultiplier: 1.02, speedVariance: [0.84, 0.94, 1.04, 1.14, 1.24] }, // ЛАТНИК: встречные зигзаг-тараны панциря
-		enem3: { movementStyle: 'lateRush',   cadence: 0.78, telegraphMs: 600, speedMultiplier: 1.18, damageMultiplier: 0.64, speedVariance: [0.90, 1.02, 1.14, 1.26, 1.38] }, // ЗУБОСКАЛ: нервные вылазки из нор по углам
-		enem4: { movementStyle: 'drift',      cadence: 0.88, telegraphMs: 730, speedMultiplier: 1.06, damageMultiplier: 0.88, speedVariance: [0.85, 0.95, 1.05, 1.15, 1.25] }, // ХЛЕБОКРАД: горизонтальные пары с одного бока
-		enem5: { movementStyle: 'pause',      cadence: 0.74, telegraphMs: 630, speedMultiplier: 1.12, damageMultiplier: 1.08, speedVariance: [0.82, 0.95, 1.08, 1.21, 1.34] }  // НЕНАСЫТЬ: смешивает почерк всех четверых, впервые перекрывает низ поля разом
+		enem1: { movementStyle: 'pause',      cadence: 1.00, telegraphMs: 720, speedMultiplier: 1.05, damageMultiplier: 0.86, speedVariance: [0.86, 0.96, 1.06, 1.16, 1.26] }, // ПРОЖОРЕНЬ: плотный рой сыплется сверху
+		enem2: { movementStyle: 'drift', cadence: 0.90, telegraphMs: 780, speedMultiplier: 0.98, damageMultiplier: 1.02, speedVariance: [0.84, 0.94, 1.04, 1.14, 1.24] }, // ЛАТНИК: встречные зигзаг-тараны панциря
+		enem3: { movementStyle: 'weave',   cadence: 0.78, telegraphMs: 600, speedMultiplier: 1.18, damageMultiplier: 0.64, speedVariance: [0.90, 1.02, 1.14, 1.26, 1.38] }, // ЗУБОСКАЛ: нервные вылазки из нор по углам
+		enem4: { movementStyle: 'accelerate',      cadence: 0.88, telegraphMs: 730, speedMultiplier: 1.06, damageMultiplier: 0.88, speedVariance: [0.85, 0.95, 1.05, 1.15, 1.25] }, // ХЛЕБОКРАД: горизонтальные пары с одного бока
+		enem5: { movementStyle: 'lateRush',      cadence: 0.74, telegraphMs: 630, speedMultiplier: 1.12, damageMultiplier: 1.08, speedVariance: [0.82, 0.95, 1.08, 1.21, 1.34] }  // НЕНАСЫТЬ: голоден до всего поля разом — жрёт пространство роем, тараном и вылазками из нор без разбора
 	}
 };
 

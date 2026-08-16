@@ -7,18 +7,18 @@ let factorChar = (lvlNumber * 5) / 100;
 // вспугнутого перепела / финал смешивает почерк всех четверых и впервые
 // перекрывает всю нижнюю полосу разом.
 const bossCombatConfig = {
-	levelCadence: 0.87, damageMultiplier: 1.08, minWaveDelay: 2060, minShotDelay: 146, minTelegraphMs: 535,
+	levelCadence: 0.87, damageMultiplier: 1.656, minWaveDelay: 2060, minShotDelay: 146, minTelegraphMs: 535,
 	phases: [
 		{ phase: 1, minHp: 0.65, cadence: 1.00, speed: 1.00, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.15, maxActiveAttacks: 15 },
 		{ phase: 2, minHp: 0.30, cadence: 0.82, speed: 1.11, damage: 1.16, telegraphMultiplier: 0.89, surpriseChance: 0.26, maxActiveAttacks: 17 },
 		{ phase: 3, minHp: 0.00, cadence: 0.69, speed: 1.20, damage: 1.28, telegraphMultiplier: 0.82, surpriseChance: 0.36, maxActiveAttacks: 20 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'straight',   cadence: 1.02, telegraphMs: 800, speedMultiplier: 0.96, damageMultiplier: 0.95, speedVariance: [0.86, 0.94, 1.02, 1.10, 1.18] }, // КОЛЮЧЕНЬ: колючие удары с одного бока за раз
-		enem2: { movementStyle: 'weave',      cadence: 0.90, telegraphMs: 740, speedMultiplier: 1.06, damageMultiplier: 0.90, speedVariance: [0.85, 0.95, 1.05, 1.15, 1.25] }, // БЕЛОЗУБКА: симметричные вспышки улыбки с флангов
-		enem3: { movementStyle: 'pause',      cadence: 1.18, telegraphMs: 970, speedMultiplier: 0.85, damageMultiplier: 1.17, speedVariance: [0.76, 0.86, 0.98, 1.10, 1.22] }, // ГОРЧАК: редкие горькие уколы, долгая пауза
+		enem1: { movementStyle: 'drift',   cadence: 1.02, telegraphMs: 800, speedMultiplier: 0.96, damageMultiplier: 0.95, speedVariance: [0.86, 0.94, 1.02, 1.10, 1.18] }, // КОЛЮЧЕНЬ: колючие удары с одного бока за раз
+		enem2: { movementStyle: 'straight',      cadence: 0.90, telegraphMs: 740, speedMultiplier: 1.06, damageMultiplier: 0.90, speedVariance: [0.85, 0.95, 1.05, 1.15, 1.25] }, // БЕЛОЗУБКА: симметричные вспышки улыбки с флангов
+		enem3: { movementStyle: 'accelerate',      cadence: 1.18, telegraphMs: 970, speedMultiplier: 0.85, damageMultiplier: 1.17, speedVariance: [0.76, 0.86, 0.98, 1.10, 1.22] }, // ГОРЧАК: редкие горькие уколы, долгая пауза
 		enem4: { movementStyle: 'lateRush',   cadence: 0.79, telegraphMs: 620, speedMultiplier: 1.16, damageMultiplier: 0.68, speedVariance: [0.89, 1.02, 1.15, 1.28, 1.41] }, // КЛОХТУН: давление снизу вспугнутого перепела
-		enem5: { movementStyle: 'accelerate', cadence: 0.74, telegraphMs: 630, speedMultiplier: 1.13, damageMultiplier: 1.08, speedVariance: [0.83, 0.96, 1.09, 1.22, 1.35] }  // ПОЛЕВИК: смешивает почерк всех четверых, впервые перекрывает низ поля разом
+		enem5: { movementStyle: 'pause', cadence: 0.74, telegraphMs: 630, speedMultiplier: 1.13, damageMultiplier: 1.08, speedVariance: [0.83, 0.96, 1.09, 1.22, 1.35] }  // ПОЛЕВИК: хозяин поля выжидает дольше всех — и обрушивает разом то, что остальные четверо делали по одному
 	}
 };
 

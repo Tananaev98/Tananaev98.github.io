@@ -11,11 +11,11 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.74, speed: 1.12, damage: 1.16, telegraphMultiplier: 0.89, surpriseChance: 0.22, maxActiveAttacks: 16 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'accelerate', cadence: 0.96, telegraphMs: 800, speedMultiplier: 1.06, damageMultiplier: 0.96, speedVariance: [0.86, 0.96, 1.06, 1.16, 1.24] }, // NEEDLE_BURST: короткие ускоряющиеся иглы
-		enem2: { movementStyle: 'drift', cadence: 1.02, telegraphMs: 850, speedMultiplier: 1.00, damageMultiplier: 1.01, speedVariance: [0.88, 0.98, 1.07, 1.15, 1.22] }, // RIGHT_HISS: угрозы сползают справа
-		enem3: { movementStyle: 'weave', cadence: 1.10, telegraphMs: 970, speedMultiplier: 0.88, damageMultiplier: 1.15, speedVariance: [0.82, 0.91, 1.00, 1.10, 1.18] }, // HEAT_GUST: волнообразные порывы
-		enem4: { movementStyle: 'lateRush', cadence: 0.92, telegraphMs: 760, speedMultiplier: 1.08, damageMultiplier: 1.06, speedVariance: [0.80, 0.92, 1.05, 1.18, 1.28] }, // DROP_FRUIT: падение → внезапный разгон
-		enem5: { movementStyle: 'pause', cadence: 1.14, telegraphMs: 1040, speedMultiplier: 0.86, damageMultiplier: 1.18, speedVariance: [0.78, 0.88, 0.98, 1.08, 1.16] } // BOTTOM_WALL: вязкая кисельная стена
+		enem1: { movementStyle: 'lateRush', cadence: 0.96, telegraphMs: 800, speedMultiplier: 1.06, damageMultiplier: 0.96, speedVariance: [0.86, 0.96, 1.06, 1.16, 1.24] }, // NEEDLE_BURST: короткие ускоряющиеся иглы
+		enem2: { movementStyle: 'pause', cadence: 1.02, telegraphMs: 850, speedMultiplier: 1.00, damageMultiplier: 1.01, speedVariance: [0.88, 0.98, 1.07, 1.15, 1.22] }, // RIGHT_HISS: угрозы сползают справа
+		enem3: { movementStyle: 'drift', cadence: 1.10, telegraphMs: 970, speedMultiplier: 0.88, damageMultiplier: 1.15, speedVariance: [0.82, 0.91, 1.00, 1.10, 1.18] }, // HEAT_GUST: волнообразные порывы
+		enem4: { movementStyle: 'straight', cadence: 0.92, telegraphMs: 760, speedMultiplier: 1.08, damageMultiplier: 1.06, speedVariance: [0.80, 0.92, 1.05, 1.18, 1.28] }, // DROP_FRUIT: падение → внезапный разгон
+		enem5: { movementStyle: 'weave', cadence: 1.14, telegraphMs: 1040, speedMultiplier: 0.86, damageMultiplier: 1.18, speedVariance: [0.78, 0.88, 0.98, 1.08, 1.16] } // BOTTOM_WALL: вязкая кисельная стена
 	}
 };
 

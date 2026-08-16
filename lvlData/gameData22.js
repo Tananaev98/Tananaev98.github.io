@@ -7,18 +7,18 @@ let factorChar = (lvlNumber * 5) / 100;
 // земли / финал смешивает почерк всех четверых и впервые перекрывает всю
 // нижнюю полосу разом.
 const bossCombatConfig = {
-	levelCadence: 0.84, damageMultiplier: 1.10, minWaveDelay: 2020, minShotDelay: 142, minTelegraphMs: 525,
+	levelCadence: 0.84, damageMultiplier: 1.613, minWaveDelay: 2020, minShotDelay: 142, minTelegraphMs: 525,
 	phases: [
 		{ phase: 1, minHp: 0.64, cadence: 1.00, speed: 1.00, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.16, maxActiveAttacks: 16 },
 		{ phase: 2, minHp: 0.29, cadence: 0.80, speed: 1.13, damage: 1.18, telegraphMultiplier: 0.88, surpriseChance: 0.28, maxActiveAttacks: 18 },
 		{ phase: 3, minHp: 0.00, cadence: 0.67, speed: 1.22, damage: 1.30, telegraphMultiplier: 0.81, surpriseChance: 0.38, maxActiveAttacks: 21 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'lateRush',   cadence: 1.05, telegraphMs: 780, speedMultiplier: 0.99, damageMultiplier: 1.11, speedVariance: [0.83, 0.93, 1.03, 1.13, 1.23] }, // ЛЕМЕШОК: низкий забег с одного бока, редкий центр
-		enem2: { movementStyle: 'pause',      cadence: 1.20, telegraphMs: 960, speedMultiplier: 0.83, damageMultiplier: 1.16, speedVariance: [0.77, 0.87, 0.97, 1.09, 1.20] }, // ПЛУГАРЬ: давление снизу тяжёлого плуга
-		enem3: { movementStyle: 'straight',   cadence: 1.02, telegraphMs: 810, speedMultiplier: 0.95, damageMultiplier: 0.94, speedVariance: [0.87, 0.94, 1.02, 1.10, 1.18] }, // БОДЕНЬ: редкие удары рогом с долгой паузой
-		enem4: { movementStyle: 'accelerate', cadence: 0.83, telegraphMs: 640, speedMultiplier: 1.15, damageMultiplier: 0.65, speedVariance: [0.87, 0.98, 1.09, 1.20, 1.31] }, // БОРОЗДЕНЬ: направленный бросок пластов земли
-		enem5: { movementStyle: 'weave',      cadence: 0.72, telegraphMs: 620, speedMultiplier: 1.17, damageMultiplier: 1.10, speedVariance: [0.80, 0.93, 1.06, 1.19, 1.32] }  // МИКУЛА: смешивает почерк всех четверых, впервые перекрывает низ поля разом
+		enem1: { movementStyle: 'weave',   cadence: 1.05, telegraphMs: 780, speedMultiplier: 0.99, damageMultiplier: 1.11, speedVariance: [0.83, 0.93, 1.03, 1.13, 1.23] }, // ЛЕМЕШОК: низкий забег с одного бока, редкий центр
+		enem2: { movementStyle: 'accelerate',      cadence: 1.20, telegraphMs: 960, speedMultiplier: 0.83, damageMultiplier: 1.16, speedVariance: [0.77, 0.87, 0.97, 1.09, 1.20] }, // ПЛУГАРЬ: давление снизу тяжёлого плуга
+		enem3: { movementStyle: 'pause',   cadence: 1.02, telegraphMs: 810, speedMultiplier: 0.95, damageMultiplier: 0.94, speedVariance: [0.87, 0.94, 1.02, 1.10, 1.18] }, // БОДЕНЬ: редкие удары рогом с долгой паузой
+		enem4: { movementStyle: 'drift', cadence: 0.83, telegraphMs: 640, speedMultiplier: 1.15, damageMultiplier: 0.65, speedVariance: [0.87, 0.98, 1.09, 1.20, 1.31] }, // БОРОЗДЕНЬ: направленный бросок пластов земли
+		enem5: { movementStyle: 'straight',      cadence: 0.72, telegraphMs: 620, speedMultiplier: 1.17, damageMultiplier: 1.10, speedVariance: [0.80, 0.93, 1.06, 1.19, 1.32] }  // МИКУЛА: богатырь-пахарь идёт прямой бороздой через всё поле — без уловок, там, где остальные хитрили
 	}
 };
 
