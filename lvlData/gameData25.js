@@ -18,29 +18,34 @@ const bossCombatConfig = {
 	bosses: {
 		enem1: {
 			movementStyle: 'drift', cadence: 1.00, telegraphMs: 900, speedMultiplier: 0.90, damageMultiplier: 0.95,
+			healthMultiplier: 1.50,
 			speedVariance: [0.86, 0.94, 1.02, 1.10, 1.18],
 			phaseMessages: { 2: 'ЗНОЙ СВОДИТ С УМА', 3: 'МАРЕВО ГУСТЕЕТ УГРОЗОЙ' }
 		}, // ЗНОЙНАЯ ПОЛУДНИЦА: зигзаг марева над бороздой, без нижней стены
 		enem2: {
 			movementStyle: 'weave', cadence: 0.88, telegraphMs: 730, speedMultiplier: 1.08, damageMultiplier: 0.92,
+			healthMultiplier: 1.50,
 			speedVariance: [0.84, 0.95, 1.06, 1.17, 1.28],
 			appearMessage: 'ДВОИТСЯ ОТ ЗЛОБЫ',
 			phaseMessages: { 2: 'ОТРАЖЕНИЯ ОБЕЗУМЕЛИ', 3: 'МАРЕВО ЖАЖДЕТ ДОБЫЧИ' }
 		}, // МАРЕВАЯ ПОЛУДНИЦА: парные удары-двойники с флангов, симметричный мираж
 		enem3: {
 			movementStyle: 'accelerate', cadence: 1.22, telegraphMs: 990, speedMultiplier: 0.82, damageMultiplier: 1.22,
+			healthMultiplier: 1.50,
 			speedVariance: [0.74, 0.85, 0.98, 1.11, 1.24],
 			appearMessage: 'УГЛИ ПЫШУТ ЖАРОМ',
 			phaseMessages: { 2: 'УГЛИ РАЗГОРАЮТСЯ СИЛЬНЕЕ', 3: 'ГОРИТ БЕЗ ПОЩАДЫ' }
 		}, // ЖАРОВАЯ ПОЛУДНИЦА: редкие тяжёлые вспышки углей, долгая пауза
 		enem4: {
 			movementStyle: 'lateRush', cadence: 0.74, telegraphMs: 590, speedMultiplier: 1.24, damageMultiplier: 0.68,
+			healthMultiplier: 1.50,
 			speedVariance: [0.93, 1.07, 1.21, 1.35, 1.49],
 			appearMessage: 'ВЕНЕЦ ПЫЛАЕТ ЗЛОБОЙ',
 			phaseMessages: { 2: 'ВЕНЕЦ ПЫШЕТ ЖАРОМ', 3: 'ВЕНЕЦ ГОРИТ БЕЗ ПОЩАДЫ' }
 		}, // ВЕНЦЕНОСНАЯ ПОЛУДНИЦА: нервные вспышки лучей только из четырёх углов
 		enem5: {
 			movementStyle: 'pause', cadence: 0.68, telegraphMs: 610, speedMultiplier: 1.22, damageMultiplier: 1.16,
+			healthMultiplier: 1.50,
 			speedVariance: [0.80, 0.94, 1.08, 1.22, 1.36],
 			appearMessage: 'ЯВИЛА ИСТИННЫЙ ГНЕВ',
 			phaseMessages: { 2: 'ЗНОЙ СТАНОВИТСЯ НЕСТЕРПИМЫМ', 3: 'ПОЛДЕНЬ ПЫЛАЕТ БЕЗ ПОЩАДЫ' }

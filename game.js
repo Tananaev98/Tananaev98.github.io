@@ -227,7 +227,7 @@ const HERO_ATTACK_TIMING = Object.freeze({
     minDeflectCycleMs: 120,
     maxDeflectCycleMs: 220,
     deflectImpactAt: 0.68,
-    animatedHeroes: Object.freeze(['eremei', 'dunya', 'luka', 'daryana'])
+    animatedHeroes: Object.freeze(['eremei', 'dunya', 'luka', 'daryana', 'mila'])
 });
 const pendingHeroAttackTimers = new Set();
 
@@ -1157,6 +1157,7 @@ function gameLoop(currentTime) {
     const deltaTime = Math.min(Math.max(rawDeltaTime, 0), 100);
     activeGameTimeMs += deltaTime;
     timeSec2 = Math.floor(activeGameTimeMs / 1000);
+    applyMilaCastleRegen(deltaTime);
 	
 	if ((timeSec2-lastTimeSec2)>=1 && (timeNextBoss-timeSec2)>0 && (timeNextBoss-timeSec2)<5 && !bossAlive) {
 		lastTimeSec2 = timeSec2;
@@ -1886,6 +1887,26 @@ function updateBossHealthBar() {
  * Наносит урон крепости
  * @param {number} damage - количество урона
  */
+// Мила — «Живительная клубника»: пассивная регенерация 1% ОТ МАКСИМУМА HP в секунду,
+// непрерывно (не тиками), пока крепость жива. Копится дробно через deltaTime, поэтому
+// не зависит от FPS. Не мешает damageCastle — просто плюс к current с тем же капом.
+const MILA_CASTLE_REGEN_PER_SECOND = 0.01;
+
+function applyMilaCastleRegen(deltaTime) {
+    if (activeHeroObject?.name !== 'mila' || isGameOver) return;
+    if (castleHP.current <= 0 || castleHP.current >= castleHP.max) return;
+
+    const regenRate = Math.max(0, Number(activeHeroObject?.castleRegenPerSecond) || MILA_CASTLE_REGEN_PER_SECOND);
+    const healAmount = castleHP.max * regenRate * (deltaTime / 1000);
+    if (healAmount <= 0) return;
+
+    const before = castleHP.current;
+    castleHP.current = Math.min(castleHP.max, castleHP.current + healAmount);
+    if (castleHP.current !== before) {
+        updateCastleHealthDisplay();
+    }
+}
+
 function damageCastle(damage) {
     if (isGameOver) return;
     
@@ -2613,11 +2634,13 @@ function damageEnemy(enemy, attackMultiplier = 1, attackKind = 'normal', shotInt
         showDunyaBossImpact(enemy, damageResult.isCritical, attackKind, timing);
         showLukaBossImpact(enemy, damageResult.isCritical, damageResult.isCountShot, timing);
         showDaryanaBossImpact(enemy, damageResult.isCritical, timing);
+        showMilaBossImpact(enemy, damageResult.isCritical, timing);
     } else if (predictedDestroyed) {
         showEremeiDeflectImpact(enemy, damageResult.isCritical, timing);
         showDunyaDeflectImpact(enemy, damageResult.isCritical, timing);
         showLukaDeflectImpact(enemy, damageResult.isCritical, timing);
         showDaryanaDeflectImpact(enemy, damageResult.isCritical, timing);
+        showMilaDeflectImpact(enemy, damageResult.isCritical, timing);
     }
 
     if (!isBoss) {
@@ -3332,6 +3355,128 @@ function showDaryanaBossImpact(boss, isCritical = false, timing = getHeroAttackT
 function showDaryanaDeflectImpact(attackEnemy, isCritical = false, timing = getHeroDeflectTiming()) {
     if (activeHeroObject?.name !== 'daryana' || !attackEnemy?.element || !enemiesContainer || !gameField) return;
     showDaryanaFireImpact(attackEnemy.element, { isMini: true, isCritical, timing });
+}
+
+// Мила: горошины летят и лопаются на попадании — та же mount/impact-схема
+// с приклеиванием по силуэту (alpha-mask), что у стрелы Луки (см. showLukaArrowImpact
+// выше), но БЕЗ направленного «втыкания под углом»: горох круглый, поэтому вместо
+// luka-puncture/luka-flight-trail — простой хлопок (масштаб + вспышка + кольцо).
+// Живёт короче стрелы (900мс против 3000мс) и обрезается агрессивнее (pruneImpactNodes) —
+// при 100мс между выстрелами на экране иначе скопится слишком много горошин разом.
+function syncMilaPeaMount(mount, enemyEl) {
+    if (!mount?.isConnected) return;
+
+    if (enemyEl?.isConnected) {
+        const renderedStyle = getComputedStyle(enemyEl);
+        mount.style.left = enemyEl.style.left || '0%';
+        mount.style.top = enemyEl.style.top || '0%';
+        mount.style.transform = renderedStyle.transform === 'none'
+            ? 'none'
+            : renderedStyle.transform;
+    }
+
+    requestAnimationFrame(() => syncMilaPeaMount(mount, enemyEl));
+}
+
+function showMilaPeaImpact(
+    enemyEl,
+    {
+        isMini = false,
+        isCritical = false,
+        timing = isMini ? getHeroDeflectTiming() : getHeroAttackTiming(SHOT_INTERVAL)
+    } = {}
+) {
+    if (!enemyEl || !enemiesContainer) return;
+
+    const spawnAt = (hit) => {
+        if (!hit || !enemyEl.isConnected || !enemiesContainer) return;
+        if (enemyEl.offsetWidth < 2 || enemyEl.offsetHeight < 2) return;
+
+        pruneImpactNodes(isMini ? '.mila-pea-mount.is-mini' : '.mila-pea-mount:not(.is-mini)', isMini ? 3 : 6);
+        pruneImpactNodes('.mila-debris-burst', isMini ? 4 : 8);
+
+        const mount = document.createElement('div');
+        mount.className = `mila-pea-mount${isMini ? ' is-mini' : ''}${isCritical ? ' is-critical' : ''}`;
+        mount.style.left = enemyEl.style.left || '0%';
+        mount.style.top = enemyEl.style.top || '0%';
+        mount.style.width = `${Math.max(1, enemyEl.offsetWidth)}px`;
+        mount.style.height = `${Math.max(1, enemyEl.offsetHeight)}px`;
+        mount.style.transform = enemyEl.style.transform || 'none';
+        mount.style.transformOrigin = getComputedStyle(enemyEl).transformOrigin || '50% 50%';
+        mount.setAttribute('aria-hidden', 'true');
+
+        const impact = document.createElement('div');
+        impact.className = `mila-boss-impact${isMini ? ' is-mini' : ''}${isCritical ? ' mila-boss-impact-critical' : ''}`;
+        impact.style.left = `${(hit.x * 100).toFixed(3)}%`;
+        impact.style.top = `${(hit.y * 100).toFixed(3)}%`;
+        const peaDurationMs = Math.max(300, Math.round(timing.impactDelayMs / 0.2));
+        impact.style.setProperty('--mila-pea-rot', `${(Math.random() * 360).toFixed(0)}deg`);
+        impact.style.setProperty('--mila-fly-x', `${(Math.random() * 44 - 22).toFixed(1)}px`);
+        impact.style.setProperty('--mila-pea-duration', `${peaDurationMs}ms`);
+        impact.style.setProperty('--mila-ring-duration', `${Math.max(140, Math.round(peaDurationMs * 0.42))}ms`);
+        impact.innerHTML = `
+            <span class="mila-splat-ring"></span>
+            <span class="mila-impact-flash"></span>
+            <span class="mila-pea"></span>
+        `;
+        mount.appendChild(impact);
+        enemiesContainer.appendChild(mount);
+        if (!isMini) {
+            syncMilaPeaMount(mount, enemyEl);
+        }
+        window.setTimeout(() => mount.remove(), peaDurationMs + 150);
+
+        // Осколки — отдельный элемент в мировых координатах поля, НЕ привязанный
+        // к боссу: горошина лопается и разлетается на месте попадания, а не едет
+        // дальше вместе с боссом (тот может продолжать качаться/двигаться волной).
+        // Живут заметно дольше самого перелёта горошины (1-1.5с, см. mila-debris-fly).
+        const enemyRect = enemyEl.getBoundingClientRect();
+        const containerRect = enemiesContainer.getBoundingClientRect();
+        const burstPxX = enemyRect.left - containerRect.left + hit.x * enemyRect.width;
+        const burstPxY = enemyRect.top - containerRect.top + hit.y * enemyRect.height;
+        const burstDelayMs = Math.round(peaDurationMs * 0.6);
+        const burst = document.createElement('div');
+        burst.className = `mila-debris-burst${isCritical ? ' is-critical' : ''}`;
+        burst.style.left = `${burstPxX.toFixed(1)}px`;
+        burst.style.top = `${burstPxY.toFixed(1)}px`;
+        burst.setAttribute('aria-hidden', 'true');
+        const shardBaseAngle = Math.random() * 360;
+        let maxPieceLifeMs = 0;
+        burst.innerHTML = [0, 130, 250].map((offset) => {
+            const angle = shardBaseAngle + offset + (Math.random() * 24 - 12);
+            const dist = Math.round(90 + Math.random() * 80);
+            const pieceDurationMs = Math.round(1000 + Math.random() * 500);
+            maxPieceLifeMs = Math.max(maxPieceLifeMs, pieceDurationMs);
+            return `<span class="mila-debris" style="--mila-shard-angle: ${angle.toFixed(0)}deg; --mila-shard-dist: ${dist}px; animation-duration: ${pieceDurationMs}ms; animation-delay: ${burstDelayMs}ms;"></span>`;
+        }).join('');
+        enemiesContainer.appendChild(burst);
+        window.setTimeout(() => burst.remove(), burstDelayMs + maxPieceLifeMs + 100);
+    };
+
+    const ready = pickOpaqueHitNormFromSamples(getEnemyOpaqueSamples(enemyEl));
+    if (ready) {
+        spawnAt(ready);
+        return;
+    }
+
+    ensureEnemyOpaqueSamples(enemyEl).then((samples) => {
+        const hit = pickOpaqueHitNormFromSamples(samples);
+        if (hit) {
+            spawnAt(hit);
+            return;
+        }
+        spawnAt({ x: 0.5, y: 0.45 });
+    });
+}
+
+function showMilaBossImpact(boss, isCritical = false, timing = getHeroAttackTiming(SHOT_INTERVAL)) {
+    if (activeHeroObject?.name !== 'mila' || !boss?.element || !enemiesContainer || !gameField) return;
+    showMilaPeaImpact(boss.element, { isMini: false, isCritical, timing });
+}
+
+function showMilaDeflectImpact(attackEnemy, isCritical = false, timing = getHeroDeflectTiming()) {
+    if (activeHeroObject?.name !== 'mila' || !attackEnemy?.element || !enemiesContainer || !gameField) return;
+    showMilaPeaImpact(attackEnemy.element, { isMini: true, isCritical, timing });
 }
 
 // Еремей: цикл двуручных ударов дубиной (горизонталь / overhead / диагонали / sweep / chop).

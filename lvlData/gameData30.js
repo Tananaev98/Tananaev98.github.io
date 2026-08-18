@@ -37,31 +37,31 @@ const bossCombatConfig = {
 	bosses: {
 		enem1: {
 			movementStyle: 'straight', cadence: 0.95, telegraphMs: 850, speedMultiplier: 0.95, damageMultiplier: 0.85,
-			healthMultiplier: 1.40,
+			healthMultiplier: 1.50,
 			speedVariance: [0.86, 0.94, 1.02, 1.10, 1.18],
 			appearMessage: 'ПРЕЗРИТЕЛЬНО СМЕЁТСЯ'
 		}, // ЦАРЬ ГОРОХ: THRONE_ROLL — ровные ленивые залпы с трона, самый честный телеграф уровня
 		enem2: {
 			movementStyle: 'accelerate', cadence: 1.05, telegraphMs: 800, speedMultiplier: 1.00, damageMultiplier: 0.95,
-			healthMultiplier: 1.40,
+			healthMultiplier: 1.50,
 			speedVariance: [0.82, 0.93, 1.05, 1.17, 1.29],
 			appearMessage: 'ЯРОСТЬ РВЁТСЯ ЧЕРЕЗ ТРЕЩИНУ'
 		}, // ТРЕСНУВШИЙ ЦАРЬ ГОРОХ: CRACK_SHOT — гнев прорывается через трещину ускоряющимися выстрелами
 		enem3: {
 			movementStyle: 'weave', cadence: 1.10, telegraphMs: 900, speedMultiplier: 0.92, damageMultiplier: 1.05,
-			healthMultiplier: 1.40,
+			healthMultiplier: 1.50,
 			speedVariance: [0.80, 0.90, 1.01, 1.12, 1.23],
 			appearMessage: 'В ГНЕВЕ ЗОВЁТ СТРАЖУ'
 		}, // ИЗРАНЕННЫЙ ЦАРЬ ГОРОХ: GUARD_VOLLEY — рваные зигзаги гороховой стражи, менее предсказуемые пути
 		enem4: {
 			movementStyle: 'drift', cadence: 1.00, telegraphMs: 950, speedMultiplier: 0.85, damageMultiplier: 1.20,
-			healthMultiplier: 1.40,
+			healthMultiplier: 1.50,
 			speedVariance: [0.77, 0.87, 0.98, 1.09, 1.20],
 			appearMessage: 'ПЫШЕТ ГНЕВНЫМИ ИСКРАМИ'
 		}, // ПЫЛАЮЩИЙ ЦАРЬ ГОРОХ: EMBER_DRIFT — тяжёлые сносимые вбок искры, самый долгий честный телеграф уровня
 		enem5: {
 			movementStyle: 'pause', cadence: 0.82, telegraphMs: 720, speedMultiplier: 1.10, damageMultiplier: 0.82,
-			healthMultiplier: 1.40,
+			healthMultiplier: 1.50,
 			speedVariance: [0.83, 0.96, 1.09, 1.22, 1.35], minFastSideSwitchMs: 850,
 			appearMessage: 'ОБЕЗУМЕЛ ОТ ГНЕВА'
 		} // ГНЕВНЫЙ ЦАРЬ ГОРОХ: ROYAL_SALUTE — несёт кульминацию региона. Первая версия читалась как

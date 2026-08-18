@@ -21,29 +21,34 @@ const bossCombatConfig = {
 	bosses: {
 		enem1: {
 			movementStyle: 'drift', cadence: 1.05, telegraphMs: 880, speedMultiplier: 0.92, damageMultiplier: 0.92,
+			healthMultiplier: 1.50,
 			speedVariance: [0.86, 0.94, 1.02, 1.10, 1.18],
 			phaseMessages: { 2: 'ПОСОХ ЖАЖДЕТ КРОВИ', 3: 'ПОСОХ НЕ ЗНАЕТ ПОЩАДЫ' }
 		}, // БАБА-ЯГА: зигзаг посоха, испытывает игрока
 		enem2: {
 			movementStyle: 'straight', cadence: 0.90, telegraphMs: 740, speedMultiplier: 1.06, damageMultiplier: 0.90,
+			healthMultiplier: 1.50,
 			speedVariance: [0.85, 0.95, 1.05, 1.15, 1.25],
 			appearMessage: 'ВЗБЕСИЛАСЬ ОТ ЗЛОСТИ',
 			phaseMessages: { 2: 'КОГТИ РВУТСЯ В БОЙ', 3: 'КОГТИ ЖАЖДУТ КРОВИ' }
 		}, // ЗЛАЯ БАБА-ЯГА: парные когтистые выпады с флангов
 		enem3: {
 			movementStyle: 'weave', cadence: 1.18, telegraphMs: 980, speedMultiplier: 0.85, damageMultiplier: 1.18,
+			healthMultiplier: 1.50,
 			speedVariance: [0.76, 0.86, 0.98, 1.10, 1.22],
 			appearMessage: 'ПРОКЛЯТЬЯ КЛОКОЧУТ В ГОРЛЕ',
 			phaseMessages: { 2: 'ПРОКЛЯТЬЯ КИПЯТ', 3: 'ОХВАЧЕНА БЕЗУМИЕМ' }
 		}, // ОЧЕНЬ ЗЛАЯ БАБА-ЯГА: редкие тяжёлые проклятия, долгие паузы
 		enem4: {
 			movementStyle: 'lateRush', cadence: 0.76, telegraphMs: 610, speedMultiplier: 1.20, damageMultiplier: 0.66,
+			healthMultiplier: 1.50,
 			speedVariance: [0.90, 1.03, 1.16, 1.29, 1.42],
 			appearMessage: 'ВЗОРВАЛАСЬ ЯРОСТЬЮ',
 			phaseMessages: { 2: 'ПЫШЕТ ОГНЁМ', 3: 'ПЫЛАЕТ ЯРОСТЬЮ' }
 		}, // ВЗБЕШЕННАЯ БАБА-ЯГА: нервные вспышки только из четырёх углов
 		enem5: {
 			movementStyle: 'pause', cadence: 0.72, telegraphMs: 640, speedMultiplier: 1.15, damageMultiplier: 1.10,
+			healthMultiplier: 1.50,
 			speedVariance: [0.84, 0.97, 1.10, 1.23, 1.36],
 			appearMessage: 'ОБЕЗУМЕЛА ОКОНЧАТЕЛЬНО',
 			phaseMessages: { 2: 'БЕЗУМИЕ РАСТЁТ', 3: 'БЕЗУМИЕ БЕЗ ГРАНИЦ' }

@@ -477,6 +477,13 @@ function openCharacterSelect() {
         const hero = gameState[heroKey];
         if (!hero || !hero.unlock) return;
 
+        // Нулевой шанс ранения — не временно низкий, а архетипная черта героя
+        // (заморожен насовсем, никогда не растёт) — самой строки в карточке тогда нет,
+        // а не "0%": ноль тут не характеристика, а отсутствие механики.
+        const woundStatRow = hero.startGlobalWoundChance > 0
+            ? `<p><span>${hero.woundChanceLabel ?? 'Шанс ранения'}:</span> <span class="value stat-wound">${formatPercent(hero.startGlobalWoundChance)}</span></p>`
+            : '';
+
         infoPanel.innerHTML = `
             <h3>${hero.dispName}</h3>
             ${getHeroDifficultyMarkup(hero)}
@@ -497,7 +504,7 @@ function openCharacterSelect() {
                         <p><span>Урон:</span> <span class="value stat-damage">${Math.round(hero.startGlobalDamage)}</span></p>
                         <p><span>Шанс критического урона:</span> <span class="value stat-critChance">${formatPercent(hero.startGlobalCritChance)}</span></p>
                         <p><span>Критический урон:</span> <span class="value stat-critMulti">${Math.round(hero.startGlobalCritMultiplier * 100)}%</span></p>
-                        <p><span>${hero.woundChanceLabel ?? 'Шанс ранения'}:</span> <span class="value stat-wound">${formatPercent(hero.startGlobalWoundChance)}</span></p>
+                        ${woundStatRow}
                         <p><span>Скорость атаки:</span> <span class="value stat-speed">${1000 - hero.startSHOT_INTERVAL}</span></p>
                         <p><span>Здоровье:</span> <span class="value stat-hp">${hero.castleHP}</span></p>
                         <p><span>Защита (снижение урона):</span> <span class="value stat-def">${formatPercent(hero.startCastleDamageReduction)}</span></p>

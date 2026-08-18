@@ -116,6 +116,7 @@
     <div class="run-row">
       <button id="runBtn">Перезапустить</button>
       <button id="stopBtn" class="secondary" disabled>Остановить</button>
+      <button id="exportBtn" class="secondary" disabled>Экспорт в Excel</button>
       <span class="status-line" id="statusLine">Запускается…</span>
     </div>
   </div>
@@ -232,6 +233,9 @@ const logEl = $('log');
 const progressBar = $('progressBar');
 const statusLine = $('statusLine');
 let stopRequested = false;
+// Снимок результатов последнего прогона (или его части, если остановлен вручную) —
+// живёт до перезапуска, читается кнопкой «Экспорт в Excel».
+let lastRunSnapshot = null;
 
 function log(text, cls) {
     const line = document.createElement('div');
@@ -934,6 +938,187 @@ const TemporaryUpgradeEngine = {
     }
 };
 
+// ==================== ЭКСПОРТ В EXCEL ====================
+// Отдельный от рендера DOM-таблиц путь: читает те же результатные объекты
+// (dpsResults/survivalResults/... — см. lastRunSnapshot, наполняется в runAll),
+// а не парсит уже отрисованный HTML — так в файл попадают точные числа, а не
+// округлённые/склеенные в один <td> строки. Формат — Excel 2003 XML (SpreadsheetML):
+// один самодостаточный .xls без единой внешней библиотеки, Excel открывает нативно.
+const ExcelExport = {
+    escape(value) {
+        return String(value).replace(/[&<>'"]/g, (ch) => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&apos;', '"': '&quot;'
+        }[ch]));
+    },
+
+    cell(value, styleId) {
+        const style = styleId ? ` ss:StyleID="${styleId}"` : '';
+        if (value === null || value === undefined || value === '') {
+            return `<Cell${style}><Data ss:Type="String"></Data></Cell>`;
+        }
+        if (typeof value === 'number' && Number.isFinite(value)) {
+            return `<Cell${style}><Data ss:Type="Number">${value}</Data></Cell>`;
+        }
+        return `<Cell${style}><Data ss:Type="String">${this.escape(value)}</Data></Cell>`;
+    },
+
+    sheetXml(sheet) {
+        const headerRow = `<Row>${sheet.header.map((h) => this.cell(h, 'header')).join('')}</Row>`;
+        const bodyRows = sheet.rows.map((row) => `<Row>${row.map((v) => this.cell(v)).join('')}</Row>`).join('');
+        // Имя листа у Excel ограничено 31 символом и не терпит []:*?/\.
+        const safeName = this.escape(sheet.name).slice(0, 31).replace(/[\[\]:*?/\\]/g, ' ');
+        return `<Worksheet ss:Name="${safeName}"><Table>${headerRow}${bodyRows}</Table></Worksheet>`;
+    },
+
+    buildWorkbook(sheets) {
+        const body = sheets.map((sheet) => this.sheetXml(sheet)).join('');
+        return `<?xml version="1.0" encoding="UTF-8"?>\n` +
+            `<?mso-application progid="Excel.Sheet"?>\n` +
+            `<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" ` +
+            `xmlns:o="urn:schemas-microsoft-com:office:office" ` +
+            `xmlns:x="urn:schemas-microsoft-com:office:excel" ` +
+            `xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">` +
+            `<Styles><Style ss:ID="header"><Font ss:Bold="1"/><Interior ss:Color="#E5DCC3" ss:Pattern="Solid"/></Style></Styles>` +
+            `${body}</Workbook>`;
+    },
+
+    round(value) {
+        return Number.isFinite(value) ? Math.round(value) : '';
+    },
+
+    pct(value) {
+        return Number.isFinite(value) ? Math.round(value * 1000) / 10 : '';
+    },
+
+    hitsLabel(value) {
+        return Number.isFinite(value) ? value : '40+';
+    },
+
+    // Три плоские числовые колонки на героя (mean/p10/p90 или mean/min/max) —
+    // так с данными потом можно работать в Excel как с обычной таблицей чисел,
+    // без парсинга склеенного текста вида "233 (P10 233 / P90 234)".
+    buildDpsSheet(name, heroes, results, levels, levelKey, includeHeroLevel) {
+        const header = includeHeroLevel ? ['Ур. кампании', 'Ур. героя'] : ['Ур. героя'];
+        heroes.forEach((h) => header.push(`${h.dispName} DPS`, `${h.dispName} P10`, `${h.dispName} P90`));
+        const rows = levels.map((level) => {
+            const row = includeHeroLevel
+                ? [level, ProgressionEngine.campaignToHeroLevel.get(level) || 1]
+                : [level];
+            heroes.forEach((h) => {
+                const cell = results[h.key] && results[h.key][level];
+                if (cell) row.push(this.round(cell.mean), this.round(cell.p10), this.round(cell.p90));
+                else row.push('', '', '');
+            });
+            return row;
+        });
+        return { name, header, rows };
+    },
+
+    buildDpsUpgradedSheet(heroes, results, levels) {
+        const header = ['Ур. кампании', 'Ур. героя'];
+        heroes.forEach((h) => header.push(`${h.dispName} DPS`, `${h.dispName} мин`, `${h.dispName} макс`));
+        const rows = levels.map((level) => {
+            const row = [level, ProgressionEngine.campaignToHeroLevel.get(level) || 1];
+            heroes.forEach((h) => {
+                const cell = results[h.key] && results[h.key][level];
+                if (cell) row.push(this.round(cell.mean), this.round(cell.min), this.round(cell.max));
+                else row.push('', '', '');
+            });
+            return row;
+        });
+        return { name: 'DPS с апгрейдами', header, rows };
+    },
+
+    buildSurvivalSheet(name, heroes, results, levels, includeHeroLevel) {
+        const header = includeHeroLevel ? ['Ур. кампании', 'Ур. героя'] : ['Ур. героя'];
+        heroes.forEach((h) => header.push(`${h.dispName} медиана ударов`, `${h.dispName} худший удар %HP`, `${h.dispName} ваншот %`));
+        const rows = levels.map((level) => {
+            const row = includeHeroLevel
+                ? [level, ProgressionEngine.campaignToHeroLevel.get(level) || 1]
+                : [level];
+            heroes.forEach((h) => {
+                const cell = results[h.key] && results[h.key][level];
+                if (cell) {
+                    row.push(
+                        this.hitsLabel(cell.medianHitsToDefeat),
+                        this.round(cell.worstSingleHitFraction * 100),
+                        this.pct(cell.oneShotRate)
+                    );
+                } else {
+                    row.push('', '', '');
+                }
+            });
+            return row;
+        });
+        return { name, header, rows };
+    },
+
+    buildSurvivalUpgradedSheet(heroes, results, levels) {
+        const header = ['Ур. кампании', 'Ур. героя'];
+        heroes.forEach((h) => header.push(`${h.dispName} среднее ударов`, `${h.dispName} ваншот %`));
+        const rows = levels.map((level) => {
+            const row = [level, ProgressionEngine.campaignToHeroLevel.get(level) || 1];
+            heroes.forEach((h) => {
+                const cell = results[h.key] && results[h.key][level];
+                if (cell) row.push(Math.round(cell.meanHitsToDefeat * 10) / 10, this.pct(cell.oneShotRate));
+                else row.push('', '');
+            });
+            return row;
+        });
+        return { name: 'Живучесть с апгрейдами', header, rows };
+    },
+
+    buildSummarySheet(snapshot) {
+        const pad = (n) => String(n).padStart(2, '0');
+        const d = snapshot.generatedAt;
+        const stamp = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        return {
+            name: 'Сводка',
+            header: ['Параметр', 'Значение'],
+            rows: [
+                ['Дата отчёта', stamp],
+                ['Статус прогона', snapshot.stoppedEarly ? 'Остановлено пользователем (данные частичные)' : 'Завершено полностью'],
+                ['Герои', snapshot.heroes.map((h) => h.dispName).join(', ')],
+                ['Боёв на точку DPS (без апгрейдов)', FIGHTS_PER_LEVEL],
+                ['Прогонов живучести на точку (без апгрейдов)', SURVIVAL_RUNS_PER_LEVEL],
+                ['Заходов с апгрейдами на уровень', ATTEMPTS_PER_LEVEL],
+                ['Стратегии выбора апгрейдов', STRATEGIES.join(', ')],
+                ['HP босса в симулированном DPS-бою', BOSS_HP_FOR_DPS_FIGHT],
+                ['Средний интервал входящих ударов, мс', INCOMING_CADENCE_MS],
+                ['Уровней кампании прогнано', CAMPAIGN_FINAL_LEVEL],
+                ['Уровни героя для перекачки сверх кампании', OVERGRIND_HERO_LEVELS.join(', ')]
+            ]
+        };
+    },
+
+    download(snapshot) {
+        const heroes = snapshot.heroes;
+        const sheets = [
+            this.buildSummarySheet(snapshot),
+            this.buildDpsSheet('DPS без апгрейдов', heroes, snapshot.dpsResults, ALL_LEVELS, 'level', true),
+            this.buildSurvivalSheet('Живучесть без апгрейдов', heroes, snapshot.survivalResults, ALL_LEVELS, true),
+            this.buildDpsSheet('Перекачка DPS', heroes, snapshot.overgrindDpsResults, OVERGRIND_HERO_LEVELS, 'heroLevel', false),
+            this.buildSurvivalSheet('Перекачка живучесть', heroes, snapshot.overgrindSurvivalResults, OVERGRIND_HERO_LEVELS, false),
+            this.buildDpsUpgradedSheet(heroes, snapshot.dpsUpgradedResults, ALL_LEVELS),
+            this.buildSurvivalUpgradedSheet(heroes, snapshot.survivalUpgradedResults, ALL_LEVELS)
+        ];
+        const xml = this.buildWorkbook(sheets);
+        const blob = new Blob([xml], { type: 'application/vnd.ms-excel' });
+        const url = URL.createObjectURL(blob);
+        const d = snapshot.generatedAt;
+        const pad = (n) => String(n).padStart(2, '0');
+        const filename = `balance-report_${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_` +
+            `${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}.xls`;
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    }
+};
+
 // ==================== ОРКЕСТРАТОР ====================
 
 function isRegionFinalLevel(level) {
@@ -1078,6 +1263,8 @@ async function runAll() {
     stopRequested = false;
     $('runBtn').disabled = true;
     $('stopBtn').disabled = false;
+    $('exportBtn').disabled = true;
+    lastRunSnapshot = null;
     logEl.innerHTML = '';
     $('dpsPanel').style.display = 'none';
     $('survivalPanel').style.display = 'none';
@@ -1270,6 +1457,15 @@ async function runAll() {
 
         statusLine.textContent = stopRequested ? 'Остановлено' : 'Готово';
         log(stopRequested ? 'Остановлено пользователем.' : 'Симуляция завершена.', 'log-ok');
+
+        lastRunSnapshot = {
+            generatedAt: new Date(),
+            stoppedEarly: stopRequested,
+            heroes,
+            dpsResults, survivalResults, overgrindDpsResults, overgrindSurvivalResults,
+            dpsUpgradedResults, survivalUpgradedResults
+        };
+        $('exportBtn').disabled = false;
     } catch (error) {
         log(`Ошибка: ${error.message}`, 'log-err');
         console.error(error);
@@ -1282,6 +1478,10 @@ async function runAll() {
 
 $('runBtn').addEventListener('click', runAll);
 $('stopBtn').addEventListener('click', () => { stopRequested = true; });
+$('exportBtn').addEventListener('click', () => {
+    if (!lastRunSnapshot) return;
+    ExcelExport.download(lastRunSnapshot);
+});
 
 // Никаких настроек и кнопки для старта — панель прогоняет всё сама сразу при открытии.
 runAll();

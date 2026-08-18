@@ -26,7 +26,7 @@ const bossCombatConfig = {
 	scaleLongComboDamage: true,
 	scaleShortComboDamage: true,
 	levelCadence: 0.80, damageMultiplier: 2.30, minWaveDelay: 1950, minShotDelay: 134, minTelegraphMs: 505,
-	musicMood: 'cunning',
+	musicMood: 'heroic',
 	phases: [
 		{ phase: 1, minHp: 0.65, cadence: 1.00, speed: 1.00, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.16, maxActiveAttacks: 16 },
 		{ phase: 2, minHp: 0.30, cadence: 0.78, speed: 1.17, damage: 1.20, telegraphMultiplier: 0.86, surpriseChance: 0.31, maxActiveAttacks: 20 },
@@ -35,27 +35,31 @@ const bossCombatConfig = {
 	bosses: {
 		enem1: {
 			movementStyle: 'wave', cadence: 0.95, telegraphMs: 900, speedMultiplier: 0.92, damageMultiplier: 0.85,
+			healthMultiplier: 1.50,
 			speedVariance: [0.84, 0.93, 1.02, 1.11, 1.20],
 			appearMessage: 'ПОДНИМАЕТ ВОЛНЫ'
 		}, // ЗАЗЫВНАЯ РУСАЛКА: широкая медленная манящая волна, самый честный телеграф уровня
 		enem2: {
 			movementStyle: 'wave', cadence: 1.02, telegraphMs: 820, speedMultiplier: 1.00, damageMultiplier: 0.95,
+			healthMultiplier: 1.50,
 			speedVariance: [0.85, 0.95, 1.05, 1.15, 1.25],
 			appearMessage: 'СКАЛИТ ЗУБЫ'
 		}, // СУЛЯЩАЯ РУСАЛКА: волна короче и быстрее, ложная щедрость
 		enem3: {
 			movementStyle: 'weave', cadence: 1.10, telegraphMs: 780, speedMultiplier: 1.05, damageMultiplier: 1.05,
+			healthMultiplier: 1.50,
 			speedVariance: [0.83, 0.94, 1.05, 1.16, 1.27],
-			appearMessage: 'ВЗБЕСИЛАСЬ ОТ ОБМАНА'
+			appearMessage: 'ВЗБЕСИЛАСЬ!'
 		}, // ОБМАННАЯ РУСАЛКА: zигзаг вместо волны — символ двуличия, честная смена архетипа
 		enem4: {
 			movementStyle: 'pause', cadence: 0.90, telegraphMs: 760, speedMultiplier: 1.08, damageMultiplier: 1.12,
+			healthMultiplier: 1.50,
 			speedVariance: [0.82, 0.94, 1.07, 1.20, 1.33], minFastSideSwitchMs: 800,
 			appearMessage: 'ГЛАЗА ГОРЯТ ПРОКЛЯТЬЕМ'
 		}, // ПРОКЛЯТАЯ РУСАЛКА: проклятие буквально замораживает её на миг перед рывком
 		enem5: {
 			movementStyle: 'wave', cadence: 0.80, telegraphMs: 680, speedMultiplier: 1.15, damageMultiplier: 0.85,
-			healthMultiplier: 1.15,
+			healthMultiplier: 1.50,
 			speedVariance: [0.85, 0.99, 1.13, 1.27, 1.41],
 			appearMessage: 'ХВОСТ ХЛЕЩЕТ БЕЗ ПОЩАДЫ'
 		} // ЩУЧЬЯ ВЕДЬМА: истинный лик, катящийся хлёст хвоста с нарастающей скоростью
@@ -78,13 +82,13 @@ const ENEMY_TYPES = {
 		deathAnimation: { preset: 'ripplesDissolve', durationMs: 1250 }
 	},
 	enem2: {
-		name: 'enem2', dispName: 'Сулящая Русалка', image: 'images/enemies/regions/4_rech_ozer/lvl39/2.webp',
+		name: 'enem2', dispName: 'Скалящаяся Русалка', image: 'images/enemies/regions/4_rech_ozer/lvl39/2.webp',
 		baseHP: 6500 + (6500 * factorChar), baseSpeed: 0, baseDamage: 22 + (22 * factorChar),
 		spawnWeight: 15, baseExp: 480, xPos: 50, size: '26%',
 		deathAnimation: { preset: 'tailCoilFade', durationMs: 1250 }
 	},
 	enem3: {
-		name: 'enem3', dispName: 'Обманная Русалка', image: 'images/enemies/regions/4_rech_ozer/lvl39/3.webp',
+		name: 'enem3', dispName: 'Бешеная Русалка', image: 'images/enemies/regions/4_rech_ozer/lvl39/3.webp',
 		baseHP: 11500 + (11500 * factorChar), baseSpeed: 0, baseDamage: 24 + (24 * factorChar),
 		spawnWeight: 20, baseExp: 600, xPos: 50, size: '27%',
 		deathAnimation: { preset: 'clawSlash', durationMs: 1400 }
