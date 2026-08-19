@@ -52,7 +52,7 @@
 </main>
 
 <script src="lvlData/areas.js?v=unlock-stubs-2026-08-14"></script>
-<script src="saveData.js?v=debug-unlock-heroes-2026-08-14"></script>
+<script src="saveData.js?v=hero-not-castle-rename-2026-08-19"></script>
 <script src="music/audio-settings.js?v=audio-settings-2026-08-11"></script>
 <script src="music/hub-music.js?v=hub-music-tab-pause-2026-08-04"></script>
 
@@ -506,8 +506,8 @@ function openCharacterSelect() {
                         <p><span>Критический урон:</span> <span class="value stat-critMulti">${Math.round(hero.startGlobalCritMultiplier * 100)}%</span></p>
                         ${woundStatRow}
                         <p><span>Скорость атаки:</span> <span class="value stat-speed">${1000 - hero.startSHOT_INTERVAL}</span></p>
-                        <p><span>Здоровье:</span> <span class="value stat-hp">${hero.castleHP}</span></p>
-                        <p><span>Защита (снижение урона):</span> <span class="value stat-def">${formatPercent(hero.startCastleDamageReduction)}</span></p>
+                        <p><span>Здоровье:</span> <span class="value stat-hp">${hero.heroHP}</span></p>
+                        <p><span>Защита (снижение урона):</span> <span class="value stat-def">${formatPercent(hero.startHeroDamageReduction)}</span></p>
                         <p class="feature-container">
                           <span class="featur">Особенность:</span>
                           <span class="value">${hero.feature}</span>
@@ -539,8 +539,8 @@ function openCharacterSelect() {
 				{ current: hero.startGlobalCritMultiplier, new: upgraded.startGlobalCritMultiplier, class: 'stat-critMulti', factor: 100, suffix: '%' },
 				{ current: hero.startGlobalWoundChance, new: upgraded.startGlobalWoundChance, class: 'stat-wound', factor: 100, suffix: '%' },
 				{ current: 1000 - hero.startSHOT_INTERVAL, new: 1000 - upgraded.startSHOT_INTERVAL, class: 'stat-speed', factor: 1, suffix: '' },
-				{ current: hero.castleHP, new: upgraded.castleHP, class: 'stat-hp', factor: 1, suffix: '' },
-				{ current: hero.startCastleDamageReduction, new: upgraded.startCastleDamageReduction, class: 'stat-def', factor: 100, suffix: '%' }
+				{ current: hero.heroHP, new: upgraded.heroHP, class: 'stat-hp', factor: 1, suffix: '' },
+				{ current: hero.startHeroDamageReduction, new: upgraded.startHeroDamageReduction, class: 'stat-def', factor: 100, suffix: '%' }
 			];
 
 			fields.forEach(f => {

@@ -14,7 +14,7 @@ const requestedLevel = params.get('level') ?? '1';
 const parsedLevel = Number(requestedLevel);
 const MIN_LEVEL = 1;
 const MAX_LEVEL = 141;
-const GAME_BUILD_VERSION = 'survivability-12-9-7-5-2026-08-13';
+const GAME_BUILD_VERSION = 'hero-not-castle-rename-2026-08-19';
 const level = Number.isInteger(parsedLevel) && parsedLevel >= MIN_LEVEL && parsedLevel <= MAX_LEVEL
     ? parsedLevel
     : null;
@@ -120,12 +120,12 @@ if (level === null) {
 
 
 <div class="main_menu_image">
-	<div class="hero-status-bar" id="castleImage">
+	<div class="hero-status-bar" id="heroStatusBar">
 		<img src="images/hero/1_babka/dunya_min.webp" class="heroImageClass" id="heroImage" alt="">
-		<div class="castle-health-container">
+		<div class="hero-health-container">
 			<div class="health-bar-container" id="hpCont">
-				<div class="health-bar" id="castleHealthBar"></div>
-				<div class="health-text" id="castleHealthText">Вихревая бабка</div>
+				<div class="health-bar" id="heroHealthBar"></div>
+				<div class="health-text" id="heroHealthText">Вихревая бабка</div>
 			</div>
 		</div>
 		<div class="statusbar-util-buttons">

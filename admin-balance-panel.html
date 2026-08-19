@@ -270,6 +270,11 @@ function formatDuration(totalSeconds) {
 // с явно переданными lvlNumber/bossCombatConfig этого уровня вместо тех, что
 // сейчас загружены в combatFrame (он всегда стоит на level=1). Кэшируется по
 // уровню — HP боссов от героя не зависит.
+// Примечание про терминологию lvlData: enem1..enem5 (однозначные ключи) — это
+// сам босс/его фазы, не пять разных мобов. Обычных врагов (мобов) в игре вообще
+// не бывает — на уровне всегда один босс. То, что похоже на "мобов" визуально —
+// это отдельные АТАКИ босса (в lvlData обычно двузначные ключи вида enem11..enem55),
+// они всегда умирают с одного удара героя и не участвуют в этом суммарном HP.
 function getLevelBossHpTotal(probe, level, levelData, cache) {
     if (cache.has(level)) return cache.get(level);
     let total = 0;
@@ -423,7 +428,7 @@ const PROBE_SCRIPT_SOURCE = `
             if (patch.critMultiplier !== undefined) globalCritMultiplier = patch.critMultiplier;
             if (patch.woundChance !== undefined) globalWoundChance = patch.woundChance;
             if (patch.interval !== undefined) SHOT_INTERVAL = patch.interval;
-            if (patch.castleDefense !== undefined) castleDamageReduction = patch.castleDefense;
+            if (patch.heroDefense !== undefined) heroDamageReduction = patch.heroDefense;
             if (patch.heroFields) Object.assign(activeHeroObject, patch.heroFields);
         },
         resetCombat: function () { resetHeroFeatureCombatState(); },
@@ -544,7 +549,7 @@ const CombatEngine = {
             critMultiplier: heroStats.startGlobalCritMultiplier,
             woundChance: heroStats.startGlobalWoundChance,
             interval: heroStats.startSHOT_INTERVAL,
-            castleDefense: heroStats.startCastleDamageReduction,
+            heroDefense: heroStats.startHeroDamageReduction,
             heroFields: {
                 guaranteedCritEvery: heroStats.guaranteedCritEvery,
                 catchBackCritChanceBonus: heroStats.catchBackCritChanceBonus,
@@ -673,10 +678,10 @@ const SurvivalEngine = {
     // (1 - защита); считаем долю прогонов, где HP героя уходит в ноль до конца прогона,
     // и средний остаток HP% там, где герой выжил.
     // Сколько случайных настоящих ударов босса (из реального пула этого уровня)
-    // подряд выдерживает герой, прежде чем HP замка уйдёт в ноль — и какую долю HP
+    // подряд выдерживает герой, прежде чем HP героя уйдёт в ноль — и какую долю HP
     // забирает худший из этих ударов сам по себе (соответствует проверке «не гибнет
     // от одного удара» в scripts/boss-damage-report.js). Принимает ЛЮБОЙ объект героя с
-    // полями castleHP/startCastleDamageReduction/defenseCap — используется и для
+    // полями heroHP/startHeroDamageReduction/defenseCap — используется и для
     // постоянных статов, и для статов, уже прокачанных временными апгрейдами.
     simulateRun(levelData, hero, maxAttacks, random) {
         const finalPhase = levelData.bossCombatConfig.phases.reduce(
@@ -685,8 +690,8 @@ const SurvivalEngine = {
         const pool = levelData.bossAbilities.filter((attack) => levelData.bossCombatConfig.bosses[attack.boss]);
         if (pool.length === 0) return null;
 
-        let hp = hero.castleHP;
-        const defense = Math.min(hero.defenseCap ?? 0.9, hero.startCastleDamageReduction);
+        let hp = hero.heroHP;
+        const defense = Math.min(hero.defenseCap ?? 0.9, hero.startHeroDamageReduction);
         let worstHitFraction = 0;
 
         for (let i = 0; i < maxAttacks; i++) {
@@ -700,7 +705,7 @@ const SurvivalEngine = {
                 levelData.lvlNumber
             );
             const taken = Math.floor(rawDamage * (1 - defense));
-            worstHitFraction = Math.max(worstHitFraction, taken / hero.castleHP);
+            worstHitFraction = Math.max(worstHitFraction, taken / hero.heroHP);
             hp -= taken;
             if (hp <= 0) return { hitsToDefeat: i + 1, worstHitFraction, oneShot: i === 0 };
         }
@@ -775,19 +780,19 @@ const TemporaryUpgradeEngine = {
             critMultiplier: hero.startGlobalCritMultiplier,
             woundChance: hero.startGlobalWoundChance,
             interval: hero.startSHOT_INTERVAL,
-            hp: hero.castleHP,
-            defense: hero.startCastleDamageReduction,
+            hp: hero.heroHP,
+            defense: hero.startHeroDamageReduction,
             defenseCap: ProgressionEngine.api.getHeroDefenseCap(hero),
             critChanceCap: ProgressionEngine.api.getHeroCritChanceCap(hero),
             woundChanceCap: ProgressionEngine.api.getHeroWoundChanceCap(hero),
-            hpCap: ProgressionEngine.api.getHeroCastleHpCap(hero),
+            hpCap: ProgressionEngine.api.getHeroHpCap(hero),
             startDamage: hero.startGlobalDamage,
             startCritChance: hero.startGlobalCritChance,
             startCritMultiplier: hero.startGlobalCritMultiplier,
             startWoundChance: hero.startGlobalWoundChance,
             startInterval: hero.startSHOT_INTERVAL,
-            startHp: hero.castleHP,
-            startDefense: hero.startCastleDamageReduction,
+            startHp: hero.heroHP,
+            startDefense: hero.startHeroDamageReduction,
             minShotInterval: hero.minShotInterval,
             guaranteedCritEvery: hero.guaranteedCritEvery,
             catchBackCritChanceBonus: hero.catchBackCritChanceBonus,
@@ -814,8 +819,8 @@ const TemporaryUpgradeEngine = {
             startGlobalCritMultiplier: state.critMultiplier,
             startGlobalWoundChance: state.woundChance,
             startSHOT_INTERVAL: state.interval,
-            startCastleDamageReduction: state.defense,
-            castleHP: state.hp,
+            startHeroDamageReduction: state.defense,
+            heroHP: state.hp,
             defenseCap: state.defenseCap,
             minShotInterval: state.minShotInterval,
             guaranteedCritEvery: state.guaranteedCritEvery,

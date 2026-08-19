@@ -2,7 +2,7 @@
 
 const GAME_STATE_STORAGE_KEY = 'gameState';
 const GAME_STATE_VERSION = 7;
-const MAX_CASTLE_DAMAGE_REDUCTION = 0.60;
+const MAX_HERO_DAMAGE_REDUCTION = 0.60;
 const CAMPAIGN_FINAL_LEVEL = 141;
 const HERO_MAX_LEVEL = 200;
 const LEVEL_REWARD_SCALE = 3;
@@ -32,9 +32,9 @@ const DEFAULT_HERO_PERMANENT_GROWTH = Object.freeze({
     critMultiplierIncrease: 0.1,
     woundChanceIncrease: 0.01,
     shotIntervalReduction: 1,
-    castleHpMultiplier: 1.05,
+    heroHpMultiplier: 1.05,
     defenseIncrease: 0.01,
-    defenseCap: MAX_CASTLE_DAMAGE_REDUCTION
+    defenseCap: MAX_HERO_DAMAGE_REDUCTION
 });
 
 const HERO_PERMANENT_GROWTH_PROFILES = Object.freeze({
@@ -46,7 +46,7 @@ const HERO_PERMANENT_GROWTH_PROFILES = Object.freeze({
         critMultiplierIncrease: 0.10,
         woundChanceIncrease: 0.003,
         shotIntervalReduction: 1,
-        castleHpMultiplier: 1.049,
+        heroHpMultiplier: 1.049,
         defenseIncrease: 0.002,
         defenseCap: 0.177
     }),
@@ -65,7 +65,7 @@ const HERO_PERMANENT_GROWTH_PROFILES = Object.freeze({
         critMultiplierIncrease: 0.012,
         woundChanceIncrease: 0,
         shotIntervalReduction: 4.7,
-        castleHpMultiplier: 1.049,
+        heroHpMultiplier: 1.049,
         defenseIncrease: 0.001,
         defenseCap: 0.162
     }),
@@ -80,7 +80,7 @@ const HERO_PERMANENT_GROWTH_PROFILES = Object.freeze({
         critMultiplierIncrease: 0.12,
         woundChanceIncrease: 0.012,
         shotIntervalReduction: 5,
-        castleHpMultiplier: 1.045,
+        heroHpMultiplier: 1.045,
         defenseIncrease: 0.002,
         defenseCap: 0.196
     }),
@@ -110,7 +110,7 @@ const HERO_PERMANENT_GROWTH_PROFILES = Object.freeze({
         critMultiplierIncrease: 0.02,
         woundChanceIncrease: 0,
         shotIntervalReduction: 0,
-        castleHpMultiplier: 1.048,
+        heroHpMultiplier: 1.048,
         defenseIncrease: 0.0015,
         defenseCap: 0.17
     }),
@@ -125,7 +125,7 @@ const HERO_PERMANENT_GROWTH_PROFILES = Object.freeze({
         woundChanceIncrease: 0.006,
         shotIntervalReduction: 2,
         // Ревизия 10 (живучесть): см. guardian выше.
-        castleHpMultiplier: 1.047,
+        heroHpMultiplier: 1.047,
         defenseIncrease: 0.002,
         defenseCap: 0.228
     })
@@ -138,7 +138,7 @@ function getHeroPermanentGrowth(hero) {
 
 function getHeroDefenseCap(hero) {
     return Math.min(
-        MAX_CASTLE_DAMAGE_REDUCTION,
+        MAX_HERO_DAMAGE_REDUCTION,
         getHeroPermanentGrowth(hero).defenseCap
     );
 }
@@ -156,8 +156,8 @@ function getHeroWoundChanceCap(hero) {
     return Number.isFinite(hero?.woundChanceCap) ? Math.min(1, hero.woundChanceCap) : 1;
 }
 
-function getHeroCastleHpCap(hero) {
-    return Number.isFinite(hero?.castleHpCap) && hero.castleHpCap > 0 ? hero.castleHpCap : Infinity;
+function getHeroHpCap(hero) {
+    return Number.isFinite(hero?.heroHpCap) && hero.heroHpCap > 0 ? hero.heroHpCap : Infinity;
 }
 
 function getHeroUpgradeCost(heroLevel) {
@@ -298,6 +298,33 @@ function getHeroInvestedZlata(heroLevel) {
     return invested;
 }
 
+// «Замка» в игре никогда не было — castleHP/startCastleDamageReduction/castleHpCap/
+// castleRegenPerSecond всегда были здоровьем и защитой самого героя, только назывались
+// по-старому. Переименовано в heroHP/startHeroDamageReduction/heroHpCap/heroRegenPerSecond
+// — эта функция один раз переносит значения со старых имён полей на новые в уже
+// сохранённых у игрока данных, чтобы прогресс не обнулился молча. Определено здесь,
+// ДО createGameState() ниже — та вызывает migrateGameState() сразу же при загрузке
+// скрипта (не отложенно), а isPlainObject — function-декларация, ей хостинг не мешает,
+// но const без инициализации на этот момент уже упал бы в temporal dead zone.
+const LEGACY_HERO_FIELD_RENAMES = Object.freeze({
+    castleHP: 'heroHP',
+    startCastleDamageReduction: 'startHeroDamageReduction',
+    castleHpCap: 'heroHpCap',
+    castleRegenPerSecond: 'heroRegenPerSecond'
+});
+
+function renameLegacyHeroFields(savedHero) {
+    if (!isPlainObject(savedHero)) return savedHero;
+    const renamed = { ...savedHero };
+    Object.entries(LEGACY_HERO_FIELD_RENAMES).forEach(([oldKey, newKey]) => {
+        if (renamed[newKey] === undefined && renamed[oldKey] !== undefined) {
+            renamed[newKey] = renamed[oldKey];
+        }
+        delete renamed[oldKey];
+    });
+    return renamed;
+}
+
 // 1. Инициализация прогресса
 let gameState = createGameState();
 
@@ -333,7 +360,7 @@ function persistGameState(state) {
 }
 
 // Каждый шаг качает пару статов. Если один из пары уже упёрся в свой потолок
-// (critChanceCap/woundChanceCap/castleHpCap на герое, defenseCap по профилю), прирост
+// (critChanceCap/woundChanceCap/heroHpCap на герое, defenseCap по профилю), прирост
 // этого шага не пропадает впустую — второй стат пары получает его ЕЩЁ РАЗ. Так героя
 // нельзя "перекачать" сверх задуманного по одной оси ценой недокачки по другой —
 // вместо этого рост перетекает туда, где ещё есть куда расти.
@@ -377,32 +404,32 @@ function applyHeroPermanentStatUpgrade(hero) {
         );
         hero.upSpecif = 4;
     } else if (hero.upSpecif === 4) {
-        const castleHpCap = getHeroCastleHpCap(hero);
+        const heroHpCap = getHeroHpCap(hero);
         const defenseCap = getHeroDefenseCap(hero);
-        const castleHpCapped = hero.castleHP >= castleHpCap;
-        const defenseCapped = hero.startCastleDamageReduction >= defenseCap;
+        const heroHpCapped = hero.heroHP >= heroHpCap;
+        const defenseCapped = hero.startHeroDamageReduction >= defenseCap;
 
-        if (!castleHpCapped) {
-            hero.castleHP = Math.min(
-                castleHpCap,
-                hero.castleHP + Math.floor(hero.castleHP * (growth.castleHpMultiplier - 1))
+        if (!heroHpCapped) {
+            hero.heroHP = Math.min(
+                heroHpCap,
+                hero.heroHP + Math.floor(hero.heroHP * (growth.heroHpMultiplier - 1))
             );
         }
         if (!defenseCapped) {
-            hero.startCastleDamageReduction = Math.min(
+            hero.startHeroDamageReduction = Math.min(
                 defenseCap,
-                hero.startCastleDamageReduction + growth.defenseIncrease
+                hero.startHeroDamageReduction + growth.defenseIncrease
             );
         }
-        if (castleHpCapped && !defenseCapped) {
-            hero.startCastleDamageReduction = Math.min(
+        if (heroHpCapped && !defenseCapped) {
+            hero.startHeroDamageReduction = Math.min(
                 defenseCap,
-                hero.startCastleDamageReduction + growth.defenseIncrease
+                hero.startHeroDamageReduction + growth.defenseIncrease
             );
-        } else if (defenseCapped && !castleHpCapped) {
-            hero.castleHP = Math.min(
-                castleHpCap,
-                hero.castleHP + Math.floor(hero.castleHP * (growth.castleHpMultiplier - 1))
+        } else if (defenseCapped && !heroHpCapped) {
+            hero.heroHP = Math.min(
+                heroHpCap,
+                hero.heroHP + Math.floor(hero.heroHP * (growth.heroHpMultiplier - 1))
             );
         }
         hero.upSpecif = 1;
@@ -458,8 +485,8 @@ function isHeroEligibleForDifficulty(hero) {
         && Number.isFinite(hero.startGlobalCritMultiplier)
         && Number.isFinite(hero.startGlobalWoundChance)
         && Number.isFinite(hero.startSHOT_INTERVAL)
-        && Number.isFinite(hero.castleHP)
-        && Number.isFinite(hero.startCastleDamageReduction);
+        && Number.isFinite(hero.heroHP)
+        && Number.isFinite(hero.startHeroDamageReduction);
 }
 
 function buildDifficultyReferenceHero(defaultHero, targetLevel) {
@@ -576,9 +603,9 @@ function getHeroExpectedPermanentDps(hero) {
 
 function getHeroDifficultyMetrics(hero) {
     const defense = clampHeroDifficultyValue(
-        Number(hero.startCastleDamageReduction) || 0,
+        Number(hero.startHeroDamageReduction) || 0,
         0,
-        MAX_CASTLE_DAMAGE_REDUCTION
+        MAX_HERO_DAMAGE_REDUCTION
     );
     const attackStats = getHeroAttackMultiplierStats(hero);
     const volatilityBurden = clampHeroDifficultyValue(
@@ -590,7 +617,7 @@ function getHeroDifficultyMetrics(hero) {
     );
 
     return {
-        effectiveHp: Math.max(1, Number(hero.castleHP) || 1) / (1 - defense),
+        effectiveHp: Math.max(1, Number(hero.heroHP) || 1) / (1 - defense),
         expectedDps: Math.max(0.001, getHeroExpectedPermanentDps(hero)),
         shotsPerSecond: 1000 / Math.max(200, Number(hero.startSHOT_INTERVAL) || 1000),
         mechanicBurden: Math.max(volatilityBurden, catchBackBurden)
@@ -675,6 +702,14 @@ function migrateGameState(savedState) {
     const defaults = getDefaultGameState();
     if (!isPlainObject(savedState)) return defaults;
 
+    if (isPlainObject(savedState) && Array.isArray(savedState.mHero)) {
+        savedState.mHero.forEach(heroKey => {
+            if (isPlainObject(savedState[heroKey])) {
+                savedState[heroKey] = renameLegacyHeroFields(savedState[heroKey]);
+            }
+        });
+    }
+
     const migrated = { ...defaults, ...savedState };
     migrated.schemaVersion = GAME_STATE_VERSION;
     migrated.lastCompletedLevel = Number.isFinite(savedState.lastCompletedLevel)
@@ -735,9 +770,9 @@ function migrateGameState(savedState) {
                 migrated[heroKey].fullImage = defaultHero.fullImage;
             }
 
-            migrated[heroKey].startCastleDamageReduction = Math.min(
+            migrated[heroKey].startHeroDamageReduction = Math.min(
                 getHeroDefenseCap(migrated[heroKey]),
-                Math.max(0, migrated[heroKey].startCastleDamageReduction)
+                Math.max(0, migrated[heroKey].startHeroDamageReduction)
             );
 
             if (Number.isFinite(migrated[heroKey].level)) {
@@ -1093,7 +1128,7 @@ function getDefaultGameState() {
 				// по среднему k=1.0095 между целью и реальным боем на всех 11 точках (см.
 				// историю подбора). Точное совпадение на каждой точке — недостижимо при
 				// таком шуме, ориентир — среднее ≈−8%, как и у остальных героев в файле.
-				startGlobalDamage: 117,
+				startGlobalDamage: 150,
 				startGlobalCritChance: 0.045,
 				startGlobalCritMultiplier: 2.1,
 				// Ревизия N: шанс ранения снят целиком (эксперимент — см. woundChanceCap
@@ -1107,7 +1142,7 @@ function getDefaultGameState() {
 				// уроном боссов. Цель — ~12 сильнейших ударов на каждом уровне кампании
 				// при focused-прокачке (см. scripts/fit-survivability.js). На 1 уровне
 				// допускается 11 вместо 12 из‑за округления.
-				startCastleDamageReduction : 0.097,
+				startHeroDamageReduction : 0.097,
 				// Скорость атаки (=1000-startSHOT_INTERVAL) опущена с 30 до 20 — постоянный
 				// ДПС Еремея оказался завышен (см. историю снятия шанса ранения выше —
 				// комментарий про balanceRevision 11). Не оценено реальным боем панели после
@@ -1121,7 +1156,7 @@ function getDefaultGameState() {
 				// «скорость атаки» ему вообще не предлагается — сила только через
 				// damage/crit, как и задумано.
 				minShotInterval: 980,
-				castleHP : 336,
+				heroHP : 336,
 				lvlUnlock: 1,
 				zlataUp: 10,
 				investedZlata: 0,
@@ -1143,7 +1178,7 @@ function getDefaultGameState() {
 				// прокачка не упирается раньше конца. Временные HP-апгрейды ограничены
 				// отдельно в game.js (~+25% от старта забега), чтобы высокий cap не
 				// раздувал живучесть внутри одного уровня.
-				castleHpCap: 3500,
+				heroHpCap: 3500,
 				// Ревизия 11 (DPS с временными улучшениями — см. game.js/getAvailableUpgrades):
 				// сила Еремея — немногочисленные, но огромные ПОСТОЯННЫЕ криты (см.
 				// критChanceCap/catchBack выше), а не стак множества мелких временных
@@ -1224,15 +1259,15 @@ function getDefaultGameState() {
 				fullImage: 'images/hero/1_babka/dunya_full.webp',
 				weaponImage: 'images/hero/1_babka/weapon.webp',
 				level: 1,
-				startGlobalDamage: 97,
+				startGlobalDamage: 115,
 				startGlobalCritChance: 0.03,
 				startGlobalCritMultiplier: 2.0,
 				startGlobalWoundChance	: 0,
 				// Ревизия 10 (живучесть): цель ~9 сильнейших ударов по всей кампании.
-				startCastleDamageReduction : 0.122,
+				startHeroDamageReduction : 0.122,
 				startSHOT_INTERVAL : 808,
-				minShotInterval: 585,
-				castleHP : 248,
+				minShotInterval: 555,
+				heroHP : 248,
 				lvlUnlock: 15,
 				zlataUp: 10,
 				investedZlata: 0,
@@ -1247,7 +1282,7 @@ function getDefaultGameState() {
 				// critChanceCap == стартовому крит-шансу (см. комментарий выше про редирект).
 				critChanceCap: 0.03,
 				woundChanceCap: 0,
-				castleHpCap: 2600,
+				heroHpCap: 2600,
 				// Ревизия 11 (DPS с временными улучшениями — см. game.js/getAvailableUpgrades
 				// и temporaryUpgradePower у объекта eremei выше): у Дуни critChanceCap==старту
 				// (см. выше) — она не может брать «шанс крита», и без компенсации это резко
@@ -1318,7 +1353,7 @@ function getDefaultGameState() {
 				fullImage: 'images/hero/4_daryana/daryana_full.webp',
 				weaponImage: 'images/hero/4_daryana/weapon.webp',
 				level: 1,
-				startGlobalDamage: 91.9,
+				startGlobalDamage: 110,
 				startGlobalCritChance: 0.02,
 				startGlobalCritMultiplier: 2.0,
 				startGlobalWoundChance	: 0.02,
@@ -1326,10 +1361,10 @@ function getDefaultGameState() {
 				// подпись в UI переименована чисто косметически, без смены логики.
 				woundChanceLabel: 'Шанс поджога',
 				// Ревизия 10 (живучесть): цель ~7 сильнейших ударов по всей кампании.
-				startCastleDamageReduction : 0.148,
+				startHeroDamageReduction : 0.148,
 				startSHOT_INTERVAL : 980,
 				minShotInterval: 940,
-				castleHP : 188,
+				heroHP : 160,
 				lvlUnlock: 1,
 				zlataUp: 10,
 				investedZlata: 0,
@@ -1345,7 +1380,7 @@ function getDefaultGameState() {
 				// Дарьяны — «Прогревание» и большой обычный урон, не крит.
 				critChanceCap: 0.103,
 				woundChanceCap: 0.30,
-				castleHpCap: 1750,
+				heroHpCap: 1750,
 				// Ревизия 11 (DPS с временными улучшениями — см. game.js/getAvailableUpgrades
 				// и temporaryUpgradePower у объекта eremei выше): minShotInterval==старту —
 				// Дарьяна не может брать «скорость атаки» вообще (весь забег), а её низкий
@@ -1388,15 +1423,15 @@ function getDefaultGameState() {
 				fullImage: 'images/hero/3_luka/luka_full.webp',
 				weaponImage: 'images/hero/3_luka/weapon.webp',
 				level: 1,
-				startGlobalDamage: 106,
-				startGlobalCritChance: 0.015,
+				startGlobalDamage: 123,
+				startGlobalCritChance: 0.035,
 				startGlobalCritMultiplier: 2.2,
 				startGlobalWoundChance	: 0.03,
 				// Ревизия 10 (живучесть): цель ~5 сильнейших ударов. Временные HP не
-				// раздуваются через высокий castleHpCap — см. потолок забега в game.js.
-				startCastleDamageReduction : 0.116,
-				startSHOT_INTERVAL : 800,
-				castleHP : 144,
+				// раздуваются через высокий heroHpCap — см. потолок забега в game.js.
+				startHeroDamageReduction : 0.116,
+				startSHOT_INTERVAL : 775,
+				heroHP : 144,
 				lvlUnlock: 3,
 				zlataUp: 10,
 				investedZlata: 0,
@@ -1408,7 +1443,7 @@ function getDefaultGameState() {
 				// его архетипная черта, поэтому cap заметно выше, чем у остальных героев.
 				critChanceCap: 0.39,
 				woundChanceCap: 0.59,
-				castleHpCap: 1200,
+				heroHpCap: 1200,
 				// Ревизия 11: у Луки не было явного temporaryUpgradePower (дефолт 1 —
 				// см. game.js/getAvailableUpgrades) — отсюда просадки под Дарьяной
 				// (power 2.5) в реальном бою панели вплоть до -21% на отдельных точках.
@@ -1440,9 +1475,9 @@ function getDefaultGameState() {
 			// Шанс ранения заморожен на нуле (woundChanceCap == старту 0) — редирект в
 			// applyHeroPermanentStatUpgrade усиливает крит-урон вместо него (см. профиль
 			// swift выше). Крит-шанс НЕ заморожен, растёт медленно сам по себе (critChanceCap
-			// 0.07). Особенность «Живительная клубника» — пассивный реген HP замка на 1% от
-			// максимума каждую секунду (см. castleRegenPerSecond ниже, применяется в game.js
-			// через applyMilaCastleRegen). ВАЖНО: сырая живучесть (castleHP/защита, БЕЗ учёта
+			// 0.07). Особенность «Живительная клубника» — пассивный реген HP героя на 1% от
+			// максимума каждую секунду (см. heroRegenPerSecond ниже, применяется в game.js
+			// через applyMilaHeroRegen). ВАЖНО: сырая живучесть (heroHP/защита, БЕЗ учёта
 			// регена) нарочно держится чуть НИЖЕ Луки на контрольных точках кампании
 			// (1/15/30/45/60/75/90/105/120/135/141) — на 1 сильнейший удар меньше почти
 			// везде — а реген компенсирует разницу в реальном бою. DPS тюнингом (см. swift)
@@ -1464,29 +1499,29 @@ function getDefaultGameState() {
 				fullImage: 'images/hero/5_MilaZelenova/full.webp',
 				weaponImage: 'images/hero/5_MilaZelenova/weapon.webp',
 				level: 1,
-				startGlobalDamage: 15.3,
+				startGlobalDamage: 20,
 				startGlobalCritChance: 0.01,
 				startGlobalCritMultiplier: 1.4,
 				startGlobalWoundChance	: 0,
 				// Ниже, чем у Луки (0.116) на старте — сырая живучесть без учёта регена
 				// нарочно слабее его (см. комментарий выше объекта mila).
-				startCastleDamageReduction : 0.10,
+				startHeroDamageReduction : 0.10,
 				startSHOT_INTERVAL : 100,
 				// Личный пол равен старту — скорость заморожена навсегда (тот же приём,
 				// что у Еремея/Дарьяны, только у неё пол на противоположном, самом
 				// быстром конце шкалы, а не на медленном).
 				minShotInterval: 100,
 				// Ниже, чем у Луки (144) на старте — см. комментарий выше объекта mila.
-				castleHP : 115,
+				heroHP : 115,
 				lvlUnlock: 30,
 				zlataUp: 10,
 				investedZlata: 0,
 				upSpecif: 1,
 				unlock: false,
 				feature: 'Живительная клубника — <br>здоровье восстанавливается<br>каждую секунду на 1%',
-				// Живительная клубника: пассивный реген HP замка, читается в game.js
-				// через applyMilaCastleRegen(hero.castleRegenPerSecond ?? дефолт).
-				castleRegenPerSecond: 0.01,
+				// Живительная клубника: пассивный реген HP героя, читается в game.js
+				// через applyMilaHeroRegen(hero.heroRegenPerSecond ?? дефолт).
+				heroRegenPerSecond: 0.01,
 				// critChanceCap выше старта (0.01) — крит-шанс растёт медленно сам,
 				// без редиректа (см. комментарий у профиля swift).
 				critChanceCap: 0.07,
@@ -1494,7 +1529,7 @@ function getDefaultGameState() {
 				// его прирост редиректится в крит-урон.
 				woundChanceCap: 0,
 				// Ниже, чем у Луки (1200) — см. комментарий выше объекта mila.
-				castleHpCap: 1000,
+				heroHpCap: 1000,
 				// Из 7 типов временных апгрейдов ей заблокированы 2 (скорость и ранение) —
 				// личные потолки равны старту (см. выше).
 				// Ревизия N (DPS с временными улучшениями — см. game.js/getAvailableUpgrades
@@ -1519,9 +1554,9 @@ function getDefaultGameState() {
 				startGlobalCritChance: 0.25,
 				startGlobalCritMultiplier: 1.8,
 				startGlobalWoundChance	: 0.1,
-				startCastleDamageReduction : 0.01,
+				startHeroDamageReduction : 0.01,
 				startSHOT_INTERVAL : 360,
-				castleHP : 50,
+				heroHP : 50,
 				lvlUnlock: 40,
 				unlock: false,
 			},
@@ -1535,9 +1570,9 @@ function getDefaultGameState() {
 				startGlobalCritChance: 0.25,
 				startGlobalCritMultiplier: 1.8,
 				startGlobalWoundChance	: 0.1,
-				startCastleDamageReduction : 0.01,
+				startHeroDamageReduction : 0.01,
 				startSHOT_INTERVAL : 360,
-				castleHP : 50,
+				heroHP : 50,
 				lvlUnlock: 50,
 				unlock: false,
 			},
@@ -1550,9 +1585,9 @@ function getDefaultGameState() {
 				startGlobalCritChance: 0.25,
 				startGlobalCritMultiplier: 1.8,
 				startGlobalWoundChance	: 0.1,
-				startCastleDamageReduction : 0.01,
+				startHeroDamageReduction : 0.01,
 				startSHOT_INTERVAL : 360,
-				castleHP : 50,
+				heroHP : 50,
 				lvlUnlock: 60,
 				unlock: false,
 			},
@@ -1565,9 +1600,9 @@ function getDefaultGameState() {
 				startGlobalCritChance: 0.25,
 				startGlobalCritMultiplier: 1.8,
 				startGlobalWoundChance	: 0.1,
-				startCastleDamageReduction : 0.01,
+				startHeroDamageReduction : 0.01,
 				startSHOT_INTERVAL : 360,
-				castleHP : 50,
+				heroHP : 50,
 				lvlUnlock: 70,
 				unlock: false,
 			},
@@ -1580,9 +1615,9 @@ function getDefaultGameState() {
 				startGlobalCritChance: 0.25,
 				startGlobalCritMultiplier: 1.8,
 				startGlobalWoundChance	: 0.1,
-				startCastleDamageReduction : 0.01,
+				startHeroDamageReduction : 0.01,
 				startSHOT_INTERVAL : 360,
-				castleHP : 50,
+				heroHP : 50,
 				lvlUnlock: 80,
 				unlock: false,
 			},
@@ -1595,9 +1630,9 @@ function getDefaultGameState() {
 				startGlobalCritChance: 0.25,
 				startGlobalCritMultiplier: 1.8,
 				startGlobalWoundChance	: 0.1,
-				startCastleDamageReduction : 0.01,
+				startHeroDamageReduction : 0.01,
 				startSHOT_INTERVAL : 360,
-				castleHP : 50,
+				heroHP : 50,
 				lvlUnlock: 90,
 				unlock: false,
 			},
@@ -1610,9 +1645,9 @@ function getDefaultGameState() {
 				startGlobalCritChance: 0.25,
 				startGlobalCritMultiplier: 1.8,
 				startGlobalWoundChance	: 0.1,
-				startCastleDamageReduction : 0.01,
+				startHeroDamageReduction : 0.01,
 				startSHOT_INTERVAL : 360,
-				castleHP : 50,
+				heroHP : 50,
 				lvlUnlock: 100,
 				unlock: false,
 			},
@@ -1625,9 +1660,9 @@ function getDefaultGameState() {
 				startGlobalCritChance: 0.25,
 				startGlobalCritMultiplier: 1.8,
 				startGlobalWoundChance	: 0.1,
-				startCastleDamageReduction : 0.01,
+				startHeroDamageReduction : 0.01,
 				startSHOT_INTERVAL : 360,
-				castleHP : 50,
+				heroHP : 50,
 				lvlUnlock: 110,
 				unlock: false,
 			},
@@ -1640,9 +1675,9 @@ function getDefaultGameState() {
 				startGlobalCritChance: 0.25,
 				startGlobalCritMultiplier: 1.8,
 				startGlobalWoundChance	: 0.1,
-				startCastleDamageReduction : 0.01,
+				startHeroDamageReduction : 0.01,
 				startSHOT_INTERVAL : 360,
-				castleHP : 50,
+				heroHP : 50,
 				lvlUnlock: 120,
 				unlock: false,
 			},
@@ -1655,9 +1690,9 @@ function getDefaultGameState() {
 				startGlobalCritChance: 0.25,
 				startGlobalCritMultiplier: 1.8,
 				startGlobalWoundChance	: 0.1,
-				startCastleDamageReduction : 0.01,
+				startHeroDamageReduction : 0.01,
 				startSHOT_INTERVAL : 360,
-				castleHP : 50,
+				heroHP : 50,
 				lvlUnlock: 130,
 				unlock: false,
 			},
@@ -1670,9 +1705,9 @@ function getDefaultGameState() {
 				startGlobalCritChance: 0.25,
 				startGlobalCritMultiplier: 1.8,
 				startGlobalWoundChance	: 0.1,
-				startCastleDamageReduction : 0.01,
+				startHeroDamageReduction : 0.01,
 				startSHOT_INTERVAL : 360,
-				castleHP : 50,
+				heroHP : 50,
 				lvlUnlock: 140,
 				unlock: false,
 			},
@@ -1685,9 +1720,9 @@ function getDefaultGameState() {
 				startGlobalCritChance: 0.25,
 				startGlobalCritMultiplier: 1.8,
 				startGlobalWoundChance	: 0.1,
-				startCastleDamageReduction : 0.01,
+				startHeroDamageReduction : 0.01,
 				startSHOT_INTERVAL : 360,
-				castleHP : 50,
+				heroHP : 50,
 				lvlUnlock: 141,
 				unlock: false,
 			},

@@ -78,8 +78,8 @@ const BOSS_HEALTH_BALANCE = Object.freeze({
 // пересекаться; при пересечении применяется первое совпадающее правило по
 // порядку в массиве.
 const BOSS_HEALTH_LEVEL_ADJUSTMENTS = Object.freeze([
-    { fromLevel: 1, toLevel: 6, hpMultiplier: 0.5 },
-    { fromLevel: 7, toLevel: 25, hpMultiplier: 0.7 }
+ //   { fromLevel: 1, toLevel: 6, hpMultiplier: 1 },
+   // { fromLevel: 7, toLevel: 25, hpMultiplier: 1 }
 ]);
 
 function getBossHealthLevelMultiplier(level) {
@@ -175,8 +175,8 @@ const BOSS_HP_CATCHUP_DELAY_MS = 480;
 const GAME_CONFIG = {
     START_Y: 5,           // Начальная позиция Y (выше экрана)
     TARGET_Y: 78,           // Целевая позиция Y (верх статус-бара героя)
-	CASTLE_BASE_HP: activeHeroObject.castleHP,
-	CASTLE_HP_PER_LEVEL: 20
+	HERO_BASE_HP: activeHeroObject.heroHP,
+	HERO_HP_PER_LEVEL: 20
 };
 
 let rowTotal = ""; //Строка итогов прохождения уровня
@@ -184,25 +184,25 @@ let rowTotal = ""; //Строка итогов прохождения уровн
 // Массив активных врагов - хранит все текущие объекты врагов
 let activeEnemies = [];
 
-// Здоровье крепости и завершение игры: 
-let castleHealthBar = null;
-let castleHealthText = null;
-let castleLevelText = null;
+// Здоровье героя и завершение игры: 
+let heroHealthBar = null;
+let heroHealthText = null;
+let heroLevelText = null;
 
 
-let castleHP = {
-    current: activeHeroObject.castleHP,
-    max: activeHeroObject.castleHP,
+let heroHP = {
+    current: activeHeroObject.heroHP,
+    max: activeHeroObject.heroHP,
     level: 1
 };
 
-const startGlobalCastleHp = activeHeroObject.castleHP;
+const startGlobalHeroHp = activeHeroObject.heroHP;
 
-castleHP.current = activeHeroObject.castleHP;
-castleHP.max = activeHeroObject.castleHP;
+heroHP.current = activeHeroObject.heroHP;
+heroHP.max = activeHeroObject.heroHP;
 
 let isGameOver = false;
-let castleImage = null;
+let heroStatusBar = null;
 
 
 // Прицел и урон
@@ -215,9 +215,9 @@ const startGlobalCritChance = activeHeroObject.startGlobalCritChance;
 const startGlobalCritMultiplier = activeHeroObject.startGlobalCritMultiplier; 
 
 const startGlobalWoundChance = activeHeroObject.startGlobalWoundChance;
-const startCastleDamageReduction = Math.min(
-    MAX_CASTLE_DAMAGE_REDUCTION,
-    activeHeroObject.startCastleDamageReduction
+const startHeroDamageReduction = Math.min(
+    MAX_HERO_DAMAGE_REDUCTION,
+    activeHeroObject.startHeroDamageReduction
 );
 const startSHOT_INTERVAL = activeHeroObject.startSHOT_INTERVAL;
 const TEMPORARY_UPGRADE_BASE_SHARE = 0.20;
@@ -235,16 +235,16 @@ let isMobileDevice = false;
 const MOBILE_AIM_OFFSET_Y = 48; // прицел чуть выше пальца, чтобы не закрывать цель
 let lastTouchAimTime = 0;
 
-let castleDamageReduction = startCastleDamageReduction;
-const castleDamageReductionCap = getHeroDefenseCap(activeHeroObject);
-// Потолки крит-шанса/шанса ранения/HP замка (см. одноимённые поля на герое в
-// saveData.js) — как и castleDamageReductionCap, читаются один раз при заходе на
+let heroDamageReduction = startHeroDamageReduction;
+const heroDamageReductionCap = getHeroDefenseCap(activeHeroObject);
+// Потолки крит-шанса/шанса ранения/HP героя (см. одноимённые поля на герое в
+// saveData.js) — как и heroDamageReductionCap, читаются один раз при заходе на
 // уровень: после потолка временные улучшения этого стата больше не предлагаются
 // (getAvailableUpgrades), а в постоянной прокачке рост уходит в парный стат шага
 // (applyHeroPermanentStatUpgrade).
 const globalCritChanceCap = getHeroCritChanceCap(activeHeroObject);
 const globalWoundChanceCap = getHeroWoundChanceCap(activeHeroObject);
-const castleHpCap = getHeroCastleHpCap(activeHeroObject);
+const heroHpCap = getHeroHpCap(activeHeroObject);
 
 // Таймер для стрельбы
 let lastShotTime = 0;
@@ -336,6 +336,21 @@ let isGamePaused = false;
  * Класс представляющий отдельного врага
  * Инкапсулирует логику конкретного врага
  */
+// ВАЖНО для понимания боевой системы: класс называется Enemy, но обычных врагов
+// (мобов) в игре не бывает — вообще ни одного. Уровень — это всегда один босс (или
+// один босс с несколькими фазами). Экземпляр Enemy — это либо сам босс/текущая фаза
+// босса целиком (isBoss===true, type ∈ bossM — в lvlData/gameDataXX.js это обычно
+// однозначные ключи типа enem1/enem2/.../enem5, каждый — своя фаза с именем и HP),
+// либо одна из его отдельных атак (isBoss===false — в lvlData это обычно ключи
+// вида enem11/enem22/.../enem55, с общим "снарядным" HP вроде 100), которая
+// прилетает как отдельный спрайт-«снаряд». Сейчас атаки босса (isBoss===false)
+// всегда умирают ровно с одного удара героя — их HP в данных уровня по факту не
+// влияет на баланс ДПС (по-настоящему считается только HP самого босса/фазы, см.
+// calculateBossMaxHealth ниже). Не путать это с "живучестью мобов" — такой механики
+// в игре нет и никогда не было. Если в будущем введут атаки босса, которые НЕ
+// умирают с одного удара (условная "броня" у снаряда), это предположение перестанет
+// быть верным везде, где сейчас на нём молча полагаются (например, анализ баланса
+// ДПС по чёрному ящику admin-balance-panel.html).
 class Enemy {
     constructor(type, xPos) {
         // Сохраняем тип врага
@@ -725,8 +740,8 @@ class Enemy {
             this.element.parentNode.removeChild(this.element);
         }
     }
-	//урон по крепости:
-	getDamageToCastle() {
+	//урон герою:
+	getDamageToHero() {
         return this.damage;
     }
 	
@@ -916,12 +931,12 @@ function initGame() {
     enemiesContainer.style.left = '0';
     gameField.appendChild(enemiesContainer);
     
-    initCastleHealth();
+    initHeroHealth();
 	
 	   // Инициализация полоски здоровья босса
     initBossHealthBar();
 	
-    castleImage = document.getElementById('castleImage');
+    heroStatusBar = document.getElementById('heroStatusBar');
 
     document.getElementById('statusbarRestartBtn')?.addEventListener('click', () => {
         location.reload();
@@ -983,10 +998,10 @@ function resetGame() {
     timeSec2 = 0;
     lastTimeSec2 = 0;
     lastFrameTime = null;
-    castleHP.current = GAME_CONFIG.CASTLE_BASE_HP;
-    castleHP.max = GAME_CONFIG.CASTLE_BASE_HP;
-    castleHP.level = 1;
-    updateCastleHealthDisplay();
+    heroHP.current = GAME_CONFIG.HERO_BASE_HP;
+    heroHP.max = GAME_CONFIG.HERO_BASE_HP;
+    heroHP.level = 1;
+    updateHeroHealthDisplay();
     document.body.style.backgroundColor = ''; // возвращаем цвет CSS-переменной --area-bg текущей области
 	stopBossEvents();
 	bossDeathSequenceActive = false;
@@ -1028,7 +1043,7 @@ function resetGame() {
     globalCritMultiplier = startGlobalCritMultiplier;
     globalWoundChance = startGlobalWoundChance;
     countDamageBoss = 0;
-    castleDamageReduction = startCastleDamageReduction;
+    heroDamageReduction = startHeroDamageReduction;
     SHOT_INTERVAL = startSHOT_INTERVAL;
     resetHeroFeatureCombatState();
     
@@ -1192,7 +1207,7 @@ function gameLoop(currentTime) {
     const deltaTime = Math.min(Math.max(rawDeltaTime, 0), 100);
     activeGameTimeMs += deltaTime;
     timeSec2 = Math.floor(activeGameTimeMs / 1000);
-    applyMilaCastleRegen(deltaTime);
+    applyMilaHeroRegen(deltaTime);
 	
 	if ((timeSec2-lastTimeSec2)>=1 && (timeNextBoss-timeSec2)>0 && (timeNextBoss-timeSec2)<5 && !bossAlive) {
 		lastTimeSec2 = timeSec2;
@@ -1253,11 +1268,11 @@ function gameLoop(currentTime) {
         }
         
         if (updateResult) {
-            // Враг достиг замка - наносим урон
-            const damage = enemy.getDamageToCastle();
-            damageCastle(damage);
+            // Атака достигла героя - наносим урон
+            const damage = enemy.getDamageToHero();
+            damageHero(damage);
             
-            console.log(`${enemy.type} достиг крепости и нанес ${damage} урона!`);
+            console.log(`${enemy.type} достиг героя и нанёс ${damage} урона!`);
             
             enemy.remove();
             activeEnemies.splice(i, 1);
@@ -1703,46 +1718,46 @@ function executeBossEvent() {
 }
 
 
-// ====================ФУНКЦИИ ЗДОРОВЬЯ КРЕПОСТИ И ЗАВЕРШЕНИЯ ИГРЫ ====================
+// ====================ФУНКЦИИ ЗДОРОВЬЯ ГЕРОЯ И ЗАВЕРШЕНИЯ ИГРЫ ====================
 
- //* Инициализирует здоровье крепости
-function initCastleHealth() {
-    castleHealthBar = document.getElementById('castleHealthBar');
-    castleHealthText = document.getElementById('castleHealthText');
-    castleLevelText = document.getElementById('castleLevel');
+ //* Инициализирует здоровье героя
+function initHeroHealth() {
+    heroHealthBar = document.getElementById('heroHealthBar');
+    heroHealthText = document.getElementById('heroHealthText');
+    heroLevelText = document.getElementById('heroLevel');
     
-    castleHP.current = GAME_CONFIG.CASTLE_BASE_HP;
-    castleHP.max = GAME_CONFIG.CASTLE_BASE_HP;
-    castleHP.level = 1;
+    heroHP.current = GAME_CONFIG.HERO_BASE_HP;
+    heroHP.max = GAME_CONFIG.HERO_BASE_HP;
+    heroHP.level = 1;
     
-    updateCastleHealthDisplay();
-    console.log('Здоровье крепости инициализировано');
+    updateHeroHealthDisplay();
+    console.log('Здоровье героя инициализировано');
 }
 
 /**
- * Обновляет отображение здоровья крепости
+ * Обновляет отображение здоровья героя
  */
-function updateCastleHealthDisplay() {
-    if (!castleHealthBar || !castleHealthText) return;
+function updateHeroHealthDisplay() {
+    if (!heroHealthBar || !heroHealthText) return;
     
-    const healthPercent = (castleHP.current / castleHP.max) * 100;
+    const healthPercent = (heroHP.current / heroHP.max) * 100;
     
-    castleHealthBar.style.width = `${healthPercent}%`;
+    heroHealthBar.style.width = `${healthPercent}%`;
     
     if (healthPercent > 50) {
-        castleHealthBar.style.background = 'linear-gradient(to right, #4CAF50, #8BC34A)';
+        heroHealthBar.style.background = 'linear-gradient(to right, #4CAF50, #8BC34A)';
     } else if (healthPercent > 25) {
-        castleHealthBar.style.background = 'linear-gradient(to right, #FF9800, #FFC107)';
+        heroHealthBar.style.background = 'linear-gradient(to right, #FF9800, #FFC107)';
     } else {
-        castleHealthBar.style.background = 'linear-gradient(to right, #F44336, #FF5722)';
+        heroHealthBar.style.background = 'linear-gradient(to right, #F44336, #FF5722)';
     }
     
-    castleHealthText.textContent = activeHeroObject.dispName;
+    heroHealthText.textContent = activeHeroObject.dispName;
 	const heroImage = document.getElementById('heroImage');
 	heroImage.src = activeHeroObject.image;
     
-    if (castleLevelText) {
-        castleLevelText.textContent = castleHP.level;
+    if (heroLevelText) {
+        heroLevelText.textContent = heroHP.level;
     }
 }
 
@@ -1915,90 +1930,90 @@ function updateBossHealthBar() {
 }
 
 /**
- * Наносит урон крепости
+ * Наносит урон герою
  * //@param {number} damage - количество урона
  */
 /**
- * Наносит урон крепости
+ * Наносит урон герою
  * @param {number} damage - количество урона
  */
 // Мила — «Живительная клубника»: пассивная регенерация 1% ОТ МАКСИМУМА HP в секунду,
-// непрерывно (не тиками), пока крепость жива. Копится дробно через deltaTime, поэтому
-// не зависит от FPS. Не мешает damageCastle — просто плюс к current с тем же капом.
-const MILA_CASTLE_REGEN_PER_SECOND = 0.01;
+// непрерывно (не тиками), пока герой жив. Копится дробно через deltaTime, поэтому
+// не зависит от FPS. Не мешает damageHero — просто плюс к current с тем же капом.
+const MILA_HERO_REGEN_PER_SECOND = 0.01;
 
-function applyMilaCastleRegen(deltaTime) {
+function applyMilaHeroRegen(deltaTime) {
     if (activeHeroObject?.name !== 'mila' || isGameOver) return;
-    if (castleHP.current <= 0 || castleHP.current >= castleHP.max) return;
+    if (heroHP.current <= 0 || heroHP.current >= heroHP.max) return;
 
-    const regenRate = Math.max(0, Number(activeHeroObject?.castleRegenPerSecond) || MILA_CASTLE_REGEN_PER_SECOND);
-    const healAmount = castleHP.max * regenRate * (deltaTime / 1000);
+    const regenRate = Math.max(0, Number(activeHeroObject?.heroRegenPerSecond) || MILA_HERO_REGEN_PER_SECOND);
+    const healAmount = heroHP.max * regenRate * (deltaTime / 1000);
     if (healAmount <= 0) return;
 
-    const before = castleHP.current;
-    castleHP.current = Math.min(castleHP.max, castleHP.current + healAmount);
-    if (castleHP.current !== before) {
-        updateCastleHealthDisplay();
+    const before = heroHP.current;
+    heroHP.current = Math.min(heroHP.max, heroHP.current + healAmount);
+    if (heroHP.current !== before) {
+        updateHeroHealthDisplay();
     }
 }
 
-function damageCastle(damage) {
+function damageHero(damage) {
     if (isGameOver) return;
     
 	
-	damage = Math.floor((damage * (1-castleDamageReduction)));
+	damage = Math.floor((damage * (1-heroDamageReduction)));
 	
-    // Запускаем анимацию удара по замку
-    animateCastleHit();
+    // Запускаем анимацию удара по герою
+    animateHeroHit();
     
     // Уменьшаем здоровье
-    castleHP.current -= damage;
+    heroHP.current -= damage;
     
     // Ограничиваем снизу
-    if (castleHP.current < 0) {
-        castleHP.current = 0;
+    if (heroHP.current < 0) {
+        heroHP.current = 0;
     }
     
     // Обновляем отображение
-    updateCastleHealthDisplay();
+    updateHeroHealthDisplay();
     
     // Логируем урон
-    console.log(`Крепость получила ${damage} урона. Осталось здоровья: ${castleHP.current}`);
+    console.log(`Герой получил ${damage} урона. Осталось здоровья: ${heroHP.current}`);
 
     // Особенность героя: реакция на полученный урон
     notifyHeroTookDamage(damage);
     
     // Проверяем конец игры
-    if (castleHP.current <= 0) {
+    if (heroHP.current <= 0) {
         gameOver();
     }
 }
 
 /**
- * Запускает анимацию удара по замку
+ * Запускает анимацию удара по герою
  */
-function animateCastleHit() {
-    if (!castleImage) return;
+function animateHeroHit() {
+    if (!heroStatusBar) return;
     
     // Удаляем класс, если он уже есть (для перезапуска анимации)
-    castleImage.classList.remove('castle-hit-animation');
+    heroStatusBar.classList.remove('hero-hit-animation');
     
     // Триггерим перерисовку DOM
-    void castleImage.offsetWidth;
+    void heroStatusBar.offsetWidth;
 	
 	 const heroImage = document.getElementById('heroImage');
 	 const hpImage = document.getElementById('hpCont');
     
     // Добавляем класс с анимацией
-    castleImage.classList.add('castle-hit-animation');
-	hpImage.classList.add('castle-hit-animation');
-	heroImage.classList.add('castle-hit-animation');
+    heroStatusBar.classList.add('hero-hit-animation');
+	hpImage.classList.add('hero-hit-animation');
+	heroImage.classList.add('hero-hit-animation');
     
     // Удаляем класс после завершения анимации
     setTimeout(() => {
-        castleImage.classList.remove('castle-hit-animation');
-		hpImage.classList.remove('castle-hit-animation');
-		heroImage.classList.remove('castle-hit-animation');
+        heroStatusBar.classList.remove('hero-hit-animation');
+		hpImage.classList.remove('hero-hit-animation');
+		heroImage.classList.remove('hero-hit-animation');
     }, 500); // 500мс - длительность анимации
 }
 
@@ -2084,13 +2099,13 @@ function buildEndgameUpgradeDeltaText(hero, preview) {
         },
         {
             label: 'HP',
-            text: formatEndgameStatDelta(hero.castleHP, preview.castleHP, { digits: 0 })
+            text: formatEndgameStatDelta(hero.heroHP, preview.heroHP, { digits: 0 })
         },
         {
             label: 'защита',
             text: formatEndgameStatDelta(
-                hero.startCastleDamageReduction,
-                preview.startCastleDamageReduction,
+                hero.startHeroDamageReduction,
+                preview.startHeroDamageReduction,
                 { percent: true, digits: 2 }
             )
         }
@@ -4690,54 +4705,54 @@ function getAvailableUpgrades() {
 
 
     // 6. Здоровье — временный потолок от старта забега (~+25%), а не от постоянного
-    // castleHpCap: иначе высокий permanent-cap (нужен для роста по кампании) позволял
+    // heroHpCap: иначе высокий permanent-cap (нужен для роста по кампании) позволял
     // раздувать HP внутри одного уровня далеко за дизайн «временные апгрейды ≤~20%».
-    const temporaryCastleHpCeiling = Math.min(
-        castleHpCap,
-        Math.round(startGlobalCastleHp * 1.25)
+    const temporaryHeroHpCeiling = Math.min(
+        heroHpCap,
+        Math.round(startGlobalHeroHp * 1.25)
     );
-    if (castleHP.max < temporaryCastleHpCeiling) {
-        const castleHpRarity = getRandomRarity();
-        const castleHpMultiplier = getRarityMultiplier(castleHpRarity);
-        const castleHpIncrease = Math.min(
-            Math.round(startGlobalCastleHp * TEMPORARY_UPGRADE_BASE_SHARE * castleHpMultiplier),
-            temporaryCastleHpCeiling - castleHP.max
+    if (heroHP.max < temporaryHeroHpCeiling) {
+        const heroHpRarity = getRandomRarity();
+        const heroHpMultiplier = getRarityMultiplier(heroHpRarity);
+        const heroHpIncrease = Math.min(
+            Math.round(startGlobalHeroHp * TEMPORARY_UPGRADE_BASE_SHARE * heroHpMultiplier),
+            temporaryHeroHpCeiling - heroHP.max
         );
-        if (castleHpIncrease > 0) {
+        if (heroHpIncrease > 0) {
             upgrades.push({
-                id: 'castleHP',
+                id: 'heroHP',
                 name: 'Здоровье',
-                description: `+${castleHpIncrease} к здоровью`,
-                rarity: castleHpRarity,
+                description: `+${heroHpIncrease} к здоровью`,
+                rarity: heroHpRarity,
                 apply: function() {
-                    castleHP.max = Math.min(temporaryCastleHpCeiling, castleHP.max + castleHpIncrease);
-                    castleHP.current = Math.min(castleHP.max, castleHP.current + castleHpIncrease);
-                    updateCastleHealthDisplay();
-                    console.log(`Здоровье увеличено до: ${castleHP.max} (множитель: ${castleHpMultiplier}x)`);
+                    heroHP.max = Math.min(temporaryHeroHpCeiling, heroHP.max + heroHpIncrease);
+                    heroHP.current = Math.min(heroHP.max, heroHP.current + heroHpIncrease);
+                    updateHeroHealthDisplay();
+                    console.log(`Здоровье увеличено до: ${heroHP.max} (множитель: ${heroHpMultiplier}x)`);
                 }
             });
         }
     }
     
     // 7. Защита — после достижения 60% больше не предлагается
-    if (castleDamageReduction < castleDamageReductionCap) {
+    if (heroDamageReduction < heroDamageReductionCap) {
         const defenseRarity = getRandomRarity();
         const defenseMultiplier = getRarityMultiplier(defenseRarity);
         const defenseIncrease = Math.min(
-            startCastleDamageReduction * TEMPORARY_UPGRADE_BASE_SHARE * defenseMultiplier,
-            castleDamageReductionCap - castleDamageReduction
+            startHeroDamageReduction * TEMPORARY_UPGRADE_BASE_SHARE * defenseMultiplier,
+            heroDamageReductionCap - heroDamageReduction
         );
         upgrades.push({
-            id: 'castleDefense',
+            id: 'heroDefense',
             name: 'Защита',
             description: `+${(defenseIncrease * 100).toFixed(2)}% к защите`,
             rarity: defenseRarity,
             apply: function() {
-                castleDamageReduction = Math.min(
-                    castleDamageReductionCap,
-                    castleDamageReduction + defenseIncrease
+                heroDamageReduction = Math.min(
+                    heroDamageReductionCap,
+                    heroDamageReduction + defenseIncrease
                 );
-                console.log(`Защита увеличена до: ${(castleDamageReduction * 100).toFixed(2)}% (множитель: ${defenseMultiplier}x)`);
+                console.log(`Защита увеличена до: ${(heroDamageReduction * 100).toFixed(2)}% (множитель: ${defenseMultiplier}x)`);
             }
         });
     }

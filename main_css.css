@@ -541,7 +541,7 @@ body {
 	background: var(--gp-wood-dark);
 }
 
-.castle-health-container {
+.hero-health-container {
 	position: relative;
 	flex: 1 1 auto;
 	min-width: 0;
@@ -608,7 +608,7 @@ body {
 	transform: translateY(0) scale(1);
 }
 
-.castle-health-container h3 {
+.hero-health-container h3 {
 	color: var(--gp-frame);
 	margin-bottom: 15px;
 	font-size: 18px;
@@ -667,8 +667,8 @@ body {
 
 /* ДОБАВИТЬ в конец файла: */
 
-/* Анимация удара по замку */
-@keyframes castleHit {
+/* Анимация удара по герою */
+@keyframes heroHit {
     0% {
         transform: scale(1) translateY(0);
         filter: brightness(1);
@@ -696,8 +696,8 @@ body {
 }
 
 /* Анимация нанесения урона */
-.castle-hit-animation {
-    animation: castleHit 0.5s ease;
+.hero-hit-animation {
+    animation: heroHit 0.5s ease;
 }
 
 /* Информация об уровне */
@@ -855,7 +855,7 @@ body {
         border-width: 2px;
     }
 
-    .castle-health-container {
+    .hero-health-container {
         height: 62%;
     }
 
@@ -4369,7 +4369,7 @@ html.is-mobile .main_menu_image {
    РазмерАтакБосса: 20vw
    ПортретГероя: bottom 14%, 44x44
    ПолоскаХпГероя: bottom 13%
-   ВысотаЗамка: 10%
+   ВысотаСтатусБара: 10%
    ПолоскаХпБосса: max 220px / 68vw
    ----------------------------------------------------------------------------- */
 @media (hover: none) and (pointer: coarse) and (max-width: 320px) {
@@ -4404,7 +4404,7 @@ html.is-mobile .main_menu_image {
    РазмерАтакБосса: 16vw
    ПортретГероя: bottom 14%, 46x46
    ПолоскаХпГероя: bottom 13%
-   ВысотаЗамка: 25%
+   ВысотаСтатусБара: 25%
    ПолоскаХпБосса: max 240px / 66vw
    ----------------------------------------------------------------------------- */
 @media (hover: none) and (pointer: coarse) and (min-width: 321px) and (max-width: 375px) {
@@ -4439,7 +4439,7 @@ html.is-mobile .main_menu_image {
    РазмерАтакБосса: 30vw
    ПортретГероя: bottom 12%, 48x48
    ПолоскаХпГероя: bottom 11%
-   ВысотаЗамка: 24%
+   ВысотаСтатусБара: 24%
    ПолоскаХпБосса: max 260px / 62vw
    ----------------------------------------------------------------------------- */
 @media (hover: none) and (pointer: coarse) and (min-width: 376px) and (max-width: 400px) {
@@ -4474,7 +4474,7 @@ html.is-mobile .main_menu_image {
    РазмерАтакБосса: 28vw
    ПортретГероя: bottom 12%, 50x50
    ПолоскаХпГероя: bottom 11%
-   ВысотаЗамка: 23%
+   ВысотаСтатусБара: 23%
    ПолоскаХпБосса: max 280px / 60vw
    ----------------------------------------------------------------------------- */
 @media (hover: none) and (pointer: coarse) and (min-width: 401px) and (max-width: 430px) {
@@ -4509,7 +4509,7 @@ html.is-mobile .main_menu_image {
    РазмерАтакБосса: 24vw
    ПортретГероя: bottom 11%, 52x52
    ПолоскаХпГероя: bottom 10%
-   ВысотаЗамка: 22%
+   ВысотаСтатусБара: 22%
    ПолоскаХпБосса: max 300px / 58vw
    ----------------------------------------------------------------------------- */
 @media (hover: none) and (pointer: coarse) and (min-width: 431px) and (max-width: 480px) {
@@ -4544,7 +4544,7 @@ html.is-mobile .main_menu_image {
    РазмерАтакБосса: 16vw
    ПортретГероя: bottom 9%, 56x56
    ПолоскаХпГероя: bottom 8%
-   ВысотаЗамка: 20%
+   ВысотаСтатусБара: 20%
    ПолоскаХпБосса: max 360px / 50vw
    ----------------------------------------------------------------------------- */
 @media (hover: none) and (pointer: coarse) and (min-width: 481px) and (max-width: 768px) {
@@ -4581,7 +4581,7 @@ html.is-mobile .main_menu_image {
    РазмерАтакБосса: 14vw
    ПортретГероя: bottom 8%, 64x64
    ПолоскаХпГероя: bottom 7%
-   ВысотаЗамка: 19%
+   ВысотаСтатусБара: 19%
    ПолоскаХпБосса: max 420px / 48vw
    ----------------------------------------------------------------------------- */
 @media (hover: none) and (pointer: coarse) and (min-width: 769px) and (max-width: 1024px) {
