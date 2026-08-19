@@ -461,7 +461,15 @@ const PROBE_SCRIPT_SOURCE = `
             return target.updateWound();
         },
         notifyDamage: function (amount) { notifyHeroTookDamage(amount); },
-        getActiveHeroName: function () { return activeHeroObject ? activeHeroObject.name : null; },
+        // Настоящий getActiveHeroSaveKey() из game.js — возвращает ключ, под которым
+        // герой реально лежит в gameState (mHero-ключ), а не его смысловое поле .name.
+        // Для большинства героев ключ и .name совпадают, но не для всех (например у
+        // Тихона Речкина ключ 'vas', а .name 'tikhon') — раньше здесь читали
+        // activeHeroObject.name напрямую, и sanity-check в loadHero() ломался на
+        // таких героях, сравнивая несовместимые идентичности.
+        getActiveHeroKey: function () {
+            return typeof getActiveHeroSaveKey === 'function' ? getActiveHeroSaveKey() : null;
+        },
         // Настоящий calculateBossMaxHealth из game.js — иframe всегда стоит на
         // level=1, поэтому для произвольного уровня кампании передаём его
         // реальные lvlNumber/bossCombatConfig/isRegionFinal явными параметрами
@@ -522,9 +530,9 @@ const CombatEngine = {
             doc.body.appendChild(scriptEl);
             await waitForCondition(() => win.__probeReady === true, 5000, 20);
 
-            const activeName = win.__probe.getActiveHeroName();
-            if (activeName !== heroKey) {
-                throw new Error(`Ожидали активного героя ${heroKey}, получили ${activeName}`);
+            const activeKey = win.__probe.getActiveHeroKey();
+            if (activeKey !== heroKey) {
+                throw new Error(`Ожидали активного героя ${heroKey}, получили ${activeKey}`);
             }
             return win.__probe;
         } catch (error) {

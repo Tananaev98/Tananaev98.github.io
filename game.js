@@ -262,7 +262,7 @@ const HERO_ATTACK_TIMING = Object.freeze({
     minDeflectCycleMs: 120,
     maxDeflectCycleMs: 220,
     deflectImpactAt: 0.68,
-    animatedHeroes: Object.freeze(['eremei', 'dunya', 'luka', 'daryana', 'mila'])
+    animatedHeroes: Object.freeze(['eremei', 'dunya', 'luka', 'daryana', 'mila', 'tikhon'])
 });
 const pendingHeroAttackTimers = new Set();
 
@@ -932,7 +932,8 @@ function initGame() {
     gameField.appendChild(enemiesContainer);
     
     initHeroHealth();
-	
+	initTikhonShakeGauge();
+
 	   // Инициализация полоски здоровья босса
     initBossHealthBar();
 	
@@ -1208,6 +1209,7 @@ function gameLoop(currentTime) {
     activeGameTimeMs += deltaTime;
     timeSec2 = Math.floor(activeGameTimeMs / 1000);
     applyMilaHeroRegen(deltaTime);
+    updateTikhonShakeGauge(currentTime);
 	
 	if ((timeSec2-lastTimeSec2)>=1 && (timeNextBoss-timeSec2)>0 && (timeNextBoss-timeSec2)<5 && !bossAlive) {
 		lastTimeSec2 = timeSec2;
@@ -2685,12 +2687,14 @@ function damageEnemy(enemy, attackMultiplier = 1, attackKind = 'normal', shotInt
         showLukaBossImpact(enemy, damageResult.isCritical, damageResult.isCountShot, timing);
         showDaryanaBossImpact(enemy, damageResult.isCritical, timing);
         showMilaBossImpact(enemy, damageResult.isCritical, timing);
+        showTikhonBossImpact(enemy, damageResult.isCritical, timing);
     } else if (predictedDestroyed) {
         showEremeiDeflectImpact(enemy, damageResult.isCritical, timing);
         showDunyaDeflectImpact(enemy, damageResult.isCritical, timing);
         showLukaDeflectImpact(enemy, damageResult.isCritical, timing);
         showDaryanaDeflectImpact(enemy, damageResult.isCritical, timing);
         showMilaDeflectImpact(enemy, damageResult.isCritical, timing);
+        showTikhonDeflectImpact(enemy, damageResult.isCritical, timing);
     }
 
     if (!isBoss) {
@@ -2838,6 +2842,10 @@ function calculateDamage(isBoss, target) {
         // Дарьяна: бонус считается от текущей недостающей HP% цели
         // ПЕРЕД этим ударом — состояние не хранится, только читает target.hp.
         damage *= getDaryanaMissingHpMultiplier(target);
+
+        // Тихон: «Дрожащая рука» — та же волна, что и в getHeroFeatureCritChanceBonus
+        // выше (общий now, один и тот же момент удара), только множит урон, а не крит-шанс.
+        damage *= getTikhonShakeDamageMultiplier();
 
         damage = Math.round(damage);
         return {
@@ -3527,6 +3535,77 @@ function showMilaBossImpact(boss, isCritical = false, timing = getHeroAttackTimi
 function showMilaDeflectImpact(attackEnemy, isCritical = false, timing = getHeroDeflectTiming()) {
     if (activeHeroObject?.name !== 'mila' || !attackEnemy?.element || !enemiesContainer || !gameField) return;
     showMilaPeaImpact(attackEnemy.element, { isMini: true, isCritical, timing });
+}
+
+// Тихон Речкин: удар веслом — тяжёлый двуручный замах, попадание в центр цели
+// (та же схема getImpactFieldPercent, что у Еремея/Дуни, а не альфа-маска по
+// силуэту, как у Луки/Дарьяны/Милы — оружие бьёт «по площади», не в конкретную
+// точку). Три варианта замаха по кругу (не 10, как у Еремея, но та же идея
+// разнообразия), плюс водяной всплеск на контакте — тематика «речкин»/река.
+let tikhonSwingStep = 0;
+const TIKHON_OAR_SWINGS = [
+    'tikhon-oar-overhead',   // 1. замах сверху, смэш
+    'tikhon-oar-diag-left',  // 2. диагональ справа-сверху налево-вниз
+    'tikhon-oar-diag-right'  // 3. диагональ слева-сверху направо-вниз
+];
+
+function nextTikhonOarSwing() {
+    const swingClass = TIKHON_OAR_SWINGS[tikhonSwingStep % TIKHON_OAR_SWINGS.length];
+    tikhonSwingStep += 1;
+    return swingClass;
+}
+
+function showTikhonBossImpact(boss, isCritical = false, timing = getHeroAttackTiming(SHOT_INTERVAL)) {
+    if (activeHeroObject?.name !== 'tikhon' || !boss?.element || !enemiesContainer || !gameField) return;
+
+    const pos = getImpactFieldPercent(boss.element);
+    if (!pos) return;
+
+    enemiesContainer.querySelectorAll('.tikhon-boss-impact:not(.is-mini)').forEach((node) => node.remove());
+
+    const swingClass = nextTikhonOarSwing();
+    const swingDurationMs = Math.max(180, Math.round(timing.impactDelayMs / 0.58));
+
+    const impact = document.createElement('div');
+    impact.className = `tikhon-boss-impact${isCritical ? ' tikhon-boss-impact-critical' : ''}`;
+    impact.style.left = `${pos.left}%`;
+    impact.style.top = `${pos.top}%`;
+    impact.style.setProperty('--tikhon-swing-duration', `${swingDurationMs}ms`);
+    impact.setAttribute('aria-hidden', 'true');
+    impact.innerHTML = `
+        <span class="tikhon-splash-ring"></span>
+        <span class="tikhon-impact-flash"></span>
+        <span class="tikhon-oar ${swingClass}"></span>
+    `;
+    enemiesContainer.appendChild(impact);
+
+    window.setTimeout(() => impact.remove(), swingDurationMs + 220);
+}
+
+function showTikhonDeflectImpact(attackEnemy, isCritical = false, timing = getHeroDeflectTiming()) {
+    if (activeHeroObject?.name !== 'tikhon' || !attackEnemy?.element || !enemiesContainer || !gameField) return;
+
+    const pos = getImpactFieldPercent(attackEnemy.element);
+    if (!pos) return;
+
+    pruneImpactNodes('.tikhon-boss-impact.is-mini', 3);
+
+    const swingDurationMs = Math.max(140, Math.round(timing.impactDelayMs / 0.5));
+
+    const impact = document.createElement('div');
+    impact.className = `tikhon-boss-impact is-mini${isCritical ? ' tikhon-boss-impact-critical' : ''}`;
+    impact.style.left = `${pos.left}%`;
+    impact.style.top = `${pos.top}%`;
+    impact.style.setProperty('--tikhon-swing-duration', `${swingDurationMs}ms`);
+    impact.setAttribute('aria-hidden', 'true');
+    impact.innerHTML = `
+        <span class="tikhon-splash-ring"></span>
+        <span class="tikhon-impact-flash"></span>
+        <span class="tikhon-oar tikhon-oar-mini-tap"></span>
+    `;
+    enemiesContainer.appendChild(impact);
+
+    window.setTimeout(() => impact.remove(), swingDurationMs + 220);
 }
 
 // Еремей: цикл двуручных ударов дубиной (горизонталь / overhead / диагонали / sweep / chop).
@@ -4226,6 +4305,27 @@ const EREMEI_CATCH_BACK = Object.freeze({
 let eremeiCatchBackUntilMs = 0;
 
 /**
+ * Тихон Речкин — «Дрожащая рука»: непрерывная треугольная волна (не событие,
+ * не реакция на удар — идёт с самого начала боя и никогда не останавливается),
+ * которая одновременно множит урон и добавляет к шансу крита. cycleMs — полный
+ * период: первая половина — рост от Min до Max, вторая половина — спад обратно
+ * до Min, дальше по кругу. tikhonShakeStartMs — момент t=0 волны для ТЕКУЩЕГО
+ * захода на уровень, лениво выставляется при первом обращении после reset'а
+ * (см. resetHeroFeatureCombatState) — так и реальная игра, и виртуальные часы
+ * probe-скрипта панели баланса (см. admin-balance-panel.html) стартуют волну
+ * с одной и той же фазы, без расхождений.
+ */
+const TIKHON_SHAKE = Object.freeze({
+    cycleMs: 6000,
+    damageMultiplierMin: 0.01,
+    damageMultiplierMax: 2.0,
+    critChanceBonusMin: 0.01,
+    critChanceBonusMax: 0.50
+});
+
+let tikhonShakeStartMs = null;
+
+/**
  * Дарьяна — «Прогревание»: за каждый недостающий 1% HP цели урон растёт на
  * missingHpDamagePerPercent (1.5% по умолчанию). Чистая функция от текущего
  * HP цели — состояние не хранится и ничего не нужно сбрасывать при смене
@@ -4245,6 +4345,96 @@ function getDaryanaMissingHpMultiplier(target) {
 
 function resetHeroFeatureCombatState() {
     eremeiCatchBackUntilMs = 0;
+    tikhonShakeStartMs = null;
+}
+
+function getTikhonShakeConfig() {
+    return {
+        cycleMs: Math.max(200, Number(activeHeroObject?.shakeCycleMs) || TIKHON_SHAKE.cycleMs),
+        damageMultiplierMin: Math.max(
+            0,
+            Number.isFinite(activeHeroObject?.shakeDamageMultiplierMin)
+                ? activeHeroObject.shakeDamageMultiplierMin
+                : TIKHON_SHAKE.damageMultiplierMin
+        ),
+        damageMultiplierMax: Math.max(
+            0,
+            Number.isFinite(activeHeroObject?.shakeDamageMultiplierMax)
+                ? activeHeroObject.shakeDamageMultiplierMax
+                : TIKHON_SHAKE.damageMultiplierMax
+        ),
+        critChanceBonusMin: Math.max(
+            0,
+            Number.isFinite(activeHeroObject?.shakeCritChanceBonusMin)
+                ? activeHeroObject.shakeCritChanceBonusMin
+                : TIKHON_SHAKE.critChanceBonusMin
+        ),
+        critChanceBonusMax: Math.max(
+            0,
+            Number.isFinite(activeHeroObject?.shakeCritChanceBonusMax)
+                ? activeHeroObject.shakeCritChanceBonusMax
+                : TIKHON_SHAKE.critChanceBonusMax
+        )
+    };
+}
+
+// Треугольная волна 0→1→0 с периодом cycleMs (первая половина — подъём, вторая —
+// спад). Возвращает «прогресс» 0..1, не сами значения урона/крита — из него потом
+// линейно интерполируются Min..Max для каждой оси отдельно (см. ниже).
+function getTikhonShakeProgress(now = performance.now()) {
+    if (tikhonShakeStartMs === null) tikhonShakeStartMs = now;
+    const { cycleMs } = getTikhonShakeConfig();
+    const elapsed = Math.max(0, now - tikhonShakeStartMs);
+    const cyclePos = (elapsed % cycleMs) / cycleMs;
+    return cyclePos < 0.5 ? (cyclePos / 0.5) : (1 - (cyclePos - 0.5) / 0.5);
+}
+
+function getTikhonShakeDamageMultiplier(now = performance.now()) {
+    if (activeHeroObject?.name !== 'tikhon') return 1;
+    const { damageMultiplierMin, damageMultiplierMax } = getTikhonShakeConfig();
+    const progress = getTikhonShakeProgress(now);
+    return damageMultiplierMin + progress * (damageMultiplierMax - damageMultiplierMin);
+}
+
+function getTikhonShakeCritChanceBonus(now = performance.now()) {
+    if (activeHeroObject?.name !== 'tikhon') return 0;
+    const { critChanceBonusMin, critChanceBonusMax } = getTikhonShakeConfig();
+    const progress = getTikhonShakeProgress(now);
+    return critChanceBonusMin + progress * (critChanceBonusMax - critChanceBonusMin);
+}
+
+// Шкала «Дрожащей руки» в статус-баре — индикатор (бутылка) ходит по горизонтали
+// вместе с прогрессом волны (0..1..0), а не отдельной от боевой механики анимацией:
+// то, что видит игрок, — это буквально то же значение progress, что прямо сейчас
+// множит урон/крит-шанс в calculateDamage/getEffectiveCritChance, без рассинхрона.
+let tikhonShakeGaugeEl = null;
+let tikhonShakeTrackEl = null;
+let tikhonShakeBottleEl = null;
+
+function initTikhonShakeGauge() {
+    tikhonShakeGaugeEl = document.getElementById('tikhonShakeGauge');
+    tikhonShakeTrackEl = document.getElementById('tikhonShakeTrack');
+    tikhonShakeBottleEl = document.getElementById('tikhonShakeBottle');
+    if (!tikhonShakeGaugeEl) return;
+
+    const isTikhon = activeHeroObject?.name === 'tikhon';
+    tikhonShakeGaugeEl.style.display = isTikhon ? '' : 'none';
+}
+
+function updateTikhonShakeGauge(now = performance.now()) {
+    if (!tikhonShakeGaugeEl || !tikhonShakeBottleEl) return;
+    if (activeHeroObject?.name !== 'tikhon') return;
+
+    const progress = getTikhonShakeProgress(now);
+    const { damageMultiplierMin, damageMultiplierMax, critChanceBonusMin, critChanceBonusMax } = getTikhonShakeConfig();
+    const damageMultiplier = damageMultiplierMin + progress * (damageMultiplierMax - damageMultiplierMin);
+    const critChanceBonus = critChanceBonusMin + progress * (critChanceBonusMax - critChanceBonusMin);
+
+    // Бутылка ходит по треку 0%..100% вместе с progress, плюс лёгкий наклон —
+    // читается как «дрожащая рука качает самогон» вместе со шкалой.
+    tikhonShakeBottleEl.style.left = `${(progress * 100).toFixed(1)}%`;
+    tikhonShakeBottleEl.style.transform = `translate(-50%, -50%) rotate(${(progress * 24 - 12).toFixed(1)}deg)`;
+    tikhonShakeBottleEl.title = `Урон ×${damageMultiplier.toFixed(2)}, крит +${Math.round(critChanceBonus * 100)}%`;
 }
 
 function getEremeiCatchBackConfig() {
@@ -4265,8 +4455,8 @@ function isEremeiCatchBackActive(now = performance.now()) {
 }
 
 function getHeroFeatureCritChanceBonus(now = performance.now()) {
-    if (!isEremeiCatchBackActive(now)) return 0;
-    return getEremeiCatchBackConfig().critChanceBonus;
+    if (isEremeiCatchBackActive(now)) return getEremeiCatchBackConfig().critChanceBonus;
+    return getTikhonShakeCritChanceBonus(now);
 }
 
 function getEffectiveCritChance(now = performance.now()) {
