@@ -256,6 +256,38 @@ function average(values) {
     return values.reduce((total, value) => total + value, 0) / values.length;
 }
 
+function formatDuration(totalSeconds) {
+    if (!Number.isFinite(totalSeconds) || totalSeconds < 0) return '—';
+    const seconds = Math.round(totalSeconds);
+    const minutes = Math.floor(seconds / 60);
+    const remainder = seconds % 60;
+    return `${minutes}:${String(remainder).padStart(2, '0')}`;
+}
+
+// Суммарный настоящий HP всех пяти боссов уровня (enem1..enem5) — реальная боевая
+// часть «прохождения уровня». Считается через тот же calculateBossMaxHealth, что
+// использует сама игра (см. probe.getBossMaxHealth в PROBE_SCRIPT_SOURCE), просто
+// с явно переданными lvlNumber/bossCombatConfig этого уровня вместо тех, что
+// сейчас загружены в combatFrame (он всегда стоит на level=1). Кэшируется по
+// уровню — HP боссов от героя не зависит.
+function getLevelBossHpTotal(probe, level, levelData, cache) {
+    if (cache.has(level)) return cache.get(level);
+    let total = 0;
+    if (levelData && levelData.bossCombatConfig) {
+        const overrides = {
+            lvlNumber: levelData.lvlNumber,
+            bossCombatConfig: levelData.bossCombatConfig,
+            isRegionFinal: !!(levelData.levelCompletionConfig && levelData.levelCompletionConfig.isRegionFinal)
+        };
+        for (const type of ['enem1', 'enem2', 'enem3', 'enem4', 'enem5']) {
+            const fallback = (levelData.ENEMY_TYPES && levelData.ENEMY_TYPES[type] && levelData.ENEMY_TYPES[type].baseHP) || 0;
+            total += probe.getBossMaxHealth(type, fallback, overrides);
+        }
+    }
+    cache.set(level, total);
+    return total;
+}
+
 function waitForEvent(target, eventName, timeoutMs, timeoutMessage) {
     return new Promise((resolve, reject) => {
         const timer = setTimeout(() => reject(new Error(timeoutMessage || `Таймаут ожидания ${eventName}`)), timeoutMs);
@@ -424,7 +456,15 @@ const PROBE_SCRIPT_SOURCE = `
             return target.updateWound();
         },
         notifyDamage: function (amount) { notifyHeroTookDamage(amount); },
-        getActiveHeroName: function () { return activeHeroObject ? activeHeroObject.name : null; }
+        getActiveHeroName: function () { return activeHeroObject ? activeHeroObject.name : null; },
+        // Настоящий calculateBossMaxHealth из game.js — иframe всегда стоит на
+        // level=1, поэтому для произвольного уровня кампании передаём его
+        // реальные lvlNumber/bossCombatConfig/isRegionFinal явными параметрами
+        // (см. calculateBossMaxHealth(type, fallback, overrides) в game.js) —
+        // это тот же код, что использует сама игра, без своей копии формулы.
+        getBossMaxHealth: function (type, fallbackBaseHealth, overrides) {
+            return calculateBossMaxHealth(type, fallbackBaseHealth, overrides);
+        }
     };
     window.__probeReady = true;
 })();
@@ -600,7 +640,10 @@ const SurvivalEngine = {
         const response = await fetch(`lvlData/gameData${levelNumber}.js?t=${Date.now()}`);
         if (!response.ok) return null;
         const source = await response.text();
-        const factory = new Function(`${source}\nreturn { lvlNumber: lvlNumber, bossCombatConfig: bossCombatConfig, ENEMY_TYPES: ENEMY_TYPES, bossM: bossM, bossAbilities: bossAbilities, bossAbilitiesDop: bossAbilitiesDop };`);
+        // levelCompletionConfig объявлен только у части уровней (финалы регионов) —
+        // typeof-проверка внутри той же строки, чтобы не падать ReferenceError на
+        // обычных уровнях, где его в gameDataN.js вообще нет.
+        const factory = new Function(`${source}\nreturn { lvlNumber: lvlNumber, bossCombatConfig: bossCombatConfig, ENEMY_TYPES: ENEMY_TYPES, bossM: bossM, bossAbilities: bossAbilities, bossAbilitiesDop: bossAbilitiesDop, levelCompletionConfig: (typeof levelCompletionConfig !== 'undefined' ? levelCompletionConfig : null) };`);
         return factory();
     },
 
@@ -1016,13 +1059,23 @@ const ExcelExport = {
 
     buildDpsUpgradedSheet(heroes, results, levels) {
         const header = ['Ур. кампании', 'Ур. героя'];
-        heroes.forEach((h) => header.push(`${h.dispName} DPS`, `${h.dispName} мин`, `${h.dispName} макс`));
+        heroes.forEach((h) => header.push(
+            `${h.dispName} DPS`, `${h.dispName} мин`, `${h.dispName} макс`,
+            `${h.dispName} время прохождения`, `${h.dispName} время прохождения, сек`
+        ));
         const rows = levels.map((level) => {
             const row = [level, ProgressionEngine.campaignToHeroLevel.get(level) || 1];
             heroes.forEach((h) => {
                 const cell = results[h.key] && results[h.key][level];
-                if (cell) row.push(this.round(cell.mean), this.round(cell.min), this.round(cell.max));
-                else row.push('', '', '');
+                if (cell) {
+                    row.push(
+                        this.round(cell.mean), this.round(cell.min), this.round(cell.max),
+                        Number.isFinite(cell.avgLevelSeconds) ? formatDuration(cell.avgLevelSeconds) : '',
+                        Number.isFinite(cell.avgLevelSeconds) ? Math.round(cell.avgLevelSeconds) : ''
+                    );
+                } else {
+                    row.push('', '', '', '', '');
+                }
             });
             return row;
         });
@@ -1203,7 +1256,10 @@ function renderDpsUpgradedTable(heroes, results) {
         const cells = heroes.map((h) => {
             const cell = results[h.key] && results[h.key][level];
             if (!cell) return '<td>—</td>';
-            return `<td>${Math.round(cell.mean)} <span style="color:var(--muted);font-size:11px;">(мин ${Math.round(cell.min)} / макс ${Math.round(cell.max)})</span></td>`;
+            const timeLabel = Number.isFinite(cell.avgLevelSeconds)
+                ? ` <span style="color:var(--muted);font-size:11px;">(среднее время прохождения уровня ${formatDuration(cell.avgLevelSeconds)})</span>`
+                : '';
+            return `<td>${Math.round(cell.mean)} <span style="color:var(--muted);font-size:11px;">(мин ${Math.round(cell.min)} / макс ${Math.round(cell.max)})</span>${timeLabel}</td>`;
         }).join('');
         const rowCls = isRegionFinalLevel(level) ? ' class="region-final"' : '';
         return `<tr${rowCls}><td>${level}</td><td>${heroLevel}</td>${cells}</tr>`;
@@ -1299,6 +1355,9 @@ async function runAll() {
         const survivalResults = {};
         const overgrindDpsResults = {};
         const overgrindSurvivalResults = {};
+        // HP боссов уровня не зависит от героя — считаем один раз на уровень и
+        // переиспользуем для всех героев, а не пересчитываем в каждой итерации.
+        const levelBossHpCache = new Map();
         const dpsUpgradedResults = {};
         const survivalUpgradedResults = {};
         const totalSteps = heroes.length * ALL_LEVELS.length * (survivalOnly ? 1 : 3)
@@ -1430,10 +1489,14 @@ async function runAll() {
                         await new Promise((resolve) => setTimeout(resolve, 0));
                     }
 
+                    const meanDps = average(dpsSamples);
+                    const levelBossHpTotal = getLevelBossHpTotal(probe, level, levelData, levelBossHpCache);
                     dpsUpgradedResults[hero.key][level] = {
-                        mean: average(dpsSamples),
+                        mean: meanDps,
                         min: Math.min(...dpsSamples),
-                        max: Math.max(...dpsSamples)
+                        max: Math.max(...dpsSamples),
+                        levelBossHpTotal,
+                        avgLevelSeconds: meanDps > 0 ? levelBossHpTotal / meanDps : null
                     };
                     if (allHits.length > 0) {
                         survivalUpgradedResults[hero.key][level] = {

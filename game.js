@@ -55,31 +55,66 @@ let bossCombatPhase = 1;
 
 // Кривая синхронизирована со свободной прокачкой одного выбранного героя:
 // без дополнительного фарма он подходит к финалу примерно на 159-м уровне.
-// Ревизия 13: baseByType поднят на 40% (было 2600/6500/11500/18500/28000) — Дарьяна
-// (и вообще сильный постоянный DPS) сносила боссов до того, как игрок успевал увидеть
-// механики уровня (замечено на уровне 26). Централизованная правка одним числом на
-// каждый тип — не трогает урон по герою (calculateBossAttackDamage — отдельная формула),
-// только время боя/DPS-бюджет, ровно то, что и нужно было поднять.
 const BOSS_HEALTH_BALANCE = Object.freeze({
     baseByType: Object.freeze({
-        enem1: 3640,
-        enem2: 9100,
-        enem3: 16100,
-        enem4: 25900,
-        enem5: 39200
+        enem1: 2600,
+        enem2: 6500,
+        enem3: 11500,
+        enem4: 18500,
+        enem5: 28000
     }),
     progressionScale: 2.25,
     progressionExponent: 2.1,
     regionFinalBossMultiplier: 1.12
 });
 
-function calculateBossMaxHealth(type, fallbackBaseHealth) {
+// Централизованные балансные правки HP БОССОВ (enem1-enem5) по диапазону
+// уровней кампании — независимо от общей прогрессии выше и от точечных
+// healthMultiplier у конкретных боссов (bossCombatConfig.bosses[type].
+// healthMultiplier — используется для многофазных сюжетных боссов, см.
+// lvlData/gameData15/25/30/39/40.js). Чтобы добавить новый нерф/бафф на
+// диапазон уровней — достаточно дописать сюда ещё одну запись { fromLevel,
+// toLevel, hpMultiplier }, ничего больше менять не нужно. Диапазоны не должны
+// пересекаться; при пересечении применяется первое совпадающее правило по
+// порядку в массиве.
+const BOSS_HEALTH_LEVEL_ADJUSTMENTS = Object.freeze([
+    { fromLevel: 1, toLevel: 6, hpMultiplier: 0.5 },
+    { fromLevel: 7, toLevel: 25, hpMultiplier: 0.7 }
+]);
+
+function getBossHealthLevelMultiplier(level) {
+    const parsedLevel = Number(level);
+    if (!Number.isFinite(parsedLevel)) return 1;
+    const currentLevel = Math.floor(parsedLevel);
+    for (const rule of BOSS_HEALTH_LEVEL_ADJUSTMENTS) {
+        if (currentLevel >= rule.fromLevel && currentLevel <= rule.toLevel) {
+            return rule.hpMultiplier;
+        }
+    }
+    return 1;
+}
+
+// overrides — опционально, только для инструментов вне реальной игры (см.
+// admin-balance-panel.html): позволяет спросить HP босса произвольного уровня
+// кампании без перезагрузки level.html под этот уровень, не трогая формулу и
+// не читая её из скрытых глобалей. В реальной игре overrides всегда
+// отсутствует, и функция читает те же lvlNumber/bossCombatConfig/
+// levelCompletionConfig, что и раньше — поведение не меняется.
+function calculateBossMaxHealth(type, fallbackBaseHealth, overrides) {
     const balancedBaseHealth = BOSS_HEALTH_BALANCE.baseByType[type];
     if (!Number.isFinite(balancedBaseHealth)) {
         return Math.max(1, Math.floor(fallbackBaseHealth));
     }
 
-    const parsedLevel = Number(lvlNumber);
+    const effectiveLvlNumber = overrides && Number.isFinite(overrides.lvlNumber)
+        ? overrides.lvlNumber
+        : lvlNumber;
+    const effectiveBossCombatConfig = (overrides && overrides.bossCombatConfig) || bossCombatConfig;
+    const effectiveIsRegionFinal = overrides && typeof overrides.isRegionFinal === 'boolean'
+        ? overrides.isRegionFinal
+        : (typeof levelCompletionConfig !== 'undefined' && levelCompletionConfig.isRegionFinal);
+
+    const parsedLevel = Number(effectiveLvlNumber);
     const currentLevel = Number.isFinite(parsedLevel)
         ? Math.max(1, Math.floor(parsedLevel))
         : 1;
@@ -92,20 +127,20 @@ function calculateBossMaxHealth(type, fallbackBaseHealth) {
 
     // Точечные сюжетные отклонения можно задавать через healthMultiplier
     // в профиле конкретного босса, не меняя общую кривую региона.
-    const configuredHealthMultiplier = bossCombatConfig?.bosses?.[type]?.healthMultiplier;
+    const configuredHealthMultiplier = effectiveBossCombatConfig?.bosses?.[type]?.healthMultiplier;
     const bossHealthMultiplier = Number.isFinite(configuredHealthMultiplier) && configuredHealthMultiplier > 0
         ? configuredHealthMultiplier
         : 1;
 
-    const isRegionFinalBoss = type === 'enem5'
-        && typeof levelCompletionConfig !== 'undefined'
-        && levelCompletionConfig.isRegionFinal;
+    const isRegionFinalBoss = type === 'enem5' && effectiveIsRegionFinal;
     const regionFinalMultiplier = isRegionFinalBoss
         ? BOSS_HEALTH_BALANCE.regionFinalBossMultiplier
         : 1;
 
+    const levelRangeMultiplier = getBossHealthLevelMultiplier(effectiveLvlNumber);
+
     return Math.max(1, Math.round(
-        balancedBaseHealth * levelMultiplier * bossHealthMultiplier * regionFinalMultiplier
+        balancedBaseHealth * levelMultiplier * bossHealthMultiplier * regionFinalMultiplier * levelRangeMultiplier
     ));
 }
 
