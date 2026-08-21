@@ -2128,8 +2128,13 @@ function buildEndgameHeroUpgradeMarkup() {
     const preview = heroUp(heroKey, true);
     if (!preview) return '';
 
+    // Не гейтим саму карточку/кнопку наличием видимого прироста — на index.html
+    // (см. updateUpgradeButton) повышение доступно по одному критерию: хватает
+    // злата и уровень не максимум. Если апгрейд попал в характеристику, уже
+    // упёршуюся в потолок (critChanceCap/woundChanceCap/defenseCap и т.п.), все
+    // 7 отображаемых дельт могут округлиться в 0 — тогда просто не показываем
+    // строку прироста, а не прячем всю карточку с кнопкой.
     const deltaText = buildEndgameUpgradeDeltaText(hero, preview);
-    if (!deltaText) return '';
 
     return `
         <div class="endgame-hero-upgrade">
@@ -2140,7 +2145,7 @@ function buildEndgameHeroUpgradeMarkup() {
                     Уровень <span class="endgame-hero-level">${Math.round(hero.level)}</span>
                     → ${Math.round(hero.level) + 1}
                 </div>
-                <div class="endgame-hero-upgrade-deltas">${deltaText}</div>
+                ${deltaText ? `<div class="endgame-hero-upgrade-deltas">${deltaText}</div>` : ''}
                 <div class="endgame-hero-upgrade-wallet">
                     У вас: ${gameState.zlata}
                     <img src="images/other/zlata.webp" class="zlatImg" alt="">
