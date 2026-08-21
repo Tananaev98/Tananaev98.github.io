@@ -789,21 +789,16 @@ body {
     100% { opacity: 1; transform: translateY(-70px) scale(1.7); }
 }
 
-/* Для контейнера врагов — реальное поле боя: прицел живёт только здесь.
-   !important обязателен: без него проиграет универсальному стилизованному
-   курсору выше (тоже !important — специфичность там не решает, важность
-   сравнивается раньше). Статус-бар всё равно перебивает это инлайн-стилем
-   с приоритетом important (см. game.js setStatusBarCursorOverride). */
-#enemies-container {
-    cursor: url('images/aim/1.png') 30 30, auto !important;
-}
+/* Курсор контейнера врагов (#enemies-container) больше не задаётся в CSS —
+   у каждого героя свой прицел (aimImage в saveData.js), навешивается
+   инлайн-стилем из game.js (см. applyHeroAimAssets/setStatusBarCursorOverride). */
 
-/* Стили для прицела */
+/* Стили для прицела — картинка (background-image) индивидуальна для героя,
+   задаётся инлайн-стилем из game.js (applyHeroAimAssets). */
 .aim {
     position: absolute;
     width: 60px;
     height: 60px;
-    background-image: url('images/aim/1.png');
     background-size: contain;
     background-repeat: no-repeat;
     pointer-events: none; /* Чтобы клики проходили сквозь прицел */

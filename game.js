@@ -2351,6 +2351,7 @@ function getLevelPreloadImagePaths() {
     // и могли мигнуть пустотой на первом ударе.
     if (activeHeroObject?.image) paths.add(activeHeroObject.image);
     if (activeHeroObject?.weaponImage) paths.add(activeHeroObject.weaponImage);
+    if (activeHeroObject?.aimImage) paths.add(activeHeroObject.aimImage);
     paths.add('images/background/1.png');
     return [...paths];
 }
@@ -2536,6 +2537,7 @@ function initAim() {
     damageContainer = document.getElementById('damage-container');
 
     applyMobileDeviceFlag();
+    applyHeroAimAssets();
 
     setupDesktopAim();
     if (isMobileDevice || ('ontouchstart' in window)) {
@@ -2558,16 +2560,44 @@ function isPointOverStatusBar(clientX, clientY) {
         clientY >= rect.top && clientY <= rect.bottom;
 }
 
-/**
- * Включает/выключает обычный курсор поверх статус-бара, перебивая
- * инлайн-стилем кастомный прицел, заданный в CSS через !important.
- */
 const STYLIZED_MENU_CURSOR = 'url(\'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><polygon points="2,2 30,12 16,20 12,30 2,2" fill="%23e0c9a6" stroke="%238B4513" stroke-width="2" stroke-linejoin="round"/></svg>\') 2 2, auto';
 
+/**
+ * У каждого героя свой прицел — картинка aimImage на его объекте в
+ * saveData.js (images/hero/<папка героя>/aim.webp). Раньше на все поле боя
+ * был один общий курсор (images/aim/1.png) — теперь курсор боевого поля
+ * целиком собирается из этого поля, общей картинки-фолбэка больше нет: без
+ * aimImage у героя просто остаётся обычный системный курсор.
+ */
+function getHeroAimCursorValue() {
+    const aimImage = activeHeroObject?.aimImage;
+    return aimImage ? `url('${aimImage}') 30 30, auto` : 'auto';
+}
+
+/**
+ * Навешивает прицел активного героя на мобильный DOM-курсор (.aim) и
+ * запоминает исходный курсор боевого поля для десктопа.
+ */
+function applyHeroAimAssets() {
+    const aimImage = activeHeroObject?.aimImage;
+    if (aimElement && aimImage) {
+        aimElement.style.backgroundImage = `url('${aimImage}')`;
+    }
+    setStatusBarCursorOverride(false);
+}
+
+/**
+ * Включает/выключает обычный курсор поверх статус-бара, перебивая
+ * инлайн-стилем прицел активного героя. Приоритет 'important' нужен ВСЕГДА
+ * (не только когда active===true) — в main_css.css есть общее правило
+ * `* { cursor: ... !important }` (стилизованный курсор всего интерфейса),
+ * и обычный инлайн-стиль без important ему проигрывает независимо от
+ * специфичности селектора.
+ */
 function setStatusBarCursorOverride(active) {
-    const value = active ? STYLIZED_MENU_CURSOR : '';
-    if (gameField) gameField.style.setProperty('cursor', value, active ? 'important' : '');
-    if (enemiesContainer) enemiesContainer.style.setProperty('cursor', value, active ? 'important' : '');
+    const value = active ? STYLIZED_MENU_CURSOR : getHeroAimCursorValue();
+    if (gameField) gameField.style.setProperty('cursor', value, 'important');
+    if (enemiesContainer) enemiesContainer.style.setProperty('cursor', value, 'important');
 }
 
 /**
@@ -2818,10 +2848,25 @@ function createWoundText(enemy) {
 }
 
 
+/**
+ * Разброс урона одиночного удара (±доля от базового урона) — та же роль для
+ * урона, что критический шанс/множитель играют для крита, но действует на
+ * КАЖДЫЙ удар, а не только на критический. Доля берётся с самого героя
+ * (getHeroDamageVariance в saveData.js, по умолчанию ±5%, у Еремея ±30% —
+ * см. damageVariance в его объекте). Равномерное распределение вокруг 1,
+ * тот же стиль, что и jitter у волн боссов (getBossWaveDelay).
+ */
+function rollDamageVariance(baseDamage) {
+    const variance = getHeroDamageVariance(activeHeroObject);
+    if (!(variance > 0)) return baseDamage;
+    const spread = 1 + (Math.random() * 2 - 1) * variance;
+    return baseDamage * spread;
+}
+
 //* Рассчитывает урон с учетом шанса критического удара
 function calculateDamage(isBoss, target) {
-    // Базовый урон
-    let damage = globalDamage;
+    // Базовый урон, ± разброс конкретного героя (см. rollDamageVariance)
+    let damage = rollDamageVariance(globalDamage);
     let isCritical = false;
 
     // Крит только по боссу: отбивание снарядов — обычный удар без крита/тряски.

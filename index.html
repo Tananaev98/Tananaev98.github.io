@@ -451,6 +451,13 @@ function openCharacterSelect() {
         return `${Number((value * 100).toFixed(2))}%`;
     }
 
+    // Дробные значения статов (теперь возможны — прокачка идёт строго
+    // поюнитно из *PerLevel на объекте героя, см. saveData.js) показываем
+    // максимум с 2 знаками после точки, лишние нули отбрасываются.
+    function formatStatNumber(value) {
+        return Number(Number(value).toFixed(2));
+    }
+
     function getHeroDifficultyMarkup(hero) {
         const difficulty = calculateHeroDifficulty(hero);
         const formattedDifficulty = difficulty.toFixed(1).replace('.', ',');
@@ -501,12 +508,13 @@ function openCharacterSelect() {
 							</div>
 						</div>
 						<p><span>Уровень:</span> <span class="value stat stat-level">${Math.round(hero.level)}</span></p>
-                        <p><span>Урон:</span> <span class="value stat-damage">${Math.round(hero.startGlobalDamage)}</span></p>
+                        <p><span>Урон:</span> <span class="value stat-damage">${formatStatNumber(hero.startGlobalDamage)}</span></p>
+                        <p><span>Разброс урона:</span> <span class="value stat-damage-variance">${formatPercent(getHeroDamageVariance(hero))}</span></p>
                         <p><span>Шанс критического урона:</span> <span class="value stat-critChance">${formatPercent(hero.startGlobalCritChance)}</span></p>
-                        <p><span>Критический урон:</span> <span class="value stat-critMulti">${Math.round(hero.startGlobalCritMultiplier * 100)}%</span></p>
+                        <p><span>Критический урон:</span> <span class="value stat-critMulti">${formatStatNumber(hero.startGlobalCritMultiplier * 100)}%</span></p>
                         ${woundStatRow}
-                        <p><span>Скорость атаки:</span> <span class="value stat-speed">${1000 - hero.startSHOT_INTERVAL}</span></p>
-                        <p><span>Здоровье:</span> <span class="value stat-hp">${hero.heroHP}</span></p>
+                        <p><span>Скорость атаки:</span> <span class="value stat-speed">${formatStatNumber(1000 - hero.startSHOT_INTERVAL)}</span></p>
+                        <p><span>Здоровье:</span> <span class="value stat-hp">${formatStatNumber(hero.heroHP)}</span></p>
                         <p><span>Защита (снижение урона):</span> <span class="value stat-def">${formatPercent(hero.startHeroDamageReduction)}</span></p>
                         <p class="feature-container">
                           <span class="featur">Особенность:</span>
@@ -550,8 +558,12 @@ function openCharacterSelect() {
 					const newVal = f.factor ? (f.new * f.factor) : f.new;
 					const diff = newVal - oldVal;
 					if (Math.abs(diff) > 0.001) {
-						// Формируем строку изменения
-						let diffText = (diff > 0 ? '+' : '') + diff.toFixed(f.suffix ? (f.suffix === '%' ? 0 : 0) : 0);
+						// Формируем строку изменения. Раньше тут всегда стояло .toFixed(0) —
+						// дробные приросты (например +0.5% защиты) отображались как "+0%".
+						// Теперь — максимум 2 знака после точки, лишние нули отбрасываются
+						// (formatStatNumber, тот же принцип, что и в основном отображении).
+						const diffRounded = formatStatNumber(diff);
+						let diffText = (diffRounded > 0 ? '+' : '') + diffRounded;
 						if (f.suffix) diffText += f.suffix;
 						const span = document.createElement('span');
 						span.className = 'stat-diff';
