@@ -215,12 +215,24 @@ const startGlobalCritChance = activeHeroObject.startGlobalCritChance;
 const startGlobalCritMultiplier = activeHeroObject.startGlobalCritMultiplier; 
 
 const startGlobalWoundChance = activeHeroObject.startGlobalWoundChance;
-const startHeroDamageReduction = Math.min(
-    MAX_HERO_DAMAGE_REDUCTION,
-    activeHeroObject.startHeroDamageReduction
-);
+// Раньше тут был доп. клэмп через движковую константу MAX_HERO_DAMAGE_REDUCTION —
+// по решению пользователя убран: единственный источник числа — сам объект героя.
+const startHeroDamageReduction = activeHeroObject.startHeroDamageReduction;
 const startSHOT_INTERVAL = activeHeroObject.startSHOT_INTERVAL;
-const TEMPORARY_UPGRADE_BASE_SHARE = 0.20;
+// 0.20 → 0.18 → 0.54 (по решению пользователя, вместе с переходом на одно окно вместо
+// трёх после босса — см. BOSS_KILL_UPGRADE_CHOICES) и без personal temporaryUpgradePower
+// (убран из saveData.js) — единая база для всех героев: обычное = 54% от базового стата.
+// Действует на все статы связок, КРОМЕ heroHP/heroDefense — у них своя, отдельная и
+// сильно меньшая база (см. TEMPORARY_UPGRADE_SURVIVAL_SHARE ниже), потому что при одном
+// окне вместо трёх урон/крит и так растут втрое быстрее за забег, а живучести такой же
+// разгон не нужен.
+const TEMPORARY_UPGRADE_BASE_SHARE = 0.54;
+// Отдельная (меньшая) база для heroHP/heroDefense — по решению пользователя: обычное =
+// 10% от базового стата, а не 54%, как у остальных.
+const TEMPORARY_UPGRADE_SURVIVAL_SHARE = 0.10;
+// Отдельная база для fireRate (скорость атаки) — по решению пользователя: обычное = 25%
+// от базового стата, а не 54%, как у урона/крита/ранения.
+const TEMPORARY_UPGRADE_FIRE_RATE_SHARE = 0.25;
 
 // Глобальные параметры оглушения
 
@@ -4239,7 +4251,9 @@ function fadeOutEnemiesQuick(enemies, durationMs = 350) {
 // небоссами-финалами уровня (боссы 1-4 из 5). Не связано с опытом/уровнем
 // игрока — та механика (giveExperienceForKill → processLevelUp) остаётся
 // нетронутой и может пригодиться отдельно для других режимов.
-const BOSS_KILL_UPGRADE_CHOICES = 3;
+// 3 → 1 по решению пользователя (вместе с ростом базовой доли 18%→54% — три старых
+// окна по 18% и одно новое по 54% дают тот же суммарный прирост за одного босса).
+const BOSS_KILL_UPGRADE_CHOICES = 1;
 
 async function awardBossKillUpgradeChoices(count = BOSS_KILL_UPGRADE_CHOICES) {
     for (let i = 0; i < count; i++) {
@@ -4258,8 +4272,8 @@ async function finalizeBossDefeatAftermath(enemy, isFinalBoss) {
 
     window.battleMusic?.setContext(buildBattleMusicContext(bossM[0]));
     await awardBossKillUpgradeChoices();
-    // giveExperienceForKill здесь намеренно не вызывается — гарантированные
-    // 3 окна полностью заменяют опыт за победу над боссом. Сама функция
+    // giveExperienceForKill здесь намеренно не вызывается — гарантированное
+    // окно полностью заменяет опыт за победу над боссом. Сама функция
     // (и вся цепочка processLevelUp/handleLevelUps) не тронута и остаётся
     // доступной для других режимов, где опыт снова понадобится.
     timeNextBoss = timeSec2 + bossInterval;
@@ -4791,6 +4805,7 @@ function showLevelUpModal(titleHtml, subtitleText) {
                 </div>
                 <h2>${resolvedTitle}</h2>
                 <p class="modal-subtitle">${resolvedSubtitle}</p>
+                ${buildLevelUpStatsPanelMarkup()}
                 <div class="upgrade-options" id="upgradeOptions"></div>
             </div>
         `;
@@ -4812,38 +4827,53 @@ function showLevelUpModal(titleHtml, subtitleText) {
             window.location.href = 'index.html';
         });
 
-        // Определяем доступные улучшения
-        const availableUpgrades = getAvailableUpgrades();
-        
-        // Выбираем 3 случайных улучшения
-        const selectedUpgrades = selectRandomUpgrades(availableUpgrades, 3);
-        
-        // Создаем кнопки для выбора улучшений
+        // До 3 связок по 3 стата — см. getAvailableUpgradeBundles (заменяет старые
+        // getAvailableUpgrades()+selectRandomUpgrades()).
+        const bundles = getAvailableUpgradeBundles(3);
+
         const upgradeOptions = document.getElementById('upgradeOptions');
-        
-        selectedUpgrades.forEach((upgrade) => {
+
+        bundles.forEach((bundle) => {
             const upgradeButton = document.createElement('div');
-            upgradeButton.className = `upgrade-option rarity-${upgrade.rarity}`;
+            upgradeButton.className = `upgrade-option rarity-${bundle.rarity}`;
+            const effectLines = bundle.statEffects.map(effect => `
+                <div class="upgrade-bundle-stat">
+                    <span class="upgrade-bundle-stat-icon" aria-hidden="true">${getLevelUpStatIcon(effect.statId)}</span>
+                    <span class="upgrade-bundle-stat-label">${getLevelUpStatShortLabel(effect.statId)}</span>
+                    <span class="upgrade-bundle-stat-amount">${effect.cardText}</span>
+                </div>
+            `).join('');
             upgradeButton.innerHTML = `
-                <div class="upgrade-title" style="color: ${getRarityColor(upgrade.rarity)}">${upgrade.name}</div>
-                <div class="upgrade-effect">${upgrade.description}</div>
-                <div class="upgrade-rarity">${getRarityName(upgrade.rarity)}</div>
+                <div class="upgrade-title" style="color: ${getRarityColor(bundle.rarity)}">${bundle.displayName}</div>
+                <div class="upgrade-effect">${effectLines}</div>
+                <div class="upgrade-rarity">${getRarityName(bundle.rarity)}</div>
             `;
-            
+
+            // Предпросмотр при наведении — тот же принцип, что у постоянной прокачки в
+            // index.html (previewUpgrade/revertPreview): показываем в панели статов
+            // реальный (уже обрезанный под потолок, если он есть) эффект КАЖДОГО из 3
+            // статов этой связки разом, а не номинал из cardText.
+            upgradeButton.addEventListener('mouseenter', () => {
+                bundle.statEffects.forEach(effect => applyLevelUpStatPreview(modal, effect.statId, effect));
+            });
+            upgradeButton.addEventListener('mouseleave', () => {
+                bundle.statEffects.forEach(effect => clearLevelUpStatPreview(modal, effect.statId));
+            });
+
             upgradeButton.addEventListener('click', () => {
-                // Применяем выбранное улучшение
-                upgrade.apply();
-                
+                // Применяем всю связку — 3 стата разом.
+                bundle.apply();
+
                 // Закрываем модальное окно
                 document.body.removeChild(modal);
-                
+
                 // Разрешаем промис
                 resolve();
-				
+
 				 resumeGame();
 				 openLevelUpModal = false;
             });
-            
+
             upgradeOptions.appendChild(upgradeButton);
         });
     });
@@ -4852,186 +4882,466 @@ function showLevelUpModal(titleHtml, subtitleText) {
 	
 }
 
-// ==================== ПОЛУЧЕНИЕ ДОСТУПНЫХ УЛУЧШЕНИЙ ====================
+// ==================== СВЯЗКИ ВРЕМЕННЫХ УЛУЧШЕНИЙ (BUNDLE-ВАРИАНТЫ) ====================
+//
+// По решению пользователя: одиночные улучшения (1 карточка = 1 стат) заменены на
+// связки (1 карточка = 3 разных стата разом, один общий ролл редкости на всю связку).
+// Никакого личного множителя силы героя (temporaryUpgradePower убран из saveData.js) —
+// база одна на всех: TEMPORARY_UPGRADE_BASE_SHARE=0.18 (обычное = 18% от базового стата).
+// Все показываемые и реально применяемые числа — целые, без дробных значений: ceil для
+// номинала на карточке и для несжатого (не упёршегося в потолок) реального эффекта,
+// floor для эффекта, который пришлось обрезать под потолок героя (чтобы округление
+// вверх не перескочило сам потолок).
 
-// ==================== ИСПРАВЛЯЕМ ФУНКЦИЮ getAvailableUpgrades ====================
+// Статы, способные меняться временными улучшениями — порядок совпадает с секциями
+// panel/bundle ниже. Объявлено здесь (а не рядом с панелью статов дальше по файлу),
+// потому что UPGRADE_VARIANTS ниже строится по этому списку уже при загрузке модуля.
+const LEVEL_UP_STAT_IDS = ['damage', 'critChance', 'critMultiplier', 'woundChance', 'heroHP', 'heroDefense', 'fireRate'];
 
-function getAvailableUpgrades() {
-    const upgrades = [];
-    // Множитель силы временных улучшений на конкретном герое (по умолчанию 1 — как
-    // было раньше). Даёт архетипу «стакать» апгрейды сильнее/слабее за одинаковый выбор,
-    // не трогая постоянные статы — см. temporaryUpgradePower у объектов героев в
-    // saveData.js: Дарьяна и Дуня заметно опережают базу (их постоянный DPS нарочно не
-    // про крит/скорость, а временная удача должна давать шанс это компенсировать —
-    // «если повезёт с критами», «если вихри напрокают»), Еремей чуть ниже базы (его сила —
-    // немногочисленные, но огромные постоянные криты, а не стак временных мелких баффов).
-    const temporaryUpgradePower = activeHeroObject?.temporaryUpgradePower ?? 1;
+// Округление числа до precision знаков после точки в заданном режиме: 'ceil' — вверх
+// (герой никогда не получает меньше номинала), 'floor' — вниз (чтобы округление вверх
+// не перескочило сам потолок героя), 'nearest' — к ближайшему (для уже показанных на
+// экране текущего значения/потолка, от которых считается разница при клэмпе).
+// precision=0 — целые числа без дробной части (все статы, кроме защиты), precision=1 —
+// один знак после точки (0.1/0.2/5.3 — по решению пользователя только у защиты).
+function roundUpgradeToPrecision(value, precision, mode) {
+    const factor = Math.pow(10, precision);
+    if (mode === 'ceil') return Math.ceil(value * factor) / factor;
+    if (mode === 'floor') return Math.floor(value * factor) / factor;
+    return Math.round(value * factor) / factor;
+}
 
-    // 1. Урон
-    const damageRarity = getRandomRarity();
-    const damageMultiplier = getRarityMultiplier(damageRarity);
-    const damageIncrease = Math.round(
-        startGlobalDamage * TEMPORARY_UPGRADE_BASE_SHARE * damageMultiplier * temporaryUpgradePower
-    );
-    upgrades.push({
-        id: 'damage',
-        name: 'Урон',
-        description: `+${damageIncrease} к урону`,
-        rarity: damageRarity,
-        apply: function() {
-            globalDamage += damageIncrease;
-            console.log(`Урон увеличен до: ${globalDamage} (множитель: ${damageMultiplier}x)`);
-        }
-    });
-    
-    // 2. Шанс крита - проверяем, что еще не достиг потолка героя (не общих 100%)
-    if (globalCritChance < globalCritChanceCap) {
-        const critChanceRarity = getRandomRarity();
-        const critChanceMultiplier = getRarityMultiplier(critChanceRarity);
-        const critChanceIncrease = Math.min(
-            startGlobalCritChance * TEMPORARY_UPGRADE_BASE_SHARE * critChanceMultiplier * temporaryUpgradePower,
-            globalCritChanceCap - globalCritChance
-        );
-        upgrades.push({
-            id: 'critChance',
-            name: 'Шанс крита',
-            description: `+${(critChanceIncrease * 100).toFixed(2)}% к шансу крита`,
-            rarity: critChanceRarity,
-            apply: function() {
-                globalCritChance = Math.min(globalCritChanceCap, globalCritChance + critChanceIncrease);
-                console.log(`Шанс крита увеличен до: ${(globalCritChance * 100).toFixed(2)}% (множитель: ${critChanceMultiplier}x)`);
-            }
-        });
+// Итоговая (видимая игроку) прибавка стата — единая логика для карточки, hover-превью и
+// apply(), чтобы карточка честно обещала именно то число, которое реально применится, а
+// не полный номинал легендарки, если герой почти упёрся в потолок (например «+5%» на
+// карточке при реальных +1% из-за близости к потолку — так быть не должно). scale — во
+// сколько раз перевести сырые единицы стата в отображаемые (100 для процентных статов,
+// 1 для абсолютных чисел вроде урона/HP/скорости). precision — см. roundUpgradeToPrecision
+// (по умолчанию 0, у защиты передаётся 1).
+// Без потолка (cap не задан/не конечен) — обычный ceil от номинала, как и раньше.
+// С потолком — всегда сравниваем ДВЕ УЖЕ ОКРУГЛЁННЫЕ величины: несжатый ceil-номинал и
+// округлённый запас до потолка (roundedCap - roundedCurrent), берём меньшую. Раньше
+// клэмп решался по сырой (до округления) разнице через эпсилон — это ловило только
+// случай, когда сырой номинал ЗАМЕТНО больше запаса, но пропускало пограничный: если
+// сырой номинал математически ровно (или чуть меньше) помещается в запас, «клэмп не
+// нужен» и код применял чистый ceil(nominal) — а ceil у нецелого номинала сам по себе
+// перепрыгивал через границу потолка (например номинал 13.5 при запасе ровно 13.5%:
+// «не клэмповано», ceil даёт 14, и 21.5%+14%=35.5% — выше потолка 35%). Теперь клэмп
+// определяется по факту (несжатый ceil > округлённый запас), а не по сырой разнице до
+// округления — потолок никогда не перепрыгивается, независимо от того, целое ли число
+// получилось у запаса.
+function computeUpgradeStatDelta(nominalRaw, current, cap, scale, precision = 0) {
+    const unclampedAmount = roundUpgradeToPrecision(nominalRaw * scale, precision, 'ceil');
+    if (!Number.isFinite(cap)) {
+        return { amount: unclampedAmount, isClamped: false };
     }
-    
-    // 3. Множитель крита - всегда доступен
-    const critMultiplierRarity = getRandomRarity();
-    const critMultiplierMultiplier = getRarityMultiplier(critMultiplierRarity);
-    const critMultiplierIncrease = startGlobalCritMultiplier * TEMPORARY_UPGRADE_BASE_SHARE * critMultiplierMultiplier * temporaryUpgradePower;
-    upgrades.push({
-        id: 'critMultiplier',
-        name: 'Множитель крита',
-        description: `+${critMultiplierIncrease.toFixed(2)} к множителю крита`,
-        rarity: critMultiplierRarity,
-        apply: function() {
-            globalCritMultiplier += critMultiplierIncrease;
-            console.log(`Множитель крита увеличен до: ${globalCritMultiplier.toFixed(2)} (множитель: ${critMultiplierMultiplier}x)`);
-        }
-    });
-    
-    // 4. Шанс ранения - проверяем, что еще не достиг потолка героя
-    if (globalWoundChance < globalWoundChanceCap) {
-        const woundChanceRarity = getRandomRarity();
-        const woundChanceMultiplier = getRarityMultiplier(woundChanceRarity);
-        const woundChanceIncrease = Math.min(
-            startGlobalWoundChance * TEMPORARY_UPGRADE_BASE_SHARE * woundChanceMultiplier * temporaryUpgradePower,
-            globalWoundChanceCap - globalWoundChance
-        );
-        // "Шанс <родительный падеж>" → "к шансу <родительный падеж>" (падеж
-        // самого существительного в подписи не меняется, склоняется только «шанс»).
-        const woundChanceLabel = activeHeroObject?.woundChanceLabel ?? 'Шанс ранения';
-        const woundChanceNoun = woundChanceLabel.replace(/^Шанс\s+/i, '').toLowerCase();
-        upgrades.push({
-            id: 'woundChance',
-            name: woundChanceLabel,
-            description: `+${(woundChanceIncrease * 100).toFixed(2)}% к шансу ${woundChanceNoun}`,
-            rarity: woundChanceRarity,
-            apply: function() {
-                globalWoundChance = Math.min(globalWoundChanceCap, globalWoundChance + woundChanceIncrease);
-                console.log(`Шанс ранения увеличен до: ${(globalWoundChance * 100).toFixed(2)}% (множитель: ${woundChanceMultiplier}x)`);
-            }
-        });
+    const roundedCap = roundUpgradeToPrecision(cap * scale, precision, 'nearest');
+    const roundedCurrent = roundUpgradeToPrecision(current * scale, precision, 'nearest');
+    const headroom = Math.max(0, roundUpgradeToPrecision(roundedCap - roundedCurrent, precision, 'nearest'));
+    if (unclampedAmount <= headroom) {
+        return { amount: unclampedAmount, isClamped: false };
     }
+    return { amount: headroom, isClamped: true };
+}
 
+// Живой (не стартовый) гейт «стат ещё способен вырасти прямо сейчас» — используется при
+// фильтрации вариантов связок на каждый показ окна. Herohp/heroDefense/critChance/
+// woundChance/fireRate — потолок гейтит только показ, само число не обрезается под
+// остаток (см. buildUpgradeStatEffect ниже) — если стата нет на потолке героя, он ничем
+// не ограничен, движок не подставляет собственных запасных чисел.
+function isUpgradeStatEligibleNow(statId) {
+    switch (statId) {
+        case 'damage':
+        case 'critMultiplier':
+            return true;
+        case 'critChance':
+            return !Number.isFinite(globalCritChanceCap) || globalCritChance < globalCritChanceCap;
+        case 'woundChance':
+            return startGlobalWoundChance > 0
+                && (!Number.isFinite(globalWoundChanceCap) || globalWoundChance < globalWoundChanceCap);
+        case 'heroHP':
+            return !Number.isFinite(heroHpCap) || heroHP.max < heroHpCap;
+        case 'heroDefense':
+            return !Number.isFinite(heroDamageReductionCap) || heroDamageReduction < heroDamageReductionCap;
+        case 'fireRate': {
+            const floor = activeHeroObject?.minShotInterval;
+            return !Number.isFinite(floor) || SHOT_INTERVAL > floor;
+        }
+        default:
+            return false;
+    }
+}
 
-    // 6. Здоровье — временный потолок от старта забега (~+25%), а не от постоянного
-    // heroHpCap: иначе высокий permanent-cap (нужен для роста по кампании) позволял
-    // раздувать HP внутри одного уровня далеко за дизайн «временные апгрейды ≤~20%».
-    const temporaryHeroHpCeiling = Math.min(
-        heroHpCap,
-        Math.round(startGlobalHeroHp * 1.25)
-    );
-    if (heroHP.max < temporaryHeroHpCeiling) {
-        const heroHpRarity = getRandomRarity();
-        const heroHpMultiplier = getRarityMultiplier(heroHpRarity);
-        const heroHpIncrease = Math.min(
-            Math.round(startGlobalHeroHp * TEMPORARY_UPGRADE_BASE_SHARE * heroHpMultiplier),
-            temporaryHeroHpCeiling - heroHP.max
-        );
-        if (heroHpIncrease > 0) {
-            upgrades.push({
-                id: 'heroHP',
-                name: 'Здоровье',
-                description: `+${heroHpIncrease} к здоровью`,
-                rarity: heroHpRarity,
+// Один стат связки: карточка, apply() и preview() всегда показывают и применяют ОДНО И
+// ТО ЖЕ число — реальную (обрезанную под потолок героя, если герой уже почти упёрся)
+// прибавку, а не полный номинал легендарки. Иначе карточка обещает «+5%», а по клику
+// реально даёт «+1%», потому что до потолка остался всего 1% — так быть не должно.
+// Одна функция на все 7 статов — единственное место с формулой magnitude = база × доля
+// × редкость, переиспользуется и при сборке связки, и (опосредованно) при построении
+// панели статов через ту же клэмп-логику. Доля разная по группам статов (по решению
+// пользователя): TEMPORARY_UPGRADE_BASE_SHARE (54%) — урон/крит-шанс/крит-урон/ранение,
+// TEMPORARY_UPGRADE_SURVIVAL_SHARE (10%) — здоровье/защита,
+// TEMPORARY_UPGRADE_FIRE_RATE_SHARE (25%) — скорость атаки.
+function buildUpgradeStatEffect(statId, rarityMultiplier) {
+    switch (statId) {
+        case 'damage': {
+            const nominalRaw = startGlobalDamage * TEMPORARY_UPGRADE_BASE_SHARE * rarityMultiplier;
+            const delta = computeUpgradeStatDelta(nominalRaw, globalDamage, undefined, 1);
+            return {
+                statId,
+                cardText: `+${delta.amount}`,
                 apply: function() {
-                    heroHP.max = Math.min(temporaryHeroHpCeiling, heroHP.max + heroHpIncrease);
-                    heroHP.current = Math.min(heroHP.max, heroHP.current + heroHpIncrease);
-                    updateHeroHealthDisplay();
-                    console.log(`Здоровье увеличено до: ${heroHP.max} (множитель: ${heroHpMultiplier}x)`);
+                    globalDamage += computeUpgradeStatDelta(nominalRaw, globalDamage, undefined, 1).amount;
+                },
+                preview: function() {
+                    const amount = computeUpgradeStatDelta(nominalRaw, globalDamage, undefined, 1).amount;
+                    return { text: `${Math.round(globalDamage)} +${amount}`, isClamped: false };
                 }
-            });
+            };
+        }
+        case 'critChance': {
+            const nominalRaw = startGlobalCritChance * TEMPORARY_UPGRADE_BASE_SHARE * rarityMultiplier;
+            const delta = computeUpgradeStatDelta(nominalRaw, globalCritChance, globalCritChanceCap, 100);
+            return {
+                statId,
+                cardText: `+${delta.amount}%`,
+                apply: function() {
+                    const liveDelta = computeUpgradeStatDelta(nominalRaw, globalCritChance, globalCritChanceCap, 100);
+                    globalCritChance += liveDelta.amount / 100;
+                },
+                preview: function() {
+                    const liveDelta = computeUpgradeStatDelta(nominalRaw, globalCritChance, globalCritChanceCap, 100);
+                    const capSuffix = liveDelta.isClamped ? ` (максимум ${Math.ceil(globalCritChanceCap * 100)}%)` : '';
+                    return { text: `${Math.round(globalCritChance * 100)}% +${liveDelta.amount}%${capSuffix}`, isClamped: liveDelta.isClamped };
+                }
+            };
+        }
+        case 'critMultiplier': {
+            // Множитель — внутреннее представление (глобальный критУрон = база × множитель);
+            // игроку везде в UI (index.html/updateInfoPanel, панель статов) крит-урон
+            // показывается как %, а не сырой множитель — тот же язык и здесь. Без потолка.
+            const nominalRaw = startGlobalCritMultiplier * TEMPORARY_UPGRADE_BASE_SHARE * rarityMultiplier;
+            const delta = computeUpgradeStatDelta(nominalRaw, globalCritMultiplier, undefined, 100);
+            return {
+                statId,
+                cardText: `+${delta.amount}%`,
+                apply: function() {
+                    const amount = computeUpgradeStatDelta(nominalRaw, globalCritMultiplier, undefined, 100).amount;
+                    globalCritMultiplier += amount / 100;
+                },
+                preview: function() {
+                    const amount = computeUpgradeStatDelta(nominalRaw, globalCritMultiplier, undefined, 100).amount;
+                    return { text: `${Math.round(globalCritMultiplier * 100)}% +${amount}%`, isClamped: false };
+                }
+            };
+        }
+        case 'woundChance': {
+            const nominalRaw = startGlobalWoundChance * TEMPORARY_UPGRADE_BASE_SHARE * rarityMultiplier;
+            const delta = computeUpgradeStatDelta(nominalRaw, globalWoundChance, globalWoundChanceCap, 100);
+            return {
+                statId,
+                cardText: `+${delta.amount}%`,
+                apply: function() {
+                    const liveDelta = computeUpgradeStatDelta(nominalRaw, globalWoundChance, globalWoundChanceCap, 100);
+                    globalWoundChance += liveDelta.amount / 100;
+                },
+                preview: function() {
+                    const liveDelta = computeUpgradeStatDelta(nominalRaw, globalWoundChance, globalWoundChanceCap, 100);
+                    const capSuffix = liveDelta.isClamped ? ` (максимум ${Math.ceil(globalWoundChanceCap * 100)}%)` : '';
+                    return { text: `${Math.round(globalWoundChance * 100)}% +${liveDelta.amount}%${capSuffix}`, isClamped: liveDelta.isClamped };
+                }
+            };
+        }
+        case 'heroHP': {
+            const nominalRaw = startGlobalHeroHp * TEMPORARY_UPGRADE_SURVIVAL_SHARE * rarityMultiplier;
+            const delta = computeUpgradeStatDelta(nominalRaw, heroHP.max, heroHpCap, 1);
+            return {
+                statId,
+                cardText: `+${delta.amount}`,
+                apply: function() {
+                    const amount = computeUpgradeStatDelta(nominalRaw, heroHP.max, heroHpCap, 1).amount;
+                    heroHP.max += amount;
+                    heroHP.current += amount;
+                    updateHeroHealthDisplay();
+                },
+                preview: function() {
+                    const liveDelta = computeUpgradeStatDelta(nominalRaw, heroHP.max, heroHpCap, 1);
+                    const capSuffix = liveDelta.isClamped ? ` (максимум ${Math.round(heroHpCap)})` : '';
+                    return { text: `${Math.round(heroHP.current)}/${Math.round(heroHP.max)} +${liveDelta.amount}${capSuffix}`, isClamped: liveDelta.isClamped };
+                }
+            };
+        }
+        case 'heroDefense': {
+            // Единственный стат с дробным шагом (по решению пользователя): максимум один
+            // знак после точки — 0.1/0.2/5.3, а не целые числа, как у остальных 6 статов.
+            const DEFENSE_PRECISION = 1;
+            const nominalRaw = startHeroDamageReduction * TEMPORARY_UPGRADE_SURVIVAL_SHARE * rarityMultiplier;
+            const delta = computeUpgradeStatDelta(nominalRaw, heroDamageReduction, heroDamageReductionCap, 100, DEFENSE_PRECISION);
+            return {
+                statId,
+                cardText: `+${delta.amount.toFixed(DEFENSE_PRECISION)}%`,
+                apply: function() {
+                    const liveDelta = computeUpgradeStatDelta(nominalRaw, heroDamageReduction, heroDamageReductionCap, 100, DEFENSE_PRECISION);
+                    heroDamageReduction += liveDelta.amount / 100;
+                },
+                preview: function() {
+                    const liveDelta = computeUpgradeStatDelta(nominalRaw, heroDamageReduction, heroDamageReductionCap, 100, DEFENSE_PRECISION);
+                    const capSuffix = liveDelta.isClamped ? ` (максимум ${Math.ceil(heroDamageReductionCap * 100)}%)` : '';
+                    return { text: `${Math.round(heroDamageReduction * 100)}% +${liveDelta.amount.toFixed(DEFENSE_PRECISION)}%${capSuffix}`, isClamped: liveDelta.isClamped };
+                }
+            };
+        }
+        case 'fireRate': {
+            // Доля/(1+доля) от СВОЕГО интервала: даёт тот же прирост DPS от ускорения, что
+            // damage-эффект с той же долей даёт от урона (симметрично остальным статам, не
+            // зависит от абсолютного стартового интервала героя). Пол на SHOT_INTERVAL — это
+            // и есть потолок на «скорости» (1000-интервал), просто вывернутый: чем меньше
+            // интервал, тем выше скорость.
+            const fireRateFloor = activeHeroObject?.minShotInterval;
+            const fireRateShare = TEMPORARY_UPGRADE_FIRE_RATE_SHARE * rarityMultiplier;
+            const nominalRaw = startSHOT_INTERVAL * (fireRateShare / (1 + fireRateShare));
+            const speedCap = Number.isFinite(fireRateFloor) ? 1000 - fireRateFloor : undefined;
+            const delta = computeUpgradeStatDelta(nominalRaw, 1000 - SHOT_INTERVAL, speedCap, 1);
+            return {
+                statId,
+                cardText: `+${delta.amount}`,
+                apply: function() {
+                    const currentSpeed = 1000 - SHOT_INTERVAL;
+                    const amount = computeUpgradeStatDelta(nominalRaw, currentSpeed, speedCap, 1).amount;
+                    SHOT_INTERVAL -= amount;
+                },
+                preview: function() {
+                    const currentSpeed = 1000 - SHOT_INTERVAL;
+                    const liveDelta = computeUpgradeStatDelta(nominalRaw, currentSpeed, speedCap, 1);
+                    const capSuffix = liveDelta.isClamped ? ` (максимум ${Math.round(speedCap)})` : '';
+                    return { text: `${Math.round(currentSpeed)} +${liveDelta.amount}${capSuffix}`, isClamped: liveDelta.isClamped };
+                }
+            };
+        }
+        default:
+            return null;
+    }
+}
+
+// Все сочетания по 3 без повторов из 7 статов (C(7,3)=35) — стабильный список,
+// сгенерированный один раз при загрузке движка. id детерминирован порядком перебора
+// (variant1..variant35, i<j<k по LEVEL_UP_STAT_IDS) — на него ссылаются лорные названия
+// в lvlData/gameData{N}.js (UPGRADE_VARIANT_NAMES[boss][variantId]). Дубликатов по
+// построению быть не может — комбинаторный перебор не повторяет один и тот же набор.
+const UPGRADE_VARIANTS = (function generateUpgradeVariants() {
+    const variants = [];
+    for (let i = 0; i < LEVEL_UP_STAT_IDS.length; i++) {
+        for (let j = i + 1; j < LEVEL_UP_STAT_IDS.length; j++) {
+            for (let k = j + 1; k < LEVEL_UP_STAT_IDS.length; k++) {
+                variants.push({
+                    id: `variant${variants.length + 1}`,
+                    statIds: [LEVEL_UP_STAT_IDS[i], LEVEL_UP_STAT_IDS[j], LEVEL_UP_STAT_IDS[k]]
+                });
+            }
         }
     }
-    
-    // 7. Защита — после достижения 60% больше не предлагается
-    if (heroDamageReduction < heroDamageReductionCap) {
-        const defenseRarity = getRandomRarity();
-        const defenseMultiplier = getRarityMultiplier(defenseRarity);
-        const defenseIncrease = Math.min(
-            startHeroDamageReduction * TEMPORARY_UPGRADE_BASE_SHARE * defenseMultiplier,
-            heroDamageReductionCap - heroDamageReduction
-        );
-        upgrades.push({
-            id: 'heroDefense',
-            name: 'Защита',
-            description: `+${(defenseIncrease * 100).toFixed(2)}% к защите`,
-            rarity: defenseRarity,
-            apply: function() {
-                heroDamageReduction = Math.min(
-                    heroDamageReductionCap,
-                    heroDamageReduction + defenseIncrease
-                );
-                console.log(`Защита увеличена до: ${(heroDamageReduction * 100).toFixed(2)}% (множитель: ${defenseMultiplier}x)`);
-            }
-        });
-    }
-    
-    // 8. Скорострельность - проверяем, что еще не достиг личного пола героя (обычно
-    // 200мс, но у некоторых героев выше — см. minShotInterval; раньше здесь везде было
-    // захардкожено 200, из-за чего герой с личным полом скорости, например Дарьяна
-    // (minShotInterval 940 — она намеренно "не про скорость"), мог временными апгрейдами
-    // разогнаться быстрее своего постоянного предела).
-    const fireRateFloor = activeHeroObject?.minShotInterval ?? 200;
-    if (SHOT_INTERVAL > fireRateFloor) {
-        const fireRateRarity = getRandomRarity();
-        const fireRateMultiplier = getRarityMultiplier(fireRateRarity);
-        // Раньше — (1000 - startSHOT_INTERVAL) * доля: чем БЫСТРЕЕ герой уже был, тем
-        // БОЛЬШЕ мс отнимала эта формула за апгрейд (у медленного героя ~930мс разница с
-        // 1000 давала гроши, у быстрого ~600мс — почти вдвое больше) — временные апгрейды
-        // награждали уже быстрых героев сильнее, а не давали всем сопоставимую пользу.
-        // Теперь — доля/(1+доля) от СВОЕГО интервала: даёт тот же прирост DPS от ускорения,
-        // что damage-апгрейд с той же долей даёт от урона (симметрично остальным статам,
-        // не зависит от абсолютного стартового интервала конкретного героя).
-        const fireRateShare = TEMPORARY_UPGRADE_BASE_SHARE * fireRateMultiplier * temporaryUpgradePower;
-        const fireRateDecrease = Math.min(
-            startSHOT_INTERVAL * (fireRateShare / (1 + fireRateShare)),
-            SHOT_INTERVAL - fireRateFloor
-        );
+    return variants;
+})();
 
-        upgrades.push({
-            id: 'fireRate',
-            name: 'Скорость атаки',
-            description: `Увеличивает скорость атаки на ${fireRateDecrease}`,
-            rarity: fireRateRarity,
-            apply: function() {
-                SHOT_INTERVAL = Math.max(fireRateFloor, SHOT_INTERVAL - fireRateDecrease);
-                console.log(`Интервал стрельбы уменьшен до: ${SHOT_INTERVAL} мс (множитель: ${fireRateMultiplier}x)`);
-            }
-        });
+// Случайный вариант из тех, где ХОТЯ БЫ ОДИН из 3 статов ещё способен вырасти (см.
+// isUpgradeStatEligibleNow), и id не входит в excludeVariantIds (чтобы 3 карточки в
+// одном окне не повторяли одну и ту же связку). Из ролла выкидываются только полностью
+// бесполезные варианты — где все 3 стата уже на потолке (карточка была бы сплошными
+// +0/+0/+0) — а не любой вариант, где хотя бы один стат упёрся: связка с одним капнутым
+// статом всё равно даёт реальный прирост по двум другим (см. computeUpgradeStatDelta —
+// капнутый эффект внутри связки сам покажет +0%, не ломая остальные два). Урон и
+// крит-урон (see isUpgradeStatEligibleNow) не капаются никогда, поэтому хотя бы одна
+// связка остаётся доступной всегда — «пустого» окна без единой карточки быть не должно.
+// null возвращается, только если excludeVariantIds уже выбрал все связки, где есть хотя
+// бы один нерастущий стат (в рамках одного открытия окна, не позднего забега).
+function getRandomUpgradeVariant(excludeVariantIds) {
+    const excluded = excludeVariantIds instanceof Set ? excludeVariantIds : new Set(excludeVariantIds || []);
+    const eligible = UPGRADE_VARIANTS.filter(variant =>
+        !excluded.has(variant.id) && variant.statIds.some(isUpgradeStatEligibleNow)
+    );
+    if (eligible.length === 0) return null;
+    return eligible[Math.floor(Math.random() * eligible.length)];
+}
+
+// Лорное название связки на ТЕКУЩЕМ уровне/боссе — опциональная глобальная переменная
+// UPGRADE_VARIANT_NAMES, объявляемая в lvlData/gameData{N}.js (см. правила создания
+// уровней), формат: { enem1: { variant7: 'Прыгучесть побегайчика' }, ... }. Не задано —
+// движок сам собирает читаемое имя из статов связки, игра не ломается без единой
+// написанной строки. Название НЕ зависит от редкости — «Ловкость колобка» остаётся
+// «Ловкостью колобка» что на обычной, что на легендарной, редкость — отдельный лейбл.
+function getUpgradeVariantDisplayName(variant) {
+    const namesForBoss = (typeof UPGRADE_VARIANT_NAMES !== 'undefined' && bossAliveName)
+        ? UPGRADE_VARIANT_NAMES[bossAliveName]
+        : null;
+    const specific = namesForBoss?.[variant.id];
+    if (specific) return specific;
+    // Короткие лейблы — иначе «Шанс крита + Критический урон + Здоровье» переносится
+    // на 2-3 строки и карточки становятся неровными по высоте.
+    return variant.statIds.map(getLevelUpStatShortLabel).join(' + ');
+}
+
+// Одна связка: один общий ролл редкости на всю тройку статов (не по одному на стат) —
+// множит magnitude всех трёх одинаково, как и было для одиночных улучшений.
+function buildUpgradeBundle(variant) {
+    const rarity = getRandomRarity();
+    const rarityMultiplier = getRarityMultiplier(rarity);
+    const statEffects = variant.statIds.map(statId => buildUpgradeStatEffect(statId, rarityMultiplier));
+    return {
+        variantId: variant.id,
+        rarity,
+        displayName: getUpgradeVariantDisplayName(variant),
+        statEffects,
+        apply: function() {
+            statEffects.forEach(effect => effect.apply());
+        }
+    };
+}
+
+// Заменяет старые getAvailableUpgrades()+selectRandomUpgrades(): до `count` связок,
+// каждая — случайный ещё не выбранный в этом окне вариант (см. getRandomUpgradeVariant).
+function getAvailableUpgradeBundles(count = 3) {
+    const bundles = [];
+    const usedVariantIds = new Set();
+    for (let i = 0; i < count; i++) {
+        const variant = getRandomUpgradeVariant(usedVariantIds);
+        if (!variant) break;
+        usedVariantIds.add(variant.id);
+        bundles.push(buildUpgradeBundle(variant));
     }
-    
-    return upgrades;
+    return bundles;
+}
+
+
+// ==================== ПАНЕЛЬ ТЕКУЩИХ СТАТОВ В ОКНЕ ВРЕМЕННЫХ УЛУЧШЕНИЙ ====================
+// LEVEL_UP_STAT_IDS объявлен раньше по файлу (у UPGRADE_VARIANTS) — используется и там,
+// и здесь.
+
+function getLevelUpStatLabel(statId) {
+    switch (statId) {
+        case 'damage': return 'Урон';
+        case 'critChance': return 'Шанс крита';
+        case 'critMultiplier': return 'Критический урон';
+        case 'woundChance': return activeHeroObject?.woundChanceLabel ?? 'Шанс ранения';
+        case 'heroHP': return 'Здоровье';
+        case 'heroDefense': return 'Защита';
+        case 'fireRate': return 'Скорость атаки';
+        default: return '';
+    }
+}
+
+// Короткая форма — для тесных мест (строка внутри карточки-связки, generic-заголовок из
+// нескольких статов через " + "), где полная «Критический урон»/«Скорость атаки»
+// переносится на 2-3 строки и ломает вёрстку. Панель текущих статов (простор шире)
+// по-прежнему использует полную getLevelUpStatLabel.
+function getLevelUpStatShortLabel(statId) {
+    switch (statId) {
+        case 'damage': return 'Урон';
+        case 'critChance': return 'Крит-шанс';
+        case 'critMultiplier': return 'Крит-урон';
+        case 'woundChance': return activeHeroObject?.woundChanceLabel ?? 'Ранение';
+        case 'heroHP': return 'Здоровье';
+        case 'heroDefense': return 'Защита';
+        case 'fireRate': return 'Скорость';
+        default: return '';
+    }
+}
+
+function getLevelUpStatIcon(statId) {
+    switch (statId) {
+        case 'damage': return '⚔️';
+        case 'critChance': return '🎯';
+        case 'critMultiplier': return '💥';
+        // «Шанс поджога» (Дарьяна) — та же ось данных, что и ранение, но подпись и
+        // иконка меняются вслед за её собственной меткой (см. woundChanceLabel).
+        case 'woundChance': return /поджог/i.test(activeHeroObject?.woundChanceLabel ?? '') ? '🔥' : '🩸';
+        case 'heroHP': return '❤️';
+        case 'heroDefense': return '🛡️';
+        case 'fireRate': return '⚡';
+        default: return '';
+    }
+}
+
+function getLevelUpStatDisplay(statId) {
+    switch (statId) {
+        case 'damage': return `${Math.round(globalDamage)}`;
+        case 'critChance': return `${(globalCritChance * 100).toFixed(2)}%`;
+        case 'critMultiplier': return `${(globalCritMultiplier * 100).toFixed(2)}%`;
+        case 'woundChance': return `${(globalWoundChance * 100).toFixed(2)}%`;
+        case 'heroHP': return `${Math.round(heroHP.current)}/${Math.round(heroHP.max)}`;
+        case 'heroDefense': return `${(heroDamageReduction * 100).toFixed(2)}%`;
+        case 'fireRate': return `${Math.round(1000 - SHOT_INTERVAL)}`;
+        default: return '';
+    }
+}
+
+// Стат показываем в панели, только если он в принципе способен вырасти от временных
+// улучшений за этот забег — те же условия, что isUpgradeStatEligibleNow выше, но
+// проверенные от СТАРТОВОГО значения героя (если старт уже был на потолке/на полу —
+// стат структурно заморожен весь забег, ни один вариант связки с ним не выпадет
+// никогда, и строка в панели была бы бессмысленной).
+function isTemporaryStatEverAvailable(statId) {
+    switch (statId) {
+        case 'damage':
+        case 'critMultiplier':
+            return true;
+        case 'critChance':
+            return !Number.isFinite(globalCritChanceCap) || startGlobalCritChance < globalCritChanceCap;
+        case 'woundChance':
+            return startGlobalWoundChance > 0
+                && (!Number.isFinite(globalWoundChanceCap) || startGlobalWoundChance < globalWoundChanceCap);
+        case 'heroHP':
+            return !Number.isFinite(heroHpCap) || startGlobalHeroHp < heroHpCap;
+        case 'heroDefense':
+            return !Number.isFinite(heroDamageReductionCap) || startHeroDamageReduction < heroDamageReductionCap;
+        case 'fireRate': {
+            const floor = activeHeroObject?.minShotInterval;
+            return !Number.isFinite(floor) || startSHOT_INTERVAL > floor;
+        }
+        default:
+            return false;
+    }
+}
+
+function buildLevelUpStatsPanelMarkup() {
+    const chips = LEVEL_UP_STAT_IDS
+        .filter(isTemporaryStatEverAvailable)
+        .map(statId => `
+            <div class="levelup-stat-row" data-stat="${statId}">
+                <span class="levelup-stat-icon" aria-hidden="true">${getLevelUpStatIcon(statId)}</span>
+                <span class="levelup-stat-text">
+                    <span class="levelup-stat-label">${getLevelUpStatLabel(statId)}</span>
+                    <span class="levelup-stat-value">${getLevelUpStatDisplay(statId)}</span>
+                </span>
+            </div>
+        `)
+        .join('');
+
+    return `
+        <div class="levelup-current-stats">
+            <div class="levelup-current-stats-title">Ваши характеристики</div>
+            <div class="levelup-current-stats-grid">${chips}</div>
+        </div>
+    `;
+}
+
+function applyLevelUpStatPreview(modal, statId, upgrade) {
+    const rowEl = modal.querySelector(`.levelup-stat-row[data-stat="${statId}"]`);
+    const valueEl = rowEl?.querySelector('.levelup-stat-value');
+    if (!valueEl || typeof upgrade.preview !== 'function') return;
+
+    const { text, isClamped } = upgrade.preview();
+    valueEl.textContent = text;
+    rowEl.classList.add('is-previewing');
+    rowEl.classList.toggle('is-clamped', isClamped);
+}
+
+function clearLevelUpStatPreview(modal, statId) {
+    const rowEl = modal.querySelector(`.levelup-stat-row[data-stat="${statId}"]`);
+    const valueEl = rowEl?.querySelector('.levelup-stat-value');
+    if (!valueEl) return;
+
+    valueEl.textContent = getLevelUpStatDisplay(statId);
+    rowEl.classList.remove('is-previewing', 'is-clamped');
 }
 
 
@@ -5084,11 +5394,7 @@ function getRarityMultiplier(rarity) {
     }
 }
 
-function selectRandomUpgrades(upgrades, count) {
-    const shuffled = [...upgrades].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, Math.min(count, shuffled.length));
-}
-let messageOpen = false; 
+let messageOpen = false;
 function showCenterText(text, duration = 2000, type = 'info') {
 	if (messageOpen) {return};
     // Создаём элемент сообщения

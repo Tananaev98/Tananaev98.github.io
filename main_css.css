@@ -947,6 +947,36 @@ body {
         margin-bottom: 16px;
     }
 
+    .levelup-current-stats {
+        margin: 2px 0 16px;
+    }
+
+    .levelup-current-stats-title {
+        font-size: 10px;
+        margin-bottom: 6px;
+    }
+
+    .levelup-current-stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+        gap: 6px;
+    }
+
+    .levelup-stat-row {
+        padding: 6px 9px;
+    }
+
+    .levelup-stat-icon {
+        font-size: 15px;
+    }
+
+    .levelup-stat-label {
+        font-size: 9.5px;
+    }
+
+    .levelup-stat-value {
+        font-size: 13px;
+    }
+
     .upgrade-options {
         grid-template-columns: 1fr;
         gap: 10px;
@@ -955,6 +985,14 @@ body {
     .upgrade-option {
         min-height: 72px;
         padding: 14px 12px;
+    }
+
+    .upgrade-bundle-stat {
+        font-size: 12px;
+    }
+
+    .upgrade-bundle-stat-icon {
+        font-size: 13px;
     }
 
     .damage-text {
@@ -3693,6 +3731,109 @@ html.is-mobile .main_menu_image {
     margin: 10px 0 0;
 }
 
+/* Панель текущих статов героя в окне временных улучшений — только те, что вообще
+   способны меняться проками (см. isTemporaryStatEverAvailable в game.js). Каждый стат —
+   отдельный «жетон» (иконка + подпись + значение), в языке остальных карточек экрана
+   (.upgrade-option), а не голый текстовый список. */
+.levelup-current-stats {
+    margin: 4px 0 22px;
+    text-align: left;
+}
+
+.levelup-current-stats-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--gp-subtitle);
+    opacity: 0.8;
+    margin: 0 0 8px 3px;
+}
+
+.levelup-current-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 8px;
+}
+
+.levelup-stat-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 11px;
+    background: rgba(255, 255, 255, 0.38);
+    border: 2px solid rgba(0, 0, 0, 0.15);
+    border-radius: 10px;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.45) inset, 0 2px 4px rgba(0, 0, 0, 0.12);
+    transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.levelup-stat-icon {
+    font-size: 18px;
+    line-height: 1;
+    flex-shrink: 0;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.3));
+}
+
+.levelup-stat-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+}
+
+.levelup-stat-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    color: var(--gp-subtitle);
+    opacity: 0.8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.levelup-stat-value {
+    font-size: 14.5px;
+    font-weight: 800;
+    color: var(--gp-wood);
+    white-space: nowrap;
+    transition: color 0.15s ease, font-size 0.15s ease;
+}
+
+/* Текст предпросмотра («208.00% +59.80% (максимум ...)») заметно длиннее обычного
+   значения — переносим по словам вместо вылезания за пределы жетона (min-width:0 на
+   .levelup-stat-text выше даёт этому переносу физически сработать) и чуть уменьшаем
+   кегль, чтобы уместиться в 1-2 строки. */
+.levelup-stat-row.is-previewing .levelup-stat-value {
+    white-space: normal;
+    overflow-wrap: break-word;
+    font-size: 12.5px;
+    line-height: 1.25;
+}
+
+/* При наведении на карточку улучшения — реальный (уже обрезанный под потолок героя,
+   если он есть) эффект именно этой карточки, а не номинал из текста самой карточки.
+   Подсвечивается весь жетон стата, не только цифра, чтобы взгляд сразу находил нужный. */
+.levelup-stat-row.is-previewing {
+    background: rgba(255, 255, 255, 0.62);
+    border-color: #2e7d32;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 0 0 3px rgba(46, 125, 50, 0.18);
+}
+
+.levelup-stat-row.is-previewing.is-clamped {
+    border-color: #c0392b;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 0 0 3px rgba(192, 57, 43, 0.18);
+}
+
+.levelup-stat-row.is-previewing .levelup-stat-value {
+    color: #1e7e34;
+}
+
+.levelup-stat-row.is-previewing.is-clamped .levelup-stat-value {
+    color: #c0392b;
+}
+
 /* Контейнер для опций улучшений */
 .upgrade-options {
     display: grid;
@@ -3777,10 +3918,47 @@ html.is-mobile .main_menu_image {
     color: var(--gp-subtitle);
 }
 
+/* Сетка иконка|лейбл|число на всю карточку (не flex-column из отдельных строк) —
+   иначе каждая строка центровалась сама по себе и иконки/текст съезжали в разные
+   позиции от строки к строке, если тексты разной длины («крив о»). display:contents на
+   .upgrade-bundle-stat отдаёт все 3 её ребёнка напрямую в родительскую сетку — так
+   иконки всегда в одной колонке, лейблы всегда в одной, числа всегда в одной. */
 .upgrade-effect {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 5px 8px;
+    margin: 0 auto 8px;
+    width: fit-content;
+    max-width: 100%;
+}
+
+.upgrade-bundle-stat {
+    display: contents;
+}
+
+.upgrade-bundle-stat-icon {
     font-size: 14px;
-    margin-bottom: 8px;
+    line-height: 1;
+    text-align: center;
+}
+
+.upgrade-bundle-stat-label {
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     color: var(--gp-frame);
+    opacity: 0.85;
+    font-size: 13px;
+}
+
+.upgrade-bundle-stat-amount {
+    text-align: right;
+    white-space: nowrap;
+    font-weight: 800;
+    color: var(--gp-frame);
+    font-size: 13px;
 }
 
 .upgrade-rarity {

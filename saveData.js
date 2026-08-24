@@ -45,29 +45,27 @@ const DEBUG_ZLATA_REWARD = 10_000_000;
 // вместо экспоненциального) — это ожидаемо и осознанно, но сами числа не
 // проверены реальным боем панели (см. CLAUDE.md §2) — нужен новый экспорт в
 // /DataExport перед следующей балансной правкой.
+// Потолки статов героя (defenseCap/critChanceCap/woundChanceCap/heroHpCap) — по
+// решению пользователя, ЕДИНСТВЕННЫЙ источник истины — поле на самом объекте героя
+// в mHero, движок нигде не хранит и не подставляет собственных запасных чисел.
+// Герой без явного поля возвращает undefined — вызывающий код (см. getAvailableUpgrades
+// в game.js) трактует это как «потолка нет вообще», а не как какое-то дефолтное
+// значение: любой Number.isFinite(cap)-fallback здесь — ровно та заглушка, от которой
+// просили избавиться.
 function getHeroDefenseCap(hero) {
-    return Math.min(
-        MAX_HERO_DAMAGE_REDUCTION,
-        Number.isFinite(hero?.defenseCap) ? hero.defenseCap : MAX_HERO_DAMAGE_REDUCTION
-    );
+    return hero?.defenseCap;
 }
 
-
-// Потолки на % и HP-статы героя — в отличие от defenseCap (общий на архетип/профиль),
-// это поля НА САМОМ герое: разным героям одного профиля можно задать разные потолки.
-// Герой без явного поля (например, служебные заглушки kim/vas/gam... в mHero) остаётся
-// без потолка — 1 для шансов, Infinity для HP — чтобы не ломать то, что раньше росло
-// свободно.
 function getHeroCritChanceCap(hero) {
-    return Number.isFinite(hero?.critChanceCap) ? Math.min(1, hero.critChanceCap) : 1;
+    return hero?.critChanceCap;
 }
 
 function getHeroWoundChanceCap(hero) {
-    return Number.isFinite(hero?.woundChanceCap) ? Math.min(1, hero.woundChanceCap) : 1;
+    return hero?.woundChanceCap;
 }
 
 function getHeroHpCap(hero) {
-    return Number.isFinite(hero?.heroHpCap) && hero.heroHpCap > 0 ? hero.heroHpCap : Infinity;
+    return hero?.heroHpCap;
 }
 
 // Разброс урона (±доля от рассчитанного удара) — поле НА САМОМ герое, как и
@@ -294,69 +292,74 @@ function persistGameState(state) {
 // — теперь строго плюсом, как и остальные статы: hero.startGlobalDamage +=
 // hero.damagePerLevel. Поле без явного *PerLevel безопасно трактуется как 0
 // (герой просто не растёт по этой оси) — так служебные заглушки в mHero не ломаются.
+// Все Math.min(cap, ...) ниже защищены Number.isFinite(cap) — если у героя нет
+// явного поля-потолка в saveData.js, cap приходит как undefined (см. getHeroCritChanceCap
+// и соседние функции выше), а Math.min(undefined, x) дал бы NaN. Без потолка стат
+// считается ничем не ограниченным (never capped), а не тихо ломается — никакого
+// движкового запасного числа при этом не подставляется.
 function applyHeroPermanentStatUpgrade(hero) {
     if (hero.upSpecif === 1) {
         const critChanceCap = getHeroCritChanceCap(hero);
-        const critChanceCapped = hero.startGlobalCritChance >= critChanceCap;
+        const critChanceCapped = Number.isFinite(critChanceCap) && hero.startGlobalCritChance >= critChanceCap;
         const damagePerLevel = Number(hero.damagePerLevel) || 0;
 
         hero.startGlobalDamage += damagePerLevel;
         if (!critChanceCapped) {
-            hero.startGlobalCritChance = Math.min(
-                critChanceCap,
-                hero.startGlobalCritChance + (Number(hero.critChancePerLevel) || 0)
-            );
+            const nextCritChance = hero.startGlobalCritChance + (Number(hero.critChancePerLevel) || 0);
+            hero.startGlobalCritChance = Number.isFinite(critChanceCap)
+                ? Math.min(critChanceCap, nextCritChance)
+                : nextCritChance;
         } else {
             hero.startGlobalDamage += damagePerLevel;
         }
         hero.upSpecif = 2;
     } else if (hero.upSpecif === 2) {
         const woundChanceCap = getHeroWoundChanceCap(hero);
-        const woundChanceCapped = hero.startGlobalWoundChance >= woundChanceCap;
+        const woundChanceCapped = Number.isFinite(woundChanceCap) && hero.startGlobalWoundChance >= woundChanceCap;
         const critMultiplierPerLevel = Number(hero.critMultiplierPerLevel) || 0;
 
         hero.startGlobalCritMultiplier += critMultiplierPerLevel;
         if (!woundChanceCapped) {
-            hero.startGlobalWoundChance = Math.min(
-                woundChanceCap,
-                hero.startGlobalWoundChance + (Number(hero.woundChancePerLevel) || 0)
-            );
+            const nextWoundChance = hero.startGlobalWoundChance + (Number(hero.woundChancePerLevel) || 0);
+            hero.startGlobalWoundChance = Number.isFinite(woundChanceCap)
+                ? Math.min(woundChanceCap, nextWoundChance)
+                : nextWoundChance;
         } else {
             hero.startGlobalCritMultiplier += critMultiplierPerLevel;
         }
         hero.upSpecif = 3;
     } else if (hero.upSpecif === 3) {
-        // Личный «пол» интервала (например, у Дарьяны — не про скорость)
-        // может быть строже общего технического минимума 200мс.
-        hero.startSHOT_INTERVAL = Math.max(
-            hero.minShotInterval ?? 200,
-            hero.startSHOT_INTERVAL - (Number(hero.shotIntervalReductionPerLevel) || 0)
-        );
+        // Личный «пол» интервала (например, у Дарьяны — не про скорость) читается
+        // только с самого героя — без него скорость ничем не ограничена снизу.
+        const floor = hero.minShotInterval;
+        const nextInterval = hero.startSHOT_INTERVAL - (Number(hero.shotIntervalReductionPerLevel) || 0);
+        hero.startSHOT_INTERVAL = Number.isFinite(floor) ? Math.max(floor, nextInterval) : nextInterval;
         hero.upSpecif = 4;
     } else if (hero.upSpecif === 4) {
         const heroHpCap = getHeroHpCap(hero);
         const defenseCap = getHeroDefenseCap(hero);
-        const heroHpCapped = hero.heroHP >= heroHpCap;
-        const defenseCapped = hero.startHeroDamageReduction >= defenseCap;
+        const heroHpCapped = Number.isFinite(heroHpCap) && hero.heroHP >= heroHpCap;
+        const defenseCapped = Number.isFinite(defenseCap) && hero.startHeroDamageReduction >= defenseCap;
         const heroHpPerLevel = Number(hero.heroHpPerLevel) || 0;
         const defensePerLevel = Number(hero.defensePerLevel) || 0;
 
-        if (!heroHpCapped) {
-            hero.heroHP = Math.min(heroHpCap, hero.heroHP + heroHpPerLevel);
-        }
-        if (!defenseCapped) {
-            hero.startHeroDamageReduction = Math.min(
-                defenseCap,
-                hero.startHeroDamageReduction + defensePerLevel
-            );
-        }
+        const growHeroHp = () => {
+            const nextHp = hero.heroHP + heroHpPerLevel;
+            hero.heroHP = Number.isFinite(heroHpCap) ? Math.min(heroHpCap, nextHp) : nextHp;
+        };
+        const growDefense = () => {
+            const nextDefense = hero.startHeroDamageReduction + defensePerLevel;
+            hero.startHeroDamageReduction = Number.isFinite(defenseCap)
+                ? Math.min(defenseCap, nextDefense)
+                : nextDefense;
+        };
+
+        if (!heroHpCapped) growHeroHp();
+        if (!defenseCapped) growDefense();
         if (heroHpCapped && !defenseCapped) {
-            hero.startHeroDamageReduction = Math.min(
-                defenseCap,
-                hero.startHeroDamageReduction + defensePerLevel
-            );
+            growDefense();
         } else if (defenseCapped && !heroHpCapped) {
-            hero.heroHP = Math.min(heroHpCap, hero.heroHP + heroHpPerLevel);
+            growHeroHp();
         }
         hero.upSpecif = 1;
     }
@@ -699,10 +702,13 @@ function migrateGameState(savedState) {
                 migrated[heroKey].aimImage = defaultHero.aimImage;
             }
 
-            migrated[heroKey].startHeroDamageReduction = Math.min(
-                getHeroDefenseCap(migrated[heroKey]),
-                Math.max(0, migrated[heroKey].startHeroDamageReduction)
-            );
+            {
+                const defenseCapForMigration = getHeroDefenseCap(migrated[heroKey]);
+                const sanitizedReduction = Math.max(0, migrated[heroKey].startHeroDamageReduction);
+                migrated[heroKey].startHeroDamageReduction = Number.isFinite(defenseCapForMigration)
+                    ? Math.min(defenseCapForMigration, sanitizedReduction)
+                    : sanitizedReduction;
+            }
 
             if (Number.isFinite(migrated[heroKey].level)) {
                 migrated[heroKey].level = Math.min(
@@ -1009,23 +1015,15 @@ function getDefaultGameState() {
 			eremei: {
 				// Ревизия 11: шанс ранения снят целиком (см. startGlobalWoundChance/
 				// woundChanceCap ниже). Ревизия 12: скорость атаки опущена с 30 до 20.
-				// Ревизия 13: базовый урон 140→116, temporaryUpgradePower 1.5→0.9 — цель:
-				// ДПС Еремея ниже всех, на 8% ниже Дуни, на каждой точке кампании — касается
-				// ОБОИХ листов панели (без апгрейдов и с апгрейдами). Ревизия 14: урон
-				// 116→117, подстройка постоянного ДПС по реальному бою. Ревизия 15: power
-				// 0.9→1.0 — лист «с апгрейдами» после ревизии 13 просел куда сильнее цели
-				// (см. комментарий у temporaryUpgradePower ниже). Bump обязателен на каждую
-				// такую правку, иначе у игроков с уже сохранённым прогрессом
-				// migrateGameState берёт старое значение прямо из localStorage
-				// (naive-merge: {...defaultHero, ...savedHero}) и не перестраивает через
-				// rebuildBalancedHero, потому что тот запускается только при разнице
-				// balanceRevision. Ревизия 16: power 1.0→1.15 (лист «с апгрейдами» после
-				// ревизии 15 всё ещё далёк от цели — среднее −33.8% вместо −8%). Подтверждено
-				// реальным боем: −23.0%. Ревизия 17: пробовали 1.30 (не проверено боем).
-				// Ревизия 18: откат обратно на 1.15 (см. комментарий у temporaryUpgradePower
-				// ниже) — фиксируем на последнем реально подтверждённом значении, дальше
-				// не тюним.
-				balanceRevision: 21,
+				// Ревизия 13: базовый урон 140→116 — цель: ДПС Еремея ниже всех, на 8% ниже
+				// Дуни, на каждой точке кампании — касается ОБОИХ листов панели (без
+				// апгрейдов и с апгрейдами). Ревизия 14: урон 116→117, подстройка
+				// постоянного ДПС по реальному бою. Bump обязателен на каждую такую правку,
+				// иначе у игроков с уже сохранённым прогрессом migrateGameState берёт старое
+				// значение прямо из localStorage (naive-merge: {...defaultHero, ...savedHero})
+				// и не перестраивает через rebuildBalancedHero, потому что тот запускается
+				// только при разнице balanceRevision.
+				balanceRevision: 25,
 				name: 'eremei',
 				permanentGrowthProfile: 'guardian',
 				dispName: 'Еремей Дуболом',
@@ -1069,8 +1067,8 @@ function getDefaultGameState() {
 				startGlobalCritChance: 0.20,
 				startGlobalCritMultiplier: 1.6,
 				// Ревизия N: шанс ранения снят целиком (эксперимент — см. woundChanceCap
-				// ниже и историю temporaryUpgradePower). Заморожен на 0 == потолку с самого
-				// старта, поэтому весь его прирост с 1 же прокачки редиректится во второй
+				// ниже). Заморожен на 0 == потолку с самого старта, поэтому весь его прирост
+				// с 1 же прокачки редиректится во второй
 				// проход critMultiplierIncrease (см. applyHeroPermanentStatUpgrade, шаг
 				// upSpecif===2) — тот же механизм, что у Дуни/Милы. Не оценено реальным боем
 				// панели — нужен новый экспорт в /DataExport после этой правки.
@@ -1079,7 +1077,7 @@ function getDefaultGameState() {
 				// уроном боссов. Цель — ~12 сильнейших ударов на каждом уровне кампании
 				// при focused-прокачке (см. scripts/fit-survivability.js). На 1 уровне
 				// допускается 11 вместо 12 из‑за округления.
-				startHeroDamageReduction : 0.097,
+				startHeroDamageReduction : 0.05,
 				// Ревизия 19: скорость атаки (=1000-startSHOT_INTERVAL) опущена до минимума —
 				// «скорость 1» по решению пользователя, ещё тяжелее прежних 20. Как и раньше,
 				// minShotInterval == старту (см. комментарий ниже) — эта ревизия не меняет
@@ -1093,7 +1091,7 @@ function getDefaultGameState() {
 				// «скорость атаки» ему вообще не предлагается — сила только через
 				// damage/crit, как и задумано.
 				minShotInterval: 999,
-				heroHP : 336,
+				heroHP : 170,
 				lvlUnlock: 1,
 				zlataUp: 10,
 				investedZlata: 0,
@@ -1116,7 +1114,7 @@ function getDefaultGameState() {
 				// (+10% крита на 3с, см. catchBackCritChanceBonus) складывается ПОВЕРХ этого
 				// потолка в getEffectiveCritChance — 50%+10%=60% в моменте достижимо и это
 				// осознанно допустимое исключение для фирменной механики, а не баг.
-				critChanceCap: 0.35,
+				critChanceCap: 0.65,
 				// 0 == старту (см. комментарий у startGlobalWoundChance выше) — эксперимент,
 				// шанс ранения снят целиком.
 				woundChanceCap: 0,
@@ -1140,55 +1138,19 @@ function getDefaultGameState() {
 				// уже были плюсовые в старом профиле — перенесены как есть, без изменений.
 				// Матчит РАСПРЕДЕЛЕНИЕ сырых статов на контрольной точке отчёта, а не реальный
 				// бой (крит/казино/волна и т.д.) — нужен новый экспорт панели для подтверждения.
-				damagePerLevel: 9,
+				damagePerLevel: 13.5,
 				critChancePerLevel: 0.003,
 				critMultiplierPerLevel: 0.08,
 				woundChancePerLevel: 0.003,
-				shotIntervalReductionPerLevel: 1,
-				heroHpPerLevel: 47.04,
-				defensePerLevel: 0.002,
-				defenseCap: 0.177,
-				// Ревизия 11 (DPS с временными улучшениями — см. game.js/getAvailableUpgrades):
-				// сила Еремея — немногочисленные, но огромные ПОСТОЯННЫЕ криты (см.
-				// критChanceCap/catchBack выше), а не стак множества мелких временных
-				// баффов за забег — поэтому temporaryUpgradePower чуть НИЖЕ базы (было
-				// 1.61x DPS Дуни при среднем по 4 стратегиям вместо целевых ~0.95x, см.
-				// подгонку в истории коммита). Не трогает постоянный DPS и HP/защиту —
-				// см. точки применения в game.js.
-				// Ревизия 12: заблокировали ему тип апгрейда «скорость атаки» (см.
-				// minShotInterval выше — архетип «тяжёлый удар», не скорость). Без этой
-				// оси вся сила апгрейдов концентрируется в critMultiplier/damage — отклик
-				// на power оказался очень нелинейным (реальный бой, не аналитика): 1.66 →
-				// 1.13x Дуни в среднем (обгонял в 59% прогонов, слишком часто), 1.25 → 0.80x
-				// (обгонял только в 1.4% — для героя с акцентом на большие редкие криты
-				// слишком редко), 1.45 → 0.948x (по факту цель была −5%, а не −8%). После
-				// того как подняли power Дуни (см. её комментарий — финально 2.1, компромисс
-				// «разрыв ~15%/обгон ~30-35%» с Дарьяной), у Еремея тот же эффект: любое
-				// изменение power Дуни двигает и его отставание от неё при том же power —
-				// подстроено вслед, до 1.5. Подтверждено реальным боем панели (141
-				// уровень): −9.4% от Дуни, обгон 12.8% («редкий крупный крит»).
-				// Ревизия 13: снятие шанса ранения (см. balanceRevision выше) убрало у него
-				// ещё один тип временного апгрейда — сила апгрейдов схлопнулась в ещё более
-				// узкий набор осей (damage/critChance/critMultiplier), тот же эффект
-				// «концентрации», что уже ловили на ревизии 12, но резче. Реальный бой
-				// панели после этого показал ДПС с апгрейдами В РАЗЫ выше всех остальных
-				// героев (141 уровень: 20062 против 9539 у Дуни). Опущено с 1.5 до 0.9 —
-				// перелетело в другую сторону: реальный бой панели показал разрыв от Дуни
-				// −25…−67% вместо целевых −8% (задача — ДПС Еремея ниже всех на 8% от Дуни
-				// касается ОБОИХ листов панели, «без апгрейдов» и «с апгрейдами», не только
-				// постоянного). Отклик на power по-прежнему очень нелинейный (см. историю
-				// выше) — 1.5 дало кратный перелёт вверх, 0.9 кратный перелёт вниз, 1.0
-				// снова перелетело вниз (реальный бой панели: среднее −33.8% от Дуни
-				// вместо целевых −8%). Локальный наклон между 0.9 и 1.0 (обе точки —
-				// реальный бой) заметно положе, чем между 0.9 и 1.5 — отклик явно
-				// нелинейно ускоряется где-то в диапазоне 1.0-1.5, поэтому линейная
-				// экстраполяция ненадёжна. 1.0 → 1.15 — осторожный, не резкий шаг вверх.
-				// Подтверждено реальным боем: среднее −23.0% (было −33.8% на 1.0) — не
-				// идеально, но это последнее значение, реально проверенное боем панели.
-				// Пробовал докрутить до 1.30 (расчётная цель ≈1.33 log-линейно), но эта
-				// правка не была проверена — по решению пользователя откат обратно на
-				// 1.15 и остановка здесь, дальше не докручивать.
-				temporaryUpgradePower: 1.15,
+				shotIntervalReductionPerLevel: 0.5,
+				heroHpPerLevel: 15,
+				defensePerLevel: 0.02,
+				defenseCap: 0.30,
+				// temporaryUpgradePower (персональный множитель силы временных улучшений)
+				// убран по решению пользователя вместе с переходом на систему связок из 3
+				// статов — единая база 18% теперь одна на всех героев без исключений.
+				// Долгая история балансировки этого поля (ревизии 11-18) осталась в
+				// git-истории файла, тут не дублируется.
 			},
 			
 			
@@ -1220,7 +1182,7 @@ function getDefaultGameState() {
 			// woundChanceCap уже 0 (ревизия 7 сняла ранение целиком) — оставлено, редирект
 			// по этой оси идёт в critMultiplier с самого начала, см. tempest.
 			dunya: {
-				balanceRevision: 10,
+				balanceRevision: 12,
 				name: 'dunya',
 				permanentGrowthProfile: 'tempest',
 				dispName: 'Ветроманка Дуня',
@@ -1234,10 +1196,10 @@ function getDefaultGameState() {
 				startGlobalCritMultiplier: 2.0,
 				startGlobalWoundChance	: 0,
 				// Ревизия 10 (живучесть): цель ~9 сильнейших ударов по всей кампании.
-				startHeroDamageReduction : 0.122,
+				startHeroDamageReduction : 0.04,
 				startSHOT_INTERVAL : 808,
-				minShotInterval: 555,
-				heroHP : 248,
+				minShotInterval: 220,
+				heroHP : 150,
 				lvlUnlock: 15,
 				zlataUp: 10,
 				investedZlata: 0,
@@ -1250,7 +1212,7 @@ function getDefaultGameState() {
 				jackpotAttackMultiplier: 8,
 				// Потолки % и HP-статов — см. подробное обоснование у объекта eremei.
 				// critChanceCap == стартовому крит-шансу (см. комментарий выше про редирект).
-				critChanceCap: 0.03,
+				critChanceCap: 0.20,
 				woundChanceCap: 0,
 				heroHpCap: 2600,
 				// Разброс урона ±5% — общий дефолт (см. getHeroDamageVariance в saveData.js),
@@ -1263,35 +1225,18 @@ function getDefaultGameState() {
 				// (1223.7-115)/80, а не /40 — первая версия ревизии делила на число ходов,
 				// а не применений, из-за чего реальный прогон уходил почти вдвое выше цели
 				// (сырой урон на герое 159 получался 2332 вместо целевых 1224).
-				damagePerLevel: 13.86,
-				critChancePerLevel: 0.0035,
+				damagePerLevel: 16,
+				critChancePerLevel: 0.0050,
 				critMultiplierPerLevel: 0.012,
 				woundChancePerLevel: 0,
 				shotIntervalReductionPerLevel: 4.7,
-				heroHpPerLevel: 34.72,
-				defensePerLevel: 0.001,
-				defenseCap: 0.162,
-				// Ревизия 11 (DPS с временными улучшениями — см. game.js/getAvailableUpgrades
-				// и temporaryUpgradePower у объекта eremei выше): у Дуни critChanceCap==старту
-				// (см. выше) — она не может брать «шанс крита», и без компенсации это резко
-				// урезало её потолок стакинга временных апгрейдов по сравнению с Лукой (её
-				// постоянный DPS в порядке, разъезжалось только под апгрейдами). Подняли
-				// power, чтобы «если вихри напрокают много» (казино-механика) она могла на
-				// удачных забегах обгонять всех, а в среднем держалась чуть ниже Дарьяны — не
-				// трогает постоянный DPS и HP/защиту.
-				// Ревизия 12: на 2.4 Дуня обгоняла Дарьяну по ДПС с временными улучшениями
-				// в 55% прогонов (реальный бой панели баланса, 141 уровень) — это уже не
-				// «если сильно повезёт», а почти монетка. У Дуни казино-механика (вихри/
-				// джекпот) даёт заметно более «толстый хвост» удачи, чем у остальных героев,
-				// поэтому обгон снижался куда медленнее среднего разрыва. Промежуточная
-				// правка 1.9 пересадила слишком сильно (в среднем −22% от Дарьяны), а 2.3
-				// (−8.8%) решала разрыв, но обгон остался почти монеткой (47.5% реальным
-				// боем) — джекпот у Дуни настолько «толстохвостый», что при разрыве ≤10%
-				// обгон физически не опускается ниже ~47%. По выбору пользователя —
-				// компромисс «разрыв ~15% / обгон ~30-35%» (не нерфим Дарьяну/Луку, только
-				// поднимаем Дуню/Еремея). 2.1 подтверждено реальным боем панели (141
-				// уровень): −16.0% от Дарьяны, обгон 34.8%. Не трогает постоянный DPS.
-				temporaryUpgradePower: 2.1,
+				heroHpPerLevel: 13,
+				defensePerLevel: 0.01,
+				defenseCap: 0.25,
+				// temporaryUpgradePower убран по решению пользователя вместе с переходом на
+				// систему связок из 3 статов — единая база 18% теперь одна на всех героев.
+				// История балансировки казино-механики Дуни относительно этого поля
+				// (ревизии 11-12) осталась в git-истории файла.
 			},
 
 			// Дарьяна — «Прогревание»: урон растёт с недостающим HP% цели — за каждый
@@ -1333,7 +1278,7 @@ function getDefaultGameState() {
 			// minShotInterval задаёт личный «пол»: скорость растёт максимум до 60
 			// (интервал не опускается ниже 940мс), в отличие от общего минимума 200мс.
 			daryana: {
-				balanceRevision: 10,
+				balanceRevision: 15,
 				name: 'daryana',
 				permanentGrowthProfile: 'ember',
 				dispName: 'Дарьяна Пылкая',
@@ -1342,18 +1287,18 @@ function getDefaultGameState() {
 				weaponImage: 'images/hero/4_daryana/weapon.webp',
 				aimImage: 'images/hero/4_daryana/aim.webp',
 				level: 1,
-				startGlobalDamage: 105,
-				startGlobalCritChance: 0.02,
+				startGlobalDamage: 160,
+				startGlobalCritChance: 0.05,
 				startGlobalCritMultiplier: 2.0,
 				startGlobalWoundChance	: 0.02,
 				// Механика та же (ranение/DoT), но для огненного мага это подпалы —
 				// подпись в UI переименована чисто косметически, без смены логики.
 				woundChanceLabel: 'Шанс поджога',
 				// Ревизия 10 (живучесть): цель ~7 сильнейших ударов по всей кампании.
-				startHeroDamageReduction : 0.148,
+				startHeroDamageReduction : 0.05,
 				startSHOT_INTERVAL : 980,
 				minShotInterval: 940,
-				heroHP : 160,
+				heroHP : 140,
 				lvlUnlock: 1,
 				zlataUp: 10,
 				investedZlata: 0,
@@ -1367,31 +1312,24 @@ function getDefaultGameState() {
 				missingHpExpectedAverageFraction: 0.425,
 				// Потолки % и HP-статов — см. подробное обоснование у объекта eremei. Сила
 				// Дарьяны — «Прогревание» и большой обычный урон, не крит.
-				critChanceCap: 0.103,
-				woundChanceCap: 0.30,
+				critChanceCap: 0.35,
+				woundChanceCap: 0.35,
 				heroHpCap: 1750,
 				damageVariance: 0.05,
 				// Ревизия 21: прирост за уровень — см. подробный комментарий у объекта eremei
 				// (матчит герой 159 из реального отчёта DataExport). critChanceCap у Дарьяны
 				// не упирается за 40 применений — редиректа по урону нет.
-				damagePerLevel: 25.62,
-				critChancePerLevel: 0.0017,
+				damagePerLevel: 33,
+				critChancePerLevel: 0.010,
 				critMultiplierPerLevel: 0.017,
-				woundChancePerLevel: 0.006,
+				woundChancePerLevel: 0.010,
 				shotIntervalReductionPerLevel: 2,
-				heroHpPerLevel: 20.50,
-				defensePerLevel: 0.002,
+				heroHpPerLevel: 11,
+				defensePerLevel: 0.001,
 				defenseCap: 0.228,
-				// Ревизия 11 (DPS с временными улучшениями — см. game.js/getAvailableUpgrades
-				// и temporaryUpgradePower у объекта eremei выше): minShotInterval==старту —
-				// Дарьяна не может брать «скорость атаки» вообще (весь забег), а её низкий
-				// critChanceCap рано выключает и «шанс крита» — из 7 типов апгрейда ей
-				// реально доступны только damage/critMultiplier/wound, из-за чего под
-				// апгрейдами она проседала до ~47% DPS Луки вместо целевых ~90% (постоянный
-				// DPS не трогали — там она и так была в порядке, ~93%). Подняли power, чтобы
-				// «если повезёт с критами» она могла обгонять Луку на удачных забегах, а в
-				// среднем держалась чуть ниже — не трогает постоянный DPS и HP/защиту.
-				temporaryUpgradePower: 2.5,
+				// temporaryUpgradePower убран по решению пользователя вместе с переходом на
+				// систему связок из 3 статов — единая база 18% теперь одна на всех героев.
+				// История балансировки (ревизия 11) осталась в git-истории файла.
 			},
 
 			luka: {
@@ -1408,15 +1346,8 @@ function getDefaultGameState() {
 				// Дарьяны из /DataExport — расчётное отклонение по всем 11 точкам
 				// кампании 7.8-11.4% (чуть выше 10% на паре точек, в пределах шума).
 				// Подтверждено реальным боем панели: получилось 7.5-11.9% — цель на
-				// листе «без апгрейдов» достигнута. Ревизия 12: temporaryUpgradePower
-				// 1.3→1.06 — лист «с апгрейдами» вышел далеко за цель. Подтверждено:
-				// среднее 15.3% (было 46.7% на 1.3) — уже близко, чуть выше 7-10%.
-				// Ревизия 13: 1.06→1.033, точечная подстройка (см. комментарий у
-				// temporaryUpgradePower ниже). Bump обязателен на каждую такую
-				// правку — см. объяснение у Еремея выше.
-				// Ревизия 14: пробовали power 1.01, не проверено боем — откат обратно на
-				// 1.033 (последнее подтверждённое значение), фиксируем, дальше не тюним.
-				balanceRevision: 15,
+				// листе «без апгрейдов» достигнута.
+				balanceRevision: 20,
 				name: 'luka',
 				permanentGrowthProfile: 'marksman',
 				dispName: 'Лука стрелок',
@@ -1425,15 +1356,15 @@ function getDefaultGameState() {
 				weaponImage: 'images/hero/3_luka/weapon.webp',
 				aimImage: 'images/hero/3_luka/aim.webp',
 				level: 1,
-				startGlobalDamage: 123,
+				startGlobalDamage: 90,
 				startGlobalCritChance: 0.035,
-				startGlobalCritMultiplier: 2.2,
-				startGlobalWoundChance	: 0.03,
+				startGlobalCritMultiplier: 1.7,
+				startGlobalWoundChance	: 0.01,
 				// Ревизия 10 (живучесть): цель ~5 сильнейших ударов. Временные HP не
 				// раздуваются через высокий heroHpCap — см. потолок забега в game.js.
 				startHeroDamageReduction : 0.116,
-				startSHOT_INTERVAL : 775,
-				heroHP : 144,
+				startSHOT_INTERVAL : 800,
+				heroHP : 80,
 				lvlUnlock: 3,
 				zlataUp: 10,
 				investedZlata: 0,
@@ -1450,37 +1381,18 @@ function getDefaultGameState() {
 				// Ревизия 21: прирост за уровень — см. подробный комментарий у объекта eremei
 				// (матчит герой 159 из реального отчёта DataExport). critChanceCap у Луки
 				// не упирается за 40 применений — редиректа по урону нет.
-				damagePerLevel: 6.88,
-				critChancePerLevel: 0.008,
-				critMultiplierPerLevel: 0.12,
-				woundChancePerLevel: 0.012,
-				shotIntervalReductionPerLevel: 5,
-				heroHpPerLevel: 16.86,
-				defensePerLevel: 0.002,
+				damagePerLevel: 13,
+				critChancePerLevel: 0.001,
+				critMultiplierPerLevel: 0.06,
+				woundChancePerLevel: 0.002,
+				shotIntervalReductionPerLevel: 12,
+				heroHpPerLevel: 8,
+				defensePerLevel: 0.0015,
 				defenseCap: 0.196,
-				// Ревизия 11: у Луки не было явного temporaryUpgradePower (дефолт 1 —
-				// см. game.js/getAvailableUpgrades) — отсюда просадки под Дарьяной
-				// (power 2.5) в реальном бою панели вплоть до -21% на отдельных точках.
-				// Первая прикидка 1.3 (расчёт «раз осей больше — рост power безопаснее»)
-				// оказалась неверна: реальный бой панели показал отклик КРУЧЕ, чем у
-				// героев с замороженными осями — в среднем по 16 точкам +46.7% от
-				// Дарьяны вместо целевых ~8.5% (было ~0.7% на дефолтном power=1 —
-				// т.е. рост всего на 0.3 units power дал +46 п.п. в среднем).
-				// Ревизия 12: log-линейная интерполяция между этими двумя реальными
-				// точками (power=1.0→ratio 1.007, power=1.3→ratio 1.467) даёт
-				// power≈1.06 для среднего ~8.5%. Подтверждено реальным боем: среднее по
-				// 141 точке вышло 15.3% — чуть выше цели 7-10%, но намного точнее, чем
-				// 1.3. Ревизия 13: интерполяция между двумя соседними реальными точками
-				// (1.0→0.66%, 1.06→15.3%) даёт power≈1.033 для центра диапазона (~8.5%).
-				// При таком разбросе (±20-30 п.п. вокруг среднего даже на фиксированном
-				// power, из-за всего 8 заходов/уровень) точное попадание 7-10% на КАЖДОЙ
-				// точке маловероятно — ориентир, как и у остальных героев в файле,
-				// среднее ≈8-9%. Подтверждено реальным боем: среднее 11.6% (было 15.3%
-				// на 1.06) — не идеально, но последнее значение, реально проверенное
-				// боем панели. Пробовали 1.01 (расчётная точечная подстройка), но эта
-				// правка не была проверена — по решению пользователя откат обратно на
-				// 1.033 и остановка здесь, дальше не тюним.
-				temporaryUpgradePower: 1.033,
+				minShotInterval: 120, 
+				// temporaryUpgradePower убран по решению пользователя вместе с переходом на
+				// систему связок из 3 статов — единая база 18% теперь одна на всех героев.
+				// История балансировки (ревизии 11-13) осталась в git-истории файла.
 			},
 			
 			// Мила Зеленова — «Стрекоза». Разблокируется после 30-го уровня кампании.
@@ -1500,12 +1412,10 @@ function getDefaultGameState() {
 			// (applyHeroPermanentStatUpgrade/calculateBossAttackDamage), не своей формулой.
 			// Реальные портрет/оружие — images/hero/5_MilaZelenova/.
 			mila: {
-				// Ревизия 11: damageMultiplier/temporaryUpgradePower пересчитаны реальным
-				// боем панели (см. комментарии у профиля swift выше и у
-				// temporaryUpgradePower ниже) — тот же bump и по той же причине, что у
-				// Еремея (см. его комментарий): без него игрок с уже сохранённой Милой
-				// не получит новые статы, пока не сбросит прокачку вручную.
-				balanceRevision: 11,
+				// Ревизия 11: damageMultiplier пересчитан реальным боем панели (см.
+				// комментарий у профиля swift выше) — bump обязателен, иначе игрок с уже
+				// сохранённой Милой не получит новые статы, пока не сбросит прокачку.
+				balanceRevision: 15,
 				name: 'mila',
 				permanentGrowthProfile: 'swift',
 				dispName: 'Мила Зеленова',
@@ -1520,14 +1430,14 @@ function getDefaultGameState() {
 				startGlobalWoundChance	: 0,
 				// Ниже, чем у Луки (0.116) на старте — сырая живучесть без учёта регена
 				// нарочно слабее его (см. комментарий выше объекта mila).
-				startHeroDamageReduction : 0.10,
+				startHeroDamageReduction : 0.01,
 				startSHOT_INTERVAL : 100,
 				// Личный пол равен старту — скорость заморожена навсегда (тот же приём,
 				// что у Еремея/Дарьяны, только у неё пол на противоположном, самом
 				// быстром конце шкалы, а не на медленном).
 				minShotInterval: 100,
 				// Ниже, чем у Луки (144) на старте — см. комментарий выше объекта mila.
-				heroHP : 115,
+				heroHP : 70,
 				lvlUnlock: 30,
 				zlataUp: 10,
 				investedZlata: 0,
@@ -1539,7 +1449,7 @@ function getDefaultGameState() {
 				heroRegenPerSecond: 0.01,
 				// critChanceCap выше старта (0.01) — крит-шанс растёт медленно сам,
 				// без редиректа (см. комментарий у профиля swift).
-				critChanceCap: 0.07,
+				critChanceCap: 0.40,
 				// woundChanceCap 0 == старту: шанс ранения заморожен на нуле, весь
 				// его прирост редиректится в крит-урон.
 				woundChanceCap: 0,
@@ -1549,27 +1459,18 @@ function getDefaultGameState() {
 				// Ревизия 21: прирост за уровень — см. подробный комментарий у объекта eremei
 				// (матчит герой 159 из реального отчёта DataExport). critChanceCap у Милы
 				// не упирается за 40 применений — редиректа по урону нет.
-				damagePerLevel: 5.5,
-				critChancePerLevel: 0.0012,
+				damagePerLevel: 6,
+				critChancePerLevel: 0.005,
 				critMultiplierPerLevel: 0.02,
 				woundChancePerLevel: 0,
 				shotIntervalReductionPerLevel: 0,
 				heroHpPerLevel: 15.40,
-				defensePerLevel: 0.0015,
+				defensePerLevel: 0.0001,
 				defenseCap: 0.17,
 				// Из 7 типов временных апгрейдов ей заблокированы 2 (скорость и ранение) —
 				// личные потолки равны старту (см. выше).
-				// Ревизия N (DPS с временными улучшениями — см. game.js/getAvailableUpgrades
-				// и temporaryUpgradePower у объекта eremei выше): первая прикидка 2.6 (по
-				// аналогии с Дарьяной 2.5 — «теряет на один тип меньше») оказалась заметно
-				// завышена — реальный бой панели (см. /DataExport, лист «DPS с апгрейдами»)
-				// показал, что среднее по 8 заходам достигало и превышало Луку на нескольких
-				// контрольных точках (ур.100: 101.8%, ур.120: 109.1%, ур.140: 102.2% от его
-				// DPS) — то есть не «если очень повезёт», а буквально в среднем. Опущено до
-				// 2.0 — первая коррекция, ещё не подтверждена свежим реальным боем панели
-				// (нужен новый экспорт в /DataExport после этой правки, см. CLAUDE.md §2).
-				// Не трогает постоянный DPS и HP/защиту.
-				temporaryUpgradePower: 2.0,
+				// temporaryUpgradePower убран по решению пользователя вместе с переходом на
+				// систему связок из 3 статов — единая база 18% теперь одна на всех героев.
 			},
 			
 			
@@ -1618,7 +1519,7 @@ function getDefaultGameState() {
 			// По решению пользователя — играется приятно, останавливаемся здесь, дальше
 			// не тюним.
 			vas: {
-				balanceRevision: 2,
+				balanceRevision: 12,
 				name: 'tikhon',
 				permanentGrowthProfile: 'tremor',
 				dispName: 'Тихон Речкин',
@@ -1630,16 +1531,16 @@ function getDefaultGameState() {
 				// картинка (бутылка самогона), см. showTikhonShakeGauge в game.js.
 				bottleImage: 'images/hero/6_TihonRechkin/bottle.webp',
 				level: 1,
-				startGlobalDamage: 106,
+				startGlobalDamage: 126,
 				startGlobalCritChance: 0.03,
 				startGlobalCritMultiplier: 2.0,
 				startGlobalWoundChance: 0,
-				startHeroDamageReduction: 0.11,
+				startHeroDamageReduction: 0.045,
 				startSHOT_INTERVAL: 900,
 				// Личный пол выше общего минимума 200мс — скорость растёт, но слабо (см.
 				// tremor.shotIntervalReduction выше) — архетип не про частоту атаки.
 				minShotInterval: 750,
-				heroHP: 290,
+				heroHP: 160,
 				lvlUnlock: 40,
 				zlataUp: 10,
 				investedZlata: 0,
@@ -1653,27 +1554,26 @@ function getDefaultGameState() {
 				shakeDamageMultiplierMax: 2.0,
 				shakeCritChanceBonusMin: 0.01,
 				shakeCritChanceBonusMax: 0.50,
-				critChanceCap: 0.10,
+				critChanceCap: 0.15,
 				woundChanceCap: 0,
 				heroHpCap: 3000,
-				damageVariance: 0.05,
+				damageVariance: 0.15,
 				// Ревизия 21: прирост за уровень — см. подробный комментарий у объекта eremei
 				// (матчит герой 159 из реального отчёта DataExport). У Тихона critChanceCap
 				// упирается на 35-м из 40 ходов урона — последние 5 удвоены редиректом:
 				// 35×1 + 5×2 = 45 применений инкремента, damagePerLevel = (498.5-106)/45
 				// (а не /40 — та же ошибка деления, что была у Дуни, см. её комментарий).
-				damagePerLevel: 8.72,
-				critChancePerLevel: 0.002,
-				critMultiplierPerLevel: 0.08,
+				damagePerLevel: 11,
+				critChancePerLevel: 0.001,
+				critMultiplierPerLevel: 0.06,
 				woundChancePerLevel: 0,
 				shotIntervalReductionPerLevel: 1.2,
-				heroHpPerLevel: 40.60,
-				defensePerLevel: 0.0015,
+				heroHpPerLevel: 18.60,
+				defensePerLevel: 0.00015,
 				defenseCap: 0.17,
-				temporaryUpgradePower: 1.0,
 			},
-			
-			
+
+
 			gen: {
 				name: 'luka', 
 				dispName: 'Лука стрелок',

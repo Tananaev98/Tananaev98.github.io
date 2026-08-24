@@ -86,6 +86,8 @@
   tbody tr:last-child td { border-bottom: none; }
   tbody tr:hover { background: var(--surface-2); }
   tbody tr.region-final { background: rgba(201, 161, 90, 0.07); }
+  tbody tr.overgrind-row { background: rgba(90, 150, 201, 0.07); }
+  tbody tr.overgrind-row:first-of-type td { border-top: 1px dashed var(--hairline); }
   .hero-name { font-weight: 600; }
   .num-good { color: var(--good); }
   .num-bad { color: var(--bad); }
@@ -215,9 +217,11 @@ const ALL_LEVELS = Array.from({ length: CAMPAIGN_FINAL_LEVEL }, (_, i) => i + 1)
 const ATTEMPTS_PER_LEVEL = 8;
 const FIGHTS_PER_ATTEMPT = 15;
 const SURVIVAL_RUNS_PER_ATTEMPT = 40;
-const TEMPORARY_UPGRADE_BASE_SHARE = 0.20;
 const STRATEGIES = ['random', 'offense', 'survival', 'hybrid'];
-const DEFAULT_UPGRADE_CHOICES = 11;
+// Фолбэк на случай испорченных/нестандартных данных уровня (см. countUpgradeChoices) —
+// совпадает с реальным числом окон на обычном уровне (4 небоссфинальных врага ×
+// BOSS_KILL_UPGRADE_CHOICES=1 из game.js), а не с произвольной константой.
+const DEFAULT_UPGRADE_CHOICES = 4;
 
 // Перекачка сверх кампании: campaignToHeroLevel по экономике злата даёт герою на 141
 // уровне ~159 уровень — здесь тот же самый (последний, самый сильный) уровень кампании
@@ -429,9 +433,51 @@ const PROBE_SCRIPT_SOURCE = `
             if (patch.woundChance !== undefined) globalWoundChance = patch.woundChance;
             if (patch.interval !== undefined) SHOT_INTERVAL = patch.interval;
             if (patch.heroDefense !== undefined) heroDamageReduction = patch.heroDefense;
+            // heroHP — единственный из мутируемых боевых глобалов, что не число, а объект
+            // {current,max}; нужен только заходу с временными улучшениями (сам DPS-бой на
+            // HP героя не смотрит), поэтому патчится отдельным необязательным полем.
+            if (patch.heroHP) {
+                heroHP.max = patch.heroHP.max;
+                heroHP.current = patch.heroHP.current !== undefined ? patch.heroHP.current : patch.heroHP.max;
+            }
             if (patch.heroFields) Object.assign(activeHeroObject, patch.heroFields);
         },
         resetCombat: function () { resetHeroFeatureCombatState(); },
+        // Настоящие getAvailableUpgradeBundles/bundle.apply() из game.js — панель НЕ
+        // пересчитывает магнитуду/редкость/клэмп сама (см. CLAUDE.md), только гоняет
+        // реальный код и читает/пишет реальные боевые глобалы через эти три метода.
+        // amount — уже посчитанное реальным кодом число с карточки (то же, что видит
+        // игрок), распарсенное из cardText, а не пересчитанное заново.
+        rollUpgradeBundles: function (count) {
+            const bundles = getAvailableUpgradeBundles(count);
+            window.__probe.__pendingBundles = bundles;
+            return bundles.map(function (bundle) {
+                return {
+                    variantId: bundle.variantId,
+                    rarity: bundle.rarity,
+                    statEffects: bundle.statEffects.map(function (effect) {
+                        return { statId: effect.statId, amount: parseFloat(effect.cardText) };
+                    })
+                };
+            });
+        },
+        applyPendingBundle: function (index) {
+            const bundle = window.__probe.__pendingBundles && window.__probe.__pendingBundles[index];
+            if (bundle) bundle.apply();
+            window.__probe.__pendingBundles = null;
+        },
+        getUpgradeState: function () {
+            return {
+                damage: globalDamage,
+                critChance: globalCritChance,
+                critMultiplier: globalCritMultiplier,
+                woundChance: globalWoundChance,
+                interval: SHOT_INTERVAL,
+                heroDefense: heroDamageReduction,
+                heroHpMax: heroHP.max,
+                heroHpCurrent: heroHP.current
+            };
+        },
         // Настоящий Enemy без DOM/спрайта — approach borrowed from Object.create(Enemy.prototype),
         // так applyWound/updateWound/removeWound работают ровно как в игре.
         makeTarget: function (hp) {
@@ -477,6 +523,14 @@ const PROBE_SCRIPT_SOURCE = `
         // это тот же код, что использует сама игра, без своей копии формулы.
         getBossMaxHealth: function (type, fallbackBaseHealth, overrides) {
             return calculateBossMaxHealth(type, fallbackBaseHealth, overrides);
+        },
+        // Настоящая константа game.js — сколько окон улучшения даёт убийство ОДНОГО
+        // небоссфинального врага уровня (см. awardBossKillUpgradeChoices). Число окон на
+        // весь уровень панель считает как (бossM.length - 1) × это число — реальный опыт
+        // боссов (giveExperienceForKill) на временные улучшения не влияет вообще, игра
+        // намеренно его не начисляет за победу над боссом (см. finalizeBossDefeatAftermath).
+        getBossKillUpgradeChoices: function () {
+            return typeof BOSS_KILL_UPGRADE_CHOICES === 'number' ? BOSS_KILL_UPGRADE_CHOICES : 1;
         }
     };
     window.__probeReady = true;
@@ -777,152 +831,155 @@ function hashSeed(text, extra) {
 // всех выборов передаются в настоящий боевой движок (CombatEngine) и настоящую живучесть
 // (SurvivalEngine.simulateRun) — результат всегда измеряется по-настоящему, не формулой.
 
-const TemporaryUpgradeEngine = {
-    // Внутреннее рабочее состояние использует короткие имена полей (как в
-    // scripts/temporary-upgrade-report.js), toHeroShape() ниже переводит обратно в
-    // формат heroStats, который понимают CombatEngine/SurvivalEngine.
-    createTemporaryState(hero) {
-        return {
-            damage: hero.startGlobalDamage,
-            critChance: hero.startGlobalCritChance,
-            critMultiplier: hero.startGlobalCritMultiplier,
-            woundChance: hero.startGlobalWoundChance,
-            interval: hero.startSHOT_INTERVAL,
-            hp: hero.heroHP,
-            defense: hero.startHeroDamageReduction,
-            defenseCap: ProgressionEngine.api.getHeroDefenseCap(hero),
-            critChanceCap: ProgressionEngine.api.getHeroCritChanceCap(hero),
-            woundChanceCap: ProgressionEngine.api.getHeroWoundChanceCap(hero),
-            hpCap: ProgressionEngine.api.getHeroHpCap(hero),
-            startDamage: hero.startGlobalDamage,
-            startCritChance: hero.startGlobalCritChance,
-            startCritMultiplier: hero.startGlobalCritMultiplier,
-            startWoundChance: hero.startGlobalWoundChance,
-            startInterval: hero.startSHOT_INTERVAL,
-            startHp: hero.heroHP,
-            startDefense: hero.startHeroDamageReduction,
-            minShotInterval: hero.minShotInterval,
-            guaranteedCritEvery: hero.guaranteedCritEvery,
-            catchBackCritChanceBonus: hero.catchBackCritChanceBonus,
-            catchBackDurationMs: hero.catchBackDurationMs,
-            catchBackExpectedUptime: hero.catchBackExpectedUptime,
-            doubleAttackChance: hero.doubleAttackChance,
-            tripleAttackChance: hero.tripleAttackChance,
-            jackpotAttackChance: hero.jackpotAttackChance,
-            jackpotAttackMultiplier: hero.jackpotAttackMultiplier,
-            missingHpDamagePerPercent: hero.missingHpDamagePerPercent,
-            missingHpExpectedAverageFraction: hero.missingHpExpectedAverageFraction,
-            // Ревизия 11: см. temporaryUpgradePower у объектов героев в saveData.js —
-            // применяется ТОЛЬКО к DPS-статам (damage/crit/wound/fireRate) в applyUpgrade
-            // ниже, HP/защита всегда на базовой доле.
-            temporaryUpgradePower: hero.temporaryUpgradePower ?? 1
+// Гоняет НАСТОЯЩИЙ getAvailableUpgradeBundles()/bundle.apply() из game.js в скрытом
+// iframe через probe (rollUpgradeBundles/applyPendingBundle/getUpgradeState в
+// PROBE_SCRIPT_SOURCE) — панель не хранит и не пересчитывает магнитуду/редкость/клэмп
+// связок сама. Раньше здесь был самописный дубль СТАРОЙ (однокарточной) механики
+// апгрейдов с захардкоженной долей 0.20 и мёртвой ссылкой на temporaryUpgradePower —
+// он разошёлся с реальной игрой ещё до перехода на связки, а после перехода на связки
+// из 3 статов разошёлся полностью (см. CLAUDE.md: единственный источник истины —
+// реальный код в iframe, не собственные формулы). expectedDps/effectiveHp ниже —
+// единственное, что осталось «своим»: лёгкая аналитическая прикидка, ЦЕЛИКОМ
+// используемая только чтобы сравнить 3 уже посчитанных реальным кодом варианта между
+// собой и выбрать «лучший» по стратегии — не источник итоговых чисел отчёта.
+const RealUpgradeEngine = {
+    // Сколько окон улучшения реально даёт этот уровень — раньше здесь была формула
+    // через опыт боссов и растущий порог, но опыт (giveExperienceForKill) на временные
+    // улучшения НЕ влияет вообще: игра намеренно не начисляет его за победу над боссом
+    // (см. finalizeBossDefeatAftermath в game.js) — вместо этого каждый небоссфинальный
+    // враг уровня (bossM.length - 1, боссы 1-4 из 5) даёт ровно
+    // probe.getBossKillUpgradeChoices() гарантированных окон, независимо от опыта.
+    countUpgradeChoices(probe, levelData) {
+        if (!levelData || !Array.isArray(levelData.bossM)) return DEFAULT_UPGRADE_CHOICES;
+        const rewardedBossCount = Math.max(0, levelData.bossM.length - 1);
+        return rewardedBossCount * probe.getBossKillUpgradeChoices();
+    },
+
+    // Гипотетическое (не закоммиченное в iframe) применение уже посчитанной реальным
+    // кодом связки к ЛОКАЛЬНОЙ копии состояния — только для ранжирования 3 вариантов
+    // между собой (см. chooseBundleIndex). amount на каждом эффекте — то самое число,
+    // что видит игрок на карточке (см. rollUpgradeBundles), не пересчитано заново.
+    applyHypothetical(state, bundle) {
+        const next = { ...state };
+        bundle.statEffects.forEach((effect) => {
+            switch (effect.statId) {
+                case 'damage': next.damage += effect.amount; break;
+                case 'critChance': next.critChance = Math.min(1, next.critChance + effect.amount / 100); break;
+                case 'critMultiplier': next.critMultiplier += effect.amount / 100; break;
+                case 'woundChance': next.woundChance = Math.min(1, next.woundChance + effect.amount / 100); break;
+                case 'heroHP':
+                    next.heroHpMax += effect.amount;
+                    next.heroHpCurrent += effect.amount;
+                    break;
+                case 'heroDefense': next.heroDefense = Math.min(1, next.heroDefense + effect.amount / 100); break;
+                case 'fireRate': next.interval = Math.max(1, next.interval - effect.amount); break;
+            }
+        });
+        return next;
+    },
+
+    chooseBundleIndex(state, bundles, strategy, random, baseDps, baseEhp) {
+        if (strategy === 'random') return Math.floor(random() * bundles.length);
+        let bestIndex = 0;
+        let bestScore = -Infinity;
+        bundles.forEach((bundle, index) => {
+            const hypothetical = this.applyHypothetical(state, bundle);
+            const dps = this.expectedDps(hypothetical);
+            const ehp = this.effectiveHp(hypothetical);
+            let score;
+            if (strategy === 'offense') score = dps;
+            else if (strategy === 'survival') score = ehp;
+            else score = Math.log(dps / baseDps) + Math.log(ehp / baseEhp);
+            if (score > bestScore) { bestScore = score; bestIndex = index; }
+        });
+        return bestIndex;
+    },
+
+    // Полный забег временных апгрейдов на permanentHero под конкретную стратегию — сеет
+    // РЕАЛЬНЫЙ iframe стартовыми статами permanentHero, дальше только реальные
+    // getAvailableUpgradeBundles()/bundle.apply() через probe, читает назад реальное
+    // финальное состояние (короткие имена полей, см. toHeroShape).
+    simulateUpgradeRun(probe, permanentHero, levelData, strategy, random) {
+        probe.resetCombat();
+        probe.setCombatState({
+            damage: permanentHero.startGlobalDamage,
+            critChance: permanentHero.startGlobalCritChance,
+            critMultiplier: permanentHero.startGlobalCritMultiplier,
+            woundChance: permanentHero.startGlobalWoundChance,
+            interval: permanentHero.startSHOT_INTERVAL,
+            heroDefense: permanentHero.startHeroDamageReduction,
+            heroHP: { max: permanentHero.heroHP, current: permanentHero.heroHP },
+            heroFields: {
+                guaranteedCritEvery: permanentHero.guaranteedCritEvery,
+                catchBackCritChanceBonus: permanentHero.catchBackCritChanceBonus,
+                catchBackDurationMs: permanentHero.catchBackDurationMs,
+                catchBackExpectedUptime: permanentHero.catchBackExpectedUptime,
+                doubleAttackChance: permanentHero.doubleAttackChance,
+                tripleAttackChance: permanentHero.tripleAttackChance,
+                jackpotAttackChance: permanentHero.jackpotAttackChance,
+                jackpotAttackMultiplier: permanentHero.jackpotAttackMultiplier,
+                missingHpDamagePerPercent: permanentHero.missingHpDamagePerPercent,
+                missingHpExpectedAverageFraction: permanentHero.missingHpExpectedAverageFraction,
+                minShotInterval: permanentHero.minShotInterval
+            }
+        });
+
+        // expectedDps (ранжирование, см. заголовок секции) читает и особые механики героя
+        // (гарантированный крит, «Лови обратно», казино-атаки Дуни) — они не мутируются
+        // связками, поэтому не приходят из probe.getUpgradeState(), а домешиваются сюда
+        // из permanentHero при каждом чтении состояния.
+        const specialFields = {
+            guaranteedCritEvery: permanentHero.guaranteedCritEvery,
+            catchBackCritChanceBonus: permanentHero.catchBackCritChanceBonus,
+            catchBackExpectedUptime: permanentHero.catchBackExpectedUptime,
+            doubleAttackChance: permanentHero.doubleAttackChance,
+            tripleAttackChance: permanentHero.tripleAttackChance,
+            jackpotAttackChance: permanentHero.jackpotAttackChance,
+            jackpotAttackMultiplier: permanentHero.jackpotAttackMultiplier,
+            missingHpDamagePerPercent: permanentHero.missingHpDamagePerPercent,
+            missingHpExpectedAverageFraction: permanentHero.missingHpExpectedAverageFraction
         };
+        const readState = () => Object.assign(probe.getUpgradeState(), specialFields);
+
+        let state = readState();
+        const baseDps = this.expectedDps(state);
+        const baseEhp = this.effectiveHp(state);
+        const choices = this.countUpgradeChoices(probe, levelData);
+
+        for (let i = 0; i < choices; i++) {
+            const bundles = probe.rollUpgradeBundles(3);
+            if (bundles.length === 0) break; // поздний забег: почти всё упёрлось в потолки, как и в игре
+            const index = this.chooseBundleIndex(state, bundles, strategy, random, baseDps, baseEhp);
+            probe.applyPendingBundle(index);
+            state = readState();
+        }
+
+        return state;
     },
 
     // Обратно в формат heroStats для CombatEngine.simulateFight / SurvivalEngine.simulateRun.
-    toHeroShape(state) {
+    toHeroShape(state, permanentHero) {
         return {
             startGlobalDamage: state.damage,
             startGlobalCritChance: state.critChance,
             startGlobalCritMultiplier: state.critMultiplier,
             startGlobalWoundChance: state.woundChance,
             startSHOT_INTERVAL: state.interval,
-            startHeroDamageReduction: state.defense,
-            heroHP: state.hp,
-            defenseCap: state.defenseCap,
-            minShotInterval: state.minShotInterval,
-            guaranteedCritEvery: state.guaranteedCritEvery,
-            catchBackCritChanceBonus: state.catchBackCritChanceBonus,
-            catchBackDurationMs: state.catchBackDurationMs,
-            catchBackExpectedUptime: state.catchBackExpectedUptime,
-            doubleAttackChance: state.doubleAttackChance,
-            tripleAttackChance: state.tripleAttackChance,
-            jackpotAttackChance: state.jackpotAttackChance,
-            jackpotAttackMultiplier: state.jackpotAttackMultiplier,
-            missingHpDamagePerPercent: state.missingHpDamagePerPercent,
-            missingHpExpectedAverageFraction: state.missingHpExpectedAverageFraction
+            startHeroDamageReduction: state.heroDefense,
+            heroHP: state.heroHpMax,
+            defenseCap: ProgressionEngine.api.getHeroDefenseCap(permanentHero),
+            minShotInterval: permanentHero.minShotInterval,
+            guaranteedCritEvery: permanentHero.guaranteedCritEvery,
+            catchBackCritChanceBonus: permanentHero.catchBackCritChanceBonus,
+            catchBackDurationMs: permanentHero.catchBackDurationMs,
+            catchBackExpectedUptime: permanentHero.catchBackExpectedUptime,
+            doubleAttackChance: permanentHero.doubleAttackChance,
+            tripleAttackChance: permanentHero.tripleAttackChance,
+            jackpotAttackChance: permanentHero.jackpotAttackChance,
+            jackpotAttackMultiplier: permanentHero.jackpotAttackMultiplier,
+            missingHpDamagePerPercent: permanentHero.missingHpDamagePerPercent,
+            missingHpExpectedAverageFraction: permanentHero.missingHpExpectedAverageFraction
         };
-    },
-
-    // Сколько апгрейдов реально даёт опыт боссов этого уровня (см. countUpgradeChoices в
-    // scripts/temporary-upgrade-report.js) — растущий порог опыта на выбор, как в игре.
-    countUpgradeChoices(levelData) {
-        if (!levelData || !levelData.bossM || !levelData.ENEMY_TYPES) return DEFAULT_UPGRADE_CHOICES;
-        let experience = 0;
-        let threshold = 100;
-        let choices = 0;
-        const rewardedBosses = levelData.bossM.slice(0, -1);
-        for (const bossKey of rewardedBosses) {
-            const enemy = levelData.ENEMY_TYPES[bossKey];
-            if (!enemy) continue;
-            experience += Math.round(enemy.baseExp);
-            while (experience >= threshold) {
-                experience -= threshold;
-                threshold = Math.round(threshold * 1.1);
-                choices++;
-            }
-        }
-        return choices || DEFAULT_UPGRADE_CHOICES;
-    },
-
-    rarityMultiplier(random) {
-        const roll = random();
-        if (roll <= 0.50) return 1;
-        if (roll <= 0.85) return 1.25;
-        if (roll <= 0.95) return 1.5;
-        if (roll <= 0.99) return 2;
-        return 2.5;
-    },
-
-    availableUpgradeTypes(state) {
-        const types = ['damage'];
-        if (state.critChance < (state.critChanceCap ?? 1)) types.push('critChance');
-        types.push('critMultiplier');
-        if (state.woundChance < (state.woundChanceCap ?? 1)) types.push('wound');
-        if (state.hp < (state.hpCap ?? Infinity)) types.push('hp');
-        if (state.defense < state.defenseCap) types.push('defense');
-        if (state.interval > (state.minShotInterval ?? 200)) types.push('fireRate');
-        return types;
-    },
-
-    createOfferedUpgrades(state, random) {
-        return this.availableUpgradeTypes(state)
-            .map((type) => ({ type, rarity: this.rarityMultiplier(random) }))
-            // Mirrors selectRandomUpgrades in game.js, including its random-sort behavior.
-            .sort(() => 0.5 - random())
-            .slice(0, 3);
-    },
-
-    // Ревизия 11: temporaryUpgradePower применяется ТОЛЬКО к DPS-статам (damage/crit/
-    // wound/fireRate) — HP и защита всегда на базовой доле (survivalShare), картина
-    // живучести с апгрейдами не должна зависеть от этого множителя. fireRate — та же
-    // правка, что в game.js/getAvailableUpgrades: доля/(1+доля) от СВОЕГО интервала
-    // (не (1000-interval), которая награждала уже быстрых героев сильнее медленных),
-    // и пол — личный minShotInterval героя, а не жёсткие 200мс для всех.
-    applyUpgrade(state, option) {
-        const upgraded = { ...state };
-        const power = state.temporaryUpgradePower ?? 1;
-        const dpsShare = TEMPORARY_UPGRADE_BASE_SHARE * option.rarity * power;
-        const survivalShare = TEMPORARY_UPGRADE_BASE_SHARE * option.rarity;
-
-        if (option.type === 'damage') {
-            upgraded.damage += Math.round(upgraded.startDamage * dpsShare);
-        } else if (option.type === 'critChance') {
-            upgraded.critChance = Math.min(state.critChanceCap ?? 1, upgraded.critChance + upgraded.startCritChance * dpsShare);
-        } else if (option.type === 'critMultiplier') {
-            upgraded.critMultiplier += upgraded.startCritMultiplier * dpsShare;
-        } else if (option.type === 'wound') {
-            upgraded.woundChance = Math.min(state.woundChanceCap ?? 1, upgraded.woundChance + upgraded.startWoundChance * dpsShare);
-        } else if (option.type === 'hp') {
-            upgraded.hp = Math.min(state.hpCap ?? Infinity, upgraded.hp + Math.round(upgraded.startHp * survivalShare));
-        } else if (option.type === 'defense') {
-            upgraded.defense = Math.min(upgraded.defenseCap, upgraded.defense + upgraded.startDefense * survivalShare);
-        } else if (option.type === 'fireRate') {
-            const fireRateDecrease = upgraded.startInterval * (dpsShare / (1 + dpsShare));
-            upgraded.interval = Math.max(upgraded.minShotInterval ?? 200, upgraded.interval - fireRateDecrease);
-        }
-
-        return upgraded;
     },
 
     // Лёгкая аналитическая оценка DPS — используется ТОЛЬКО чтобы ранжировать 3
@@ -959,38 +1016,7 @@ const TemporaryUpgradeEngine = {
     },
 
     effectiveHp(state) {
-        return state.hp / (1 - state.defense);
-    },
-
-    chooseUpgrade(state, offers, strategy, random, baseDps, baseEhp) {
-        if (strategy === 'random') {
-            return this.applyUpgrade(state, offers[Math.floor(random() * offers.length)]);
-        }
-        const candidates = offers.map((option) => {
-            const upgraded = this.applyUpgrade(state, option);
-            const dps = this.expectedDps(upgraded);
-            const ehp = this.effectiveHp(upgraded);
-            let score;
-            if (strategy === 'offense') score = dps;
-            else if (strategy === 'survival') score = ehp;
-            else score = Math.log(dps / baseDps) + Math.log(ehp / baseEhp);
-            return { upgraded, score };
-        });
-        return candidates.reduce((best, candidate) => (candidate.score > best.score ? candidate : best)).upgraded;
-    },
-
-    // Полный забег временных апгрейдов на permanentHero под конкретную стратегию —
-    // возвращает финальное состояние (ещё в коротких именах полей, см. toHeroShape).
-    simulateUpgradeRun(permanentHero, levelData, strategy, random) {
-        let state = this.createTemporaryState(permanentHero);
-        const baseDps = this.expectedDps(state);
-        const baseEhp = this.effectiveHp(state);
-        const choices = this.countUpgradeChoices(levelData);
-        for (let i = 0; i < choices; i++) {
-            const offers = this.createOfferedUpgrades(state, random);
-            state = this.chooseUpgrade(state, offers, strategy, random, baseDps, baseEhp);
-        }
-        return state;
+        return state.heroHpCurrent / (1 - state.heroDefense);
     }
 };
 
@@ -1070,16 +1096,16 @@ const ExcelExport = {
         return { name, header, rows };
     },
 
-    buildDpsUpgradedSheet(heroes, results, levels) {
+    buildDpsUpgradedSheet(heroes, results) {
         const header = ['Ур. кампании', 'Ур. героя'];
         heroes.forEach((h) => header.push(
             `${h.dispName} DPS`, `${h.dispName} мин`, `${h.dispName} макс`,
             `${h.dispName} время прохождения`, `${h.dispName} время прохождения, сек`
         ));
-        const rows = levels.map((level) => {
-            const row = [level, ProgressionEngine.campaignToHeroLevel.get(level) || 1];
+        const rows = buildUpgradedRowDescriptors().map((rowDesc) => {
+            const row = [rowDesc.campaignLabel, rowDesc.heroLevel];
             heroes.forEach((h) => {
-                const cell = results[h.key] && results[h.key][level];
+                const cell = results[h.key] && results[h.key][rowDesc.resultKey];
                 if (cell) {
                     row.push(
                         this.round(cell.mean), this.round(cell.min), this.round(cell.max),
@@ -1119,13 +1145,13 @@ const ExcelExport = {
         return { name, header, rows };
     },
 
-    buildSurvivalUpgradedSheet(heroes, results, levels) {
+    buildSurvivalUpgradedSheet(heroes, results) {
         const header = ['Ур. кампании', 'Ур. героя'];
         heroes.forEach((h) => header.push(`${h.dispName} среднее ударов`, `${h.dispName} ваншот %`));
-        const rows = levels.map((level) => {
-            const row = [level, ProgressionEngine.campaignToHeroLevel.get(level) || 1];
+        const rows = buildUpgradedRowDescriptors().map((rowDesc) => {
+            const row = [rowDesc.campaignLabel, rowDesc.heroLevel];
             heroes.forEach((h) => {
-                const cell = results[h.key] && results[h.key][level];
+                const cell = results[h.key] && results[h.key][rowDesc.resultKey];
                 if (cell) row.push(Math.round(cell.meanHitsToDefeat * 10) / 10, this.pct(cell.oneShotRate));
                 else row.push('', '');
             });
@@ -1165,8 +1191,8 @@ const ExcelExport = {
             this.buildSurvivalSheet('Живучесть без апгрейдов', heroes, snapshot.survivalResults, ALL_LEVELS, true),
             this.buildDpsSheet('Перекачка DPS', heroes, snapshot.overgrindDpsResults, OVERGRIND_HERO_LEVELS, 'heroLevel', false),
             this.buildSurvivalSheet('Перекачка живучесть', heroes, snapshot.overgrindSurvivalResults, OVERGRIND_HERO_LEVELS, false),
-            this.buildDpsUpgradedSheet(heroes, snapshot.dpsUpgradedResults, ALL_LEVELS),
-            this.buildSurvivalUpgradedSheet(heroes, snapshot.survivalUpgradedResults, ALL_LEVELS)
+            this.buildDpsUpgradedSheet(heroes, snapshot.dpsUpgradedResults),
+            this.buildSurvivalUpgradedSheet(heroes, snapshot.survivalUpgradedResults)
         ];
         const xml = this.buildWorkbook(sheets);
         const blob = new Blob([xml], { type: 'application/vnd.ms-excel' });
@@ -1261,21 +1287,46 @@ function renderOvergrindSurvivalTable(heroes, results) {
     $('overgrindSurvivalPanel').style.display = '';
 }
 
+// Общий список строк для таблиц/экспорта «с апгрейдами» (по решению пользователя):
+// сначала все уровни кампании 1..141 (герой растёт по экономике злата), а дальше та же
+// самая таблица ПРОДОЛЖАЕТСЯ — тот же уровень 141 «фармится» против героя, прокачанного
+// руками сверх кампании до 200 (см. OVERGRIND_HERO_LEVELS) — тот же принцип, что и у
+// перекачки без апгрейдов (renderOvergrindDpsTable), но одной непрерывной таблицей, а
+// не отдельной панелью. resultKey — ключ в results[hero.key][...]: номер уровня кампании
+// для обычных строк, номер уровня героя для строк-продолжения (диапазоны не пересекаются
+// — кампания только до 141, продолжение начинается с 159).
+function buildUpgradedRowDescriptors() {
+    const normalRows = ALL_LEVELS.map((level) => ({
+        resultKey: level,
+        campaignLabel: String(level),
+        heroLevel: ProgressionEngine.campaignToHeroLevel.get(level) || 1,
+        isOvergrind: false
+    }));
+    const overgrindRows = OVERGRIND_HERO_LEVELS.map((heroLevel) => ({
+        resultKey: heroLevel,
+        campaignLabel: `${OVERGRIND_CAMPAIGN_LEVEL} (фарм)`,
+        heroLevel,
+        isOvergrind: true
+    }));
+    return normalRows.concat(overgrindRows);
+}
+
 function renderDpsUpgradedTable(heroes, results) {
     const table = $('dpsUpgradedTable');
     const thead = `<thead><tr><th>Ур. кампании</th><th>Ур. героя</th>${heroes.map((h) => `<th>${h.dispName}</th>`).join('')}</tr></thead>`;
-    const rows = ALL_LEVELS.map((level) => {
-        const heroLevel = ProgressionEngine.campaignToHeroLevel.get(level) || 1;
+    const rows = buildUpgradedRowDescriptors().map((row) => {
         const cells = heroes.map((h) => {
-            const cell = results[h.key] && results[h.key][level];
+            const cell = results[h.key] && results[h.key][row.resultKey];
             if (!cell) return '<td>—</td>';
             const timeLabel = Number.isFinite(cell.avgLevelSeconds)
                 ? ` <span style="color:var(--muted);font-size:11px;">(среднее время прохождения уровня ${formatDuration(cell.avgLevelSeconds)})</span>`
                 : '';
             return `<td>${Math.round(cell.mean)} <span style="color:var(--muted);font-size:11px;">(мин ${Math.round(cell.min)} / макс ${Math.round(cell.max)})</span>${timeLabel}</td>`;
         }).join('');
-        const rowCls = isRegionFinalLevel(level) ? ' class="region-final"' : '';
-        return `<tr${rowCls}><td>${level}</td><td>${heroLevel}</td>${cells}</tr>`;
+        const rowCls = row.isOvergrind
+            ? ' class="overgrind-row"'
+            : (isRegionFinalLevel(row.resultKey) ? ' class="region-final"' : '');
+        return `<tr${rowCls}><td>${row.campaignLabel}</td><td>${row.heroLevel}</td>${cells}</tr>`;
     }).join('');
     table.innerHTML = `${thead}<tbody>${rows}</tbody>`;
     $('dpsUpgradedPanel').style.display = '';
@@ -1284,17 +1335,18 @@ function renderDpsUpgradedTable(heroes, results) {
 function renderSurvivalUpgradedTable(heroes, results) {
     const table = $('survivalUpgradedTable');
     const thead = `<thead><tr><th>Ур. кампании</th><th>Ур. героя</th>${heroes.map((h) => `<th>${h.dispName}</th>`).join('')}</tr></thead>`;
-    const rows = ALL_LEVELS.map((level) => {
-        const heroLevel = ProgressionEngine.campaignToHeroLevel.get(level) || 1;
+    const rows = buildUpgradedRowDescriptors().map((row) => {
         const cells = heroes.map((h) => {
-            const cell = results[h.key] && results[h.key][level];
+            const cell = results[h.key] && results[h.key][row.resultKey];
             if (!cell) return '<td>—</td>';
             const oneShotPct = (cell.oneShotRate * 100).toFixed(1);
             const cls = cell.oneShotRate > 0 ? 'num-bad' : 'num-good';
             return `<td>${cell.meanHitsToDefeat.toFixed(1)} уд. до гибели (среднее) · <span class="${cls}">ваншот ${oneShotPct}%</span></td>`;
         }).join('');
-        const rowCls = isRegionFinalLevel(level) ? ' class="region-final"' : '';
-        return `<tr${rowCls}><td>${level}</td><td>${heroLevel}</td>${cells}</tr>`;
+        const rowCls = row.isOvergrind
+            ? ' class="overgrind-row"'
+            : (isRegionFinalLevel(row.resultKey) ? ' class="region-final"' : '');
+        return `<tr${rowCls}><td>${row.campaignLabel}</td><td>${row.heroLevel}</td>${cells}</tr>`;
     }).join('');
     table.innerHTML = `${thead}<tbody>${rows}</tbody>`;
     $('survivalUpgradedPanel').style.display = '';
@@ -1304,8 +1356,8 @@ function renderSurvivalUpgradedTable(heroes, results) {
 // настоящий бой (несколько боёв — усредняются) и настоящая живучесть (несколько
 // прогонов) на итоговых статах. Возвращает { dps, hitsSamples, oneShot }.
 async function runOneUpgradedAttempt(probe, permanentHero, levelData, strategy, random) {
-    const finalState = TemporaryUpgradeEngine.simulateUpgradeRun(permanentHero, levelData, strategy, random);
-    const heroShape = TemporaryUpgradeEngine.toHeroShape(finalState);
+    const finalState = RealUpgradeEngine.simulateUpgradeRun(probe, permanentHero, levelData, strategy, random);
+    const heroShape = RealUpgradeEngine.toHeroShape(finalState, permanentHero);
 
     const dpsAgg = await CombatEngine.simulateManyFights(
         probe,
@@ -1374,7 +1426,11 @@ async function runAll() {
         const dpsUpgradedResults = {};
         const survivalUpgradedResults = {};
         const totalSteps = heroes.length * ALL_LEVELS.length * (survivalOnly ? 1 : 3)
-            + heroes.length * OVERGRIND_HERO_LEVELS.length * (survivalOnly ? 1 : 2);
+            + heroes.length * OVERGRIND_HERO_LEVELS.length * (survivalOnly ? 1 : 2)
+            // Продолжение таблицы «с апгрейдами» на уровне 141 до 200 уровня героя (см.
+            // buildUpgradedRowDescriptors) — один шаг на heroLevel, как и у обычных
+            // уровней кампании в цикле ниже, и только когда апгрейды вообще считаются.
+            + heroes.length * OVERGRIND_HERO_LEVELS.length * (survivalOnly ? 0 : 1);
         let doneSteps = 0;
         setProgress(0, totalSteps);
 
@@ -1525,6 +1581,57 @@ async function runAll() {
                         log(`   уровень кампании ${level}: DPS с улучшениями ≈ ${Math.round(cell.mean)} (было бы ${Math.round((dpsResults[hero.key][level] || { mean: 0 }).mean)} без них)`, 'log-dim');
                     }
                 }
+
+                // Продолжение той же таблицы «с апгрейдами» сверх кампании (по решению
+                // пользователя): тот же уровень 141 фармится дальше против героя,
+                // прокачанного руками до 200 (см. OVERGRIND_HERO_LEVELS/
+                // buildUpgradedRowDescriptors) — тот же принцип, что и обычная перекачка
+                // без апгрейдов чуть выше, просто строки дописываются в тот же results-
+                // объект под ключом heroLevel, а не отдельной панелью.
+                log(`— ${hero.dispName}: продолжаю с апгрейдами перекачку уровня ${OVERGRIND_CAMPAIGN_LEVEL} до 200 уровня героя.`, 'log-dim');
+                for (const heroLevel of OVERGRIND_HERO_LEVELS) {
+                    if (stopRequested) break;
+                    const permanentHero = ProgressionEngine.buildHeroAtLevel(hero.key, heroLevel);
+
+                    const dpsSamples = [];
+                    const allHits = [];
+                    let oneShotAttempts = 0;
+                    let totalRuns = 0;
+
+                    for (let attempt = 0; attempt < ATTEMPTS_PER_LEVEL; attempt++) {
+                        const strategy = STRATEGIES[attempt % STRATEGIES.length];
+                        const random = mulberry32(hashSeed(`${hero.key}:${strategy}:overgrind`, heroLevel * 1000 + attempt));
+                        const result = await runOneUpgradedAttempt(probe, permanentHero, overgrindLevelData, strategy, random);
+                        dpsSamples.push(result.dps);
+                        for (const hits of result.hitsSamples) {
+                            allHits.push(Number.isFinite(hits) ? hits : 40);
+                        }
+                        oneShotAttempts += result.oneShots;
+                        totalRuns += result.hitsSamples.length;
+                        await new Promise((resolve) => setTimeout(resolve, 0));
+                    }
+
+                    const meanDps = average(dpsSamples);
+                    const levelBossHpTotal = getLevelBossHpTotal(probe, OVERGRIND_CAMPAIGN_LEVEL, overgrindLevelData, levelBossHpCache);
+                    dpsUpgradedResults[hero.key][heroLevel] = {
+                        mean: meanDps,
+                        min: Math.min(...dpsSamples),
+                        max: Math.max(...dpsSamples),
+                        levelBossHpTotal,
+                        avgLevelSeconds: meanDps > 0 ? levelBossHpTotal / meanDps : null
+                    };
+                    if (allHits.length > 0) {
+                        survivalUpgradedResults[hero.key][heroLevel] = {
+                            meanHitsToDefeat: average(allHits),
+                            oneShotRate: totalRuns > 0 ? oneShotAttempts / totalRuns : 0
+                        };
+                    }
+
+                    doneSteps++;
+                    setProgress(doneSteps, totalSteps);
+                }
+                log(`— ${hero.dispName}: перекачка с апгрейдами (уровень ${OVERGRIND_CAMPAIGN_LEVEL} против героя 159→200) посчитана.`, 'log-dim');
+
                 renderDpsUpgradedTable(heroes, dpsUpgradedResults);
                 renderSurvivalUpgradedTable(heroes, survivalUpgradedResults);
                 log(`— ${hero.dispName}: усреднённые показатели с временными улучшениями посчитаны.`, 'log-ok');
