@@ -925,9 +925,12 @@ body {
     .modal-content {
         padding: 18px 14px;
         width: min(94%, 420px);
-        max-height: 90svh;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
+        /* max-height/overflow-y/-webkit-overflow-scrolling — теперь в базовом правиле
+           .modal-content (единый источник, см. комментарий там); дублировать здесь
+           бессмысленно — эта часть файла идёт РАНЬШЕ базового правила, так что при
+           равной специфичности базовое всё равно победило бы. touch-action ниже —
+           единственное, что реально специфично мобильному @media и нигде не задано
+           в базовом правиле. */
         touch-action: pan-y;
     }
 
@@ -3691,7 +3694,16 @@ html.is-mobile .main_menu_image {
     max-width: 600px;
     text-align: center;
     box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
-    overflow: hidden;
+    /* max-height + overflow-y здесь (а не только в мобильном @media ниже) — иначе это
+       правило, идущее в файле ПОСЛЕ мобильного блока, с той же специфичностью
+       перекрывало бы его overflow-y:auto обратно на overflow:hidden на любом экране,
+       где сработал бы тот @media (порядок в каскаде решает при равной специфичности,
+       а не сам факт нахождения внутри @media) — окно улучшений не влезало по высоте
+       и не прокручивалось на мобилках. Теперь это единственный источник правды. */
+    max-height: 90vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
 }
 
 .modal-content h2 {
