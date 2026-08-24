@@ -922,82 +922,6 @@ body {
         letter-spacing: 0.5px;
     }
 
-    .modal-content {
-        padding: 18px 14px;
-        width: min(94%, 420px);
-        /* max-height/overflow-y/-webkit-overflow-scrolling — теперь в базовом правиле
-           .modal-content (единый источник, см. комментарий там); дублировать здесь
-           бессмысленно — эта часть файла идёт РАНЬШЕ базового правила, так что при
-           равной специфичности базовое всё равно победило бы. touch-action ниже —
-           единственное, что реально специфично мобильному @media и нигде не задано
-           в базовом правиле. */
-        touch-action: pan-y;
-    }
-
-    .modal-content h2 {
-        font-size: 22px;
-    }
-
-    .levelup-util-btn {
-        width: 32px;
-        height: 32px;
-        font-size: 15px;
-        border-width: 2px;
-    }
-
-    .modal-subtitle {
-        font-size: 15px;
-        margin-bottom: 16px;
-    }
-
-    .levelup-current-stats {
-        margin: 2px 0 16px;
-    }
-
-    .levelup-current-stats-title {
-        font-size: 10px;
-        margin-bottom: 6px;
-    }
-
-    .levelup-current-stats-grid {
-        grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-        gap: 6px;
-    }
-
-    .levelup-stat-row {
-        padding: 6px 9px;
-    }
-
-    .levelup-stat-icon {
-        font-size: 15px;
-    }
-
-    .levelup-stat-label {
-        font-size: 9.5px;
-    }
-
-    .levelup-stat-value {
-        font-size: 13px;
-    }
-
-    .upgrade-options {
-        grid-template-columns: 1fr;
-        gap: 10px;
-    }
-
-    .upgrade-option {
-        min-height: 72px;
-        padding: 14px 12px;
-    }
-
-    .upgrade-bundle-stat {
-        font-size: 12px;
-    }
-
-    .upgrade-bundle-stat-icon {
-        font-size: 13px;
-    }
-
     .damage-text {
         font-size: 22px;
         z-index: 2000;
@@ -4425,6 +4349,112 @@ html.is-mobile .main_menu_image {
 
 .endgame-hero-upgrade-host:empty {
     display: none;
+}
+
+/* Окно временного улучшения на мобилках должно ПОМЕЩАТЬСЯ на экран целиком, без
+   скролла (по решению пользователя) — а не просто не обрезаться со скроллом.
+   max-height/overflow-y в базовом .modal-content (см. выше) остаются подстраховкой
+   на совсем нестандартных пропорциях экрана, но при этих размерах реальный контент
+   (заголовок + панель статов до 7 строк + до 3 карточек улучшений по 3 стата)
+   укладывается в обычный телефонный экран (проверено на 375×667) без единого пикселя
+   скролла. Этот блок НАРОЧНО расположен здесь, ПОСЛЕ всех перечисленных ниже базовых
+   правил (.modal-content/.upgrade-*/.levelup-*), а не в общем мобильном @media в
+   начале файла — там он стоял РАНЬШЕ этих базовых правил и при равной специфичности
+   селектора базовые правила, идущие позже в каскаде, полностью его перебивали
+   (ровно так и не работал прошлый фикс скролла, пока его не подняли в базовое
+   правило) — здесь такой проблемы нет ни у одного свойства. */
+@media (max-width: 768px), (hover: none) and (pointer: coarse) {
+    .modal-content {
+        padding: 10px 10px;
+        width: min(94%, 420px);
+        touch-action: pan-y;
+    }
+
+    .modal-content h2 {
+        font-size: 16px;
+        margin-bottom: 3px;
+    }
+
+    .levelup-util-btn {
+        width: 26px;
+        height: 26px;
+        font-size: 12px;
+        border-width: 2px;
+    }
+
+    .modal-subtitle {
+        font-size: 11px;
+        margin-bottom: 6px;
+    }
+
+    .levelup-current-stats {
+        margin: 2px 0 6px;
+    }
+
+    .levelup-current-stats-title {
+        font-size: 8px;
+        margin-bottom: 3px;
+    }
+
+    .levelup-current-stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+        gap: 3px;
+    }
+
+    .levelup-stat-row {
+        padding: 3px 5px;
+        gap: 5px;
+        border-width: 1px;
+        border-radius: 6px;
+    }
+
+    .levelup-stat-icon {
+        font-size: 11px;
+    }
+
+    .levelup-stat-label {
+        font-size: 7.5px;
+    }
+
+    .levelup-stat-value {
+        font-size: 10px;
+    }
+
+    .upgrade-options {
+        grid-template-columns: 1fr;
+        gap: 4px;
+        margin-top: 6px;
+    }
+
+    .upgrade-option {
+        min-height: 0;
+        padding: 5px 8px;
+        border-width: 2px;
+    }
+
+    .upgrade-title {
+        font-size: 12px;
+        margin-bottom: 2px;
+    }
+
+    .upgrade-effect {
+        gap: 1px 6px;
+        margin: 0 auto 2px;
+    }
+
+    .upgrade-bundle-stat-icon {
+        font-size: 10px;
+    }
+
+    .upgrade-bundle-stat-label,
+    .upgrade-bundle-stat-amount {
+        font-size: 9.5px;
+    }
+
+    .upgrade-rarity {
+        font-size: 8.5px;
+        letter-spacing: 0.5px;
+    }
 }
 
 .endgame-hero-upgrade {
