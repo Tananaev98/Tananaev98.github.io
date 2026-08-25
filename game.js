@@ -260,6 +260,9 @@ const heroDamageReductionCap = getHeroDefenseCap(activeHeroObject);
 const globalCritChanceCap = getHeroCritChanceCap(activeHeroObject);
 const globalWoundChanceCap = getHeroWoundChanceCap(activeHeroObject);
 const heroHpCap = getHeroHpCap(activeHeroObject);
+// Необязательный — undefined у героя без явного поля значит "без потолка", как и было
+// у всех до этого (см. getHeroCritMultiplierCap в saveData.js).
+const globalCritMultiplierCap = getHeroCritMultiplierCap(activeHeroObject);
 
 // Таймер для стрельбы
 let lastShotTime = 0;
@@ -4960,8 +4963,9 @@ function computeUpgradeStatDelta(nominalRaw, current, cap, scale, precision = 0)
 function isUpgradeStatEligibleNow(statId) {
     switch (statId) {
         case 'damage':
-        case 'critMultiplier':
             return true;
+        case 'critMultiplier':
+            return !Number.isFinite(globalCritMultiplierCap) || globalCritMultiplier < globalCritMultiplierCap;
         case 'critChance':
             return !Number.isFinite(globalCritChanceCap) || globalCritChance < globalCritChanceCap;
         case 'woundChance':
@@ -5029,19 +5033,22 @@ function buildUpgradeStatEffect(statId, rarityMultiplier) {
         case 'critMultiplier': {
             // Множитель — внутреннее представление (глобальный критУрон = база × множитель);
             // игроку везде в UI (index.html/updateInfoPanel, панель статов) крит-урон
-            // показывается как %, а не сырой множитель — тот же язык и здесь. Без потолка.
+            // показывается как %, а не сырой множитель — тот же язык и здесь. Потолок —
+            // необязательный (globalCritMultiplierCap), см. getHeroCritMultiplierCap в
+            // saveData.js: у героя без явного поля — по-прежнему без потолка, как раньше.
             const nominalRaw = startGlobalCritMultiplier * TEMPORARY_UPGRADE_BASE_SHARE * rarityMultiplier;
-            const delta = computeUpgradeStatDelta(nominalRaw, globalCritMultiplier, undefined, 100);
+            const delta = computeUpgradeStatDelta(nominalRaw, globalCritMultiplier, globalCritMultiplierCap, 100);
             return {
                 statId,
                 cardText: `+${delta.amount}%`,
                 apply: function() {
-                    const amount = computeUpgradeStatDelta(nominalRaw, globalCritMultiplier, undefined, 100).amount;
+                    const amount = computeUpgradeStatDelta(nominalRaw, globalCritMultiplier, globalCritMultiplierCap, 100).amount;
                     globalCritMultiplier += amount / 100;
                 },
                 preview: function() {
-                    const amount = computeUpgradeStatDelta(nominalRaw, globalCritMultiplier, undefined, 100).amount;
-                    return { text: `${Math.round(globalCritMultiplier * 100)}% +${amount}%`, isClamped: false };
+                    const liveDelta = computeUpgradeStatDelta(nominalRaw, globalCritMultiplier, globalCritMultiplierCap, 100);
+                    const capSuffix = liveDelta.isClamped ? ` (максимум ${Math.ceil(globalCritMultiplierCap * 100)}%)` : '';
+                    return { text: `${Math.round(globalCritMultiplier * 100)}% +${liveDelta.amount}%${capSuffix}`, isClamped: liveDelta.isClamped };
                 }
             };
         }
@@ -5289,8 +5296,9 @@ function getLevelUpStatDisplay(statId) {
 function isTemporaryStatEverAvailable(statId) {
     switch (statId) {
         case 'damage':
-        case 'critMultiplier':
             return true;
+        case 'critMultiplier':
+            return !Number.isFinite(globalCritMultiplierCap) || startGlobalCritMultiplier < globalCritMultiplierCap;
         case 'critChance':
             return !Number.isFinite(globalCritChanceCap) || startGlobalCritChance < globalCritChanceCap;
         case 'woundChance':

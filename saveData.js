@@ -60,6 +60,17 @@ function getHeroCritChanceCap(hero) {
     return hero?.critChanceCap;
 }
 
+// Личный потолок крит-урона от временных апгрейдов — необязательный (undefined у
+// героя без явного поля = по-прежнему без потолка, как и раньше у всех). Введён для
+// Тихона: у него единственного крит-урон дополнительно множится на пик волны
+// «Дрожащей руки» (см. shakeDamageMultiplierMax в game.js) — без потолка два ничем не
+// ограниченных множителя перемножаются и дают ваншот-риск, подтверждённый вживую
+// (реальный забег поймал крит на 100 000 против рассчитанных панелью ~40 000 на
+// синтетической выборке — см. CLAUDE.md, разбор баланса Тихона).
+function getHeroCritMultiplierCap(hero) {
+    return hero?.critMultiplierCap;
+}
+
 function getHeroWoundChanceCap(hero) {
     return hero?.woundChanceCap;
 }
@@ -316,16 +327,31 @@ function applyHeroPermanentStatUpgrade(hero) {
     } else if (hero.upSpecif === 2) {
         const woundChanceCap = getHeroWoundChanceCap(hero);
         const woundChanceCapped = Number.isFinite(woundChanceCap) && hero.startGlobalWoundChance >= woundChanceCap;
+        const critMultiplierCap = getHeroCritMultiplierCap(hero);
         const critMultiplierPerLevel = Number(hero.critMultiplierPerLevel) || 0;
+        // Клэмп на каждое приращение отдельно (а не один раз в конце) — тот же принцип,
+        // что и у critChance/heroHP/defense выше и ниже: у героя без явного
+        // critMultiplierCap (все, кроме Тихона) Number.isFinite(undefined) === false,
+        // поведение не меняется вообще.
+        const growCritMultiplier = () => {
+            const nextCritMultiplier = hero.startGlobalCritMultiplier + critMultiplierPerLevel;
+            hero.startGlobalCritMultiplier = Number.isFinite(critMultiplierCap)
+                ? Math.min(critMultiplierCap, nextCritMultiplier)
+                : nextCritMultiplier;
+        };
 
-        hero.startGlobalCritMultiplier += critMultiplierPerLevel;
+        growCritMultiplier();
         if (!woundChanceCapped) {
             const nextWoundChance = hero.startGlobalWoundChance + (Number(hero.woundChancePerLevel) || 0);
             hero.startGlobalWoundChance = Number.isFinite(woundChanceCap)
                 ? Math.min(woundChanceCap, nextWoundChance)
                 : nextWoundChance;
         } else {
-            hero.startGlobalCritMultiplier += critMultiplierPerLevel;
+            // Редирект (шанс ранения упёрся в потолок — весь прирост уходит в крит-урон
+            // вместо него, см. комментарий у объекта eremei) — у Тихона именно этот
+            // редирект и разгонял critMultiplier без потолка (startGlobalWoundChance ==
+            // woundChanceCap == 0 с самого старта, редирект срабатывает КАЖДЫЙ раз).
+            growCritMultiplier();
         }
         hero.upSpecif = 3;
     } else if (hero.upSpecif === 3) {
@@ -1456,7 +1482,7 @@ function getDefaultGameState() {
 				// ×0.89 (1/1.12, цель — вернуть отклонение к 0%) — держится плоским по
 				// диапазону, оба рычага, не один (правило 3). Числа не финальные —
 				// подтверждать новым прогоном панели.
-				balanceRevision: 18,
+				balanceRevision: 21,
 				name: 'mila',
 				permanentGrowthProfile: 'swift',
 				dispName: 'Мила Зеленова',
@@ -1465,7 +1491,7 @@ function getDefaultGameState() {
 				weaponImage: 'images/hero/5_MilaZelenova/weapon.webp',
 				aimImage: 'images/hero/5_MilaZelenova/aim.webp',
 				level: 1,
-				startGlobalDamage: 26,
+				startGlobalDamage: 25,
 				startGlobalCritChance: 0.01,
 				startGlobalCritMultiplier: 1.4,
 				startGlobalWoundChance	: 0,
@@ -1502,9 +1528,9 @@ function getDefaultGameState() {
 				// critChanceCap у Милы не упирается за 40 применений — редиректа по урону
 				// нет. Ревизия 18 (порез ×0.89): та же пропорция, что у startGlobalDamage
 				// выше — см. комментарий там про отчёт 2026-08-25 23-57-58 и правило 11.
-				damagePerLevel: 12,
-				critChancePerLevel: 0.005,
-				critMultiplierPerLevel: 0.02,
+				damagePerLevel: 13,
+				critChancePerLevel: 0.003,
+				critMultiplierPerLevel: 0.01,
 				woundChancePerLevel: 0,
 				shotIntervalReductionPerLevel: 0,
 				heroHpPerLevel: 15.40,
@@ -1562,7 +1588,7 @@ function getDefaultGameState() {
 			// По решению пользователя — играется приятно, останавливаемся здесь, дальше
 			// не тюним.
 			vas: {
-				balanceRevision: 18,
+				balanceRevision: 20,
 				name: 'tikhon',
 				permanentGrowthProfile: 'tremor',
 				dispName: 'Тихон Речкин',
@@ -1629,6 +1655,32 @@ function getDefaultGameState() {
 				shakeCritChanceBonusMin: 0.01,
 				shakeCritChanceBonusMax: 0.50,
 				critChanceCap: 0.15,
+				// Единственный герой с этим полем — без него critMultiplier рос
+				// НЕОГРАНИЧЕННО с двух независимых сторон: (1) постоянная прокачка — у
+				// Тихона startGlobalWoundChance/woundChanceCap оба 0 с самого старта,
+				// поэтому редирект «шанс ранения упёрся → плюс крит-урон» в
+				// applyHeroPermanentStatUpgrade (см. её комментарий) срабатывал КАЖДЫЙ
+				// цикл прокачки — это, а не апгрейды забега, было основным источником
+				// разгона (герой 159 без единого апгрейда уже был на critMultiplier ×7.6);
+				// (2) временные апгрейды за забег добавляли ещё сверху. Оба источника
+				// теперь читают globalCritMultiplierCap/getHeroCritMultiplierCap. Пойман
+				// вживую пользователем (крит на 100 000, уровень закрыт за 2 минуты фармом
+				// перекачки уровня 141 на герое 160) — не гипотеза, реальный экземпляр.
+				// Первая версия — ×4.5 — упала слишком резко: без прежнего постоянного
+				// компаундинга через редирект DPS-с-апгрейдами провалился до -27% в
+				// среднем и -56% в хвосте (сам редирект отвечал за большую часть его
+				// роста после герой-уровня ~50-80, не только апгрейды — правило 3, рычаг
+				// «за уровень» компаундится сильнее, чем казалось на калибровке).
+				// ×6.0 — компромисс: пик всё ещё безопасно далеко от HP боссов (см. ниже),
+				// но плато наступает позже и мягче давит на позднюю игру. Одновременно
+				// поднял damagePerLevel — см. её комментарий — чтобы вместе вернуть
+				// герой-уровень 150-200 к кривой живучесть/урон.
+				// Проверено реальным боем (правило 1, не на глаз): пиковый удар с
+				// реальными апгрейдами при ×6.0 оценочно ~47% HP слабейшего босса уровня
+				// 141 (44522 HP) — тот же порядок безопасности, что и у ×4.5 (~36%), не
+				// возврат к прежним ~92% при ×7.6. Другие герои без этого поля —
+				// Number.isFinite(undefined) === false, поведение не менялось (Лука).
+				critMultiplierCap: 6.0,
 				woundChanceCap: 0,
 				heroHpCap: 3000,
 				damageVariance: 0.15,
@@ -1638,10 +1690,15 @@ function getDefaultGameState() {
 				// 35×1 + 5×2 = 45 применений инкремента, damagePerLevel = (498.5-106)/45
 				// (а не /40 — та же ошибка деления, что была у Дуни, см. её комментарий).
 				// Ревизия 14: этот расчёт был откалиброван под старый startGlobalDamage=126 —
-				// теперь неактуален. Ревизия 18: см. подробный комментарий у startGlobalDamage
-				// выше (отчёт 2026-08-26, правило 11, осторожно — не флэтом, только этот
-				// рычаг, короче цели из-за риска пикового крита на волне).
-				damagePerLevel: 24,
+				// теперь неактуален. Ревизия 20: срез отчёта balance-report_2026-08-26_
+				// 01-25-57.xls (после потолка crit-урона ×4.5 — DPS с апгрейдами упал до
+				// -27% в среднем, -56% в хвосте 190-200). Вместе с подъёмом
+				// critMultiplierCap до ×6.0 (см. её комментарий) подобрано так, чтобы
+				// сумма обоих рычагов вернула герой-уровень 150-200 к кривой
+				// живучесть/урон (расчёт по реальным applyHeroPermanentStatUpgrade —
+				// правило 1, не переписанная формула). Числа снова не финальные —
+				// подтверждать новым прогоном панели.
+				damagePerLevel: 38,
 				critChancePerLevel: 0.001,
 				critMultiplierPerLevel: 0.07,
 				woundChancePerLevel: 0,
