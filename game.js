@@ -222,17 +222,20 @@ const startSHOT_INTERVAL = activeHeroObject.startSHOT_INTERVAL;
 // 0.20 → 0.18 → 0.54 (по решению пользователя, вместе с переходом на одно окно вместо
 // трёх после босса — см. BOSS_KILL_UPGRADE_CHOICES) и без personal temporaryUpgradePower
 // (убран из saveData.js) — единая база для всех героев: обычное = 54% от базового стата.
-// Действует на все статы связок, КРОМЕ heroHP/heroDefense — у них своя, отдельная и
-// сильно меньшая база (см. TEMPORARY_UPGRADE_SURVIVAL_SHARE ниже), потому что при одном
-// окне вместо трёх урон/крит и так растут втрое быстрее за забег, а живучести такой же
-// разгон не нужен.
+// Действует на damage/critMultiplier — у остальных статов своя, отдельная и меньшая база
+// (см. TEMPORARY_UPGRADE_MINOR_SHARE/TEMPORARY_UPGRADE_FIRE_RATE_SHARE ниже).
 const TEMPORARY_UPGRADE_BASE_SHARE = 0.54;
-// Отдельная (меньшая) база для heroHP/heroDefense — по решению пользователя: обычное =
-// 10% от базового стата, а не 54%, как у остальных.
-const TEMPORARY_UPGRADE_SURVIVAL_SHARE = 0.10;
+// Отдельная (меньшая) база для heroHP/heroDefense/critChance/woundChance — по решению
+// пользователя: обычное = 10% от базового стата, а не 54%, как у урона/крит-урона.
+const TEMPORARY_UPGRADE_MINOR_SHARE = 0.10;
 // Отдельная база для fireRate (скорость атаки) — по решению пользователя: обычное = 25%
 // от базового стата, а не 54%, как у урона/крита/ранения.
 const TEMPORARY_UPGRADE_FIRE_RATE_SHARE = 0.25;
+// Максимум один знак после точки у дробных статов связок (0.1/0.5/0.9/1.3/1.8 — по
+// решению пользователя) — сейчас у защиты, крит-шанса и шанса ранения; у остальных
+// статов дробных значений нет, там обычные целые числа (precision=0 по умолчанию, см.
+// computeUpgradeStatDelta).
+const TEMPORARY_UPGRADE_FRACTIONAL_PRECISION = 1;
 
 // Глобальные параметры оглушения
 
@@ -4906,9 +4909,14 @@ const LEVEL_UP_STAT_IDS = ['damage', 'critChance', 'critMultiplier', 'woundChanc
 // один знак после точки (0.1/0.2/5.3 — по решению пользователя только у защиты).
 function roundUpgradeToPrecision(value, precision, mode) {
     const factor = Math.pow(10, precision);
-    if (mode === 'ceil') return Math.ceil(value * factor) / factor;
-    if (mode === 'floor') return Math.floor(value * factor) / factor;
-    return Math.round(value * factor) / factor;
+    // Крохотный эпсилон убирает шум плавающей точки (0.1×0.10 = 0.010000000000000002,
+    // а не ровно 0.01) — без него ceil прыгал на одну лишнюю ступеньку вверх (1.1%
+    // вместо честных 1.0%). Округление по-прежнему ВВЕРХ, просто до правильного числа,
+    // а не до случайно завышенного плавающей точкой.
+    const scaled = value * factor;
+    if (mode === 'ceil') return Math.ceil(scaled - 1e-9) / factor;
+    if (mode === 'floor') return Math.floor(scaled + 1e-9) / factor;
+    return Math.round(scaled) / factor;
 }
 
 // Итоговая (видимая игроку) прибавка стата — единая логика для карточки, hover-превью и
@@ -4979,9 +4987,11 @@ function isUpgradeStatEligibleNow(statId) {
 // Одна функция на все 7 статов — единственное место с формулой magnitude = база × доля
 // × редкость, переиспользуется и при сборке связки, и (опосредованно) при построении
 // панели статов через ту же клэмп-логику. Доля разная по группам статов (по решению
-// пользователя): TEMPORARY_UPGRADE_BASE_SHARE (54%) — урон/крит-шанс/крит-урон/ранение,
-// TEMPORARY_UPGRADE_SURVIVAL_SHARE (10%) — здоровье/защита,
-// TEMPORARY_UPGRADE_FIRE_RATE_SHARE (25%) — скорость атаки.
+// пользователя): TEMPORARY_UPGRADE_BASE_SHARE (54%) — урон/крит-урон,
+// TEMPORARY_UPGRADE_MINOR_SHARE (10%) — здоровье/защита/крит-шанс/шанс ранения,
+// TEMPORARY_UPGRADE_FIRE_RATE_SHARE (25%) — скорость атаки. Защита/крит-шанс/шанс
+// ранения дополнительно округляются до одного знака после точки (см.
+// TEMPORARY_UPGRADE_FRACTIONAL_PRECISION), у остальных статов — целые числа.
 function buildUpgradeStatEffect(statId, rarityMultiplier) {
     switch (statId) {
         case 'damage': {
@@ -5000,19 +5010,19 @@ function buildUpgradeStatEffect(statId, rarityMultiplier) {
             };
         }
         case 'critChance': {
-            const nominalRaw = startGlobalCritChance * TEMPORARY_UPGRADE_BASE_SHARE * rarityMultiplier;
-            const delta = computeUpgradeStatDelta(nominalRaw, globalCritChance, globalCritChanceCap, 100);
+            const nominalRaw = startGlobalCritChance * TEMPORARY_UPGRADE_MINOR_SHARE * rarityMultiplier;
+            const delta = computeUpgradeStatDelta(nominalRaw, globalCritChance, globalCritChanceCap, 100, TEMPORARY_UPGRADE_FRACTIONAL_PRECISION);
             return {
                 statId,
-                cardText: `+${delta.amount}%`,
+                cardText: `+${delta.amount.toFixed(TEMPORARY_UPGRADE_FRACTIONAL_PRECISION)}%`,
                 apply: function() {
-                    const liveDelta = computeUpgradeStatDelta(nominalRaw, globalCritChance, globalCritChanceCap, 100);
+                    const liveDelta = computeUpgradeStatDelta(nominalRaw, globalCritChance, globalCritChanceCap, 100, TEMPORARY_UPGRADE_FRACTIONAL_PRECISION);
                     globalCritChance += liveDelta.amount / 100;
                 },
                 preview: function() {
-                    const liveDelta = computeUpgradeStatDelta(nominalRaw, globalCritChance, globalCritChanceCap, 100);
+                    const liveDelta = computeUpgradeStatDelta(nominalRaw, globalCritChance, globalCritChanceCap, 100, TEMPORARY_UPGRADE_FRACTIONAL_PRECISION);
                     const capSuffix = liveDelta.isClamped ? ` (максимум ${Math.ceil(globalCritChanceCap * 100)}%)` : '';
-                    return { text: `${Math.round(globalCritChance * 100)}% +${liveDelta.amount}%${capSuffix}`, isClamped: liveDelta.isClamped };
+                    return { text: `${Math.round(globalCritChance * 100)}% +${liveDelta.amount.toFixed(TEMPORARY_UPGRADE_FRACTIONAL_PRECISION)}%${capSuffix}`, isClamped: liveDelta.isClamped };
                 }
             };
         }
@@ -5036,24 +5046,24 @@ function buildUpgradeStatEffect(statId, rarityMultiplier) {
             };
         }
         case 'woundChance': {
-            const nominalRaw = startGlobalWoundChance * TEMPORARY_UPGRADE_BASE_SHARE * rarityMultiplier;
-            const delta = computeUpgradeStatDelta(nominalRaw, globalWoundChance, globalWoundChanceCap, 100);
+            const nominalRaw = startGlobalWoundChance * TEMPORARY_UPGRADE_MINOR_SHARE * rarityMultiplier;
+            const delta = computeUpgradeStatDelta(nominalRaw, globalWoundChance, globalWoundChanceCap, 100, TEMPORARY_UPGRADE_FRACTIONAL_PRECISION);
             return {
                 statId,
-                cardText: `+${delta.amount}%`,
+                cardText: `+${delta.amount.toFixed(TEMPORARY_UPGRADE_FRACTIONAL_PRECISION)}%`,
                 apply: function() {
-                    const liveDelta = computeUpgradeStatDelta(nominalRaw, globalWoundChance, globalWoundChanceCap, 100);
+                    const liveDelta = computeUpgradeStatDelta(nominalRaw, globalWoundChance, globalWoundChanceCap, 100, TEMPORARY_UPGRADE_FRACTIONAL_PRECISION);
                     globalWoundChance += liveDelta.amount / 100;
                 },
                 preview: function() {
-                    const liveDelta = computeUpgradeStatDelta(nominalRaw, globalWoundChance, globalWoundChanceCap, 100);
+                    const liveDelta = computeUpgradeStatDelta(nominalRaw, globalWoundChance, globalWoundChanceCap, 100, TEMPORARY_UPGRADE_FRACTIONAL_PRECISION);
                     const capSuffix = liveDelta.isClamped ? ` (максимум ${Math.ceil(globalWoundChanceCap * 100)}%)` : '';
-                    return { text: `${Math.round(globalWoundChance * 100)}% +${liveDelta.amount}%${capSuffix}`, isClamped: liveDelta.isClamped };
+                    return { text: `${Math.round(globalWoundChance * 100)}% +${liveDelta.amount.toFixed(TEMPORARY_UPGRADE_FRACTIONAL_PRECISION)}%${capSuffix}`, isClamped: liveDelta.isClamped };
                 }
             };
         }
         case 'heroHP': {
-            const nominalRaw = startGlobalHeroHp * TEMPORARY_UPGRADE_SURVIVAL_SHARE * rarityMultiplier;
+            const nominalRaw = startGlobalHeroHp * TEMPORARY_UPGRADE_MINOR_SHARE * rarityMultiplier;
             const delta = computeUpgradeStatDelta(nominalRaw, heroHP.max, heroHpCap, 1);
             return {
                 statId,
@@ -5072,22 +5082,19 @@ function buildUpgradeStatEffect(statId, rarityMultiplier) {
             };
         }
         case 'heroDefense': {
-            // Единственный стат с дробным шагом (по решению пользователя): максимум один
-            // знак после точки — 0.1/0.2/5.3, а не целые числа, как у остальных 6 статов.
-            const DEFENSE_PRECISION = 1;
-            const nominalRaw = startHeroDamageReduction * TEMPORARY_UPGRADE_SURVIVAL_SHARE * rarityMultiplier;
-            const delta = computeUpgradeStatDelta(nominalRaw, heroDamageReduction, heroDamageReductionCap, 100, DEFENSE_PRECISION);
+            const nominalRaw = startHeroDamageReduction * TEMPORARY_UPGRADE_MINOR_SHARE * rarityMultiplier;
+            const delta = computeUpgradeStatDelta(nominalRaw, heroDamageReduction, heroDamageReductionCap, 100, TEMPORARY_UPGRADE_FRACTIONAL_PRECISION);
             return {
                 statId,
-                cardText: `+${delta.amount.toFixed(DEFENSE_PRECISION)}%`,
+                cardText: `+${delta.amount.toFixed(TEMPORARY_UPGRADE_FRACTIONAL_PRECISION)}%`,
                 apply: function() {
-                    const liveDelta = computeUpgradeStatDelta(nominalRaw, heroDamageReduction, heroDamageReductionCap, 100, DEFENSE_PRECISION);
+                    const liveDelta = computeUpgradeStatDelta(nominalRaw, heroDamageReduction, heroDamageReductionCap, 100, TEMPORARY_UPGRADE_FRACTIONAL_PRECISION);
                     heroDamageReduction += liveDelta.amount / 100;
                 },
                 preview: function() {
-                    const liveDelta = computeUpgradeStatDelta(nominalRaw, heroDamageReduction, heroDamageReductionCap, 100, DEFENSE_PRECISION);
+                    const liveDelta = computeUpgradeStatDelta(nominalRaw, heroDamageReduction, heroDamageReductionCap, 100, TEMPORARY_UPGRADE_FRACTIONAL_PRECISION);
                     const capSuffix = liveDelta.isClamped ? ` (максимум ${Math.ceil(heroDamageReductionCap * 100)}%)` : '';
-                    return { text: `${Math.round(heroDamageReduction * 100)}% +${liveDelta.amount.toFixed(DEFENSE_PRECISION)}%${capSuffix}`, isClamped: liveDelta.isClamped };
+                    return { text: `${Math.round(heroDamageReduction * 100)}% +${liveDelta.amount.toFixed(TEMPORARY_UPGRADE_FRACTIONAL_PRECISION)}%${capSuffix}`, isClamped: liveDelta.isClamped };
                 }
             };
         }

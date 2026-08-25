@@ -91,6 +91,10 @@
   .hero-name { font-weight: 600; }
   .num-good { color: var(--good); }
   .num-bad { color: var(--bad); }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .badge-ok { background: rgba(82, 184, 171, 0.15); color: var(--good); }
+  .badge-warn { background: rgba(229, 103, 79, 0.18); color: var(--bad); }
+  .badge-caution { background: rgba(201, 161, 90, 0.18); color: var(--accent); }
   iframe.hidden-engine { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; left: -9999px; top: -9999px; }
   footer { color: var(--muted); font-size: 11.5px; margin-top: 28px; }
   code { background: var(--surface-2); padding: 1px 5px; border-radius: 3px; }
@@ -124,30 +128,24 @@
   </div>
 
   <div class="panel" id="dpsPanel" style="display:none;">
-    <h2>Постоянный DPS на каждом уровне кампании (без временных улучшений)</h2>
+    <h2>Постоянный DPS без временных улучшений (уровень героя 1→200)</h2>
+    <p class="hint">
+      Уровни кампании 1..141 идут как обычно (герой растёт по реальной экономике злата), а дальше
+      таблица непрерывно продолжается: тот же самый последний, самый сильный уровень кампании (141)
+      фармится против героя, прокачанного вручную дальше — до максимума 200 — чтобы увидеть, не
+      разваливается ли баланс на перекачке сверх того, что даёт кампания. Без временных улучшений —
+      только постоянные статы.
+    </p>
     <div class="table-scroll"><table id="dpsTable"></table></div>
   </div>
 
   <div class="panel" id="survivalPanel" style="display:none;">
-    <h2>Живучесть на каждом уровне кампании (без временных улучшений)</h2>
-    <div class="table-scroll"><table id="survivalTable"></table></div>
-  </div>
-
-  <div class="panel" id="overgrindDpsPanel" style="display:none;">
-    <h2>Перекачка сверх кампании: DPS на уровне 141 против героя 159→200</h2>
+    <h2>Живучесть без временных улучшений (уровень героя 1→200)</h2>
     <p class="hint">
-      Кампания заканчивается на 141 уровне, где игрок по экономике злата (реальной, как в игре)
-      обычно оказывается на герое около 159 уровня. Здесь тот же самый последний, самый сильный
-      уровень кампании прогоняется против героя, прокачанного вручную дальше — до максимума 200 —
-      чтобы увидеть, не разваливается ли баланс на перекачке сверх того, что даёт кампания.
-      Без временных улучшений — только постоянные статы.
+      Тот же принцип продолжения таблицы, что и в DPS-таблице выше: уровни кампании 1..141, а
+      дальше — перекачка уровня 141 против героя 159→200.
     </p>
-    <div class="table-scroll"><table id="overgrindDpsTable"></table></div>
-  </div>
-
-  <div class="panel" id="overgrindSurvivalPanel" style="display:none;">
-    <h2>Перекачка сверх кампании: живучесть на уровне 141 против героя 159→200</h2>
-    <div class="table-scroll"><table id="overgrindSurvivalTable"></table></div>
+    <div class="table-scroll"><table id="survivalTable"></table></div>
   </div>
 
   <div class="panel" id="dpsUpgradedPanel" style="display:none;">
@@ -169,6 +167,24 @@
       уровня. Число — среднее число ударов до гибели по всем заходам и прогонам (сумма ÷ количество).
     </p>
     <div class="table-scroll"><table id="survivalUpgradedTable"></table></div>
+  </div>
+
+  <div class="panel" id="balanceAnalyticsPanel" style="display:none;">
+    <h2>Аналитика баланса: живучесть/урон и сигналы несправедливости</h2>
+    <p class="hint">
+      Ничего не пересчитывает — берёт уже посчитанные выше таблицы (DPS/живучесть, без апгрейдов
+      и с апгрейдами) по ВСЕМУ диапазону 1→200 уровня героя (правило 3 CLAUDE.md) и на каждой
+      строке сравнивает DPS героя с тем, что предсказывает кривая живучесть→DPS остальных героев
+      на этой же строке (регрессия leave-one-out — герой не участвует в построении своей же
+      кривой). «Δ» — среднее отклонение факта от этой кривой по всему диапазону и отдельно в
+      хвосте (герой-уровень ~190-200, правило 3). Сигнал «⚠» — когда отклонение в одну сторону
+      держится на большинстве строк диапазона, а не на паре выбросов (правило 6). Это ПОДСКАЗКА
+      для дальнейшего разбора по правилам 1-9, а не готовый вывод — окончательное решение о
+      несправедливости требует ещё вручную применить правило 8 (идеальный отыгрыш симуляции) и
+      правило 5 (особенности героя) к каждому сигналу.
+    </p>
+    <div class="table-scroll"><table id="balanceAnalyticsTable"></table></div>
+    <div id="balanceAnalyticsSummary" style="margin-top: 12px; font-size: 12.5px; line-height: 1.7; color: var(--muted);"></div>
   </div>
 
   <footer>
@@ -229,8 +245,6 @@ const DEFAULT_UPGRADE_CHOICES = 4;
 // не разваливается ли баланс на чистой перекачке (без апгрейдов, только постоянные статы).
 const OVERGRIND_CAMPAIGN_LEVEL = CAMPAIGN_FINAL_LEVEL;
 const OVERGRIND_HERO_LEVELS = [159, 165, 170, 175, 180, 185, 190, 195, 200];
-const OVERGRIND_FIGHTS = 150;
-const OVERGRIND_SURVIVAL_RUNS = 300;
 
 const $ = (id) => document.getElementById(id);
 const logEl = $('log');
@@ -295,6 +309,54 @@ function getLevelBossHpTotal(probe, level, levelData, cache) {
     }
     cache.set(level, total);
     return total;
+}
+
+// То же самое, что getLevelBossHpTotal выше (тот же реальный getBossMaxHealth,
+// тот же порядок enem1..enem5), только НЕ суммирует, а возвращает HP каждого из пяти
+// боссов уровня по отдельности, в порядке boss.bossM (реальный порядок боёв внутри
+// уровня — см. handleBossDeathSequence/bossM.splice в game.js). Нужен для
+// buildBossSegments ниже — оценить, сколько РЕАЛЬНОГО времени займёт бой с КАЖДЫМ
+// боссом по отдельности (а не суммарно), чтобы честно расставить паузы между ними.
+function getPerBossHpList(probe, levelKey, levelData, cache) {
+    const cacheKey = 'list:' + levelKey;
+    if (cache.has(cacheKey)) return cache.get(cacheKey);
+    let list = [];
+    if (levelData && levelData.bossCombatConfig) {
+        const overrides = {
+            lvlNumber: levelData.lvlNumber,
+            bossCombatConfig: levelData.bossCombatConfig,
+            isRegionFinal: !!(levelData.levelCompletionConfig && levelData.levelCompletionConfig.isRegionFinal)
+        };
+        const order = Array.isArray(levelData.bossM) && levelData.bossM.length > 0
+            ? levelData.bossM
+            : ['enem1', 'enem2', 'enem3', 'enem4', 'enem5'];
+        list = order.map((type) => {
+            const fallback = (levelData.ENEMY_TYPES && levelData.ENEMY_TYPES[type] && levelData.ENEMY_TYPES[type].baseHP) || 0;
+            return probe.getBossMaxHealth(type, fallback, overrides);
+        });
+    }
+    cache.set(cacheKey, list);
+    return list;
+}
+
+// Правило 10 CLAUDE.md: finalizeBossDefeatAftermath (game.js) НЕ сбрасывает HP героя
+// между боссами внутри уровня и даёт bossInterval секунд простоя (спавн следующего
+// босса откладывается — timeNextBoss = timeSec2 + bossInterval) без единой входящей
+// атаки, пока герой ждёт следующего босса. Реген тикает и в этот простой — а раньше ни
+// одна модель панели про это не знала вообще (проверял по вашему вопросу про Милу).
+// Считаем РЕАЛЬНУЮ длительность боя с каждым боссом = его HP ÷ DPS героя (тот же DPS,
+// что уже честно посчитан панелью для этой же строки — ничего не выдумываем, берём
+// готовое число) — так пауза встаёт в РЕАЛЬНО подходящий момент таймлайна, а не после
+// произвольного числа ударов. Пауза — после каждого боя, кроме последнего (пятый босс
+// финальный, после него сразу конец уровня, см. finalizeBossDefeatAftermath).
+// Возвращает null, если DPS героя ещё не посчитан/нулевой — вызывающий код просто не
+// передаёт сегменты дальше и living-модель откатывается к прежнему поведению без пауз.
+function buildBossSegments(hpList, bossIntervalSec, heroDps) {
+    if (!(heroDps > 0) || !Array.isArray(hpList) || hpList.length === 0) return null;
+    return hpList.map((hp, index) => ({
+        durationMs: (hp / heroDps) * 1000,
+        pauseAfterMs: index < hpList.length - 1 ? bossIntervalSec * 1000 : 0
+    }));
 }
 
 function waitForEvent(target, eventName, timeoutMs, timeoutMessage) {
@@ -531,8 +593,27 @@ const PROBE_SCRIPT_SOURCE = `
         // намеренно его не начисляет за победу над боссом (см. finalizeBossDefeatAftermath).
         getBossKillUpgradeChoices: function () {
             return typeof BOSS_KILL_UPGRADE_CHOICES === 'number' ? BOSS_KILL_UPGRADE_CHOICES : 1;
+        },
+        // Настоящая applyMilaHeroRegen(deltaTime) из game.js — сама решает, применять ли
+        // что-то (гейт по activeHeroObject.name === 'mila' внутри), панель не дублирует
+        // ни формулу, ни гейт (см. CLAUDE.md, правило 1 и правило 10). Урон одного удара
+        // вычитается тут же вторым шагом — один вызов через границу iframe на удар вместо
+        // двух, это не игровая логика, а такое же прямое вычитание, что раньше делалось
+        // в SurvivalEngine.simulateRun локальной переменной.
+        applyHeroRegen: function (deltaTimeMs, damageTaken) {
+            applyMilaHeroRegen(deltaTimeMs);
+            heroHP.current = Math.max(0, heroHP.current - (damageTaken || 0));
+            return heroHP.current;
         }
     };
+    // Настоящий gameLoop (game.js) тикает по requestAnimationFrame с РЕАЛЬНЫМ временем
+    // кадра браузера (rAF-таймстамп не идёт через наш performance.now/Date.now выше) и
+    // сам, в фоне, вызывает applyMilaHeroRegen(realDeltaTime) каждый кадр — если не
+    // остановить его здесь, он будет незаметно тикать реген Милы по настоящим секундам
+    // параллельно с любой нашей контролируемой симуляцией (DPS и особенно живучесть,
+    // которая теперь тоже трогает heroHP.current). isGamePaused просто останавливает
+    // gameLoop до выхода из своего же early return — ни на что другое не влияет.
+    try { isGamePaused = true; } catch (e) {}
     window.__probeReady = true;
 })();
 `;
@@ -685,7 +766,10 @@ const CombatEngine = {
             dpsValues.push(this.simulateFight(probe, heroStats, options).dps);
             // Каждый бой — тысячи синхронных вызовов через границу iframe; без точки
             // возврата в event loop вкладка выглядит подвисшей на весь батч сразу.
-            if (i % 20 === 19) await new Promise((resolve) => setTimeout(resolve, 0));
+            // Батч побольше (50 вместо 20) — меньше yield'ов на тот же объём боёв: браузер
+            // клэмпит setTimeout(0) до ~4мс, и на сотнях точек по всем героям это давало
+            // заметные накладные расходы без пользы для качества/размера выборки.
+            if (i % 50 === 49) await new Promise((resolve) => setTimeout(resolve, 0));
         }
         dpsValues.sort((a, b) => a - b);
         const sum = dpsValues.reduce((total, value) => total + value, 0);
@@ -710,7 +794,7 @@ const SurvivalEngine = {
         // levelCompletionConfig объявлен только у части уровней (финалы регионов) —
         // typeof-проверка внутри той же строки, чтобы не падать ReferenceError на
         // обычных уровнях, где его в gameDataN.js вообще нет.
-        const factory = new Function(`${source}\nreturn { lvlNumber: lvlNumber, bossCombatConfig: bossCombatConfig, ENEMY_TYPES: ENEMY_TYPES, bossM: bossM, bossAbilities: bossAbilities, bossAbilitiesDop: bossAbilitiesDop, levelCompletionConfig: (typeof levelCompletionConfig !== 'undefined' ? levelCompletionConfig : null) };`);
+        const factory = new Function(`${source}\nreturn { lvlNumber: lvlNumber, bossCombatConfig: bossCombatConfig, ENEMY_TYPES: ENEMY_TYPES, bossM: bossM, bossAbilities: bossAbilities, bossAbilitiesDop: bossAbilitiesDop, bossInterval: (typeof bossInterval !== 'undefined' ? bossInterval : 5), levelCompletionConfig: (typeof levelCompletionConfig !== 'undefined' ? levelCompletionConfig : null) };`);
         return factory();
     },
 
@@ -745,18 +829,65 @@ const SurvivalEngine = {
     // от одного удара» в scripts/boss-damage-report.js). Принимает ЛЮБОЙ объект героя с
     // полями heroHP/startHeroDamageReduction/defenseCap — используется и для
     // постоянных статов, и для статов, уже прокачанных временными апгрейдами.
-    simulateRun(levelData, hero, maxAttacks, random) {
+    //
+    // probe — опциональный: если передан и у героя реально есть heroRegenPerSecond > 0
+    // (сейчас — только Мила, «Живительная клубника»), между ударами прогоняется НАСТОЯЩАЯ
+    // applyMilaHeroRegen через probe.applyHeroRegen (см. CLAUDE.md, правило 10 — раньше
+    // эта модель вообще не знала о времени между ударами, и реген был структурно невидим).
+    // Время между ударами берём из того же INCOMING_CADENCE_MS, что и DPS-движок
+    // (экспоненциальное распределение вокруг среднего интервала входящих атак).
+    //
+    // bossSegments — опциональный (см. buildBossSegments): если передан, атаки идут не
+    // единым потоком на весь прогон, а нарезаны по реальным боям с каждым из 5 боссов
+    // уровня (durationMs каждого — из его настоящего HP и уже посчитанного DPS героя), с
+    // паузой pauseAfterMs между ними БЕЗ единой атаки — как реальный простой между боссами
+    // в игре (см. buildBossSegments — правило 10). Реген тикает и в паузу тоже. Если герой
+    // дочищает все сегменты, не умерев и не выбрав лимит ударов — уровень пройден целиком,
+    // это тоже «выжил» (Infinity), как и раньше при достижении maxAttacks.
+    simulateRun(levelData, hero, maxAttacks, random, probe, bossSegments) {
         const finalPhase = levelData.bossCombatConfig.phases.reduce(
             (strongest, phase) => (phase.damage > strongest.damage ? phase : strongest)
         );
         const pool = levelData.bossAbilities.filter((attack) => levelData.bossCombatConfig.bosses[attack.boss]);
         if (pool.length === 0) return null;
 
+        const regenRate = Math.max(0, Number(hero.heroRegenPerSecond) || 0);
+        const useRegen = regenRate > 0 && !!probe;
+        const useSegments = useRegen && Array.isArray(bossSegments) && bossSegments.length > 0;
+
         let hp = hero.heroHP;
         const defense = Math.min(hero.defenseCap ?? 0.9, hero.startHeroDamageReduction);
         let worstHitFraction = 0;
 
+        if (useRegen) probe.setCombatState({ heroHP: { max: hero.heroHP, current: hp } });
+
+        let segmentIdx = 0;
+        let segmentElapsedMs = 0;
+        let nextAttackDeltaMs = useSegments ? -Math.log(1 - random()) * INCOMING_CADENCE_MS : 0;
+
         for (let i = 0; i < maxAttacks; i++) {
+            if (useSegments) {
+                const segment = bossSegments[segmentIdx];
+                if (segmentElapsedMs + nextAttackDeltaMs >= segment.durationMs) {
+                    // Этот босс «умирает» раньше, чем прилетел бы следующий удар — герой
+                    // переходит к простою/следующему боссу без этой атаки вообще.
+                    const remaining = segment.durationMs - segmentElapsedMs;
+                    hp = probe.applyHeroRegen(remaining + segment.pauseAfterMs, 0);
+                    segmentIdx++;
+                    if (segmentIdx >= bossSegments.length) {
+                        // Все 5 боссов уровня пройдены в рамках лимита ударов — выжил.
+                        return { hitsToDefeat: Infinity, worstHitFraction, oneShot: false };
+                    }
+                    segmentElapsedMs = 0;
+                    // Пересемплировать заново — экспоненциальное распределение без памяти,
+                    // «донести» остаток ожидания через границу сегмента математически то
+                    // же самое, что и просто кинуть кубик заново для нового босса.
+                    nextAttackDeltaMs = -Math.log(1 - random()) * INCOMING_CADENCE_MS;
+                    i--; // эта итерация не потратила удар — не считаем её как попытку
+                    continue;
+                }
+            }
+
             const attack = pool[Math.floor(random() * pool.length)];
             const profile = levelData.bossCombatConfig.bosses[attack.boss];
             const rawDamage = ProgressionEngine.calculateBossAttackDamage(
@@ -768,14 +899,34 @@ const SurvivalEngine = {
             );
             const taken = Math.floor(rawDamage * (1 - defense));
             worstHitFraction = Math.max(worstHitFraction, taken / hero.heroHP);
-            hp -= taken;
+
+            if (useRegen) {
+                // Время до ЭТОГО удара — реген успевает натикать за него, потом удар
+                // забирает свой урон разом (см. probe.applyHeroRegen в PROBE_SCRIPT_SOURCE).
+                const deltaTime = useSegments ? nextAttackDeltaMs : (-Math.log(1 - random()) * INCOMING_CADENCE_MS);
+                hp = probe.applyHeroRegen(deltaTime, taken);
+            } else {
+                hp -= taken;
+            }
+
             if (hp <= 0) return { hitsToDefeat: i + 1, worstHitFraction, oneShot: i === 0 };
+
+            if (useSegments) {
+                segmentElapsedMs += nextAttackDeltaMs;
+                nextAttackDeltaMs = -Math.log(1 - random()) * INCOMING_CADENCE_MS;
+            }
         }
 
         return { hitsToDefeat: Infinity, worstHitFraction, oneShot: false };
     },
 
-    async simulateHeroAtCampaignLevel(heroKey, campaignLevel, heroLevel, runs) {
+    // dpsMean/bossHpCache — опциональные, нужны только для пауз между боссами (см.
+    // buildBossSegments): dpsMean — уже посчитанный DPS этого героя на этой же строке
+    // отчёта (не пересчитываем заново, берём готовое число — правило 1), bossHpCache —
+    // общий с DPS-движком Map для getLevelBossHpTotal/getPerBossHpList (передаётся из
+    // runAll, там же лежит и суммарный HP боссов для колонки «время прохождения»).
+    // Сегменты строятся ОДИН раз на герой/строку, а не на каждый из runs прогонов.
+    async simulateHeroAtCampaignLevel(heroKey, campaignLevel, heroLevel, runs, probe, dpsMean, bossHpCache) {
         const levelData = await this.loadLevelData(campaignLevel);
         if (!levelData) return null;
         const hero = ProgressionEngine.buildHeroAtLevel(heroKey, heroLevel);
@@ -784,8 +935,15 @@ const SurvivalEngine = {
         let oneShots = 0;
         let worstFractionSeen = 0;
 
+        const regenRate = Math.max(0, Number(hero.heroRegenPerSecond) || 0);
+        let bossSegments = null;
+        if (regenRate > 0 && probe && bossHpCache && dpsMean > 0) {
+            const hpList = getPerBossHpList(probe, campaignLevel, levelData, bossHpCache);
+            bossSegments = buildBossSegments(hpList, levelData.bossInterval, dpsMean);
+        }
+
         for (let i = 0; i < runs; i++) {
-            const outcome = this.simulateRun(levelData, hero, 40, random);
+            const outcome = this.simulateRun(levelData, hero, 40, random, probe, bossSegments);
             if (!outcome) continue;
             hitsSamples.push(outcome.hitsToDefeat);
             if (outcome.oneShot) oneShots++;
@@ -967,6 +1125,7 @@ const RealUpgradeEngine = {
             startSHOT_INTERVAL: state.interval,
             startHeroDamageReduction: state.heroDefense,
             heroHP: state.heroHpMax,
+            heroRegenPerSecond: permanentHero.heroRegenPerSecond,
             defenseCap: ProgressionEngine.api.getHeroDefenseCap(permanentHero),
             minShotInterval: permanentHero.minShotInterval,
             guaranteedCritEvery: permanentHero.guaranteedCritEvery,
@@ -1019,6 +1178,211 @@ const RealUpgradeEngine = {
         return state.heroHpCurrent / (1 - state.heroDefense);
     }
 };
+
+// ==================== АНАЛИТИКА БАЛАНСА (правила 3, 4, 5, 6, 8, 9 CLAUDE.md) ====================
+// Ничего не считает заново — только читает уже посчитанные dpsResults/survivalResults (и
+// апгрейд-варианты) и раскладывает героев по оси живучесть/урон: leave-one-out регрессия
+// ln(DPS) ~ ln(живучесть) по ВСЕМУ диапазону строк (правило 3), а не по чекпоинтам. Порог
+// отклонения и доля «системности» ниже — параметры именно этого статистического слоя, не
+// игровые величины, поэтому не подпадают под правило 1 (никакая формула урона тут не
+// переписана — берутся только уже посчитанные реальным движком числа).
+const BALANCE_DEVIATION_THRESHOLD_PCT = 15;
+const BALANCE_SYSTEMATIC_SHARE = 0.6;
+// «Хвост» диапазона для отдельного взгляда (правило 3 требует отдельно смотреть на
+// герой-уровень ~190-200) — все строки перекачки плюс немного кампании перед ними.
+const BALANCE_TAIL_ROW_COUNT = OVERGRIND_HERO_LEVELS.length + 5;
+
+const BalanceAnalytics = {
+    // Потолок прогона живучести — 40 ударов (см. SurvivalEngine.simulateRun); недостигнутую
+    // гибель ("40+"/Infinity) считаем за 40, как и везде в этой панели (см. allHits в runAll),
+    // чтобы Infinity не ломал логарифм/регрессию. meanField — читать meanHitsToDefeat (с
+    // апгрейдами) вместо medianHitsToDefeat (без апгрейдов) — разные поля разных движков.
+    hitsValue(cell, meanField) {
+        const value = meanField ? cell.meanHitsToDefeat : cell.medianHitsToDefeat;
+        return Number.isFinite(value) ? Math.max(value, 0.5) : 40;
+    },
+
+    // Точки одной строки отчёта: {heroKey, x: ln(живучесть), y: ln(DPS)} для героев, у
+    // которых на этой строке есть и DPS, и живучесть (могло не досчитаться при ручной
+    // остановке прогона — тогда герой просто выпадает из этой строки, не роняет всю функцию).
+    collectRowPoints(heroes, dpsResults, survivalResults, resultKey, meanField) {
+        const points = [];
+        heroes.forEach((h) => {
+            const dpsCell = dpsResults[h.key] && dpsResults[h.key][resultKey];
+            const survCell = survivalResults[h.key] && survivalResults[h.key][resultKey];
+            if (!dpsCell || !survCell || !(dpsCell.mean > 0)) return;
+            const hits = this.hitsValue(survCell, meanField);
+            if (hits <= 0) return;
+            points.push({ heroKey: h.key, x: Math.log(hits), y: Math.log(dpsCell.mean) });
+        });
+        return points;
+    },
+
+    // Обычная МНК-прямая y = a + b*x.
+    fitLine(points) {
+        const n = points.length;
+        if (n < 2) return null;
+        let sx = 0, sy = 0, sxx = 0, sxy = 0;
+        points.forEach((p) => { sx += p.x; sy += p.y; sxx += p.x * p.x; sxy += p.x * p.y; });
+        const denom = n * sxx - sx * sx;
+        if (Math.abs(denom) < 1e-9) return null;
+        const b = (n * sxy - sx * sy) / denom;
+        const a = (sy - b * sx) / n;
+        return { a, b };
+    },
+
+    // Для каждой строки диапазона и каждого героя — leave-one-out: кривую живучесть→DPS
+    // строим по ОСТАЛЬНЫМ героям этой же строки, не по самому герою (иначе герой подтягивает
+    // кривую под себя и отклонение всегда будет казаться маленьким — правило 4). deviationPct
+    // > 0 — герой даёт больше DPS, чем предсказывает его живучесть на этой строке; < 0 — меньше.
+    //
+    // extrapolated — живучесть героя на этой строке выходит ЗА диапазон живучести остальных
+    // (самый хрупкий или самый живучий в ростере на этой строке) — тогда прямая остальных
+    // экстраполируется до него, а не интерполируется, и предсказание менее надёжно (на
+    // синтетическом тесте самый живучий/самый хрупкий герой давал ложные "систематические"
+    // отклонения без единого спланированного перекоса — просто из-за крайнего положения).
+    // Точку НЕ выбрасываем (иначе для героя, который стабильно самый живучий/хрупкий во всём
+    // ростере, аналитика будет молчать по нему всегда — это хуже, чем цифра с оговоркой), но
+    // помечаем — summarizeHero() показывает долю экстраполяции в заметке (правило 9, п.4:
+    // недостоверную цифру нужно явно пометить, а не молча подать как факт).
+    computeDeviations(heroes, dpsResults, survivalResults, rows, meanField) {
+        const deviations = [];
+        rows.forEach((row) => {
+            const points = this.collectRowPoints(heroes, dpsResults, survivalResults, row.resultKey, meanField);
+            if (points.length < 3) return; // нужно минимум 2 "остальных" героя, чтобы построить кривую
+            points.forEach((point) => {
+                const others = points.filter((p) => p.heroKey !== point.heroKey);
+                const otherXs = others.map((p) => p.x);
+                const extrapolated = point.x < Math.min(...otherXs) || point.x > Math.max(...otherXs);
+                const fit = this.fitLine(others);
+                if (!fit) return;
+                const predictedY = fit.a + fit.b * point.x;
+                const deviationPct = (Math.exp(point.y - predictedY) - 1) * 100;
+                deviations.push({ heroKey: point.heroKey, resultKey: row.resultKey, isOvergrind: row.isOvergrind, deviationPct, extrapolated });
+            });
+        });
+        return deviations;
+    },
+
+    // Свод по одному герою: средняя/хвостовая Δ и доля строк, где герой систематически (не
+    // выбросами — правило 6) держится выше/ниже кривой на этом листе, плюс доля строк, где
+    // сравнение было экстраполяцией (герой — крайний по живучести на этой строке, см.
+    // computeDeviations) — чем она выше, тем меньше доверия к цифре.
+    summarizeHero(heroKey, deviations, tailRowCount) {
+        const own = deviations.filter((d) => d.heroKey === heroKey);
+        if (own.length === 0) return null;
+        const tail = own.slice(-tailRowCount);
+        const mean = (list) => list.reduce((s, d) => s + d.deviationPct, 0) / list.length;
+        const shareAbove = own.filter((d) => d.deviationPct > BALANCE_DEVIATION_THRESHOLD_PCT).length / own.length;
+        const shareBelow = own.filter((d) => d.deviationPct < -BALANCE_DEVIATION_THRESHOLD_PCT).length / own.length;
+        const extrapolatedShare = own.filter((d) => d.extrapolated).length / own.length;
+
+        let verdict = 'на кривой';
+        let systematic = null;
+        if (shareAbove >= BALANCE_SYSTEMATIC_SHARE) { verdict = 'систематически выше кривой'; systematic = 'above'; }
+        else if (shareBelow >= BALANCE_SYSTEMATIC_SHARE) { verdict = 'систематически ниже кривой'; systematic = 'below'; }
+        else if (shareAbove > 0.25 || shareBelow > 0.25) { verdict = 'смешанно/частично'; }
+
+        return {
+            rows: own.length,
+            meanDeviationPct: mean(own),
+            tailDeviationPct: tail.length ? mean(tail) : null,
+            shareAbovePct: shareAbove * 100,
+            shareBelowPct: shareBelow * 100,
+            extrapolatedSharePct: extrapolatedShare * 100,
+            verdict,
+            systematic
+        };
+    },
+
+    // Эвристика правила 8: у героя есть тайминг-ОКНО, которое надо ЛОВИТЬ (не просто триггер
+    // по счётчику ударов/RNG/состоянию цели, как гарантированный крит Луки, казино Дуни или
+    // «Лови обратно» Еремея) — единственная такая механика, найденная в коде на этом проекте
+    // (правило 9, п.3) — волна «Дрожащая рука» Тихона (shakeCycleMs). Читает настоящее поле
+    // героя, а не сравнивает по имени/ключу — должно само сработать и на будущих героях с
+    // похожей волновой механикой (правило 10), не завязано на конкретного Тихона.
+    hasTimingWindowMechanic(heroSample) {
+        return Number(heroSample && heroSample.shakeCycleMs) > 0;
+    }
+};
+
+// Строит и рисует таблицу аналитики поверх уже готового снимка результатов (никаких новых
+// боёв/симуляций — см. заголовок секции выше). Отдельная функция, а не метод BalanceAnalytics,
+// потому что работает с DOM ($, buildFullRangeRowDescriptors, ProgressionEngine) — по тому же
+// разделению, что и остальные render*Table в этом файле.
+function renderBalanceAnalyticsTable(snapshot) {
+    const heroes = snapshot.heroes;
+    const rows = buildFullRangeRowDescriptors();
+
+    const devNoUpg = BalanceAnalytics.computeDeviations(heroes, snapshot.dpsResults, snapshot.survivalResults, rows, false);
+    const devUpg = BalanceAnalytics.computeDeviations(heroes, snapshot.dpsUpgradedResults, snapshot.survivalUpgradedResults, rows, true);
+
+    const bodyRows = heroes.map((h) => ({
+        hero: h,
+        // buildHeroAtLevel читает только статичные поля из saveData.js (шаг 3 правила 9) —
+        // ни одного нового боя/прогона живучести, не путать с "не пересчитывать" выше.
+        timingCaveat: BalanceAnalytics.hasTimingWindowMechanic(ProgressionEngine.buildHeroAtLevel(h.key, 1)),
+        noUpg: BalanceAnalytics.summarizeHero(h.key, devNoUpg, BALANCE_TAIL_ROW_COUNT),
+        upg: BalanceAnalytics.summarizeHero(h.key, devUpg, BALANCE_TAIL_ROW_COUNT)
+    }));
+
+    const fmtPct = (v) => (v === null || v === undefined || !Number.isFinite(v)) ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(0)}%`;
+    const verdictBadge = (summary) => {
+        if (!summary) return '<span class="badge">нет данных</span>';
+        if (summary.systematic === 'above') return '<span class="badge badge-warn">⚠ выше кривой</span>';
+        if (summary.systematic === 'below') return '<span class="badge badge-warn">⚠ ниже кривой</span>';
+        if (summary.verdict === 'смешанно/частично') return '<span class="badge badge-caution">смешанно</span>';
+        return '<span class="badge badge-ok">на кривой</span>';
+    };
+
+    const thead = `<thead><tr>
+        <th>Герой</th>
+        <th>Без апгр. — Δ среднее / хвост</th>
+        <th>Без апгр. — сигнал</th>
+        <th>С апгр. — Δ среднее / хвост</th>
+        <th>С апгр. — сигнал</th>
+        <th>Заметка</th>
+    </tr></thead>`;
+
+    const rowsHtml = bodyRows.map(({ hero, noUpg, upg, timingCaveat }) => {
+        const eitherSystematic = (noUpg && noUpg.systematic) || (upg && upg.systematic);
+        const highExtrapolation = (noUpg && noUpg.extrapolatedSharePct > 50) || (upg && upg.extrapolatedSharePct > 50);
+        const notes = [];
+        if (eitherSystematic && timingCaveat) {
+            notes.push('⚠ правило 8: у героя тайминг-механика (нужно ловить фазу волны) — идеальный ' +
+                'отыгрыш симуляции мог завысить DPS относительно реальной игры, где игрок ещё и ' +
+                'уклоняется. Перед выводом о несправедливости — применить правило 8/9 из CLAUDE.md вручную.');
+        } else if (eitherSystematic) {
+            notes.push('Отклонение системное (правило 6) — перед выводом проверить особенности героя ' +
+                '(правило 5) и применить правило 8, прежде чем называть это несправедливостью.');
+        }
+        if (highExtrapolation) {
+            notes.push('Герой чаще всего крайний по живучести в ростере на этом диапазоне — сравнение ' +
+                'на большинстве строк экстраполировано (правило 9, п.4), доверять цифре меньше, чем у остальных.');
+        }
+        const note = notes.join('<br>') || '—';
+        return `<tr>
+            <td class="hero-name">${hero.dispName}</td>
+            <td>${fmtPct(noUpg && noUpg.meanDeviationPct)} / ${fmtPct(noUpg && noUpg.tailDeviationPct)}</td>
+            <td>${verdictBadge(noUpg)}</td>
+            <td>${fmtPct(upg && upg.meanDeviationPct)} / ${fmtPct(upg && upg.tailDeviationPct)}</td>
+            <td>${verdictBadge(upg)}</td>
+            <td style="white-space:normal;max-width:360px;">${note}</td>
+        </tr>`;
+    }).join('');
+
+    $('balanceAnalyticsTable').innerHTML = `${thead}<tbody>${rowsHtml}</tbody>`;
+
+    const flagged = bodyRows.filter(({ noUpg, upg }) => (noUpg && noUpg.systematic) || (upg && upg.systematic));
+    const summaryEl = $('balanceAnalyticsSummary');
+    summaryEl.innerHTML = flagged.length === 0
+        ? `Систематических отклонений от кривой живучесть/урон не найдено ни на одном листе ` +
+          `(порог ±${BALANCE_DEVIATION_THRESHOLD_PCT}%, минимум на ${Math.round(BALANCE_SYSTEMATIC_SHARE * 100)}% строк диапазона).`
+        : `Кандидаты на разбор по правилу 9 (это подсказка, не готовый вывод): ` +
+          flagged.map(({ hero }) => hero.dispName).join(', ') + '.';
+
+    $('balanceAnalyticsPanel').style.display = '';
+}
 
 // ==================== ЭКСПОРТ В EXCEL ====================
 // Отдельный от рендера DOM-таблиц путь: читает те же результатные объекты
@@ -1079,15 +1443,13 @@ const ExcelExport = {
     // Три плоские числовые колонки на героя (mean/p10/p90 или mean/min/max) —
     // так с данными потом можно работать в Excel как с обычной таблицей чисел,
     // без парсинга склеенного текста вида "233 (P10 233 / P90 234)".
-    buildDpsSheet(name, heroes, results, levels, levelKey, includeHeroLevel) {
-        const header = includeHeroLevel ? ['Ур. кампании', 'Ур. героя'] : ['Ур. героя'];
+    buildDpsSheet(name, heroes, results) {
+        const header = ['Ур. кампании', 'Ур. героя'];
         heroes.forEach((h) => header.push(`${h.dispName} DPS`, `${h.dispName} P10`, `${h.dispName} P90`));
-        const rows = levels.map((level) => {
-            const row = includeHeroLevel
-                ? [level, ProgressionEngine.campaignToHeroLevel.get(level) || 1]
-                : [level];
+        const rows = buildFullRangeRowDescriptors().map((rowDesc) => {
+            const row = [rowDesc.campaignLabel, rowDesc.heroLevel];
             heroes.forEach((h) => {
-                const cell = results[h.key] && results[h.key][level];
+                const cell = results[h.key] && results[h.key][rowDesc.resultKey];
                 if (cell) row.push(this.round(cell.mean), this.round(cell.p10), this.round(cell.p90));
                 else row.push('', '', '');
             });
@@ -1102,7 +1464,7 @@ const ExcelExport = {
             `${h.dispName} DPS`, `${h.dispName} мин`, `${h.dispName} макс`,
             `${h.dispName} время прохождения`, `${h.dispName} время прохождения, сек`
         ));
-        const rows = buildUpgradedRowDescriptors().map((rowDesc) => {
+        const rows = buildFullRangeRowDescriptors().map((rowDesc) => {
             const row = [rowDesc.campaignLabel, rowDesc.heroLevel];
             heroes.forEach((h) => {
                 const cell = results[h.key] && results[h.key][rowDesc.resultKey];
@@ -1121,15 +1483,13 @@ const ExcelExport = {
         return { name: 'DPS с апгрейдами', header, rows };
     },
 
-    buildSurvivalSheet(name, heroes, results, levels, includeHeroLevel) {
-        const header = includeHeroLevel ? ['Ур. кампании', 'Ур. героя'] : ['Ур. героя'];
+    buildSurvivalSheet(name, heroes, results) {
+        const header = ['Ур. кампании', 'Ур. героя'];
         heroes.forEach((h) => header.push(`${h.dispName} медиана ударов`, `${h.dispName} худший удар %HP`, `${h.dispName} ваншот %`));
-        const rows = levels.map((level) => {
-            const row = includeHeroLevel
-                ? [level, ProgressionEngine.campaignToHeroLevel.get(level) || 1]
-                : [level];
+        const rows = buildFullRangeRowDescriptors().map((rowDesc) => {
+            const row = [rowDesc.campaignLabel, rowDesc.heroLevel];
             heroes.forEach((h) => {
-                const cell = results[h.key] && results[h.key][level];
+                const cell = results[h.key] && results[h.key][rowDesc.resultKey];
                 if (cell) {
                     row.push(
                         this.hitsLabel(cell.medianHitsToDefeat),
@@ -1148,7 +1508,7 @@ const ExcelExport = {
     buildSurvivalUpgradedSheet(heroes, results) {
         const header = ['Ур. кампании', 'Ур. героя'];
         heroes.forEach((h) => header.push(`${h.dispName} среднее ударов`, `${h.dispName} ваншот %`));
-        const rows = buildUpgradedRowDescriptors().map((rowDesc) => {
+        const rows = buildFullRangeRowDescriptors().map((rowDesc) => {
             const row = [rowDesc.campaignLabel, rowDesc.heroLevel];
             heroes.forEach((h) => {
                 const cell = results[h.key] && results[h.key][rowDesc.resultKey];
@@ -1183,16 +1543,50 @@ const ExcelExport = {
         };
     },
 
+    // Свод BalanceAnalytics (см. секцию «АНАЛИТИКА БАЛАНСА» выше) в виде листа Excel — те же
+    // числа и вердикты, что в панели balanceAnalyticsPanel, чтобы отчёт был самодостаточным и
+    // без браузера (Claude по правилу 2 CLAUDE.md читает именно экспортированный файл).
+    buildBalanceAnalyticsSheet(snapshot) {
+        const heroes = snapshot.heroes;
+        const rows = buildFullRangeRowDescriptors();
+        const devNoUpg = BalanceAnalytics.computeDeviations(heroes, snapshot.dpsResults, snapshot.survivalResults, rows, false);
+        const devUpg = BalanceAnalytics.computeDeviations(heroes, snapshot.dpsUpgradedResults, snapshot.survivalUpgradedResults, rows, true);
+
+        const header = [
+            'Герой',
+            'Без апгр. Δ среднее %', 'Без апгр. Δ хвост %', 'Без апгр. сигнал', 'Без апгр. % строк экстраполировано',
+            'С апгр. Δ среднее %', 'С апгр. Δ хвост %', 'С апгр. сигнал', 'С апгр. % строк экстраполировано',
+            'Тайминг-механика (правило 8)'
+        ];
+        const rowsOut = heroes.map((h) => {
+            const timingCaveat = BalanceAnalytics.hasTimingWindowMechanic(ProgressionEngine.buildHeroAtLevel(h.key, 1));
+            const noUpg = BalanceAnalytics.summarizeHero(h.key, devNoUpg, BALANCE_TAIL_ROW_COUNT);
+            const upg = BalanceAnalytics.summarizeHero(h.key, devUpg, BALANCE_TAIL_ROW_COUNT);
+            return [
+                h.dispName,
+                noUpg ? this.round(noUpg.meanDeviationPct) : '',
+                noUpg ? this.round(noUpg.tailDeviationPct) : '',
+                noUpg ? noUpg.verdict : 'нет данных',
+                noUpg ? this.round(noUpg.extrapolatedSharePct) : '',
+                upg ? this.round(upg.meanDeviationPct) : '',
+                upg ? this.round(upg.tailDeviationPct) : '',
+                upg ? upg.verdict : 'нет данных',
+                upg ? this.round(upg.extrapolatedSharePct) : '',
+                timingCaveat ? 'да — учесть правило 8 перед выводом о несправедливости' : ''
+            ];
+        });
+        return { name: 'Аналитика баланса', header, rows: rowsOut };
+    },
+
     download(snapshot) {
         const heroes = snapshot.heroes;
         const sheets = [
             this.buildSummarySheet(snapshot),
-            this.buildDpsSheet('DPS без апгрейдов', heroes, snapshot.dpsResults, ALL_LEVELS, 'level', true),
-            this.buildSurvivalSheet('Живучесть без апгрейдов', heroes, snapshot.survivalResults, ALL_LEVELS, true),
-            this.buildDpsSheet('Перекачка DPS', heroes, snapshot.overgrindDpsResults, OVERGRIND_HERO_LEVELS, 'heroLevel', false),
-            this.buildSurvivalSheet('Перекачка живучесть', heroes, snapshot.overgrindSurvivalResults, OVERGRIND_HERO_LEVELS, false),
+            this.buildDpsSheet('DPS без апгрейдов', heroes, snapshot.dpsResults),
+            this.buildSurvivalSheet('Живучесть без апгрейдов', heroes, snapshot.survivalResults),
             this.buildDpsUpgradedSheet(heroes, snapshot.dpsUpgradedResults),
-            this.buildSurvivalUpgradedSheet(heroes, snapshot.survivalUpgradedResults)
+            this.buildSurvivalUpgradedSheet(heroes, snapshot.survivalUpgradedResults),
+            this.buildBalanceAnalyticsSheet(snapshot)
         ];
         const xml = this.buildWorkbook(sheets);
         const blob = new Blob([xml], { type: 'application/vnd.ms-excel' });
@@ -1220,15 +1614,16 @@ function isRegionFinalLevel(level) {
 function renderDpsTable(heroes, results) {
     const table = $('dpsTable');
     const thead = `<thead><tr><th>Ур. кампании</th><th>Ур. героя</th>${heroes.map((h) => `<th>${h.dispName}</th>`).join('')}</tr></thead>`;
-    const rows = ALL_LEVELS.map((level) => {
-        const heroLevel = ProgressionEngine.campaignToHeroLevel.get(level) || 1;
+    const rows = buildFullRangeRowDescriptors().map((row) => {
         const cells = heroes.map((h) => {
-            const cell = results[h.key] && results[h.key][level];
+            const cell = results[h.key] && results[h.key][row.resultKey];
             if (!cell) return '<td>—</td>';
             return `<td>${Math.round(cell.mean)} <span style="color:var(--muted);font-size:11px;">(P10 ${Math.round(cell.p10)} / P90 ${Math.round(cell.p90)})</span></td>`;
         }).join('');
-        const rowCls = isRegionFinalLevel(level) ? ' class="region-final"' : '';
-        return `<tr${rowCls}><td>${level}</td><td>${heroLevel}</td>${cells}</tr>`;
+        const rowCls = row.isOvergrind
+            ? ' class="overgrind-row"'
+            : (isRegionFinalLevel(row.resultKey) ? ' class="region-final"' : '');
+        return `<tr${rowCls}><td>${row.campaignLabel}</td><td>${row.heroLevel}</td>${cells}</tr>`;
     }).join('');
     table.innerHTML = `${thead}<tbody>${rows}</tbody>`;
     $('dpsPanel').style.display = '';
@@ -1237,65 +1632,32 @@ function renderDpsTable(heroes, results) {
 function renderSurvivalTable(heroes, results) {
     const table = $('survivalTable');
     const thead = `<thead><tr><th>Ур. кампании</th><th>Ур. героя</th>${heroes.map((h) => `<th>${h.dispName}</th>`).join('')}</tr></thead>`;
-    const rows = ALL_LEVELS.map((level) => {
-        const heroLevel = ProgressionEngine.campaignToHeroLevel.get(level) || 1;
+    const rows = buildFullRangeRowDescriptors().map((row) => {
         const cells = heroes.map((h) => {
-            const cell = results[h.key] && results[h.key][level];
+            const cell = results[h.key] && results[h.key][row.resultKey];
             if (!cell) return '<td>—</td>';
             const oneShotPct = (cell.oneShotRate * 100).toFixed(1);
             const cls = cell.oneShotRate > 0 ? 'num-bad' : 'num-good';
             const hitsLabel = Number.isFinite(cell.medianHitsToDefeat) ? cell.medianHitsToDefeat : '40+';
             return `<td>${hitsLabel} уд. до гибели (медиана) · худший удар ${(cell.worstSingleHitFraction * 100).toFixed(0)}% HP · <span class="${cls}">ваншот ${oneShotPct}%</span></td>`;
         }).join('');
-        const rowCls = isRegionFinalLevel(level) ? ' class="region-final"' : '';
-        return `<tr${rowCls}><td>${level}</td><td>${heroLevel}</td>${cells}</tr>`;
+        const rowCls = row.isOvergrind
+            ? ' class="overgrind-row"'
+            : (isRegionFinalLevel(row.resultKey) ? ' class="region-final"' : '');
+        return `<tr${rowCls}><td>${row.campaignLabel}</td><td>${row.heroLevel}</td>${cells}</tr>`;
     }).join('');
     table.innerHTML = `${thead}<tbody>${rows}</tbody>`;
     $('survivalPanel').style.display = '';
 }
 
-function renderOvergrindDpsTable(heroes, results) {
-    const table = $('overgrindDpsTable');
-    const thead = `<thead><tr><th>Ур. героя</th>${heroes.map((h) => `<th>${h.dispName}</th>`).join('')}</tr></thead>`;
-    const rows = OVERGRIND_HERO_LEVELS.map((heroLevel) => {
-        const cells = heroes.map((h) => {
-            const cell = results[h.key] && results[h.key][heroLevel];
-            if (!cell) return '<td>—</td>';
-            return `<td>${Math.round(cell.mean)} <span style="color:var(--muted);font-size:11px;">(P10 ${Math.round(cell.p10)} / P90 ${Math.round(cell.p90)})</span></td>`;
-        }).join('');
-        return `<tr><td>${heroLevel}</td>${cells}</tr>`;
-    }).join('');
-    table.innerHTML = `${thead}<tbody>${rows}</tbody>`;
-    $('overgrindDpsPanel').style.display = '';
-}
-
-function renderOvergrindSurvivalTable(heroes, results) {
-    const table = $('overgrindSurvivalTable');
-    const thead = `<thead><tr><th>Ур. героя</th>${heroes.map((h) => `<th>${h.dispName}</th>`).join('')}</tr></thead>`;
-    const rows = OVERGRIND_HERO_LEVELS.map((heroLevel) => {
-        const cells = heroes.map((h) => {
-            const cell = results[h.key] && results[h.key][heroLevel];
-            if (!cell) return '<td>—</td>';
-            const oneShotPct = (cell.oneShotRate * 100).toFixed(1);
-            const cls = cell.oneShotRate > 0 ? 'num-bad' : 'num-good';
-            const hitsLabel = Number.isFinite(cell.medianHitsToDefeat) ? cell.medianHitsToDefeat : '40+';
-            return `<td>${hitsLabel} уд. до гибели (медиана) · худший удар ${(cell.worstSingleHitFraction * 100).toFixed(0)}% HP · <span class="${cls}">ваншот ${oneShotPct}%</span></td>`;
-        }).join('');
-        return `<tr><td>${heroLevel}</td>${cells}</tr>`;
-    }).join('');
-    table.innerHTML = `${thead}<tbody>${rows}</tbody>`;
-    $('overgrindSurvivalPanel').style.display = '';
-}
-
-// Общий список строк для таблиц/экспорта «с апгрейдами» (по решению пользователя):
-// сначала все уровни кампании 1..141 (герой растёт по экономике злата), а дальше та же
-// самая таблица ПРОДОЛЖАЕТСЯ — тот же уровень 141 «фармится» против героя, прокачанного
-// руками сверх кампании до 200 (см. OVERGRIND_HERO_LEVELS) — тот же принцип, что и у
-// перекачки без апгрейдов (renderOvergrindDpsTable), но одной непрерывной таблицей, а
-// не отдельной панелью. resultKey — ключ в results[hero.key][...]: номер уровня кампании
-// для обычных строк, номер уровня героя для строк-продолжения (диапазоны не пересекаются
-// — кампания только до 141, продолжение начинается с 159).
-function buildUpgradedRowDescriptors() {
+// Общий список строк для ВСЕХ таблиц/экспортов панели (без апгрейдов и с апгрейдами
+// одинаково): сначала все уровни кампании 1..141 (герой растёт по экономике злата), а
+// дальше та же самая таблица ПРОДОЛЖАЕТСЯ — тот же уровень 141 «фармится» против героя,
+// прокачанного руками сверх кампании до 200 (см. OVERGRIND_HERO_LEVELS) — одной
+// непрерывной таблицей, а не отдельной панелью. resultKey — ключ в results[hero.key][...]:
+// номер уровня кампании для обычных строк, номер уровня героя для строк-продолжения
+// (диапазоны не пересекаются — кампания только до 141, продолжение начинается с 159).
+function buildFullRangeRowDescriptors() {
     const normalRows = ALL_LEVELS.map((level) => ({
         resultKey: level,
         campaignLabel: String(level),
@@ -1314,7 +1676,7 @@ function buildUpgradedRowDescriptors() {
 function renderDpsUpgradedTable(heroes, results) {
     const table = $('dpsUpgradedTable');
     const thead = `<thead><tr><th>Ур. кампании</th><th>Ур. героя</th>${heroes.map((h) => `<th>${h.dispName}</th>`).join('')}</tr></thead>`;
-    const rows = buildUpgradedRowDescriptors().map((row) => {
+    const rows = buildFullRangeRowDescriptors().map((row) => {
         const cells = heroes.map((h) => {
             const cell = results[h.key] && results[h.key][row.resultKey];
             if (!cell) return '<td>—</td>';
@@ -1335,7 +1697,7 @@ function renderDpsUpgradedTable(heroes, results) {
 function renderSurvivalUpgradedTable(heroes, results) {
     const table = $('survivalUpgradedTable');
     const thead = `<thead><tr><th>Ур. кампании</th><th>Ур. героя</th>${heroes.map((h) => `<th>${h.dispName}</th>`).join('')}</tr></thead>`;
-    const rows = buildUpgradedRowDescriptors().map((row) => {
+    const rows = buildFullRangeRowDescriptors().map((row) => {
         const cells = heroes.map((h) => {
             const cell = results[h.key] && results[h.key][row.resultKey];
             if (!cell) return '<td>—</td>';
@@ -1355,7 +1717,10 @@ function renderSurvivalUpgradedTable(heroes, results) {
 // Один заход: полная прокачка временными апгрейдами (по стратегии этого захода), затем
 // настоящий бой (несколько боёв — усредняются) и настоящая живучесть (несколько
 // прогонов) на итоговых статах. Возвращает { dps, hitsSamples, oneShot }.
-async function runOneUpgradedAttempt(probe, permanentHero, levelData, strategy, random) {
+// bossHpLevelKey/bossHpCache — опциональные, те же, что и в SurvivalEngine.
+// simulateHeroAtCampaignLevel (см. комментарий там) — нужны только для пауз между
+// боссами; dps этого захода уже посчитан прямо здесь (dpsAgg.mean), заново не считаем.
+async function runOneUpgradedAttempt(probe, permanentHero, levelData, strategy, random, bossHpLevelKey, bossHpCache) {
     const finalState = RealUpgradeEngine.simulateUpgradeRun(probe, permanentHero, levelData, strategy, random);
     const heroShape = RealUpgradeEngine.toHeroShape(finalState, permanentHero);
 
@@ -1369,8 +1734,14 @@ async function runOneUpgradedAttempt(probe, permanentHero, levelData, strategy, 
     const hitsSamples = [];
     let oneShots = 0;
     if (levelData) {
+        const regenRate = Math.max(0, Number(heroShape.heroRegenPerSecond) || 0);
+        let bossSegments = null;
+        if (regenRate > 0 && probe && bossHpCache && dpsAgg.mean > 0) {
+            const hpList = getPerBossHpList(probe, bossHpLevelKey, levelData, bossHpCache);
+            bossSegments = buildBossSegments(hpList, levelData.bossInterval, dpsAgg.mean);
+        }
         for (let i = 0; i < SURVIVAL_RUNS_PER_ATTEMPT; i++) {
-            const outcome = SurvivalEngine.simulateRun(levelData, heroShape, 40, random);
+            const outcome = SurvivalEngine.simulateRun(levelData, heroShape, 40, random, probe, bossSegments);
             if (!outcome) continue;
             hitsSamples.push(outcome.hitsToDefeat);
             if (outcome.oneShot) oneShots++;
@@ -1389,10 +1760,9 @@ async function runAll() {
     logEl.innerHTML = '';
     $('dpsPanel').style.display = 'none';
     $('survivalPanel').style.display = 'none';
-    $('overgrindDpsPanel').style.display = 'none';
-    $('overgrindSurvivalPanel').style.display = 'none';
     $('dpsUpgradedPanel').style.display = 'none';
     $('survivalUpgradedPanel').style.display = 'none';
+    $('balanceAnalyticsPanel').style.display = 'none';
     $('attemptsLabel1').textContent = ATTEMPTS_PER_LEVEL;
 
     try {
@@ -1418,19 +1788,17 @@ async function runAll() {
 
         const dpsResults = {};
         const survivalResults = {};
-        const overgrindDpsResults = {};
-        const overgrindSurvivalResults = {};
         // HP боссов уровня не зависит от героя — считаем один раз на уровень и
         // переиспользуем для всех героев, а не пересчитываем в каждой итерации.
         const levelBossHpCache = new Map();
         const dpsUpgradedResults = {};
         const survivalUpgradedResults = {};
-        const totalSteps = heroes.length * ALL_LEVELS.length * (survivalOnly ? 1 : 3)
-            + heroes.length * OVERGRIND_HERO_LEVELS.length * (survivalOnly ? 1 : 2)
-            // Продолжение таблицы «с апгрейдами» на уровне 141 до 200 уровня героя (см.
-            // buildUpgradedRowDescriptors) — один шаг на heroLevel, как и у обычных
-            // уровней кампании в цикле ниже, и только когда апгрейды вообще считаются.
-            + heroes.length * OVERGRIND_HERO_LEVELS.length * (survivalOnly ? 0 : 1);
+        // Единый список строк 1..200 (кампания + перекачка, см. buildFullRangeRowDescriptors)
+        // переиспользуется для ВСЕХ четырёх проходов на героя — раньше здесь было 5
+        // отдельных циклов (DPS, живучесть, перекачка DPS+живучесть вместе, с апгрейдами,
+        // с апгрейдами перекачка), из которых 3 совпадали по набору строк почти дословно.
+        const fullRangeRows = buildFullRangeRowDescriptors();
+        const totalSteps = heroes.length * fullRangeRows.length * (survivalOnly ? 1 : 3);
         let doneSteps = 0;
         setProgress(0, totalSteps);
 
@@ -1442,78 +1810,65 @@ async function runAll() {
                 dpsResults[hero.key] = {};
                 log(`— ${hero.dispName}: загружаю боевой движок...`, 'log-dim');
                 probe = await CombatEngine.loadHero(hero.key);
-                log(`— ${hero.dispName}: боевой движок готов, симулирую DPS без улучшений на всех уровнях.`, 'log-ok');
+                log(`— ${hero.dispName}: боевой движок готов, симулирую DPS без улучшений (1→200 уровень героя).`, 'log-ok');
 
-                for (const level of ALL_LEVELS) {
+                for (const row of fullRangeRows) {
                     if (stopRequested) break;
-                    const heroLevel = ProgressionEngine.campaignToHeroLevel.get(level) || 1;
-                    const heroStats = ProgressionEngine.buildHeroAtLevel(hero.key, heroLevel);
+                    const heroStats = ProgressionEngine.buildHeroAtLevel(hero.key, row.heroLevel);
                     const agg = await CombatEngine.simulateManyFights(
                         probe,
                         heroStats,
                         { bossHp: BOSS_HP_FOR_DPS_FIGHT, incomingCadenceMs: INCOMING_CADENCE_MS, maxHits: 4000 },
                         FIGHTS_PER_LEVEL
                     );
-                    dpsResults[hero.key][level] = agg;
+                    dpsResults[hero.key][row.resultKey] = agg;
                     doneSteps++;
-                    if (level % 15 === 0 || level === 1 || level === CAMPAIGN_FINAL_LEVEL) {
+                    if (row.isOvergrind || row.resultKey % 15 === 0 || row.resultKey === 1) {
                         setProgress(doneSteps, totalSteps);
-                        log(`   уровень кампании ${level} (герой ур. ${heroLevel}): DPS ≈ ${Math.round(agg.mean)}`, 'log-dim');
+                        log(`   ${row.campaignLabel} (герой ур. ${row.heroLevel}): DPS ≈ ${Math.round(agg.mean)}`, 'log-dim');
                     }
                 }
                 renderDpsTable(heroes, dpsResults);
-                log(`— ${hero.dispName}: DPS без улучшений посчитан на всех уровнях.`, 'log-ok');
+                log(`— ${hero.dispName}: DPS без улучшений посчитан (1→200 уровень героя).`, 'log-ok');
             }
 
             survivalResults[hero.key] = {};
-            for (const level of ALL_LEVELS) {
-                if (stopRequested) break;
-                const heroLevel = ProgressionEngine.campaignToHeroLevel.get(level) || 1;
-                const survival = await SurvivalEngine.simulateHeroAtCampaignLevel(
-                    hero.key, level, heroLevel, SURVIVAL_RUNS_PER_LEVEL
-                );
-                if (survival) survivalResults[hero.key][level] = survival;
-                doneSteps++;
-                if (level % 15 === 0) setProgress(doneSteps, totalSteps);
-            }
-            setProgress(doneSteps, totalSteps);
-            renderSurvivalTable(heroes, survivalResults);
-            log(`— ${hero.dispName}: живучесть без улучшений посчитана на всех уровнях.`, 'log-ok');
-
-            overgrindDpsResults[hero.key] = {};
-            overgrindSurvivalResults[hero.key] = {};
             const overgrindLevelData = await SurvivalEngine.loadLevelData(OVERGRIND_CAMPAIGN_LEVEL);
-            for (const heroLevel of OVERGRIND_HERO_LEVELS) {
+            for (const row of fullRangeRows) {
                 if (stopRequested) break;
-                const heroStats = ProgressionEngine.buildHeroAtLevel(hero.key, heroLevel);
-
-                if (!survivalOnly && probe) {
-                    const agg = await CombatEngine.simulateManyFights(
-                        probe,
-                        heroStats,
-                        { bossHp: BOSS_HP_FOR_DPS_FIGHT, incomingCadenceMs: INCOMING_CADENCE_MS, maxHits: 4000 },
-                        OVERGRIND_FIGHTS
+                if (!row.isOvergrind) {
+                    const dpsMean = dpsResults[hero.key] && dpsResults[hero.key][row.resultKey]
+                        ? dpsResults[hero.key][row.resultKey].mean
+                        : undefined;
+                    const survival = await SurvivalEngine.simulateHeroAtCampaignLevel(
+                        hero.key, row.resultKey, row.heroLevel, SURVIVAL_RUNS_PER_LEVEL, probe, dpsMean, levelBossHpCache
                     );
-                    overgrindDpsResults[hero.key][heroLevel] = agg;
-                    doneSteps++;
-                }
-
-                if (overgrindLevelData) {
-                    const random = mulberry32(hashSeed(hero.key, OVERGRIND_CAMPAIGN_LEVEL * 1000 + heroLevel));
+                    if (survival) survivalResults[hero.key][row.resultKey] = survival;
+                } else if (overgrindLevelData) {
+                    const heroStats = ProgressionEngine.buildHeroAtLevel(hero.key, row.heroLevel);
+                    const random = mulberry32(hashSeed(hero.key, OVERGRIND_CAMPAIGN_LEVEL * 1000 + row.heroLevel));
+                    const regenRateOG = Math.max(0, Number(heroStats.heroRegenPerSecond) || 0);
+                    const dpsMeanOG = dpsResults[hero.key] && dpsResults[hero.key][row.resultKey]
+                        ? dpsResults[hero.key][row.resultKey].mean
+                        : undefined;
+                    let bossSegmentsOG = null;
+                    if (regenRateOG > 0 && probe && dpsMeanOG > 0) {
+                        const hpListOG = getPerBossHpList(probe, OVERGRIND_CAMPAIGN_LEVEL, overgrindLevelData, levelBossHpCache);
+                        bossSegmentsOG = buildBossSegments(hpListOG, overgrindLevelData.bossInterval, dpsMeanOG);
+                    }
                     const hitsSamples = [];
                     let oneShots = 0;
                     let worstFractionSeen = 0;
-                    for (let i = 0; i < OVERGRIND_SURVIVAL_RUNS; i++) {
-                        const outcome = SurvivalEngine.simulateRun(overgrindLevelData, heroStats, 40, random);
+                    for (let i = 0; i < SURVIVAL_RUNS_PER_LEVEL; i++) {
+                        const outcome = SurvivalEngine.simulateRun(overgrindLevelData, heroStats, 40, random, probe, bossSegmentsOG);
                         if (!outcome) continue;
                         hitsSamples.push(outcome.hitsToDefeat);
                         if (outcome.oneShot) oneShots++;
                         worstFractionSeen = Math.max(worstFractionSeen, outcome.worstHitFraction);
-                        if (i % 500 === 499) await new Promise((resolve) => setTimeout(resolve, 0));
                     }
                     if (hitsSamples.length > 0) {
                         hitsSamples.sort((a, b) => a - b);
-                        overgrindSurvivalResults[hero.key][heroLevel] = {
+                        survivalResults[hero.key][row.resultKey] = {
                             medianHitsToDefeat: hitsSamples[Math.floor(hitsSamples.length / 2)],
                             oneShotRate: oneShots / hitsSamples.length,
                             worstSingleHitFraction: worstFractionSeen
@@ -1521,22 +1876,24 @@ async function runAll() {
                     }
                 }
                 doneSteps++;
-                setProgress(doneSteps, totalSteps);
+                if (row.isOvergrind || row.resultKey % 15 === 0) setProgress(doneSteps, totalSteps);
             }
-            renderOvergrindDpsTable(heroes, overgrindDpsResults);
-            renderOvergrindSurvivalTable(heroes, overgrindSurvivalResults);
-            log(`— ${hero.dispName}: перекачка сверх кампании (уровень ${OVERGRIND_CAMPAIGN_LEVEL} против героя 159→200) посчитана.`, 'log-ok');
+            setProgress(doneSteps, totalSteps);
+            renderSurvivalTable(heroes, survivalResults);
+            log(`— ${hero.dispName}: живучесть без улучшений посчитана (1→200 уровень героя).`, 'log-ok');
 
             if (!survivalOnly) {
                 dpsUpgradedResults[hero.key] = {};
                 survivalUpgradedResults[hero.key] = {};
-                log(`— ${hero.dispName}: усредняю ${ATTEMPTS_PER_LEVEL} заходов с временными улучшениями на каждом уровне.`, 'log-dim');
+                log(`— ${hero.dispName}: усредняю ${ATTEMPTS_PER_LEVEL} заходов с временными улучшениями (1→200 уровень героя).`, 'log-dim');
 
-                for (const level of ALL_LEVELS) {
+                for (const row of fullRangeRows) {
                     if (stopRequested) break;
-                    const heroLevel = ProgressionEngine.campaignToHeroLevel.get(level) || 1;
-                    const permanentHero = ProgressionEngine.buildHeroAtLevel(hero.key, heroLevel);
-                    const levelData = await SurvivalEngine.loadLevelData(level);
+                    const permanentHero = ProgressionEngine.buildHeroAtLevel(hero.key, row.heroLevel);
+                    const levelData = row.isOvergrind
+                        ? overgrindLevelData
+                        : await SurvivalEngine.loadLevelData(row.resultKey);
+                    const bossHpLevelKey = row.isOvergrind ? OVERGRIND_CAMPAIGN_LEVEL : row.resultKey;
 
                     const dpsSamples = [];
                     const allHits = [];
@@ -1545,8 +1902,9 @@ async function runAll() {
 
                     for (let attempt = 0; attempt < ATTEMPTS_PER_LEVEL; attempt++) {
                         const strategy = STRATEGIES[attempt % STRATEGIES.length];
-                        const random = mulberry32(hashSeed(`${hero.key}:${strategy}`, level * 1000 + attempt));
-                        const result = await runOneUpgradedAttempt(probe, permanentHero, levelData, strategy, random);
+                        const seedKey = row.isOvergrind ? `${hero.key}:${strategy}:overgrind` : `${hero.key}:${strategy}`;
+                        const random = mulberry32(hashSeed(seedKey, row.resultKey * 1000 + attempt));
+                        const result = await runOneUpgradedAttempt(probe, permanentHero, levelData, strategy, random, bossHpLevelKey, levelBossHpCache);
                         dpsSamples.push(result.dps);
                         for (const hits of result.hitsSamples) {
                             // 40+ (потолок прогона) считаем за 40 при усреднении — как "40+" в
@@ -1555,12 +1913,16 @@ async function runAll() {
                         }
                         oneShotAttempts += result.oneShots;
                         totalRuns += result.hitsSamples.length;
-                        await new Promise((resolve) => setTimeout(resolve, 0));
                     }
+                    // Один yield на строку вместо одного на каждый из ATTEMPTS_PER_LEVEL
+                    // заходов — тот же общий объём боевых вызовов, просто реже отдаём
+                    // управление event loop'у (браузер клэмпит setTimeout(0) до ~4мс, так
+                    // что раньше это давало заметные накладные расходы без пользы для качества).
+                    await new Promise((resolve) => setTimeout(resolve, 0));
 
                     const meanDps = average(dpsSamples);
-                    const levelBossHpTotal = getLevelBossHpTotal(probe, level, levelData, levelBossHpCache);
-                    dpsUpgradedResults[hero.key][level] = {
+                    const levelBossHpTotal = getLevelBossHpTotal(probe, bossHpLevelKey, levelData, levelBossHpCache);
+                    dpsUpgradedResults[hero.key][row.resultKey] = {
                         mean: meanDps,
                         min: Math.min(...dpsSamples),
                         max: Math.max(...dpsSamples),
@@ -1568,69 +1930,19 @@ async function runAll() {
                         avgLevelSeconds: meanDps > 0 ? levelBossHpTotal / meanDps : null
                     };
                     if (allHits.length > 0) {
-                        survivalUpgradedResults[hero.key][level] = {
+                        survivalUpgradedResults[hero.key][row.resultKey] = {
                             meanHitsToDefeat: average(allHits),
                             oneShotRate: totalRuns > 0 ? oneShotAttempts / totalRuns : 0
                         };
                     }
 
                     doneSteps++;
-                    if (level % 15 === 0 || level === 1 || level === CAMPAIGN_FINAL_LEVEL) {
+                    if (row.isOvergrind || row.resultKey % 15 === 0 || row.resultKey === 1) {
                         setProgress(doneSteps, totalSteps);
-                        const cell = dpsUpgradedResults[hero.key][level];
-                        log(`   уровень кампании ${level}: DPS с улучшениями ≈ ${Math.round(cell.mean)} (было бы ${Math.round((dpsResults[hero.key][level] || { mean: 0 }).mean)} без них)`, 'log-dim');
+                        const cell = dpsUpgradedResults[hero.key][row.resultKey];
+                        log(`   ${row.campaignLabel}: DPS с улучшениями ≈ ${Math.round(cell.mean)} (было бы ${Math.round((dpsResults[hero.key][row.resultKey] || { mean: 0 }).mean)} без них)`, 'log-dim');
                     }
                 }
-
-                // Продолжение той же таблицы «с апгрейдами» сверх кампании (по решению
-                // пользователя): тот же уровень 141 фармится дальше против героя,
-                // прокачанного руками до 200 (см. OVERGRIND_HERO_LEVELS/
-                // buildUpgradedRowDescriptors) — тот же принцип, что и обычная перекачка
-                // без апгрейдов чуть выше, просто строки дописываются в тот же results-
-                // объект под ключом heroLevel, а не отдельной панелью.
-                log(`— ${hero.dispName}: продолжаю с апгрейдами перекачку уровня ${OVERGRIND_CAMPAIGN_LEVEL} до 200 уровня героя.`, 'log-dim');
-                for (const heroLevel of OVERGRIND_HERO_LEVELS) {
-                    if (stopRequested) break;
-                    const permanentHero = ProgressionEngine.buildHeroAtLevel(hero.key, heroLevel);
-
-                    const dpsSamples = [];
-                    const allHits = [];
-                    let oneShotAttempts = 0;
-                    let totalRuns = 0;
-
-                    for (let attempt = 0; attempt < ATTEMPTS_PER_LEVEL; attempt++) {
-                        const strategy = STRATEGIES[attempt % STRATEGIES.length];
-                        const random = mulberry32(hashSeed(`${hero.key}:${strategy}:overgrind`, heroLevel * 1000 + attempt));
-                        const result = await runOneUpgradedAttempt(probe, permanentHero, overgrindLevelData, strategy, random);
-                        dpsSamples.push(result.dps);
-                        for (const hits of result.hitsSamples) {
-                            allHits.push(Number.isFinite(hits) ? hits : 40);
-                        }
-                        oneShotAttempts += result.oneShots;
-                        totalRuns += result.hitsSamples.length;
-                        await new Promise((resolve) => setTimeout(resolve, 0));
-                    }
-
-                    const meanDps = average(dpsSamples);
-                    const levelBossHpTotal = getLevelBossHpTotal(probe, OVERGRIND_CAMPAIGN_LEVEL, overgrindLevelData, levelBossHpCache);
-                    dpsUpgradedResults[hero.key][heroLevel] = {
-                        mean: meanDps,
-                        min: Math.min(...dpsSamples),
-                        max: Math.max(...dpsSamples),
-                        levelBossHpTotal,
-                        avgLevelSeconds: meanDps > 0 ? levelBossHpTotal / meanDps : null
-                    };
-                    if (allHits.length > 0) {
-                        survivalUpgradedResults[hero.key][heroLevel] = {
-                            meanHitsToDefeat: average(allHits),
-                            oneShotRate: totalRuns > 0 ? oneShotAttempts / totalRuns : 0
-                        };
-                    }
-
-                    doneSteps++;
-                    setProgress(doneSteps, totalSteps);
-                }
-                log(`— ${hero.dispName}: перекачка с апгрейдами (уровень ${OVERGRIND_CAMPAIGN_LEVEL} против героя 159→200) посчитана.`, 'log-dim');
 
                 renderDpsUpgradedTable(heroes, dpsUpgradedResults);
                 renderSurvivalUpgradedTable(heroes, survivalUpgradedResults);
@@ -1645,9 +1957,12 @@ async function runAll() {
             generatedAt: new Date(),
             stoppedEarly: stopRequested,
             heroes,
-            dpsResults, survivalResults, overgrindDpsResults, overgrindSurvivalResults,
+            dpsResults, survivalResults,
             dpsUpgradedResults, survivalUpgradedResults
         };
+        // Только читает уже посчитанные результаты выше — ни одного нового боя/прогона
+        // живучести (см. заголовок секции «АНАЛИТИКА БАЛАНСА»).
+        renderBalanceAnalyticsTable(lastRunSnapshot);
         $('exportBtn').disabled = false;
     } catch (error) {
         log(`Ошибка: ${error.message}`, 'log-err');
