@@ -139,8 +139,12 @@ function calculateBossMaxHealth(type, fallbackBaseHealth, overrides) {
 
     const levelRangeMultiplier = getBossHealthLevelMultiplier(effectiveLvlNumber);
 
+    // Сложность уровня (getDifficultyMultiplier, saveData.js) — только здесь, в ветке
+    // РЕАЛЬНОГО босса. Ветка выше (fallbackBaseHealth, ранний return) — для атак/
+    // не-боссов, которых сложность по правилам фичи не касается (см. её комментарий).
     return Math.max(1, Math.round(
-        balancedBaseHealth * levelMultiplier * bossHealthMultiplier * regionFinalMultiplier * levelRangeMultiplier
+        balancedBaseHealth * levelMultiplier * bossHealthMultiplier * regionFinalMultiplier
+        * levelRangeMultiplier * getDifficultyMultiplier()
     ));
 }
 
@@ -951,6 +955,7 @@ function initGame() {
     
     initHeroHealth();
 	initTikhonShakeGauge();
+	initEliseyBeeGauge();
 
 	   // Инициализация полоски здоровья босса
     initBossHealthBar();
@@ -1228,7 +1233,9 @@ function gameLoop(currentTime) {
     timeSec2 = Math.floor(activeGameTimeMs / 1000);
     applyMilaHeroRegen(deltaTime);
     updateTikhonShakeGauge(currentTime);
-	
+    updateEliseyBees(currentTime);
+    updateEliseyBeeGauge();
+
 	if ((timeSec2-lastTimeSec2)>=1 && (timeNextBoss-timeSec2)>0 && (timeNextBoss-timeSec2)<5 && !bossAlive) {
 		lastTimeSec2 = timeSec2;
 		showCenterText((timeNextBoss-timeSec2), 800, 'info');
@@ -2047,12 +2054,8 @@ function gameOver() {
 }
 
 // ==================== ФУНКЦИИ ПОБЕДЫ/ПОРАЖЕНИЯ ====================
-
-function formatTime(seconds) {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-}
+// formatTime переехала в saveData.js — нужна и index.html (окно детализации рейтинга),
+// который game.js вообще не грузит.
 
 function getActiveHeroSaveKey() {
     return gameState?.activeHero || activeHeroObject?.name || null;
@@ -2257,6 +2260,62 @@ function refreshEndgameHeroUpgrade(modal) {
     });
 }
 
+// Анимированный пересчёт чисел (злато, очки рейтинга) от 0 до целевого значения в
+// окне победы/поражения — плашки со статами сами по себе уже появляются по очереди
+// (см. .endgame-stat-row в main_css.css), а числа внутри них дополнительно "накручиваются",
+// как это обычно делают в играх. Уважает prefers-reduced-motion — тогда просто сразу
+// показывает итоговое число без анимации.
+function animateEndgameCounters(modal) {
+    const targets = modal?.querySelectorAll('[data-count-to]');
+    if (!targets || targets.length === 0) return;
+
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const duration = 900;
+
+    targets.forEach(el => {
+        const target = Math.round(Number(el.dataset.countTo)) || 0;
+        if (reduceMotion || target === 0) {
+            el.textContent = target;
+            return;
+        }
+        const start = performance.now();
+        const step = now => {
+            const progress = Math.min(1, (now - start) / duration);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            el.textContent = Math.round(target * eased);
+            if (progress < 1) {
+                requestAnimationFrame(step);
+            } else {
+                el.textContent = target;
+            }
+        };
+        requestAnimationFrame(step);
+    });
+}
+
+// Полоса прогресса до нового героя (см. .endgame-hero-track/getHeroUnlockProgress
+// в saveData.js) рендерится с шириной 0%, а целевой % лежит в data-target-width —
+// два кадра спустя после вставки в DOM переставляем реальную ширину, чтобы сработал
+// CSS-переход (задать финальную ширину сразу в разметке — переход не запустится,
+// браузер просто отрисует уже готовое состояние).
+function animateEndgameHeroTrackFill(modal) {
+    const fillEl = modal?.querySelector('.endgame-hero-track .hero-track-fill[data-target-width]');
+    if (!fillEl) return;
+
+    const target = fillEl.dataset.targetWidth;
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) {
+        fillEl.style.width = `${target}%`;
+        return;
+    }
+
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            fillEl.style.width = `${target}%`;
+        });
+    });
+}
+
 function showEndGameModal(victory, timeSeconds) {
     // Доигрываем текущую композицию, но после неё оставляем экран результата в тишине.
     window.battleMusic?.setCombatActive(false);
@@ -2287,15 +2346,24 @@ function showEndGameModal(victory, timeSeconds) {
         && nextLevelNumber <= maxPlayableLevel;
 	
     const modal = document.createElement('div');
-    modal.className = 'level-up-modal endgame-modal';
+    modal.className = `level-up-modal endgame-modal ${victory ? 'is-victory' : 'is-defeat'}`;
     modal.innerHTML = `
         <div class="modal-content">
-            <h2>${victory ? 'ПОБЕДА!' : 'ПОРАЖЕНИЕ!'}</h2>
+            <div class="endgame-badge">${victory ? '🏆' : '⚔️'}</div>
+            <h2>${victory ? 'ПОБЕДА!' : 'ПОРАЖЕНИЕ'}</h2>
             <p class="modal-subtitle">${victory ? 'Последний противник побежден!' : 'Ваш персонаж побежден'}</p>
             <div class="endgame-stats">
-                <div class="resource-line"> Получено злат: <span>${zlatP} <img src='images/other/zlata.webp' class='zlatImg'></span> </div>
-                <div class="time-line">Время прохождения: <span>${formatTime(timeSeconds)}</span></div>` 
-				+ rowTotal + 	
+                <div class="endgame-stat-row resource-line">
+                    <span class="endgame-stat-icon"><img src="images/other/zlata.webp" class="zlatImg" alt=""></span>
+                    <span class="endgame-stat-label">Получено злата</span>
+                    <span class="endgame-stat-value" data-count-to="${zlatP}">0</span>
+                </div>
+                <div class="endgame-stat-row time-line">
+                    <span class="endgame-stat-icon">⏱</span>
+                    <span class="endgame-stat-label">Время прохождения</span>
+                    <span class="endgame-stat-value endgame-stat-value--time">${formatTime(timeSeconds)}</span>
+                </div>`
+				+ rowTotal +
             `</div>
             <div class="endgame-hero-upgrade-host"></div>
             <div class="endgame-buttons">
@@ -2308,11 +2376,21 @@ function showEndGameModal(victory, timeSeconds) {
 
     document.body.appendChild(modal);
     refreshEndgameHeroUpgrade(modal);
+    animateEndgameCounters(modal);
+    animateEndgameHeroTrackFill(modal);
+
+    // Кнопка в баннере разблокировки героя (см. recordLevelCompletion/completeLevel в
+    // saveData.js) — ведёт на index.html и сразу открывает окно персонажей с уже
+    // выбранной карточкой именно этого героя, чтобы игрок не искал её в сетке сам.
+    modal.querySelectorAll('.endgame-hero-unlock-goto').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const heroKey = btn.dataset.hero || '';
+            window.location.href = `index.html?openCharacters=${encodeURIComponent(heroKey)}`;
+        });
+    });
 
     modal.querySelector('.next-level')?.addEventListener('click', () => {
-        const version = typeof GAME_BUILD_VERSION === 'string' ? GAME_BUILD_VERSION : '';
-        const versionQuery = version ? `&v=${encodeURIComponent(version)}` : '';
-        window.location.href = `level.html?level=${nextLevelNumber}${versionQuery}`;
+        goToLevelWithRememberedDifficulty(nextLevelNumber);
     });
 
     // Кнопка "Еще разок" – перезагрузка страницы
@@ -2374,6 +2452,9 @@ function getLevelPreloadImagePaths() {
     // и могли мигнуть пустотой на первом ударе.
     if (activeHeroObject?.image) paths.add(activeHeroObject.image);
     if (activeHeroObject?.weaponImage) paths.add(activeHeroObject.weaponImage);
+    // Второй спрайт пчелы у Елисея (чередуется с weaponImage, см. trySpawnEliseyBee) —
+    // без прелоада первая пчела с этим спрайтом мигала бы пустотой при появлении.
+    if (activeHeroObject?.weaponImage2) paths.add(activeHeroObject.weaponImage2);
     if (activeHeroObject?.aimImage) paths.add(activeHeroObject.aimImage);
     paths.add('images/background/1.png');
     return [...paths];
@@ -2457,6 +2538,23 @@ function showStartModal() {
 }
 
 // Определяет, доступен ли следующий уровень (в рамках контента и уже открытый прогрессом игрока)
+// Переход "Следующий уровень" (из окна победы и из окна временного улучшения после
+// босса) — по прямому запросу пользователя больше НЕ спрашивает сложность: она
+// берётся автоматически (getLevelDifficulty — глобальный дефолт из настроек, если
+// уровень ещё не проходили, иначе последняя сложность, с которой его запускали).
+// setLevelDifficulty всё равно вызывается — этот переход тоже реальный старт уровня,
+// и по тому же правилу «запоминается в момент старта», что и явное окно выбора
+// (см. difficulty.js/onStart), должен обновить память о последней сложности этого
+// уровня. Окно выбора сложности по клику на плитку уровня в index.html не трогаем —
+// там оно как и было.
+function goToLevelWithRememberedDifficulty(levelNumber) {
+    const difficulty = typeof getLevelDifficulty === 'function' ? getLevelDifficulty(levelNumber) : 1;
+    if (typeof setLevelDifficulty === 'function') setLevelDifficulty(levelNumber, difficulty);
+    const version = typeof GAME_BUILD_VERSION === 'string' ? GAME_BUILD_VERSION : '';
+    const versionQuery = version ? `&v=${encodeURIComponent(version)}` : '';
+    window.location.href = `level.html?level=${levelNumber}&difficulty=${difficulty}${versionQuery}`;
+}
+
 function getNextLevelAvailability() {
     const nextLevelNumber = Math.floor(Number(lvlNumber)) + 1;
     const maxContentLevel = (typeof MAX_LEVEL === 'number' && Number.isFinite(MAX_LEVEL))
@@ -2697,6 +2795,21 @@ function checkAimAndDamage() {
 
     const index = activeEnemies.indexOf(enemy);
     if (index !== -1) {
+        // ЖЕЛЕЗОБЕТОННОЕ ПРАВИЛО (не только для Елисея — для ЛЮБОГО текущего и
+        // будущего героя): "атаки" боссов (снаряды/угрозы, enemy НЕ из bossM) —
+        // это то, что игрок ОТБИВАЕТ, и отбой обязан быть МГНОВЕННЫМ, без единой
+        // мс задержки, независимо от особой механики героя. Поэтому рой Елисея
+        // подменяет обычный удар ТОЛЬКО по самому боссу (isBoss) — по его атакам
+        // Елисей бьёт как все, через обычный damageEnemy ниже (isBoss=false там
+        // и так уже применяет урон синхронно в этом же кадре, без scheduleHeroImpact).
+        if (activeHeroObject?.name === 'elisey' && isBoss) {
+            // Прицел поднимает пчёл (до 8 на цели) вместо мгновенного удара — сам
+            // урон/крит наносится позже, независимо каждой пчелой по своему темпу
+            // (см. trySpawnEliseyBee/updateEliseyBees). Этот же rate-limit по
+            // enemy.lastShotTime/shotInterval выше — и есть темп СПАВНА новых пчёл.
+            trySpawnEliseyBee(enemy);
+            return;
+        }
         const attackRoll = rollHeroAttackMultiplier(isBoss);
         damageEnemy(enemy, attackRoll.multiplier, attackRoll.kind, shotInterval);
     }
@@ -2748,6 +2861,7 @@ function damageEnemy(enemy, attackMultiplier = 1, attackKind = 'normal', shotInt
         showDaryanaDeflectImpact(enemy, damageResult.isCritical, timing);
         showMilaDeflectImpact(enemy, damageResult.isCritical, timing);
         showTikhonDeflectImpact(enemy, damageResult.isCritical, timing);
+        showEliseyDeflectImpact(enemy, damageResult.isCritical, timing);
     }
 
     if (!isBoss) {
@@ -4165,6 +4279,7 @@ function playGenericEnemyDeathVisual(enemy) {
  * @returns {boolean} true, если это смерть босса (визуал уже ведёт sequence)
  */
 function beginEnemyDeathVisual(enemy, cause = 'player') {
+    clearEliseyBeesForEnemy(enemy);
     if (enemy?.type === bossAliveName || enemy?.isBoss) {
         handleBossDeathSequence(enemy, cause);
         return true;
@@ -4416,6 +4531,7 @@ function getDaryanaMissingHpMultiplier(target) {
 function resetHeroFeatureCombatState() {
     eremeiCatchBackUntilMs = 0;
     tikhonShakeStartMs = null;
+    clearAllEliseyBees();
 }
 
 function getTikhonShakeConfig() {
@@ -4505,6 +4621,251 @@ function updateTikhonShakeGauge(now = performance.now()) {
     tikhonShakeBottleEl.style.left = `${(progress * 100).toFixed(1)}%`;
     tikhonShakeBottleEl.style.transform = `translate(-50%, -50%) rotate(${(progress * 24 - 12).toFixed(1)}deg)`;
     tikhonShakeBottleEl.title = `Урон ×${damageMultiplier.toFixed(2)}, крит +${Math.round(critChanceBonus * 100)}%`;
+}
+
+// ==================== Елисей Медов — «Пчелиный рой» ====================
+// Вместо мгновенного урона по прицелу (см. редирект в checkAimAndDamage) герой
+// поднимает пчёл на цель — до 8 одновременно, КАЖДАЯ со своим независимым
+// таймером посадки (не хором, см. updateEliseyBees ниже) — суммарный темп
+// попаданий на полном стеке растёт в разы относительно SHOT_INTERVAL, это и
+// есть источник его высокого потенциала урона. Данные пчелы живут прямо на
+// объекте enemy (enemy.eliseyBees), по тому же принципу, что enemy.lastShotTime/
+// enemy.isWounded — никакого отдельного глобального реестра.
+//
+// Урон/крит каждой посадки считается РЕАЛЬНЫМ damageEnemy/calculateDamage
+// (правило 1 — не переписывается заново): damageEnemy(enemy, 0.125, ...)
+// берёт уже посчитанный полный урон героя и умножает на 1/8, а крит-шанс/
+// крит-множитель читаются оттуда же (getEffectiveCritChance()/
+// globalCritMultiplier) — то есть "крит пчелы = крит героя" выполняется само
+// собой, без единой новой строчки крит-логики. activeHeroObject.name НЕ
+// добавлен в HERO_ATTACK_TIMING.animatedHeroes — значит getHeroAttackTiming
+// вернёт impactDelayMs:0 (мгновенное применение без синхронизированной
+// анимации "полёта снаряда"), что и нужно: пчела уже сидит на цели.
+const ELISEY_BEE = Object.freeze({
+    maxBeesPerTarget: 8,
+    landDamageShare: 0.125, // 1/8 урона героя за одну посадку
+    // Ревизия 2 (правка баланса, см. minShotInterval в saveData.js): 3с → 1.5с по прямому
+    // решению пользователя — механику нанесения урона нельзя делать слишком прощающей,
+    // раз она усилена скоростью набора роя (см. рядом), удержание прицела должно
+    // оставаться реальным навыком, а не формальностью.
+    idleDespawnMs: 1500,    // исчезает после 1.5с без прицела на цели
+    wanderIntervalMs: 650   // как часто пчела выбирает новую точку на силуэте
+});
+
+let eliseyBeeIdCounter = 0;
+// Цель, чей рой сейчас показывается в индикаторе статус-бара (см. раздел
+// "Индикатор пчелиного роя" ниже) — обновляется при каждом спавне пчелы.
+let eliseyFocusedEnemy = null;
+
+function trySpawnEliseyBee(enemy) {
+    if (!enemy) return;
+    if (!Array.isArray(enemy.eliseyBees)) enemy.eliseyBees = [];
+    eliseyFocusedEnemy = enemy;
+    if (enemy.eliseyBees.length >= ELISEY_BEE.maxBeesPerTarget) return;
+
+    const now = performance.now();
+    const bee = {
+        id: ++eliseyBeeIdCounter,
+        // Чередование спрайтов weapon1/weapon2 по чётности индекса — чтобы рой
+        // не летал "в одну сторону" (см. weaponImage/weaponImage2 у героя).
+        weaponVariant: enemy.eliseyBees.length % 2 === 0 ? 1 : 2,
+        lastLandTime: now, // не жалит в самый момент появления
+        idleSince: null,
+        nextWanderAt: 0,
+        mount: null,
+        beeEl: null
+    };
+    enemy.eliseyBees.push(bee);
+    spawnEliseyBeeVisual(enemy, bee);
+}
+
+function removeEliseyBee(enemy, bee) {
+    if (!enemy || !Array.isArray(enemy.eliseyBees)) return;
+    const index = enemy.eliseyBees.indexOf(bee);
+    if (index !== -1) enemy.eliseyBees.splice(index, 1);
+    bee.mount?.remove();
+}
+
+function clearEliseyBeesForEnemy(enemy) {
+    if (!enemy || !Array.isArray(enemy.eliseyBees) || enemy.eliseyBees.length === 0) return;
+    enemy.eliseyBees.slice().forEach(bee => removeEliseyBee(enemy, bee));
+    enemy.eliseyBees = [];
+    if (eliseyFocusedEnemy === enemy) eliseyFocusedEnemy = null;
+}
+
+function clearAllEliseyBees() {
+    activeEnemies.forEach(clearEliseyBeesForEnemy);
+    eliseyFocusedEnemy = null;
+}
+
+// Вызывается каждый кадр из gameLoop, только пока активный герой — Елисей.
+function updateEliseyBees(now) {
+    if (activeHeroObject?.name !== 'elisey') return;
+
+    const aimedEnemy = getEnemyAtPoint(aimPosition.x, aimPosition.y);
+
+    activeEnemies.forEach(enemy => {
+        if (!Array.isArray(enemy.eliseyBees) || enemy.eliseyBees.length === 0) return;
+
+        const isAimedNow = enemy === aimedEnemy;
+        if (isAimedNow) eliseyFocusedEnemy = enemy;
+
+        enemy.eliseyBees.slice().forEach(bee => {
+            // Деспавн: таймер тикает только пока прицел НЕ на этой цели — пока
+            // держишь прицел на враге, пчёлы не гаснут вообще.
+            if (isAimedNow) {
+                bee.idleSince = null;
+            } else {
+                if (bee.idleSince === null) bee.idleSince = now;
+                if (now - bee.idleSince >= ELISEY_BEE.idleDespawnMs) {
+                    removeEliseyBee(enemy, bee);
+                    return;
+                }
+            }
+
+            // Посадка/урон — независимо от простоя, пока пчела жива (она может
+            // "жалить", даже угасая последние секунды без прицела).
+            if (now - bee.lastLandTime >= SHOT_INTERVAL) {
+                bee.lastLandTime = now;
+                damageEnemy(enemy, ELISEY_BEE.landDamageShare, 'bee', SHOT_INTERVAL);
+                pulseEliseyBeeVisual(bee);
+            }
+
+            updateEliseyBeeWander(enemy, bee, now);
+        });
+    });
+}
+
+// ---- Визуал: mount синхронизируется с врагом 1:1 по паттерну
+// syncLukaArrowMount/syncDaryanaFireMount/syncMilaPeaMount, только живёт не
+// один цикл, а пока существует пчела (despawn останавливает рекурсию rAF сам —
+// mount.remove() делает isConnected===false, следующий кадр просто не планирует
+// новый). Точка посадки внутри mount берётся из того же источника семплов
+// силуэта (getEnemyOpaqueSamples/pickOpaqueHitNormFromSamples), что уже питает
+// стрелу Луки/огонь Дарьяны/горошину Милы.
+function spawnEliseyBeeVisual(enemy, bee) {
+    const enemyEl = enemy?.element;
+    if (!enemyEl || !enemiesContainer) return;
+    if (enemyEl.offsetWidth < 2 || enemyEl.offsetHeight < 2) return;
+
+    pruneImpactNodes('.elisey-bee-mount', ELISEY_BEE.maxBeesPerTarget * 3);
+
+    const mount = document.createElement('div');
+    mount.className = 'elisey-bee-mount';
+    mount.style.left = enemyEl.style.left || '0%';
+    mount.style.top = enemyEl.style.top || '0%';
+    mount.style.width = `${Math.max(1, enemyEl.offsetWidth)}px`;
+    mount.style.height = `${Math.max(1, enemyEl.offsetHeight)}px`;
+    mount.style.transform = enemyEl.style.transform || 'none';
+    mount.style.transformOrigin = getComputedStyle(enemyEl).transformOrigin || '50% 50%';
+    mount.setAttribute('aria-hidden', 'true');
+
+    const beeEl = document.createElement('img');
+    beeEl.className = 'elisey-bee';
+    beeEl.src = (bee.weaponVariant === 2 && activeHeroObject?.weaponImage2)
+        ? activeHeroObject.weaponImage2
+        : activeHeroObject?.weaponImage;
+    beeEl.alt = '';
+    const initialHit = pickOpaqueHitNormFromSamples(getEnemyOpaqueSamples(enemyEl)) || { x: 0.5, y: 0.45 };
+    beeEl.style.left = `${(initialHit.x * 100).toFixed(2)}%`;
+    beeEl.style.top = `${(initialHit.y * 100).toFixed(2)}%`;
+
+    mount.appendChild(beeEl);
+    enemiesContainer.appendChild(mount);
+
+    bee.mount = mount;
+    bee.beeEl = beeEl;
+
+    syncEliseyBeeMount(mount, enemyEl);
+}
+
+function syncEliseyBeeMount(mount, enemyEl) {
+    if (!mount?.isConnected) return;
+
+    if (enemyEl?.isConnected) {
+        const renderedStyle = getComputedStyle(enemyEl);
+        mount.style.left = enemyEl.style.left || '0%';
+        mount.style.top = enemyEl.style.top || '0%';
+        mount.style.transform = renderedStyle.transform === 'none'
+            ? 'none'
+            : renderedStyle.transform;
+    }
+
+    requestAnimationFrame(() => syncEliseyBeeMount(mount, enemyEl));
+}
+
+// Косметическое блуждание точки посадки внутри mount — раз в ~650-900мс новая
+// случайная точка силуэта, CSS-transition на left/top интерполирует полёт.
+function updateEliseyBeeWander(enemy, bee, now) {
+    if (!bee.beeEl?.isConnected) return;
+    if (now < bee.nextWanderAt) return;
+    bee.nextWanderAt = now + ELISEY_BEE.wanderIntervalMs + Math.random() * 250;
+
+    const point = pickOpaqueHitNormFromSamples(getEnemyOpaqueSamples(enemy.element));
+    if (!point) return;
+    bee.beeEl.style.left = `${(point.x * 100).toFixed(2)}%`;
+    bee.beeEl.style.top = `${(point.y * 100).toFixed(2)}%`;
+}
+
+function pulseEliseyBeeVisual(bee) {
+    if (!bee.beeEl) return;
+    bee.beeEl.classList.remove('is-stinging');
+    void bee.beeEl.offsetWidth;
+    bee.beeEl.classList.add('is-stinging');
+}
+
+// ---- Индикатор пчелиного роя в статус-баре — 8 силуэтов под HP-баром, тот же
+// init/update-паттерн по кадрам, что и initTikhonShakeGauge/updateTikhonShakeGauge
+// выше. Показывает рой ТЕКУЩЕЙ "сфокусированной" цели (eliseyFocusedEnemy) —
+// если она без пчёл (все истекли), просто все 8 слотов пустые.
+let eliseyBeeGaugeEl = null;
+let eliseyBeeSlotEls = [];
+
+function initEliseyBeeGauge() {
+    eliseyBeeGaugeEl = document.getElementById('eliseyBeeGauge');
+    if (!eliseyBeeGaugeEl) return;
+    eliseyBeeSlotEls = Array.from(eliseyBeeGaugeEl.querySelectorAll('.elisey-bee-slot'));
+
+    const isElisey = activeHeroObject?.name === 'elisey';
+    eliseyBeeGaugeEl.style.display = isElisey ? '' : 'none';
+}
+
+function updateEliseyBeeGauge() {
+    if (!eliseyBeeGaugeEl || activeHeroObject?.name !== 'elisey') return;
+
+    const activeCount = eliseyFocusedEnemy?.eliseyBees?.length || 0;
+    eliseyBeeSlotEls.forEach((slot, index) => {
+        slot.classList.toggle('is-filled', index < activeCount);
+    });
+}
+
+// Отбой "атаки" босса (isBoss===false — см. железобетонное правило про мгновенный
+// отбой, CLAUDE.md правило 13): урон применяется мгновенно и синхронно ДО этого
+// вызова (см. комментарий "VFX доигрывается независимо" в damageEnemy) — эта
+// функция только косметика поверх уже случившегося отбоя, ничего не задерживает.
+// По просьбе пользователя: кратковременно появляется пчела в точке отбоя и
+// пропадает примерно через секунду — в отличие от персистентного роя на самом
+// боссе, тут одноразовый эффект без mount/слежения за целью (цель уже уничтожена).
+function showEliseyDeflectImpact(attackEnemy, isCritical = false) {
+    if (activeHeroObject?.name !== 'elisey' || !attackEnemy?.element || !enemiesContainer || !gameField) return;
+
+    const pos = getImpactFieldPercent(attackEnemy.element);
+    if (!pos) return;
+
+    pruneImpactNodes('.elisey-deflect-bee', 8);
+
+    const impact = document.createElement('img');
+    impact.className = `elisey-deflect-bee${isCritical ? ' is-critical' : ''}`;
+    impact.src = (Math.random() < 0.5 && activeHeroObject.weaponImage2)
+        ? activeHeroObject.weaponImage2
+        : activeHeroObject.weaponImage;
+    impact.alt = '';
+    impact.style.left = `${pos.left}%`;
+    impact.style.top = `${pos.top}%`;
+    impact.setAttribute('aria-hidden', 'true');
+    enemiesContainer.appendChild(impact);
+
+    window.setTimeout(() => impact.remove(), 1000);
 }
 
 function getEremeiCatchBackConfig() {
@@ -4824,9 +5185,7 @@ function showLevelUpModal(titleHtml, subtitleText) {
         });
 
         modal.querySelector('.levelup-util-btn.next-level')?.addEventListener('click', () => {
-            const version = typeof GAME_BUILD_VERSION === 'string' ? GAME_BUILD_VERSION : '';
-            const versionQuery = version ? `&v=${encodeURIComponent(version)}` : '';
-            window.location.href = `level.html?level=${nextLevelNumber}${versionQuery}`;
+            goToLevelWithRememberedDifficulty(nextLevelNumber);
         });
 
         modal.querySelector('.levelup-util-btn.base').addEventListener('click', () => {

@@ -151,9 +151,11 @@
   <div class="panel" id="dpsUpgradedPanel" style="display:none;">
     <h2>Постоянный DPS С временными улучшениями (среднее по заходам)</h2>
     <p class="hint">
-      На каждом уровне герой проходит <code id="attemptsLabel1"></code> заходов подряд, циклически
-      разными стратегиями выбора временных апгрейдов (случайная / в урон / в защиту / гибрид — как в
-      <code>scripts/temporary-upgrade-report.js</code>), получает столько апгрейдов, сколько реально даёт опыт
+      На каждом уровне герой проходит <code id="attemptsLabel1"></code> заходов (по
+      <code id="attemptsPerStrategyLabel"></code> на каждую стратегию), циклически
+      разными стратегиями выбора временных апгрейдов (случайная / в урон (по аналитическому DPS) /
+      агрессивная (сначала атакующие статы, DPS — только тай-брейк) / в защиту / гибрид), получает
+      столько апгрейдов, сколько реально даёт опыт
       боссов этого уровня, и только после этого бьётся реальным боевым движком. Число в ячейке — среднее
       DPS по всем заходам (сумма ÷ число заходов), в скобках — разброс мин/макс между заходами.
     </p>
@@ -221,22 +223,48 @@ const CAMPAIGN_FINAL_LEVEL = 141;
 const FIGHTS_PER_LEVEL = 150;
 const SURVIVAL_RUNS_PER_LEVEL = 300;
 const INCOMING_CADENCE_MS = 2200;
-const BOSS_HP_FOR_DPS_FIGHT = 80000;
+// DPS-бой больше НЕ идёт на своей синтетической цифре HP — только на настоящем
+// суммарном HP боссов конкретного уровня/точки (getLevelBossHpTotal, тот же
+// calculateBossMaxHealth, что и в живучести) — см. циклы DPS без/с апгрейдами
+// ниже. Раньше здесь была константа BOSS_HP_FOR_DPS_FIGHT=80000: она пряталa
+// зависимость от длины боя (штраф на разгон у героев с таймингом вроде роя
+// Елисея на длинном синтетическом бою почти незаметен, а на настоящем коротком
+// бою уровня 1 — заметно сильнее) — правило пользователя: тестировать на
+// настоящих HP уровней, а не на своих фикс-данных.
 const ALL_LEVELS = Array.from({ length: CAMPAIGN_FINAL_LEVEL }, (_, i) => i + 1);
 
+// 'aggressive' — отдельно от 'offense': 'offense' ранжирует все 3 связки по аналитической
+// expectedDps без разбора, какие статы в них входят; 'aggressive' сначала сравнивает
+// количество атакующих статов в связке (см. ATTACK_STAT_IDS) и только при равенстве
+// достаёт expectedDps как тай-брейк — то есть НИКОГДА не предпочтёт связку с heroHP/
+// heroDefense связке с бóльшим числом атакующих статов, даже если аналитическая формула
+// (которая вообще не считает heroHP/heroDefense) почему-то оценит её выше. Нужна как
+// отдельная, буквально «бей во что бы то ни стало» дорожка сравнения с реальной игрой —
+// в отличие от смешанного среднего по всем стратегиям.
+const STRATEGIES = ['random', 'offense', 'aggressive', 'survival', 'hybrid'];
+
 // Проход «с временными улучшениями»: на каждом уровне ATTEMPTS_PER_LEVEL независимых
-// заходов (циклически по 4 стратегиям — по 2 полных круга при 8 заходах), в каждом
-// заходе — реальное число апгрейдов для этого уровня, затем реальный бой/реальные удары
-// на итоговых прокачанных статах. Числа на заход меньше, чем в постоянном проходе (15
-// боёв вместо 150, 40 прогонов живучести вместо 300) — компенсируется усреднением по
-// ATTEMPTS_PER_LEVEL заходам, а не одним большим прогоном на одном наборе статов.
-const ATTEMPTS_PER_LEVEL = 8;
+// заходов — ровно ATTEMPTS_PER_STRATEGY заходов НА КАЖДУЮ стратегию (round-robin по
+// STRATEGIES кратно её длине, см. цикл attempt % STRATEGIES.length ниже), а не общий пул
+// заходов, размазанный по стратегиям неравномерно — иначе картина по каждой стратегии
+// отдельно (в т.ч. по 'aggressive' для сверки с реальной игрой) была бы недостаточно
+// статистически устойчивой. В каждом заходе — реальное число апгрейдов для этого уровня,
+// затем реальный бой/реальные удары на итоговых прокачанных статах. Числа на заход
+// меньше, чем в постоянном проходе (15 боёв вместо 150, 40 прогонов живучести вместо
+// 300) — компенсируется усреднением по ATTEMPTS_PER_LEVEL заходам, а не одним большим
+// прогоном на одном наборе статов.
+const ATTEMPTS_PER_STRATEGY = 10;
+const ATTEMPTS_PER_LEVEL = STRATEGIES.length * ATTEMPTS_PER_STRATEGY;
 const FIGHTS_PER_ATTEMPT = 15;
 const SURVIVAL_RUNS_PER_ATTEMPT = 40;
-const STRATEGIES = ['random', 'offense', 'survival', 'hybrid'];
-// Фолбэк на случай испорченных/нестандартных данных уровня (см. countUpgradeChoices) —
-// совпадает с реальным числом окон на обычном уровне (4 небоссфинальных врага ×
-// BOSS_KILL_UPGRADE_CHOICES=1 из game.js), а не с произвольной константой.
+// Те же 7 id, что LEVEL_UP_STAT_IDS в game.js (см. buildUpgradeStatEffect) — только
+// категоризация уже посчитанных реальным кодом статов на «атакующие»/«защитные» для
+// стратегии 'aggressive' выше, самих чисел эффектов это не пересчитывает.
+const ATTACK_STAT_IDS = new Set(['damage', 'critChance', 'critMultiplier', 'woundChance', 'fireRate']);
+// Фолбэк на случай испорченных/нестандартных данных уровня (см. RealUpgradeEngine.
+// simulateUpgradeRun) — совпадает с реальным числом окон на обычном уровне (4
+// небоссфинальных врага × BOSS_KILL_UPGRADE_CHOICES=1 из game.js), а не с
+// произвольной константой.
 const DEFAULT_UPGRADE_CHOICES = 4;
 
 // Перекачка сверх кампании: campaignToHeroLevel по экономике злата даёт герою на 141
@@ -485,6 +513,15 @@ const PROBE_SCRIPT_SOURCE = `
     // тысячи симулированных ударов и не падают на null-цели без DOM-элемента.
     window.showCenterText = function () {};
     Enemy.prototype.showWoundDamage = function () {};
+    // updateHeroHealthDisplay (полоска HP героя, картинка, текст уровня) дёргается на
+    // каждый вызов applyMilaHeroRegen — единственная механика, которая зовёт probe на
+    // каждый удар ВНУТРИ живучести (см. probe.applyHeroRegen ниже), и с ростом числа
+    // заходов «с апгрейдами» (ATTEMPTS_PER_LEVEL × SURVIVAL_RUNS_PER_ATTEMPT) это
+    // тысячи лишних DOM-записей (включая image.src — реальная попытка перезагрузить
+    // картинку героя) на один и тот же результат боя. Чисто визуальный побочный эффект,
+    // на globalDamage/heroHP/итоговые числа не влияет — тот же принцип, что и два
+    // no-op выше.
+    window.updateHeroHealthDisplay = function () {};
 
     window.__probe = {
         setClock: function (ms) { __virtualNow = ms; },
@@ -556,11 +593,15 @@ const PROBE_SCRIPT_SOURCE = `
         // damageEnemy() в реальной игре умножает результат calculateDamage() на
         // rollHeroAttackMultiplier(true).multiplier ОТДЕЛЬНО (для Дуни — казино-атака;
         // для остальных героев функция сама возвращает multiplier:1) — повторяем ровно
-        // ту же цепочку вызовов, иначе казино-урон потеряется.
-        hit: function (target) {
+        // ту же цепочку вызовов, иначе казино-урон потеряется. extraShare — второй
+        // независимый множитель ПОВЕРХ этого (по умолчанию 1, ничего не меняет) — тот
+        // же смысл, что и attackMultiplier у damageEnemy в game.js для одной посадки
+        // пчелы Елисея (0.125 = 1/8 урона героя), см. CombatEngine.simulateFight ниже.
+        hit: function (target, extraShare) {
             const base = calculateDamage(true, target);
             const roll = rollHeroAttackMultiplier(true);
-            const damage = Math.round(base.damage * roll.multiplier);
+            const share = typeof extraShare === 'number' ? extraShare : 1;
+            const damage = Math.round(base.damage * roll.multiplier * share);
             return { damage: damage, isCritical: base.isCritical, attackKind: roll.kind };
         },
         checkWound: function (target, damage) { checkForWound(target, damage); },
@@ -713,20 +754,41 @@ const CombatEngine = {
         const incomingEvery = options.incomingCadenceMs > 0 ? options.incomingCadenceMs : Infinity;
         const WOUND_TICK_MS = 300;
 
+        // Елисей Медов — «Пчелиный рой» (см. trySpawnEliseyBee/updateEliseyBees в
+        // game.js): прицел НЕ бьёт мгновенно — копит до 8 пчёл, каждая бьёт на свою
+        // 1/8 урона по СВОЕМУ независимому таймеру от момента появления/предыдущей
+        // посадки, не хором. Симуляция всегда держит прицел на цели (идеальный
+        // отыгрыш, правило 8 CLAUDE.md) — деспавн (тикает только БЕЗ прицела в
+        // реальной игре) тут никогда не наступает, поэтому его не моделируем вообще,
+        // только рост роя + независимые посадки. Числа (0.125, 8) — те же самые
+        // ELISEY_BEE.landDamageShare/maxBeesPerTarget, что и в game.js; если их
+        // поменяют там — поменять и тут (единственное место, где панель НЕ читает
+        // константу напрямую из общего кода, т.к. она живёт вне iframe с игрой).
+        const isElisey = heroStats.name === 'elisey';
+        const ELISEY_BEE_LAND_SHARE = 0.125;
+        const ELISEY_MAX_BEES = 8;
+        const beeLandTimes = [];
+
         let elapsed = 0;
         let hits = 0;
         let nextShotAt = 0;
         let nextIncomingAt = incomingEvery;
         let nextWoundTickAt = WOUND_TICK_MS;
-        const maxHits = options.maxHits || 4000;
+        // У Елисея "выстрел" — это спавн, а не удар: реальный урон приходит от до 8
+        // независимых пчелиных посадок за тот же промежуток времени, а не от одного
+        // события — поднимаем потолок пропорционально, иначе бой обрывается по
+        // maxHits на середине без вины по существу (не потому что бой некорректен).
+        const maxHits = (options.maxHits || 4000) * (isElisey ? ELISEY_MAX_BEES : 1);
         const initialHp = target.hp;
 
-        // Дискретно-событийный цикл: свои выстрелы, входящие удары босса (двигают таймер
-        // «Лови обратно» через notifyDamage) и тики ранения (Enemy.prototype.updateWound,
-        // раз в 300мс реального времени, здесь — виртуального) продвигаются по единому
-        // таймлайну, а не изолированно, ровно как в настоящем бою.
+        // Дискретно-событийный цикл: свои выстрелы (у Елисея — спавн пчёл + независимые
+        // посадки), входящие удары босса (двигают таймер «Лови обратно» через
+        // notifyDamage) и тики ранения (Enemy.prototype.updateWound, раз в 300мс
+        // реального времени, здесь — виртуального) продвигаются по единому таймлайну,
+        // а не изолированно, ровно как в настоящем бою.
         while (target.hp > 0 && hits < maxHits) {
-            elapsed = Math.min(nextShotAt, nextIncomingAt, nextWoundTickAt);
+            const nextBeeLandAt = isElisey && beeLandTimes.length > 0 ? Math.min(...beeLandTimes) : Infinity;
+            elapsed = Math.min(nextShotAt, nextIncomingAt, nextWoundTickAt, nextBeeLandAt);
             probe.setClock(elapsed);
 
             if (elapsed === nextWoundTickAt) {
@@ -745,19 +807,55 @@ const CombatEngine = {
                 nextIncomingAt += -Math.log(1 - Math.random()) * incomingEvery;
                 continue;
             }
+            if (isElisey && elapsed === nextBeeLandAt) {
+                // Посадка ОДНОЙ пчелы — 1/8 урона героя, свой независимый таймер.
+                const index = beeLandTimes.indexOf(nextBeeLandAt);
+                const result = probe.hit(target, ELISEY_BEE_LAND_SHARE);
+                target.hp -= result.damage;
+                probe.checkWound(target, result.damage);
+                beeLandTimes[index] = elapsed + interval;
+                hits++;
+                continue;
+            }
 
-            const result = probe.hit(target);
-            target.hp -= result.damage;
-            probe.checkWound(target, result.damage);
+            // elapsed === nextShotAt. У обычного героя — мгновенный полный удар. У
+            // Елисея — темп СПАВНА новой пчелы (до кап 8), без урона в этот момент —
+            // тот же rate-limit, что и checkAimAndDamage в реальной игре (спавн
+            // вместо удара), сам урон придёт позже отдельной посадкой этой пчелы.
+            if (isElisey) {
+                if (beeLandTimes.length < ELISEY_MAX_BEES) {
+                    beeLandTimes.push(elapsed + interval);
+                }
+            } else {
+                const result = probe.hit(target);
+                target.hp -= result.damage;
+                probe.checkWound(target, result.damage);
+                hits++;
+            }
             nextShotAt += interval;
-            hits++;
         }
 
         // Суммарный урон = сколько HP цели фактически ушло (прямые попадания + тики
         // ранения) — считаем через разницу HP, а не отдельным счётчиком, чтобы ранение
         // автоматически попадало в DPS без риска задвоить или забыть его источник.
         const totalDamage = initialHp - target.hp;
-        return { dps: elapsed > 0 ? totalDamage / (elapsed / 1000) : 0, hits, elapsedMs: elapsed };
+        // elapsed===0 — цель убита самым первым ударом (nextShotAt стартует с 0) —
+        // раньше это давало dps:0 (деление на elapsed), что было практически
+        // недостижимо при фиксированных 80000 HP синтетического босса, но стало
+        // реальным сценарием теперь, когда bossHp — настоящий HP уровня (может быть
+        // меньше одного удара сильного героя на позднем уровне). interval — тот же
+        // естественный масштаб времени, что и темп атаки самого героя, не отсебятина.
+        const effectiveElapsedMs = elapsed > 0 ? elapsed : interval;
+        return {
+            dps: totalDamage / (effectiveElapsedMs / 1000),
+            hits,
+            elapsedMs: elapsed,
+            // Сырые (не сглаженные effectiveElapsedMs-подстраховкой) damage/elapsedMs —
+            // нужны simulateLevelFight ниже, чтобы честно СУММИРОВАТЬ урон/время по
+            // нескольким последовательным боям, а не реконструировать их обратно из
+            // готового dps (там бы разъехалось именно в вырожденном elapsed===0 случае).
+            damage: totalDamage
+        };
     },
 
     async simulateManyFights(probe, heroStats, options, count) {
@@ -769,6 +867,66 @@ const CombatEngine = {
             // Батч побольше (50 вместо 20) — меньше yield'ов на тот же объём боёв: браузер
             // клэмпит setTimeout(0) до ~4мс, и на сотнях точек по всем героям это давало
             // заметные накладные расходы без пользы для качества/размера выборки.
+            if (i % 50 === 49) await new Promise((resolve) => setTimeout(resolve, 0));
+        }
+        dpsValues.sort((a, b) => a - b);
+        const sum = dpsValues.reduce((total, value) => total + value, 0);
+        return {
+            mean: sum / dpsValues.length,
+            median: dpsValues[Math.floor(dpsValues.length / 2)],
+            p10: dpsValues[Math.floor(dpsValues.length * 0.10)],
+            p90: dpsValues[Math.floor(dpsValues.length * 0.90)]
+        };
+    },
+
+    // Уровень — это НЕ один длинный бой на суммарном HP, а РЕАЛЬНО perBossHpList.length
+    // (обычно 5) отдельных встреч с боссами ПОДРЯД (см. handleBossDeathSequence/
+    // bossM.splice в game.js — каждый новый босс это новый enemy-объект). Для героя с
+    // механикой, которая живёт на конкретном enemy-объекте и обнуляется при его смерти
+    // (сейчас — рой Елисея: enemy.eliseyBees, а в simulateFight выше — локальный
+    // beeLandTimes, который в любом случае создаётся заново на каждый вызов
+    // simulateFight), это принципиально: один бой на СУММЕ HP прячет штраф на разгон,
+    // который в реальности платится ЗАНОВО на каждом из пяти боссов, а не один раз на
+    // весь уровень. Поэтому simulateFight вызывается по разу НА КАЖДЫЙ элемент
+    // perBossHpList, а не один раз на их сумму — суммируем сырые damage/elapsedMs
+    // (не dps каждого боя по отдельности, иначе короткие/длинные бои исказили бы вклад).
+    //
+    // heroStatsOrShapes — ЛИБО один статичный объект статов (путь "без апгрейдов" —
+    // герой не меняется внутри уровня, один и тот же набор статов для всех 5 боссов),
+    // ЛИБО массив снапшотов по одному НА КАЖДОГО босса (путь "с апгрейдами" — см.
+    // RealUpgradeEngine.simulateUpgradeRun/runOneUpgradedAttempt: первого босса игрок
+    // встречает без единого временного апгрейда, дальше сила растёт с каждым убитым
+    // боссом уровня — кормить всех пятерых финальными, уже полностью прокачанными
+    // статами было бы так же нечестно, как раньше не сбрасывать рой между боссами).
+    simulateLevelFight(probe, heroStatsOrShapes, perBossHpList, options) {
+        let totalDamage = 0;
+        let totalElapsedMs = 0;
+        let totalHits = 0;
+        let fallbackInterval = 1;
+        const bossHpValues = Array.isArray(perBossHpList) && perBossHpList.length > 0
+            ? perBossHpList
+            : [options.bossHp];
+        const perBossShapes = Array.isArray(heroStatsOrShapes) ? heroStatsOrShapes : null;
+        for (let i = 0; i < bossHpValues.length; i++) {
+            const bossHp = bossHpValues[i];
+            if (!(bossHp > 0)) continue;
+            const heroStats = perBossShapes
+                ? perBossShapes[Math.min(i, perBossShapes.length - 1)]
+                : heroStatsOrShapes;
+            fallbackInterval = Math.max(1, heroStats.startSHOT_INTERVAL);
+            const result = this.simulateFight(probe, heroStats, Object.assign({}, options, { bossHp }));
+            totalDamage += result.damage;
+            totalElapsedMs += result.elapsedMs;
+            totalHits += result.hits;
+        }
+        const effectiveElapsedMs = totalElapsedMs > 0 ? totalElapsedMs : fallbackInterval;
+        return { dps: totalDamage / (effectiveElapsedMs / 1000), hits: totalHits, elapsedMs: totalElapsedMs };
+    },
+
+    async simulateManyLevelFights(probe, heroStatsOrShapes, perBossHpList, options, count) {
+        const dpsValues = [];
+        for (let i = 0; i < count; i++) {
+            dpsValues.push(this.simulateLevelFight(probe, heroStatsOrShapes, perBossHpList, options).dps);
             if (i % 50 === 49) await new Promise((resolve) => setTimeout(resolve, 0));
         }
         dpsValues.sort((a, b) => a - b);
@@ -1001,17 +1159,6 @@ function hashSeed(text, extra) {
 // используемая только чтобы сравнить 3 уже посчитанных реальным кодом варианта между
 // собой и выбрать «лучший» по стратегии — не источник итоговых чисел отчёта.
 const RealUpgradeEngine = {
-    // Сколько окон улучшения реально даёт этот уровень — раньше здесь была формула
-    // через опыт боссов и растущий порог, но опыт (giveExperienceForKill) на временные
-    // улучшения НЕ влияет вообще: игра намеренно не начисляет его за победу над боссом
-    // (см. finalizeBossDefeatAftermath в game.js) — вместо этого каждый небоссфинальный
-    // враг уровня (bossM.length - 1, боссы 1-4 из 5) даёт ровно
-    // probe.getBossKillUpgradeChoices() гарантированных окон, независимо от опыта.
-    countUpgradeChoices(probe, levelData) {
-        if (!levelData || !Array.isArray(levelData.bossM)) return DEFAULT_UPGRADE_CHOICES;
-        const rewardedBossCount = Math.max(0, levelData.bossM.length - 1);
-        return rewardedBossCount * probe.getBossKillUpgradeChoices();
-    },
 
     // Гипотетическое (не закоммиченное в iframe) применение уже посчитанной реальным
     // кодом связки к ЛОКАЛЬНОЙ копии состояния — только для ранжирования 3 вариантов
@@ -1045,7 +1192,23 @@ const RealUpgradeEngine = {
             const dps = this.expectedDps(hypothetical);
             const ehp = this.effectiveHp(hypothetical);
             let score;
-            if (strategy === 'offense') score = dps;
+            if (strategy === 'aggressive') {
+                // ИСПРАВЛЕНО: первая версия домножала score на attackStatCount×1e9 —
+                // число атакующих статов ПОЛНОСТЬЮ забивало реальный dps, из-за чего
+                // связка с 3 слабыми атакующими статами всегда обгоняла связку с 2
+                // сильными атакующими + 1 защитным, даже если та вторая давала СИЛЬНО
+                // больше реального урона. На практике это делало 'aggressive' местами
+                // ХУЖЕ 'offense' (подтверждено: DPS Елисея в отчёте просело после
+                // добавления этой стратегии в ротацию, а не выросло) — противоречит
+                // самому смыслу «агрессивной» стратегии. Теперь число атакующих статов
+                // — лишь умеренный бонус к уже посчитанному dps (до +50% на 3 из 3
+                // статов), который может сдвинуть выбор только между близкими по
+                // ценности связками, но никогда не предпочтёт связку с ощутимо меньшим
+                // реальным уроном только за счёт числа «атакующих» ярлыков на карточках.
+                const attackStatCount = bundle.statEffects.filter((effect) => ATTACK_STAT_IDS.has(effect.statId)).length;
+                score = dps * (1 + 0.15 * attackStatCount);
+            }
+            else if (strategy === 'offense') score = dps;
             else if (strategy === 'survival') score = ehp;
             else score = Math.log(dps / baseDps) + Math.log(ehp / baseEhp);
             if (score > bestScore) { bestScore = score; bestIndex = index; }
@@ -1102,22 +1265,48 @@ const RealUpgradeEngine = {
         let state = readState();
         const baseDps = this.expectedDps(state);
         const baseEhp = this.effectiveHp(state);
-        const choices = this.countUpgradeChoices(probe, levelData);
 
-        for (let i = 0; i < choices; i++) {
-            const bundles = probe.rollUpgradeBundles(3);
-            if (bundles.length === 0) break; // поздний забег: почти всё упёрлось в потолки, как и в игре
-            const index = this.chooseBundleIndex(state, bundles, strategy, random, baseDps, baseEhp);
-            probe.applyPendingBundle(index);
-            state = readState();
+        // Возвращаем МАССИВ снапшотов состояния — по одному на каждого босса уровня,
+        // а не одно финальное состояние. Игрок встречает первого босса уровня БЕЗ
+        // единого временного апгрейда — опыт (giveExperienceForKill) на них не влияет,
+        // игра намеренно не начисляет апгрейд за победу над боссом (см.
+        // finalizeBossDefeatAftermath в game.js) — апгрейды падают ПОСЛЕ каждого
+        // небоссфинального босса и достаются следующему боссу, а не всем сразу.
+        // states[0] — стартовые статы (для боя с первым боссом), states[k] — статы
+        // после апгрейдов, накопленных за первых k боссов (для боя с (k+1)-м боссом),
+        // последний элемент — статы после ВСЕХ апгрейдов уровня (для финального
+        // босса). Апгрейды по-прежнему СУММИРУЮТСЯ между боссами — probe.rollUpgradeBundles
+        // читает уже применённые предыдущие через реальные боевые глобалы, тут ничего
+        // не меняется, просто снапшот статов сохраняется НА КАЖДОМ шаге, а не только
+        // в самом конце (см. использование в runOneUpgradedAttempt/simulateLevelFight).
+        const bossCount = (levelData && Array.isArray(levelData.bossM) && levelData.bossM.length > 0)
+            ? levelData.bossM.length
+            : DEFAULT_UPGRADE_CHOICES + 1;
+        const choicesPerBoss = probe.getBossKillUpgradeChoices();
+        const states = [state];
+
+        for (let bossIndex = 0; bossIndex < bossCount - 1; bossIndex++) {
+            for (let c = 0; c < choicesPerBoss; c++) {
+                const bundles = probe.rollUpgradeBundles(3);
+                if (bundles.length === 0) break; // поздний забег: почти всё упёрлось в потолки, как и в игре
+                const index = this.chooseBundleIndex(state, bundles, strategy, random, baseDps, baseEhp);
+                probe.applyPendingBundle(index);
+                state = readState();
+            }
+            states.push(state);
         }
 
-        return state;
+        return states;
     },
 
     // Обратно в формат heroStats для CombatEngine.simulateFight / SurvivalEngine.simulateRun.
     toHeroShape(state, permanentHero) {
         return {
+            // Нужен CombatEngine.simulateFight, чтобы узнать особую механику героя
+            // (сейчас — только рой Елисея) без отдельного параметра на каждый вызов;
+            // buildHeroAtLevel (путь "без апгрейдов") клонирует героя целиком и .name
+            // там и так уже есть — этот путь ("с апгрейдами") раньше его терял.
+            name: permanentHero.name,
             startGlobalDamage: state.damage,
             startGlobalCritChance: state.critChance,
             startGlobalCritMultiplier: state.critMultiplier,
@@ -1534,8 +1723,9 @@ const ExcelExport = {
                 ['Боёв на точку DPS (без апгрейдов)', FIGHTS_PER_LEVEL],
                 ['Прогонов живучести на точку (без апгрейдов)', SURVIVAL_RUNS_PER_LEVEL],
                 ['Заходов с апгрейдами на уровень', ATTEMPTS_PER_LEVEL],
+                ['Заходов на каждую стратегию', ATTEMPTS_PER_STRATEGY],
                 ['Стратегии выбора апгрейдов', STRATEGIES.join(', ')],
-                ['HP босса в симулированном DPS-бою', BOSS_HP_FOR_DPS_FIGHT],
+                ['HP босса в симулированном DPS-бою', 'настоящий HP боссов конкретного уровня/точки (не фикс. цифра)'],
                 ['Средний интервал входящих ударов, мс', INCOMING_CADENCE_MS],
                 ['Уровней кампании прогнано', CAMPAIGN_FINAL_LEVEL],
                 ['Уровни героя для перекачки сверх кампании', OVERGRIND_HERO_LEVELS.join(', ')]
@@ -1721,13 +1911,33 @@ function renderSurvivalUpgradedTable(heroes, results) {
 // simulateHeroAtCampaignLevel (см. комментарий там) — нужны только для пауз между
 // боссами; dps этого захода уже посчитан прямо здесь (dpsAgg.mean), заново не считаем.
 async function runOneUpgradedAttempt(probe, permanentHero, levelData, strategy, random, bossHpLevelKey, bossHpCache) {
-    const finalState = RealUpgradeEngine.simulateUpgradeRun(probe, permanentHero, levelData, strategy, random);
-    const heroShape = RealUpgradeEngine.toHeroShape(finalState, permanentHero);
+    // По снапшоту статов на КАЖДОГО босса уровня (states[0] — до всех апгрейдов, для
+    // первого босса; states[k] — после апгрейдов, накопленных за первых k боссов —
+    // см. комментарий в simulateUpgradeRun) — апгрейды за уровень не только суммируются
+    // между собой (это уже было верно), но и должны применяться К ПРАВИЛЬНОМУ боссу:
+    // первого игрок реально встречает без единого апгрейда, а не с уже полностью
+    // прокачанными статами всего уровня.
+    const states = RealUpgradeEngine.simulateUpgradeRun(probe, permanentHero, levelData, strategy, random);
+    const heroShapesPerBoss = states.map((state) => RealUpgradeEngine.toHeroShape(state, permanentHero));
+    // Финальное (после ВСЕХ апгрейдов уровня) состояние — по-прежнему используется для
+    // живучести ниже (heroRegenPerSecond/паузы между боссами): та часть расчёта пока
+    // не разносит статы по каждому боссу отдельно, как теперь делает DPS — отдельный,
+    // ранее существовавший срез точности, не входит в этот заход правки.
+    const heroShape = heroShapesPerBoss[heroShapesPerBoss.length - 1];
 
-    const dpsAgg = await CombatEngine.simulateManyFights(
+    // Настоящий HP КАЖДОГО из боссов этого уровня по отдельности (getPerBossHpList —
+    // тот же calculateBossMaxHealth, что и живучесть ниже), не своя фиксированная
+    // цифра и не их сумма одним боем — simulateManyLevelFights прогоняет их как 5
+    // ОТДЕЛЬНЫХ боёв подряд, КАЖДЫЙ на статах именно того момента уровня (см. её
+    // комментарий в CombatEngine выше), иначе и штраф на разгон роя Елисея, и сам факт
+    // прогрессии силы за уровень считались бы неверно (либо совсем не сбрасываясь
+    // между боссами, либо все 5 боёв — на статах уже полностью прокачанного героя).
+    const perBossHp = getPerBossHpList(probe, bossHpLevelKey, levelData, bossHpCache);
+    const dpsAgg = await CombatEngine.simulateManyLevelFights(
         probe,
-        heroShape,
-        { bossHp: BOSS_HP_FOR_DPS_FIGHT, incomingCadenceMs: INCOMING_CADENCE_MS, maxHits: 4000 },
+        heroShapesPerBoss,
+        perBossHp,
+        { incomingCadenceMs: INCOMING_CADENCE_MS, maxHits: 4000 },
         FIGHTS_PER_ATTEMPT
     );
 
@@ -1764,6 +1974,7 @@ async function runAll() {
     $('survivalUpgradedPanel').style.display = 'none';
     $('balanceAnalyticsPanel').style.display = 'none';
     $('attemptsLabel1').textContent = ATTEMPTS_PER_LEVEL;
+    $('attemptsPerStrategyLabel').textContent = ATTEMPTS_PER_STRATEGY;
 
     try {
         if (location.protocol === 'file:') {
@@ -1783,7 +1994,7 @@ async function runAll() {
         } else {
             log(`Прогоняю все ${CAMPAIGN_FINAL_LEVEL} уровней для каждого героя: сначала без временных улучшений ` +
                 `(DPS: ${FIGHTS_PER_LEVEL} боёв/уровень, живучесть: ${SURVIVAL_RUNS_PER_LEVEL} прогонов/уровень), ` +
-                `затем усреднённо С улучшениями (${ATTEMPTS_PER_LEVEL} заходов/уровень по кругу стратегий: ${STRATEGIES.join(', ')}).`, 'log-dim');
+                `затем усреднённо С улучшениями (${ATTEMPTS_PER_LEVEL} заходов/уровень, по ${ATTEMPTS_PER_STRATEGY} на каждую стратегию: ${STRATEGIES.join(', ')}).`, 'log-dim');
         }
 
         const dpsResults = {};
@@ -1806,6 +2017,12 @@ async function runAll() {
             if (stopRequested) break;
 
             let probe = null;
+            // Общая для всех трёх циклов ниже (DPS без апгрейдов, живучесть, DPS с
+            // апгрейдами) — уровень «фарма» один и тот же (141), кэш SurvivalEngine
+            // всё равно не даст перечитать файл дважды, но так не гоняем await лишний
+            // раз впустую там, где overgrindLevelData уже точно понадобится.
+            const overgrindLevelData = await SurvivalEngine.loadLevelData(OVERGRIND_CAMPAIGN_LEVEL);
+
             if (!survivalOnly) {
                 dpsResults[hero.key] = {};
                 log(`— ${hero.dispName}: загружаю боевой движок...`, 'log-dim');
@@ -1815,10 +2032,24 @@ async function runAll() {
                 for (const row of fullRangeRows) {
                     if (stopRequested) break;
                     const heroStats = ProgressionEngine.buildHeroAtLevel(hero.key, row.heroLevel);
-                    const agg = await CombatEngine.simulateManyFights(
+                    // Бой идёт на НАСТОЯЩЕМ HP каждого из боссов этого уровня по
+                    // отдельности (getPerBossHpList — тот же реальный
+                    // calculateBossMaxHealth, что и в живучести ниже), не на своих
+                    // синтетических данных и не на их сумме одним боем —
+                    // simulateManyLevelFights прогоняет их как 5 отдельных боёв
+                    // подряд (см. её комментарий в CombatEngine) — иначе героя с
+                    // механикой, зависящей от сброса между боссами (рой Елисея —
+                    // штраф на разгон), панель оценивала бы нечестно.
+                    const levelData = row.isOvergrind
+                        ? overgrindLevelData
+                        : await SurvivalEngine.loadLevelData(row.resultKey);
+                    const bossHpLevelKey = row.isOvergrind ? OVERGRIND_CAMPAIGN_LEVEL : row.resultKey;
+                    const perBossHp = getPerBossHpList(probe, bossHpLevelKey, levelData, levelBossHpCache);
+                    const agg = await CombatEngine.simulateManyLevelFights(
                         probe,
                         heroStats,
-                        { bossHp: BOSS_HP_FOR_DPS_FIGHT, incomingCadenceMs: INCOMING_CADENCE_MS, maxHits: 4000 },
+                        perBossHp,
+                        { incomingCadenceMs: INCOMING_CADENCE_MS, maxHits: 4000 },
                         FIGHTS_PER_LEVEL
                     );
                     dpsResults[hero.key][row.resultKey] = agg;
@@ -1833,7 +2064,6 @@ async function runAll() {
             }
 
             survivalResults[hero.key] = {};
-            const overgrindLevelData = await SurvivalEngine.loadLevelData(OVERGRIND_CAMPAIGN_LEVEL);
             for (const row of fullRangeRows) {
                 if (stopRequested) break;
                 if (!row.isOvergrind) {

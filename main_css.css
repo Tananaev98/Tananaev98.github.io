@@ -12,7 +12,11 @@
    :root — ЧИСТО технический фолбэк (на случай если data-area вдруг не выставлен),
    пиксель-в-пиксель совпадает со старыми хардкод-значениями. Он НЕ считается "дизайном"
    какой-либо конкретной области — у каждой области, включая Смешной лес (id=1),
-   свой собственный блок body[data-area="N"] ниже. */
+   свой собственный блок [data-area="N"] ниже. Селектор БЕЗ тега (не body[data-area]) —
+   атрибут выставляется и на <body>, и на <html> (см. index.html/level.html), чтобы
+   переменные темы доставали и до html-уровневого скролла страницы (стилизация
+   скроллбаров ниже читает --gp-wood/--gp-panel-a и должна совпадать с темой области
+   независимо от того, html или body у браузера считается скроллящим элементом). */
 :root {
     --area-accent: #8B4513;
     --area-accent-mid: #6b4c35;
@@ -37,7 +41,7 @@
     --gp-subtitle: #5C4033;
 }
 
-body[data-area="1"] { /* Смешной лес — тот же тон, что и всегда, лишь чуть мшисто-зеленее (эталон, без --area-accent* — карточки меню не трогаем) */
+[data-area="1"] { /* Смешной лес — тот же тон, что и всегда, лишь чуть мшисто-зеленее (эталон, без --area-accent* — карточки меню не трогаем) */
     --area-tint: rgba(90, 150, 80, 0.22);
     --area-bg: #D6CB8E;
 
@@ -53,7 +57,7 @@ body[data-area="1"] { /* Смешной лес — тот же тон, что и
     --gp-subtitle: #4A4018;
 }
 
-body[data-area="2"] { /* Золотые поля — тёплая золотисто-пшеничная тема для фона геймплея, бокового фона и HUD */
+[data-area="2"] { /* Золотые поля — тёплая золотисто-пшеничная тема для фона геймплея, бокового фона и HUD */
     --area-accent: #B8860B;
     --area-accent-mid: #8a6a1e;
     --area-accent-dark: #6b4f16;
@@ -73,7 +77,7 @@ body[data-area="2"] { /* Золотые поля — тёплая золотис
     --gp-subtitle: #6B4A1A;
 }
 
-body[data-area="3"] { /* Плодородные земли — зеленее, чем Смешной лес. --area-accent нейтральный
+[data-area="3"] { /* Плодородные земли — зеленее, чем Смешной лес. --area-accent нейтральный
     (карточки меню не трогаем), характерный цвет области — из --area-tint, поэтому --gp-*
     ниже производим от него же (то же исключение, что и у Смешного леса). */
     --area-accent: #A0522D;
@@ -95,7 +99,7 @@ body[data-area="3"] { /* Плодородные земли — зеленее, �
     --gp-subtitle: #3D4A1A;
 }
 
-body[data-area="4"] { /* Реки и озёра — синеватый. --area-accent (тил) сам по себе тематически
+[data-area="4"] { /* Реки и озёра — синеватый. --area-accent (тил) сам по себе тематически
     подходит для рамок, поэтому --gp-frame/wood/glow берём из него. Панели --gp-panel-a/b
     держим ближе к пергаменту (холодный оттенок не должен полностью вытеснять тёплую бумагу,
     иначе текст поверх плохо читается и модалка выбивается из общего стиля игры). */
@@ -118,7 +122,7 @@ body[data-area="4"] { /* Реки и озёра — синеватый. --area-a
     --gp-subtitle: #1F4548;
 }
 
-body[data-area="5"] { /* Беспокойная деревня — насыщенный медно-терракотовый (глубже и теплее
+[data-area="5"] { /* Беспокойная деревня — насыщенный медно-терракотовый (глубже и теплее
     старого "тёплого рустика", чтобы не читаться как обычный дефолтный коричневый). */
     --area-accent: #A8461E;
     --area-accent-mid: #833819;
@@ -139,7 +143,7 @@ body[data-area="5"] { /* Беспокойная деревня — насыще�
     --gp-subtitle: #5C2A10;
 }
 
-body[data-area="6"] { /* Засечный лес — глубокая тёмная зелень, --area-accent сам по себе подходит для HUD */
+[data-area="6"] { /* Засечный лес — глубокая тёмная зелень, --area-accent сам по себе подходит для HUD */
     --area-accent: #4B5E3A;
     --area-accent-mid: #3a4a2d;
     --area-accent-dark: #2c3a22;
@@ -159,7 +163,7 @@ body[data-area="6"] { /* Засечный лес — глубокая тёмна
     --gp-subtitle: #2E3A20;
 }
 
-body[data-area="7"] { /* Кладбища — серо-лиловый. Панели --gp-panel-a/b держим ближе к пергаменту
+[data-area="7"] { /* Кладбища — серо-лиловый. Панели --gp-panel-a/b держим ближе к пергаменту
     (холодный десатурированный оттенок иначе убивает читаемость текста поверх модалки). */
     --area-accent: #5B5568;
     --area-accent-mid: #46414f;
@@ -180,7 +184,7 @@ body[data-area="7"] { /* Кладбища — серо-лиловый. Пане�
     --gp-subtitle: #322D3A;
 }
 
-body[data-area="8"] { /* Зимние земли — бледно-ледяной синий. Glow берём из --area-tint (он ярче/чище
+[data-area="8"] { /* Зимние земли — бледно-ледяной синий. Glow берём из --area-tint (он ярче/чище
     accent — так свечение полоски босса читается как настоящий лёд, а не тусклая синева). */
     --area-accent: #5C7C99;
     --area-accent-mid: #486277;
@@ -201,7 +205,7 @@ body[data-area="8"] { /* Зимние земли — бледно-ледяной
     --gp-subtitle: #24404E;
 }
 
-body[data-area="9"] { /* Чёрные горы — тёплый красно-огненный. Glow берём из --area-tint (более
+[data-area="9"] { /* Чёрные горы — тёплый красно-огненный. Glow берём из --area-tint (более
     яркий оранжево-красный, чем тёмный accent — читается как настоящее пламя). */
     --area-accent: #8B2E1F;
     --area-accent-mid: #6b2418;
@@ -222,7 +226,7 @@ body[data-area="9"] { /* Чёрные горы — тёплый красно-о�
     --gp-subtitle: #5C2A12;
 }
 
-body[data-area="10"] { /* Оплот безумия — искажённый пурпур, тон сильнее остальных. Единственная
+[data-area="10"] { /* Оплот безумия — искажённый пурпур, тон сильнее остальных. Единственная
     область, где даже панели --gp-panel-a/b намеренно насыщеннее обычного — по замыслу
     самая интенсивная/"испорченная" область кампании. */
     --area-accent: #7A2E6E;
@@ -249,6 +253,43 @@ body[data-area="10"] { /* Оплот безумия — искажённый п�
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+
+    /* Единый стиль скроллбаров по всему проекту (index.html и level.html — общий
+       файл), цвет берётся из --gp-wood/--gp-panel-a темы ТЕКУЩЕЙ области (см. блоки
+       [data-area="N"] выше) — скролл автоматически подстраивается под лес/
+       пещеру/зиму и т.д., а не зашит одним фиксированным цветом. Firefox — это и
+       есть вся его поддержка (scrollbar-width/scrollbar-color), для остальных
+       браузеров — ::-webkit-scrollbar* ниже. Универсальный селектор — чтобы под
+       тему попадал любой скролл в проекте, текущий и будущий, без ручного
+       перечисления каждого отдельного контейнера. */
+    scrollbar-width: thin;
+    scrollbar-color: var(--gp-wood) color-mix(in srgb, var(--gp-panel-a) 45%, transparent);
+}
+
+*::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+    background: color-mix(in srgb, var(--gp-panel-a) 35%, transparent);
+    border-radius: 6px;
+}
+
+*::-webkit-scrollbar-thumb {
+    background-image: linear-gradient(180deg, var(--gp-wood-light), var(--gp-wood));
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background-image: linear-gradient(180deg, var(--gp-wood), var(--gp-wood-dark));
+    background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-corner {
+    background: transparent;
 }
 
 
@@ -3453,6 +3494,113 @@ html.is-mobile .main_menu_image {
     filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
 }
 
+/* Индикатор пчелиного роя Елисея — тот же flex-child приём в колонке
+   .hero-health-container, что и .tikhon-shake-gauge выше. 8 равных слотов;
+   пустой слот — тусклый ч/б силуэт пчелы (тот же спрайт weapon1, просто
+   приглушённый), заполненный — цветной с лёгким свечением. Видно только у
+   Елисея (см. initEliseyBeeGauge в game.js). */
+.elisey-bee-gauge {
+    position: relative;
+    flex: 0 0 auto;
+    width: 92%;
+    height: clamp(10px, 1.8vh, 15px);
+    display: flex;
+    gap: 2px;
+    pointer-events: none;
+}
+
+.elisey-bee-slot {
+    flex: 1 1 0;
+    height: 100%;
+    min-width: 0;
+    border-radius: 3px;
+    border: 1px solid var(--gp-wood);
+    background-color: rgba(0, 0, 0, 0.35);
+    background-image: url('images/hero/7_EliseyMedov/weapon1.webp');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 60%;
+    opacity: 0.35;
+    filter: grayscale(1);
+    transition: opacity 0.2s ease, filter 0.2s ease, box-shadow 0.2s ease;
+}
+
+.elisey-bee-slot.is-filled {
+    opacity: 1;
+    filter: grayscale(0);
+    box-shadow: 0 0 6px rgba(255, 214, 0, 0.7);
+}
+
+/* Сама летающая/жалящая пчела на цели (mount синхронизируется с врагом отдельно
+   в JS, см. syncEliseyBeeMount) — блуждание между точками силуэта интерполируется
+   через transition на left/top, "укус" — короткий импульс масштаба/свечения. */
+.elisey-bee-mount {
+    position: absolute;
+    pointer-events: none;
+    z-index: 9;
+    overflow: visible;
+}
+
+.elisey-bee {
+    position: absolute;
+    width: clamp(20px, 2.6vw, 34px);
+    aspect-ratio: 1;
+    object-fit: contain;
+    transform: translate(-50%, -50%);
+    transition: left 550ms ease-in-out, top 550ms ease-in-out;
+    filter: drop-shadow(0 2px 2px rgba(20, 8, 2, 0.5));
+    will-change: left, top, transform;
+}
+
+.elisey-bee.is-stinging {
+    animation: elisey-bee-sting 260ms ease-out;
+}
+
+@keyframes elisey-bee-sting {
+    0% { transform: translate(-50%, -50%) scale(1); filter: drop-shadow(0 2px 2px rgba(20, 8, 2, 0.5)); }
+    40% { transform: translate(-50%, -50%) scale(1.55); filter: drop-shadow(0 0 8px rgba(255, 214, 0, 0.9)); }
+    100% { transform: translate(-50%, -50%) scale(1); filter: drop-shadow(0 2px 2px rgba(20, 8, 2, 0.5)); }
+}
+
+/* Пчела — не разовый эффект вроде стрелы/огня, а единственный видимый признак
+   активного, длящегося роя, поэтому под reduced-motion её не прячем целиком
+   (как .luka-arrow-mount и т.п. ниже) — только убираем анимацию полёта/укуса,
+   позиции обновляются мгновенно вместо плавной интерполяции. */
+@media (prefers-reduced-motion: reduce) {
+    .elisey-bee {
+        transition: none;
+        animation: none;
+    }
+}
+
+/* Кратковременная пчела при отбитии "атаки" босса (не самого босса) — одноразовый
+   эффект, урон уже применён синхронно ДО её появления (см. showEliseyDeflectImpact
+   в game.js — правило 13 CLAUDE.md про мгновенный отбой, эта пчела ничего не
+   задерживает). Появляется, держится, гаснет — ровно 1000ms, как попросил
+   пользователь ("спустя секунду исчезают"). */
+.elisey-deflect-bee {
+    position: absolute;
+    width: clamp(18px, 2.4vw, 30px);
+    aspect-ratio: 1;
+    object-fit: contain;
+    z-index: 9;
+    pointer-events: none;
+    filter: drop-shadow(0 2px 2px rgba(20, 8, 2, 0.5));
+    animation: elisey-deflect-bee-life 1000ms ease-out forwards;
+}
+
+.elisey-deflect-bee.is-critical {
+    filter: drop-shadow(0 0 10px rgba(255, 214, 0, 0.9));
+}
+
+@keyframes elisey-deflect-bee-life {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.4); }
+    15% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+    30% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    75% { opacity: 1; transform: translate(-50%, -50%) scale(1) translateY(0); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.85) translateY(-14px); }
+}
+
 @media (prefers-reduced-motion: reduce) {
     .eremei-boss-impact,
     .dunya-boss-impact,
@@ -3463,6 +3611,7 @@ html.is-mobile .main_menu_image {
     .mila-boss-impact,
     .mila-pea-mount,
     .mila-debris-burst,
+    .elisey-deflect-bee,
     .tikhon-boss-impact { display: none; }
 
     .main_menu_image.eremei-screen-shake,
@@ -4221,25 +4370,425 @@ html.is-mobile .main_menu_image {
 }
 
 /* ====== ОКНО ПОБЕДЫ/ПОРАЖЕНИЯ ====== */
-.endgame-stats {
-    margin: 20px 0;
-    font-size: 18px;
-    color: var(--gp-subtitle);
-    background: rgba(255, 255, 255, 0.3);
-    padding: 10px;
-    border-radius: 5px;
+
+/* Появление самого окна: победа влетает с лёгким пружинным перехлёстом (воодушевление),
+   поражение — спокойнее и без перехлёста ("чуть меньше воодушевления", как просили). */
+.endgame-modal.is-victory .modal-content {
+    animation: endgame-modal-pop-in 480ms cubic-bezier(0.18, 0.9, 0.25, 1) both;
+    border-color: #e8b13a;
+    box-shadow: 0 0 40px rgba(255, 190, 60, 0.35), 0 0 30px rgba(0, 0, 0, 0.5);
 }
 
-.resource-line, .time-line {
-    margin: 5px 0;
+.endgame-modal.is-defeat .modal-content {
+    animation: endgame-modal-fade-in 520ms ease-out both;
+    border-color: #6b4a44;
+    box-shadow: 0 0 24px rgba(0, 0, 0, 0.55);
+}
+
+@keyframes endgame-modal-pop-in {
+    0% { opacity: 0; transform: scale(0.72) translateY(18px); }
+    55% { opacity: 1; transform: scale(1.035) translateY(-2px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes endgame-modal-fade-in {
+    0% { opacity: 0; transform: scale(0.94) translateY(10px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.endgame-badge {
+    font-size: 46px;
+    line-height: 1;
+    margin-bottom: 2px;
+    filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.35));
+}
+
+.endgame-modal.is-victory .endgame-badge {
+    animation: endgame-badge-victory-pop 720ms cubic-bezier(0.18, 0.9, 0.25, 1) both;
+}
+
+.endgame-modal.is-defeat .endgame-badge {
+    filter: grayscale(0.4) drop-shadow(0 3px 4px rgba(0, 0, 0, 0.35));
+    animation: endgame-badge-defeat-drop 560ms ease-out both;
+}
+
+@keyframes endgame-badge-victory-pop {
+    0% { opacity: 0; transform: scale(0.3) rotate(-14deg); }
+    60% { opacity: 1; transform: scale(1.18) rotate(6deg); }
+    100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+@keyframes endgame-badge-defeat-drop {
+    0% { opacity: 0; transform: translateY(-14px) scale(0.85); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.endgame-modal.is-victory .modal-content h2 {
+    color: #ffd75e;
+    text-shadow: 0 0 10px rgba(255, 197, 51, 0.75), 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.endgame-modal.is-defeat .modal-content h2 {
+    color: #c96a5a;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.endgame-stats {
+    margin: 18px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* Каждая строка статы — своя "плашка", появляющаяся по очереди, а не разом. */
+.endgame-stat-row {
+    display: grid;
+    grid-template-columns: 30px 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    background: rgba(255, 255, 255, 0.35);
+    border: 2px solid rgba(0, 0, 0, 0.12);
+    border-radius: 10px;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset;
+    opacity: 0;
+    animation: endgame-stat-row-in 420ms ease-out both;
+}
+
+.endgame-stat-row:nth-of-type(1) { animation-delay: 80ms; }
+.endgame-stat-row:nth-of-type(2) { animation-delay: 160ms; }
+.endgame-stat-row:nth-of-type(3) { animation-delay: 240ms; }
+.endgame-stat-row:nth-of-type(4) { animation-delay: 320ms; }
+
+@keyframes endgame-stat-row-in {
+    0% { opacity: 0; transform: translateX(-14px); }
+    100% { opacity: 1; transform: translateX(0); }
+}
+
+.endgame-stat-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+}
+
+.endgame-stat-icon img {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+}
+
+.endgame-stat-label {
+    text-align: left;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--gp-subtitle);
+    opacity: 0.85;
+}
+
+.endgame-stat-value {
+    font-size: 19px;
+    font-weight: 800;
+    color: var(--gp-frame);
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Строка с достижением («новый рекорд») — акцентная плашка, отдельная от обычных
+   строк статов, появляется чуть позже них и мягко пульсирует, привлекая взгляд.
+   Показывается только при победе (rowTotal формируется исключительно внутри
+   completeLevel/recordLevelCompletion, которые вызываются только по victory). */
+.endgame-record-banner {
+    margin-top: 4px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    text-align: center;
+    opacity: 0;
+    animation: endgame-stat-row-in 420ms ease-out both;
+}
+
+.endgame-record-banner.endgame-record-prev {
+    background: rgba(0, 0, 0, 0.12);
+    font-size: 12.5px;
+    color: var(--gp-subtitle);
+    padding: 6px 12px;
+    animation-delay: 420ms;
+}
+
+.endgame-record-banner.endgame-record-new {
+    background: linear-gradient(135deg, #fff3c4, #ffd873 55%, #f3b23a);
+    border: 2px solid #b9781a;
+    box-shadow: 0 0 16px rgba(255, 187, 42, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    animation:
+        endgame-stat-row-in 420ms ease-out 560ms both,
+        endgame-record-glow 1.8s ease-in-out 1000ms infinite alternate;
+}
+
+.endgame-record-badge {
+    display: block;
+    font-size: 15px;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    color: #7a4407;
+    text-transform: uppercase;
+}
+
+.endgame-record-formula {
+    display: block;
+    font-size: 12.5px;
+    color: #7a4407;
+    opacity: 0.85;
+    margin-top: 2px;
+}
+
+.endgame-record-total {
+    display: block;
+    font-size: 24px;
+    font-weight: 900;
+    color: #7a4407;
+    margin-top: 3px;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+    font-variant-numeric: tabular-nums;
+}
+
+@keyframes endgame-record-glow {
+    0% { box-shadow: 0 0 12px rgba(255, 187, 42, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.6); }
+    100% { box-shadow: 0 0 26px rgba(255, 187, 42, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.6); }
+}
+
+/* Только окно победы/поражения — не .start-modal ("Готовы к битве?"), который тоже
+   переиспользует класс .endgame-buttons для своей кнопки "ВПЕРЕД!": та должна
+   появляться сразу, без интерактивной задержки, а не всплывать через ~1с. */
+.endgame-modal .endgame-buttons {
+    opacity: 0;
+    animation: endgame-stat-row-in 420ms ease-out 620ms both;
+}
+
+/* Баннер разблокировки уровня/области — раньше был сухой строкой текста в общем
+   списке статов, теперь отдельная заметная плашка со своим цветом (бирюзовый —
+   не путать с золотым "новый рекорд" и фиолетовым "новый герой" ниже). */
+.endgame-unlock-banner {
+    margin-top: 4px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    text-align: center;
+    font-weight: 800;
+    font-size: 15px;
+    color: #0d4d43;
+    background: linear-gradient(135deg, #d3f5ea, #a8e6d2 60%, #7ed1b8);
+    border: 2px solid #2f8f74;
+    box-shadow: 0 0 14px rgba(46, 176, 140, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+    opacity: 0;
+    animation: endgame-stat-row-in 420ms ease-out 420ms both;
+}
+
+/* Баннер разблокировки нового героя — самое яркое и заметное событие в этом окне,
+   с реальным портретом героя (безопасно показывать именно тут — этот баннер
+   рендерится ровно в момент, когда hero.unlock только что стал true) и кнопкой
+   прямого перехода к экрану персонажей. */
+.endgame-hero-unlock-banner {
+    margin-top: 4px;
+    padding: 14px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    text-align: left;
+    background: linear-gradient(135deg, #f3e2ff, #d9b8ff 55%, #b98af0);
+    border: 3px solid #7a3fc9;
+    box-shadow: 0 0 22px rgba(154, 79, 230, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    opacity: 0;
+    animation:
+        endgame-stat-row-in 460ms ease-out 500ms both,
+        endgame-hero-unlock-glow 1.8s ease-in-out 960ms infinite alternate;
+}
+
+@keyframes endgame-hero-unlock-glow {
+    0% { box-shadow: 0 0 16px rgba(154, 79, 230, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.55); }
+    100% { box-shadow: 0 0 30px rgba(154, 79, 230, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.55); }
+}
+
+.endgame-hero-unlock-portrait {
+    flex-shrink: 0;
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 3px solid #5a2a9c;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+.endgame-hero-unlock-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.endgame-hero-unlock-kicker {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #4a1f80;
+    opacity: 0.85;
+}
+
+.endgame-hero-unlock-name {
+    font-size: 19px;
+    font-weight: 900;
+    color: #3a1465;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.endgame-hero-unlock-goto {
+    flex-shrink: 0;
+    padding: 10px 16px;
+    font-size: 13px;
+    background: linear-gradient(135deg, #7a3fc9, #5a2a9c);
+    color: #fff;
+    border-color: #3a1465;
+    white-space: nowrap;
+}
+
+/* ====== "Внутренности" трека прогресса до нового героя ======
+   Показывается только в баннере окна победы (.endgame-hero-track ниже) — по
+   решению пользователя убрано с главного экрана (index.html), там раньше жил
+   .hero-track с теми же классами. Цифры берутся из ОДНОЙ функции —
+   getHeroUnlockProgress() в saveData.js — сюда попадает только разметка/отрисовка,
+   сам расчёт (следующий герой, % прогресса, остаток уровней) не дублируется.
+   Портрет героя тут ПРИНЦИПИАЛЬНО не грузится — до разблокировки это заглушка "?",
+   тот же язык, что и .character-portrait.locked. */
+.hero-track-portrait.locked {
+    flex-shrink: 0;
+    width: 56px;
+    height: 56px;
+    border-radius: 10px;
+    border: 3px solid #8B4513;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #2a1a0e;
+    color: #8B4513;
+    font-size: 26px;
+    font-weight: 900;
+    text-shadow: 2px 2px 0 #000;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+}
+
+.hero-track-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.hero-track-top {
     display: flex;
     justify-content: space-between;
-    font-weight: bold;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 6px;
 }
 
-.resource-line span, .time-line span {
+.hero-track-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--gp-subtitle);
+    opacity: 0.85;
+}
+
+.hero-track-count {
+    font-size: 15px;
+    font-weight: 800;
     color: var(--gp-frame);
-    font-size: 20px;
+    white-space: nowrap;
+}
+
+.hero-track-bar {
+    position: relative;
+    height: 14px;
+    border-radius: 7px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 2px solid var(--gp-frame);
+    overflow: hidden;
+}
+
+.hero-track-fill {
+    height: 100%;
+    border-radius: 5px;
+    background: linear-gradient(90deg, #ffd873, #f3b23a);
+    box-shadow: 0 0 10px rgba(255, 187, 42, 0.7);
+    transition: width 700ms cubic-bezier(0.18, 0.9, 0.25, 1);
+}
+
+@media (max-width: 640px) {
+    .hero-track-portrait.locked {
+        width: 46px;
+        height: 46px;
+        font-size: 20px;
+    }
+
+    .hero-track-title {
+        font-size: 11px;
+    }
+
+    .hero-track-count {
+        font-size: 13px;
+    }
+}
+
+/* Баннер трека прогресса до нового героя — появляется только при прохождении
+   уровня, который раньше не был пройден (см. completeLevel в saveData.js), и
+   всегда показывает прогресс к СЛЕДУЮЩЕМУ ещё не открытому герою (если только что
+   открылся герой — см. .endgame-hero-unlock-banner выше — трек уже указывает на
+   герой ПОСЛЕ него). */
+.endgame-hero-track {
+    margin-top: 4px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: left;
+    background: rgba(255, 255, 255, 0.35);
+    border: 2px solid rgba(0, 0, 0, 0.12);
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset;
+    opacity: 0;
+    animation: endgame-stat-row-in 420ms ease-out 640ms both;
+}
+
+@media (max-width: 560px) {
+    .endgame-hero-unlock-banner {
+        flex-wrap: wrap;
+        text-align: center;
+        justify-content: center;
+    }
+
+    .endgame-hero-unlock-body {
+        align-items: center;
+    }
+
+    .endgame-hero-unlock-goto {
+        width: 100%;
+    }
+
+    /* На узких экранах 3 кнопки в ряд (padding 12px 24px + gap 15px каждая) не
+       помещаются по ширине и вылезают за модалку (обрезаются overflow-x:hidden
+       у .modal-content, но иначе торчали бы наружу) — на телефоне складываем
+       кнопки в столбец на всю ширину, как и остальные кнопки этого окна. */
+    .endgame-buttons {
+        flex-direction: column;
+    }
+
+    .endgame-button {
+        width: 100%;
+        box-sizing: border-box;
+    }
 }
 
 .endgame-buttons {
@@ -4730,6 +5279,22 @@ html.is-mobile .main_menu_image {
     .endgame-hero-level.level-up-value {
         animation: none;
     }
+
+    .endgame-modal .modal-content,
+    .endgame-badge,
+    .endgame-stat-row,
+    .endgame-record-banner,
+    .endgame-unlock-banner,
+    .endgame-hero-unlock-banner,
+    .endgame-hero-track,
+    .endgame-buttons {
+        animation: none;
+        opacity: 1;
+    }
+
+    .hero-track-fill {
+        transition: none;
+    }
 }
 
 @media (max-width: 560px) {
@@ -5006,6 +5571,130 @@ html.is-mobile .main_menu_image {
         left: 0;
         width: 100%;
     }
+}
+
+/* ==================== Окно выбора сложности уровня ==================== */
+/* Общее для index.html (клик по плитке уровня) и level.html (кнопка «Следующий
+   уровень» в конце боя) — см. difficulty.js. Визуально повторяет
+   .debug-unlock-modal/.debug-unlock-dialog из index_css.css, но как самостоятельные
+   классы здесь, в main_css.css — единственном файле стилей, который грузят обе страницы. */
+.difficulty-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 2500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(18, 12, 8, 0.88);
+}
+
+.difficulty-dialog {
+    position: relative;
+    width: min(380px, 100%);
+    padding: 32px;
+    color: var(--gp-subtitle);
+    text-align: center;
+    background: linear-gradient(135deg, var(--gp-panel-a), var(--gp-panel-b));
+    border: 3px solid var(--gp-frame);
+    border-radius: 15px;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.65);
+}
+
+.difficulty-dialog h2 {
+    margin: 0 32px 6px;
+    color: var(--gp-frame);
+}
+
+.difficulty-subtitle {
+    margin: 0 0 20px;
+}
+
+.difficulty-close {
+    position: absolute;
+    top: 8px;
+    right: 12px;
+    padding: 0;
+    color: var(--gp-frame);
+    font: 700 32px/1 sans-serif;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+}
+
+.difficulty-stepper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+    margin: 0 0 10px;
+}
+
+.difficulty-arrow {
+    width: 48px;
+    height: 48px;
+    color: #f3dfbd;
+    font-size: 26px;
+    line-height: 1;
+    background: linear-gradient(135deg, var(--gp-wood), var(--gp-wood-dark));
+    border: 2px solid var(--gp-frame);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.difficulty-arrow:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.difficulty-value {
+    width: 88px;
+    padding: 4px 2px;
+    color: var(--gp-frame);
+    font-family: inherit;
+    font-size: 40px;
+    font-weight: 700;
+    text-align: center;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    outline: none;
+    font-variant-numeric: tabular-nums;
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.difficulty-value:focus {
+    border-bottom-color: var(--gp-frame);
+}
+
+.difficulty-value::-webkit-inner-spin-button,
+.difficulty-value::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.difficulty-hint {
+    margin: 0 0 20px;
+    font-size: 13px;
+    opacity: 0.85;
+}
+
+.difficulty-actions {
+    display: flex;
+    justify-content: center;
+}
+
+.difficulty-start {
+    padding: 12px 32px;
+    color: #f3dfbd;
+    font-weight: 700;
+    font-size: 15px;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, #347334, #215121);
+    border: 2px solid var(--gp-frame);
+    border-radius: 6px;
+    cursor: pointer;
 }
 
 

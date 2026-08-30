@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Monstrous world</title>
-    <link rel="stylesheet" href="main_css.css?v=tikhon-crit-multiplier-cap-2">
+    <link rel="stylesheet" href="main_css.css?v=level-difficulty-1">
     <script src="music/audio-settings.js?v=audio-settings-2026-08-11"></script>
     <script src="enemyAlphaMasks.js?v=hp-bars-revert-2026-08-06"></script>
+    <script src="difficulty.js?v=level-difficulty-1"></script>
 
     <script>
 const params = new URLSearchParams(window.location.search);
@@ -14,10 +15,22 @@ const requestedLevel = params.get('level') ?? '1';
 const parsedLevel = Number(requestedLevel);
 const MIN_LEVEL = 1;
 const MAX_LEVEL = 141;
-const GAME_BUILD_VERSION = 'tikhon-crit-multiplier-cap-2';
+const GAME_BUILD_VERSION = 'level-difficulty-1';
 const level = Number.isInteger(parsedLevel) && parsedLevel >= MIN_LEVEL && parsedLevel <= MAX_LEVEL
     ? parsedLevel
     : null;
+
+// Сложность уровня, выбранная в окне на экране выбора уровня (index.html/difficulty.js)
+// или на кнопке «Следующий уровень» в конце боя (game.js) — приходит через ?difficulty=N.
+// Читается game.js/saveData.js как обычная глобальная переменная верхнего уровня (та же
+// область видимости скриптов страницы, что и у level/GAME_BUILD_VERSION здесь — см.
+// getDifficultyMultiplier в saveData.js). Прямых заходов без параметра (старые
+// ссылки/админ-панель) не ломает — падает на минимальную сложность 1, отдельного
+// «нулевого»/выключенного варианта в игре нет.
+const requestedDifficulty = Number(params.get('difficulty'));
+const LEVEL_DIFFICULTY = Number.isInteger(requestedDifficulty) && requestedDifficulty >= 1
+    ? requestedDifficulty
+    : 1;
 
 let loadedCount = 0;
 let gameStarted = false;
@@ -68,13 +81,17 @@ if (level === null) {
 } else {
     document.title = `Monstrous world — уровень ${level}`;
 
-    // Тема области для фона геймплея (см. main_css.css :root/body[data-area]).
+    // Тема области для фона геймплея (см. main_css.css :root/[data-area]).
     // Необязательна для запуска игры, поэтому не участвует в totalToLoad/checkAllLoaded.
     const areasScript = document.createElement('script');
     areasScript.src = `lvlData/areas.js?v=${GAME_BUILD_VERSION}`;
     areasScript.onload = () => {
         if (typeof getAreaByLevel === 'function' && document.body) {
-            document.body.dataset.area = String(getAreaByLevel(level).id);
+            const areaId = String(getAreaByLevel(level).id);
+            document.body.dataset.area = areaId;
+            // И на <html> тоже — на случай html-уровневого скролла (см. тот же
+            // комментарий в index.html), для единообразия с ним.
+            document.documentElement.dataset.area = areaId;
         }
     };
     document.head.appendChild(areasScript);
@@ -135,6 +152,20 @@ if (level === null) {
 				<div class="tikhon-shake-track" id="tikhonShakeTrack">
 					<img src="images/hero/6_TihonRechkin/bottle.webp" class="tikhon-shake-bottle" id="tikhonShakeBottle" alt="Дрожащая рука">
 				</div>
+			</div>
+			<!-- Елисей Медов — «Пчелиный рой»: 8 силуэтов под HP-баром, заполняются
+			     иконкой пчелы по числу живых пчёл на текущей "сфокусированной" цели
+			     (см. initEliseyBeeGauge/updateEliseyBeeGauge в game.js). Показывается
+			     только у Елисея, у остальных героев — скрыт (display:none). -->
+			<div class="elisey-bee-gauge" id="eliseyBeeGauge" style="display:none;">
+				<div class="elisey-bee-slot"></div>
+				<div class="elisey-bee-slot"></div>
+				<div class="elisey-bee-slot"></div>
+				<div class="elisey-bee-slot"></div>
+				<div class="elisey-bee-slot"></div>
+				<div class="elisey-bee-slot"></div>
+				<div class="elisey-bee-slot"></div>
+				<div class="elisey-bee-slot"></div>
 			</div>
 		</div>
 		<div class="statusbar-util-buttons">

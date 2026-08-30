@@ -14,15 +14,16 @@
 <body class="menu-page">
 
 <header class="menu-topbar">
-    <div class="skill-points-display" id="skillPointsDisplay">
+    <button type="button" class="skill-points-display" id="skillPointsDisplay" aria-label="Открыть детализацию рейтинга">
         <span class="skill-points-icon">⚡</span>
-        <span class="skill-points-label">Очки мастерства:</span>
+        <span class="skill-points-label">Рейтинг:</span>
         <span class="skill-points-value" id="skillPointsValue">0</span>
         <div class="skill-points-tooltip">
-            Очки мастерства начисляются за скорость прохождения уровней: чем быстрее вы проходите уровень, тем больше очков получаете!
-            (Если уровень проходится дольше 10 минут, очки не начисляются.)
+            Рейтинг начисляется за скорость прохождения уровней: чем быстрее вы проходите уровень, тем больше очков получаете!
+            (Если уровень проходится дольше 10 минут, очки не начисляются.) Плюс бонус за сложность.
+            Нажмите, чтобы увидеть детализацию по каждому уровню.
         </div>
-    </div>
+    </button>
 
     <div class="menu-actions">
         <div class="select-character-button" id="selectCharacterBtn">Персонажи</div>
@@ -53,6 +54,7 @@
 
 <script src="lvlData/areas.js?v=unlock-stubs-2026-08-14"></script>
 <script src="saveData.js?v=upgrade-bundles-v1-2026-08-20"></script>
+<script src="difficulty.js?v=level-difficulty-1"></script>
 <script src="music/audio-settings.js?v=audio-settings-2026-08-11"></script>
 <script src="music/hub-music.js?v=hub-music-tab-pause-2026-08-04"></script>
 
@@ -61,11 +63,28 @@
 const LEVEL_LINK_VERSION = 'area-preview-levels-2026-08-05';
 
 const requestedArea = Number(new URLSearchParams(window.location.search).get('area'));
-const currentAreaIndex = Number.isInteger(requestedArea) && requestedArea >= 1 && requestedArea <= AREAS.length
-    ? requestedArea - 1
-    : 0;
+const hasExplicitRequestedArea = Number.isInteger(requestedArea) && requestedArea >= 1 && requestedArea <= AREAS.length;
+
+// Без явного ?area= в URL (обычная загрузка/обновление главной, не переход по
+// стрелке навигации области) — фокусируемся на области ПОСЛЕДНЕГО пройденного
+// уровня, а не всегда на первой. Если ничего ещё не пройдено — как и раньше,
+// первая область (AREAS[0]).
+function getDefaultAreaIndex() {
+    const lastCompletedLevel = Number(gameState?.lastCompletedLevel) || 0;
+    if (lastCompletedLevel <= 0 || typeof getAreaByLevel !== 'function') return 0;
+    const area = getAreaByLevel(lastCompletedLevel);
+    const index = AREAS.findIndex(a => a.id === area.id);
+    return index >= 0 ? index : 0;
+}
+
+const currentAreaIndex = hasExplicitRequestedArea ? requestedArea - 1 : getDefaultAreaIndex();
 const currentArea = AREAS[currentAreaIndex];
 document.body.dataset.area = String(currentArea.id);
+// Тот же атрибут — на <html>, а не только на <body>: страничный скролл на этом
+// экране физически управляется html.is-menu (см. index_css.css), и без атрибута
+// именно тут его скроллбар не видел бы переменные темы области (main_css.css) и
+// оставался бы на дефолтном :root-цвете вместо тона текущей области.
+document.documentElement.dataset.area = String(currentArea.id);
 
 const areaHeaderEl = document.getElementById('areaHeader');
 areaHeaderEl.innerHTML = `
@@ -137,6 +156,28 @@ levels.forEach(link => {
         link.classList.remove('locked');
         link.classList.add('unlocked');
     }
+});
+
+// ==================== Окно выбора сложности перед входом на уровень ====================
+// Только разблокированные плитки — у заблокированных нет href/класса .unlocked, клик
+// по ним и раньше никуда не вёл (см. index_css.css: .level.unlocked{pointer-events:auto}).
+document.querySelectorAll('a.level.unlocked[data-level]').forEach(link => {
+    link.addEventListener('click', event => {
+        event.preventDefault();
+        const levelNumber = parseInt(link.dataset.level, 10);
+        openLevelDifficultyModal(levelNumber, {
+            // music/hub-music.js уже отреагировал на этот же клик (перехватывает клики по
+            // a.level.unlocked[href] на document в фазе погружения) — начал гасить хабовую
+            // музыку и подсветил плитку как "is-entering", ожидая реальной навигации.
+            // Если игрок закрыл окно без «Начать» — откатываем это состояние, иначе
+            // повторный клик по любой плитке будет молча проигнорирован (hub-music.js
+            // подавляет клики, пока не сброшен его внутренний navigationStarted).
+            onCancel: () => window.hubMusic?.resetNavigationState(),
+            onStart: (difficulty) => {
+                window.location.href = `level.html?level=${levelNumber}&difficulty=${difficulty}&v=${LEVEL_LINK_VERSION}`;
+            }
+        });
+    });
 });
 
 // ==================== Секретная разблокировка для отладки ====================
@@ -241,6 +282,11 @@ function openSettingsModal() {
                     <span class="settings-slider-value" id="settingsSfxValue">${sfxVolume}</span>
                 </div>
             </div>
+            <div class="settings-row">
+                <span class="settings-row-label">Сложность по умолчанию</span>
+                <input type="number" class="settings-difficulty-input" id="settingsDefaultDifficulty" min="1" step="1" inputmode="numeric" value="${getDefaultLevelDifficulty()}">
+            </div>
+            <p class="settings-hint">Применяется к уровням, на которые вы ещё ни разу не заходили — уже начатый уровень помнит свою последнюю сложность отдельно.</p>
         </div>
     `;
 
@@ -264,6 +310,15 @@ function openSettingsModal() {
         const value = Number(event.target.value);
         sfxValue.textContent = value;
         window.audioSettings?.setSfxVolume(value);
+    });
+
+    const defaultDifficultyInput = modal.querySelector('#settingsDefaultDifficulty');
+    const commitDefaultDifficulty = () => {
+        defaultDifficultyInput.value = setDefaultLevelDifficulty(defaultDifficultyInput.value);
+    };
+    defaultDifficultyInput.addEventListener('blur', commitDefaultDifficulty);
+    defaultDifficultyInput.addEventListener('keydown', event => {
+        if (event.key === 'Enter') { event.preventDefault(); commitDefaultDifficulty(); }
     });
 
     document.body.appendChild(modal);
@@ -398,8 +453,11 @@ function openCharacterSelect() {
 			<button class="reset-upgrades-btn" id="resetAllUpgradesBtn">Сбросить прокачку</button>
 			<div class="upgrade-wrapper">
 			<div class="upgrade-cost" id="upgradeCostModal"></div>
+				<label class="max-upgrade-toggle">
+					<input type="checkbox" id="maxUpgradeCheckbox">
+					<span>Повышать на максимум</span>
+				</label>
 				<button class="upgrade-hero-btn" id="upgradeHeroModalBtn" disabled>Повысить уровень</button>
-				
 			</div>
 			<button class="select-hero-btn" id="selectHeroBtn" disabled>Выбрать персонажа</button>
 		</div>
@@ -413,6 +471,12 @@ function openCharacterSelect() {
     upgradeBtnInModal = document.getElementById('upgradeHeroModalBtn');
     upgradeInfoSpan = document.getElementById('upgradeCostModal');
     const resetAllUpgradesBtn = document.getElementById('resetAllUpgradesBtn');
+    const maxUpgradeCheckbox = document.getElementById('maxUpgradeCheckbox');
+    maxUpgradeCheckbox.checked = !!gameState.maxUpgradeMode;
+    maxUpgradeCheckbox.addEventListener('change', () => {
+        gameState.maxUpgradeMode = maxUpgradeCheckbox.checked;
+        saveGameState();
+    });
 
     let currentSelectedElement = null;
     let currentHeroKey = null;
@@ -641,6 +705,27 @@ function openCharacterSelect() {
 				alert(`Персонаж достиг максимального уровня (${HERO_MAX_LEVEL})`);
 				return;
 			}
+			if (maxUpgradeCheckbox.checked) {
+				// heroUp мутирует gameState[currentHeroKey] на месте (hero — та же
+				// ссылка), поэтому hero.level/hero.zlataUp читаются свежими на каждом
+				// шаге цикла без повторного obращения к gameState.
+				let leveledUp = 0;
+				while (hero.level < HERO_MAX_LEVEL && gameState.zlata >= hero.zlataUp) {
+					heroUp(currentHeroKey, false);
+					leveledUp++;
+				}
+				if (leveledUp === 0) {
+					alert("Недостаточно злата!");
+					return;
+				}
+				const updatedHero = gameState[currentHeroKey];
+				updateUpgradeButton(updatedHero);
+				updateInfoPanel(currentHeroKey);
+				updateResetButton();
+				playLevelUpAnimation(updatedHero.level);
+				playLevelUpSound();
+				return;
+			}
 			const cost = hero.zlataUp;
 			if (gameState.zlata >= cost) {
 				heroUp(currentHeroKey, false);
@@ -853,11 +938,11 @@ function openCharacterSelect() {
     });
 }
 
-// ==================== ОТОБРАЖЕНИЕ ОЧКОВ МАСТЕРСТВА ====================
+// ==================== ОТОБРАЖЕНИЕ РЕЙТИНГА ====================
 function updateSkillPointsDisplay() {
     const pointsSpan = document.getElementById('skillPointsValue');
     if (pointsSpan) {
-        const points = (typeof gameState !== 'undefined' && gameState.skillPoints !== undefined) ? gameState.skillPoints : 0;
+        const points = typeof getTotalRatingPoints === 'function' ? getTotalRatingPoints() : 0;
         pointsSpan.textContent = points;
     }
 }
@@ -865,7 +950,98 @@ function updateSkillPointsDisplay() {
 // Вызываем при загрузке
 updateSkillPointsDisplay();
 
+// ==================== Окно детализации рейтинга ====================
+// Требование пользователя: сумма в шапке должна БЫТЬ суммой видимых строк этой таблицы,
+// без единой скрытой добавки — обе стороны читают одну и ту же getTotalRatingPoints()
+// (saveData.js), никакого отдельно хранимого/пересчитанного числа здесь нет.
+function openRatingDetailsModal() {
+    const oldModal = document.querySelector('.rating-details-modal');
+    if (oldModal) oldModal.remove();
+
+    const records = Object.entries(gameState.levelRecords)
+        .map(([level, record]) => ({ level: Number(level), ...record }))
+        .sort((a, b) => a.level - b.level);
+
+    const total = getTotalRatingPoints();
+
+    const rowsHtml = records.length === 0
+        ? `<tr><td colspan="7" class="rating-details-empty">Пока нет ни одного пройденного уровня.</td></tr>`
+        : records.map(record => {
+            const hero = record.heroKey ? gameState[record.heroKey] : null;
+            const heroCell = hero
+                ? `<span class="rating-hero-cell"><img src="${hero.image}" alt="${hero.dispName}" class="rating-hero-icon">${hero.dispName}</span>`
+                : '<span class="rating-hero-unknown">—</span>';
+            const bonusPct = Math.round((record.difficulty || 1) * 10);
+            return `
+                <tr>
+                    <td class="rating-level-cell">Уровень ${record.level}<br><span class="rating-level-title">${getLevelDisplayTitle(record.level)}</span></td>
+                    <td>${record.difficulty}</td>
+                    <td>${heroCell}</td>
+                    <td>${formatTime(record.time)}</td>
+                    <td>${record.basePoints}</td>
+                    <td>+${bonusPct}%</td>
+                    <td class="rating-final-cell">${record.finalPoints}</td>
+                </tr>`;
+        }).join('');
+
+    const modal = document.createElement('div');
+    modal.className = 'rating-details-modal debug-unlock-modal';
+    modal.innerHTML = `
+        <div class="debug-unlock-dialog rating-details-dialog" role="dialog" aria-modal="true" aria-labelledby="ratingDetailsTitle">
+            <button type="button" class="debug-unlock-close" aria-label="Закрыть">&times;</button>
+            <h2 id="ratingDetailsTitle">Детализация рейтинга</h2>
+            <div class="rating-details-scroll">
+                <table class="rating-details-table">
+                    <thead>
+                        <tr>
+                            <th>Уровень</th>
+                            <th>Сложность</th>
+                            <th>Герой</th>
+                            <th>Время</th>
+                            <th>Очки без бонуса</th>
+                            <th>Бонус сложности</th>
+                            <th>Итого очков</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rowsHtml}</tbody>
+                    <tfoot>
+                        <tr class="rating-details-total-row">
+                            <td colspan="6">Рейтинг:</td>
+                            <td class="rating-final-cell">${total}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    `;
+
+    const closeModal = () => modal.remove();
+    modal.querySelector('.debug-unlock-close').addEventListener('click', closeModal);
+    modal.addEventListener('click', event => {
+        if (event.target === modal) closeModal();
+    });
+
+    document.body.appendChild(modal);
+}
+
+const skillPointsDisplayBtn = document.getElementById('skillPointsDisplay');
+if (skillPointsDisplayBtn) {
+    skillPointsDisplayBtn.addEventListener('click', openRatingDetailsModal);
+}
+
 selectBtn.addEventListener('click', openCharacterSelect)
+
+// Переход по кнопке "Перейти к персонажам" из баннера разблокировки героя (окно
+// победы на level.html) — сразу открываем окно персонажей и выбираем карточку
+// именно разблокированного героя, чтобы не искать её в сетке самому.
+const openCharactersParam = new URLSearchParams(window.location.search).get('openCharacters');
+if (openCharactersParam) {
+    openCharacterSelect();
+    if (openCharactersParam !== '1') {
+        document.querySelector(`.character-portrait[data-hero="${openCharactersParam}"]`)?.click();
+    }
+    window.history.replaceState({}, '', window.location.pathname);
+}
 </script>
 	
 </script>

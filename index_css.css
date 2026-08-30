@@ -260,6 +260,134 @@ html.is-menu {
     font-variant-numeric: tabular-nums;
 }
 
+.settings-difficulty-input {
+    width: 84px;
+    padding: 8px 10px;
+    color: #2c1a10;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    text-align: center;
+    background: #f4e4c7;
+    border: 2px solid var(--gp-frame);
+    border-radius: 7px;
+    outline: none;
+    font-variant-numeric: tabular-nums;
+}
+
+.settings-difficulty-input:focus {
+    border-color: var(--gp-wood-light);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--gp-frame) 22%, transparent);
+}
+
+.settings-hint {
+    margin: 12px 0 0;
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: var(--gp-subtitle);
+    opacity: 0.8;
+}
+
+/* ==================== Окно детализации рейтинга ==================== */
+.rating-details-dialog {
+    /* .debug-unlock-dialog (базовый класс) не задаёт box-sizing — при content-box
+       её padding:32px + border:3px добавлялись ПОВЕРХ width:min(920px,100%), из-за
+       чего на узких экранах диалог реально рендерился шире 100% контейнера и
+       обрезался за пределами вьюпорта без возможности проскроллить (пропадала
+       даже кнопка закрытия). border-box держит паддинг/рамку ВНУТРИ заданной
+       ширины — только тут, не трогая .debug-unlock-dialog у остальных диалогов. */
+    box-sizing: border-box;
+    width: min(920px, 100%);
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.rating-details-dialog h2 {
+    margin: 0 32px 12px;
+}
+
+.rating-details-scroll {
+    overflow: auto;
+    max-height: 65vh;
+    border: 1px solid color-mix(in srgb, var(--gp-frame) 30%, transparent);
+    border-radius: 8px;
+}
+
+.rating-details-table {
+    width: 100%;
+    min-width: 720px;
+    border-collapse: collapse;
+    font-size: 13px;
+    text-align: left;
+}
+
+.rating-details-table th {
+    position: sticky;
+    top: 0;
+    background: var(--gp-wood-dark);
+    color: #f3dfbd;
+    padding: 8px 10px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    white-space: nowrap;
+}
+
+.rating-details-table td {
+    padding: 7px 10px;
+    border-top: 1px solid color-mix(in srgb, var(--gp-frame) 20%, transparent);
+    color: var(--gp-subtitle);
+    white-space: nowrap;
+}
+
+.rating-level-cell {
+    white-space: normal;
+}
+
+.rating-level-title {
+    display: block;
+    color: var(--gp-subtitle);
+    opacity: 0.75;
+    font-size: 11.5px;
+}
+
+.rating-hero-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.rating-hero-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--gp-frame);
+}
+
+.rating-hero-unknown {
+    opacity: 0.5;
+}
+
+.rating-final-cell {
+    font-weight: 700;
+    color: var(--gp-frame);
+}
+
+.rating-details-total-row td {
+    border-top: 2px solid var(--gp-frame);
+    font-weight: 700;
+    background: color-mix(in srgb, var(--gp-frame) 8%, transparent);
+}
+
+.rating-details-empty {
+    text-align: center;
+    padding: 20px !important;
+    opacity: 0.7;
+    white-space: normal !important;
+}
+
 .menu-main {
     position: relative;
     z-index: 1;
@@ -939,8 +1067,8 @@ html.is-level-navigation-pending .level.unlocked {
     overflow-x: hidden;
     overflow-y: auto;
     box-sizing: border-box;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(92, 64, 51, 0.55) transparent;
+    /* Цвет скролла — общее правило в main_css.css (тема области), тут больше не
+       дублируется отдельным фиксированным цветом. */
 }
 
 .character-portrait {
@@ -1356,8 +1484,7 @@ html.is-level-navigation-pending .level.unlocked {
     overflow-x: hidden;
     overflow-y: auto;
     padding: 0 4px;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(92, 64, 51, 0.55) transparent;
+    /* Цвет скролла — общее правило в main_css.css (тема области). */
 }
 
 /* Блок с полным изображением */
@@ -1526,6 +1653,25 @@ body, .main_menu_image, .select-character-button,
     width: auto;
     white-space: nowrap;
     box-sizing: border-box;
+}
+
+.max-upgrade-toggle {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    color: #e0c9a6;
+    font-size: 12px;
+    user-select: none;
+    align-self: flex-end;
+}
+
+.max-upgrade-toggle input[type="checkbox"] {
+    accent-color: var(--gp-wood, #8a5a34);
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+    margin: 0;
 }
 
 .reset-upgrades-btn {
@@ -1918,8 +2064,16 @@ body, .main_menu_image, .select-character-button,
     backdrop-filter: blur(4px);
     z-index: 1000;
     font-family: inherit;
+    font-size: inherit;
+    color: inherit;
     transition: all 0.2s ease;
     cursor: pointer;
+}
+
+/* Теперь это <button> (было <div>) — чтобы окно детализации рейтинга открывалось
+   кликом по-настоящему интерактивно, доступно и с клавиатуры. */
+.skill-points-display:hover {
+    filter: brightness(1.08);
 }
 
 .skill-points-icon {
@@ -2225,6 +2379,11 @@ body, .main_menu_image, .select-character-button,
         white-space: normal;
         text-align: center;
         margin: 0 auto;
+    }
+
+    .max-upgrade-toggle {
+        align-self: center;
+        font-size: 11px;
     }
 
     .upgrade-hero-btn,

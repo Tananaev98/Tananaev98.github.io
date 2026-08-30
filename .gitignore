@@ -3,3 +3,4 @@ desktop.ini
 .DS_Store
 tmp/
 DataExport/
+node_modules/

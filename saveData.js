@@ -9,6 +9,37 @@ const LEVEL_REWARD_SCALE = 3;
 const REGION_FINAL_FIRST_CLEAR_ZLATA_MULTIPLIER = 10;
 const HERO_UPGRADE_BASE_COST = 10;
 const HERO_UPGRADE_COST_GROWTH = 1.06;
+
+// «Перекачка» после героя-уровня 160 — тот же архитектурный приём, что и у
+// BOSS_HEALTH_LEVEL_ADJUSTMENTS/getBossHealthLevelMultiplier ниже (плавная ускоряющаяся
+// кривая через Math.exp от прогресса внутри диапазона), применённая к цене прокачки
+// вместо HP боссов. fromLevel — множитель РОВНО 1 (никакого скачка цены в самой точке
+// перехода, herolevel 160 стоит ИДЕНТИЧНО прежней формуле — правило пользователя «не
+// резкий скачок»); дальше множитель гладко ускоряется до toLevel.
+// scale/exponent подобраны (не на глаз) так, чтобы суммарная цена прокачки 160→200
+// (40 покупок) совпадала с целью пользователя: getLevelZlataPayout(141, 5, 5) на
+// сложности 500 (см. difficulty.js), взятое 100 раз — реальными функциями, не
+// переписанной формулой (см. scripts-заметку в истории коммитов при желании
+// перепроверить: getLevelZlataPayout(141,5,5) при LEVEL_DIFFICULTY=500 ≈ 5 339 700,
+// ×100 ≈ 533 970 000 — и это ровно то, что получается с этими scale/exponent).
+// Результат: рядом с 160 прирост цены за уровень почти не отличается от базовых 6%
+// (лвл 161 — уже ~10.7% вместо 6%, а не единомоментный множитель ×N), и только к концу
+// диапазона (герой-уровень ~190-199) ускорение становится действительно резким —
+// ступенчато нарастающий процент прироста, а не одна ступенька.
+const HERO_UPGRADE_OVERDRIVE = Object.freeze({
+    fromLevel: 160,
+    toLevel: HERO_MAX_LEVEL,
+    scale: 0.276,
+    exponent: 6
+});
+
+function getHeroUpgradeOverdriveMultiplier(heroLevel) {
+    const { fromLevel, toLevel, scale, exponent } = HERO_UPGRADE_OVERDRIVE;
+    if (heroLevel <= fromLevel) return 1;
+    const span = Math.max(1, toLevel - fromLevel);
+    const progress = Math.min(1, (heroLevel - fromLevel) / span);
+    return 1 + scale * (Math.exp(exponent * progress) - 1);
+}
 // Ревизия 10: убран движковый хак «погасить легаси +5%/уровень, наложить свою кривую
 // поверх» — он делил РЕАЛЬНЫЙ configuredAttackDamage (customDamage/baseDamage из lvlData)
 // на растущий множитель, хотя в самих файлах уровней никакого «уже заложенного +5%/уровень»
@@ -99,9 +130,33 @@ function getHeroUpgradeCost(heroLevel) {
 
     if (normalizedLevel >= HERO_MAX_LEVEL) return 0;
 
+    const baseCost = HERO_UPGRADE_BASE_COST * Math.pow(HERO_UPGRADE_COST_GROWTH, normalizedLevel - 1);
     return Math.max(1, Math.round(
-        HERO_UPGRADE_BASE_COST * Math.pow(HERO_UPGRADE_COST_GROWTH, normalizedLevel - 1)
+        baseCost * getHeroUpgradeOverdriveMultiplier(normalizedLevel)
     ));
+}
+
+// Выбранная игроком сложность уровня на этом заходе (см. index.html — окно выбора при
+// входе на уровень, difficulty.js). LEVEL_DIFFICULTY — глобальная переменная верхнего
+// уровня, объявленная в level.html из URL-параметра ?difficulty=N (та же лексическая
+// область видимости скриптов одной страницы, что и у lvlNumber/bossCombatConfig — см.
+// PROBE_SCRIPT_SOURCE в admin-balance-panel.html, где этот же приём уже использовался для
+// isGamePaused). В контекстах, где её вообще нет (страница не через level.html, песочница
+// ProgressionEngine админ-панели) — typeof-проверка, безопасный дефолт: сложность 1
+// (минимальная выбираемая сложность в игре — не «выключенная» сложность, отдельного
+// «нулевого» варианта нет).
+function getCurrentLevelDifficulty() {
+    const raw = typeof LEVEL_DIFFICULTY !== 'undefined' ? Number(LEVEL_DIFFICULTY) : 1;
+    return Number.isFinite(raw) ? Math.max(1, Math.floor(raw)) : 1;
+}
+
+// Единая точка для ВСЕХ начислений, зависящих от сложности — урон боссов (ниже), HP
+// боссов (calculateBossMaxHealth в game.js), злато (getLevelZlataPayout ниже) и рейтинг
+// (recordLevelCompletion ниже) читают отсюда, а не пересчитывают каждый сам по себе.
+// Это и есть «универсально раз и навсегда»: чтобы добавить сложность новому уровню,
+// ничего в его gameDataN.js трогать не нужно.
+function getDifficultyMultiplier() {
+    return 1 + getCurrentLevelDifficulty() * 0.10;
 }
 
 // Ревизия 10: levelNumber больше не используется (см. комментарий ревизии 10 выше у
@@ -110,6 +165,8 @@ function getHeroUpgradeCost(heroLevel) {
 // приходит через bossMultiplier/phaseMultiplier/levelMultiplier — то есть напрямую из
 // данных уровня.
 // Ревизия 11: без потолка на произведение множителей.
+// Сложность уровня (getDifficultyMultiplier) домножается сюда же — это урон именно
+// БОССА (реальная величина одного удара), не механика/паттерн атаки, который не меняется.
 function calculateBossAttackDamage(
     configuredAttackDamage,
     bossMultiplier,
@@ -118,7 +175,8 @@ function calculateBossAttackDamage(
 ) {
     const combatMultiplier = Math.max(0, Number(bossMultiplier) || 0)
         * Math.max(0, Number(phaseMultiplier) || 0)
-        * Math.max(0, Number(levelMultiplier) || 0);
+        * Math.max(0, Number(levelMultiplier) || 0)
+        * getDifficultyMultiplier();
 
     return Math.max(1, Math.round(
         Math.max(0, Number(configuredAttackDamage) || 0)
@@ -203,6 +261,10 @@ function getLevelZlataReward(levelNumber) {
     return getHeroUpgradeCost(normalizedLevel) * LEVEL_REWARD_SCALE;
 }
 
+// Сложность (getDifficultyMultiplier) — здесь, а не в getLevelZlataReward выше: там
+// живёт «база» уровня, которую панель баланса использует напрямую для проекции
+// экономики кампании (buildCampaignToHeroLevelMap) — трогать её незачем, реальная
+// выплата (эта функция) домножается уже поверх.
 function getLevelZlataPayout(levelNumber, defeatedBosses, totalBosses = 5) {
     const normalizedBossCount = Math.max(1, Math.floor(Number(totalBosses) || 1));
     const normalizedDefeated = Math.min(
@@ -211,7 +273,7 @@ function getLevelZlataPayout(levelNumber, defeatedBosses, totalBosses = 5) {
     );
 
     return Math.floor(
-        getLevelZlataReward(levelNumber) * (normalizedDefeated / normalizedBossCount)
+        getLevelZlataReward(levelNumber) * (normalizedDefeated / normalizedBossCount) * getDifficultyMultiplier()
     );
 }
 
@@ -657,6 +719,27 @@ function migrateGameState(savedState) {
     const defaults = getDefaultGameState();
     if (!isPlainObject(savedState)) return defaults;
 
+    // Переименование ключей героев вслед за игровым именем: Тихон Речкин раньше
+    // лежал под ключом 'vas' (при этом его .name уже был 'tikhon' — см. историю
+    // этого разнобоя в комментарии getActiveHeroKey в admin-balance-panel.html),
+    // Елисей — под заглушкой 'gen'. Без этого шага прогресс (level/investedZlata/
+    // unlock) в уже существующих сохранениях молча терялся бы: под новыми ключами
+    // ('tikhon'/'elisey') в defaults для старых записей ничего бы не нашлось, и
+    // герой откатился бы к чистому дефолту.
+    const LEGACY_HERO_KEY_RENAMES = { vas: 'tikhon', gen: 'elisey' };
+    Object.entries(LEGACY_HERO_KEY_RENAMES).forEach(([oldKey, newKey]) => {
+        if (isPlainObject(savedState[oldKey]) && !isPlainObject(savedState[newKey])) {
+            savedState[newKey] = savedState[oldKey];
+        }
+        delete savedState[oldKey];
+        if (Array.isArray(savedState.mHero)) {
+            savedState.mHero = savedState.mHero.map(key => key === oldKey ? newKey : key);
+        }
+        if (savedState.activeHero === oldKey) {
+            savedState.activeHero = newKey;
+        }
+    });
+
     if (isPlainObject(savedState) && Array.isArray(savedState.mHero)) {
         savedState.mHero.forEach(heroKey => {
             if (isPlainObject(savedState[heroKey])) {
@@ -670,9 +753,6 @@ function migrateGameState(savedState) {
     migrated.lastCompletedLevel = Number.isFinite(savedState.lastCompletedLevel)
         ? Math.max(0, Math.floor(savedState.lastCompletedLevel))
         : defaults.lastCompletedLevel;
-    migrated.skillPoints = Number.isFinite(savedState.skillPoints)
-        ? Math.max(0, savedState.skillPoints)
-        : defaults.skillPoints;
     migrated.zlata = Number.isFinite(savedState.zlata)
         ? Math.max(0, savedState.zlata)
         : defaults.zlata;
@@ -756,14 +836,66 @@ function migrateGameState(savedState) {
         }
     });
 
-    const savedTimes = isPlainObject(savedState.levelTimes) ? savedState.levelTimes : {};
-    migrated.levelTimes = {};
-    Object.entries(savedTimes).forEach(([level, time]) => {
+    const savedDifficulty = isPlainObject(savedState.levelDifficulty) ? savedState.levelDifficulty : {};
+    migrated.levelDifficulty = {};
+    Object.entries(savedDifficulty).forEach(([level, difficulty]) => {
         const levelNumber = Number(level);
-        if (Number.isInteger(levelNumber) && levelNumber > 0 && Number.isFinite(time) && time >= 0) {
-            migrated.levelTimes[levelNumber] = time;
+        const normalizedDifficulty = Math.floor(Number(difficulty));
+        if (Number.isInteger(levelNumber) && levelNumber > 0 && Number.isInteger(normalizedDifficulty) && normalizedDifficulty >= 1) {
+            migrated.levelDifficulty[levelNumber] = normalizedDifficulty;
         }
     });
+
+    const normalizedDefaultDifficulty = Math.floor(Number(savedState.defaultLevelDifficulty));
+    migrated.defaultLevelDifficulty = Number.isInteger(normalizedDefaultDifficulty) && normalizedDefaultDifficulty >= 1
+        ? normalizedDefaultDifficulty
+        : defaults.defaultLevelDifficulty;
+
+    // levelRecords — источник истины для рейтинга (см. окно детализации в index.html и
+    // комментарий у levelRecords в getDefaultGameState). Два пути: (1) уже есть записи
+    // нового формата — просто провалидировать; (2) старое сохранение, до этой ревизии,
+    // знает только плоский levelTimes — честно восстанавливаем что можем: сложность
+    // берём из уже смигрированного levelDifficulty выше как лучшее доступное
+    // приближение (по факту это «сложность последнего СТАРТА», не «сложность именно
+    // рекордного забега», точнее взять неоткуда), герой никогда не отслеживался — null.
+    // Старый непрозрачный gameState.skillPoints (бегущий накопитель дельт) нигде не
+    // используется — рейтинг с этой ревизии всегда живая сумма finalPoints ниже.
+    migrated.levelRecords = {};
+    if (isPlainObject(savedState.levelRecords)) {
+        Object.entries(savedState.levelRecords).forEach(([level, record]) => {
+            const levelNumber = Number(level);
+            const time = Number(record?.time);
+            if (!Number.isInteger(levelNumber) || levelNumber <= 0 || !isPlainObject(record) || !Number.isFinite(time) || time < 0) return;
+            const difficulty = Number.isInteger(record.difficulty) && record.difficulty >= 1 ? record.difficulty : 1;
+            const basePoints = Math.max(0, 600 - time);
+            migrated.levelRecords[levelNumber] = {
+                time,
+                difficulty,
+                heroKey: typeof record.heroKey === 'string' ? record.heroKey : null,
+                basePoints,
+                finalPoints: Number.isFinite(record.finalPoints) && record.finalPoints >= 0
+                    ? Math.round(record.finalPoints)
+                    : Math.round(basePoints * (1 + difficulty * 0.10))
+            };
+        });
+    } else if (isPlainObject(savedState.levelTimes)) {
+        Object.entries(savedState.levelTimes).forEach(([level, time]) => {
+            const levelNumber = Number(level);
+            const normalizedTime = Number(time);
+            if (!Number.isInteger(levelNumber) || levelNumber <= 0 || !Number.isFinite(normalizedTime) || normalizedTime < 0) return;
+            const difficulty = migrated.levelDifficulty[levelNumber] ?? 1;
+            const basePoints = Math.max(0, 600 - normalizedTime);
+            migrated.levelRecords[levelNumber] = {
+                time: normalizedTime,
+                difficulty,
+                heroKey: null,
+                basePoints,
+                finalPoints: Math.round(basePoints * (1 + difficulty * 0.10))
+            };
+        });
+    }
+    delete migrated.levelTimes;
+    delete migrated.skillPoints;
 
     if (typeof migrated.activeHero !== 'string' || !isPlainObject(migrated[migrated.activeHero])) {
         migrated.activeHero = defaults.activeHero;
@@ -847,7 +979,12 @@ function unlockAllLevelsForDebug(secret, maxAvailableLevel) {
 // (используется для одноразового бонуса x10 к златам — см. showEndGameModal).
 function completeLevel() {
 
-	saveLevelTime(lvlNumber, timeSec2);
+	// Сложность запоминается в момент СТАРТА уровня (см. onStart в difficulty.js,
+	// вызывается из окна выбора при клике «Начать»), а не здесь — пользователь явно
+	// уточнил: «переопределяется последним числом, с которым НАЧАЛИ прохождение», не
+	// обязательно прошли. Поражение тоже должно запомниться, а completeLevel вызывается
+	// только при победе (см. showEndGameModal).
+	recordLevelCompletion(lvlNumber, timeSec2);
     let firstRegionFinalClear = false;
     if (lvlNumber > gameState.lastCompletedLevel) {
         gameState.lastCompletedLevel = lvlNumber;
@@ -855,9 +992,9 @@ function completeLevel() {
 		if (typeof levelCompletionConfig !== 'undefined' && levelCompletionConfig.isRegionFinal) {
 			firstRegionFinalClear = true;
 			const completionMessage = levelCompletionConfig.completionMessage || 'Область пройдена!';
-			rowTotal = rowTotal + `<div class="time-line">${completionMessage}</div>`;
+			rowTotal = rowTotal + `<div class="endgame-unlock-banner">🔓 ${completionMessage}</div>`;
 		} else {
-			rowTotal = rowTotal + `<div class="time-line">Разблокирован уровень ${lvlNumber+1}!</div>`;
+			rowTotal = rowTotal + `<div class="endgame-unlock-banner">🔓 Разблокирован уровень ${lvlNumber+1}!</div>`;
 		}
 
         gameState.mHero.forEach(heroKey => {
@@ -866,20 +1003,149 @@ function completeLevel() {
 
             if (hero.lvlUnlock <= lvlNumber && hero.unlock == false) {
                 hero.unlock = true;
-				rowTotal = rowTotal + `<div class="time-line">Разблокирован новый герой — ${hero.dispName}!</div>`;
+				// Портрет героя тут можно показывать открыто — герой только что разблокирован
+				// именно в этот момент (в отличие от боевого трека прогресса на index.html,
+				// который обязан скрывать портрет ДО разблокировки).
+				rowTotal = rowTotal + `
+					<div class="endgame-hero-unlock-banner">
+						<img class="endgame-hero-unlock-portrait" src="${hero.image}" alt="${hero.dispName}">
+						<div class="endgame-hero-unlock-body">
+							<span class="endgame-hero-unlock-kicker">✨ Новый герой разблокирован!</span>
+							<span class="endgame-hero-unlock-name">${hero.dispName}</span>
+						</div>
+						<button type="button" class="endgame-button endgame-hero-unlock-goto" data-hero="${heroKey}">Перейти к персонажам</button>
+					</div>`;
             }
         }); // Добавлена закрывающая скобка
+
+		// Трек прогресса до следующего героя — показывается только тут (в окне победы),
+		// при прохождении уровня, который раньше не был пройден, по прямому запросу
+		// пользователя (изначально был ещё и в шапке меню на index.html, но пользователь
+		// попросил убрать его оттуда и оставить только здесь). Если герой только что
+		// разблокировался парой строк выше, эта функция уже вызывается ПОСЛЕ того
+		// forEach, поэтому корректно укажет на СЛЕДУЮЩЕГО ещё не открытого героя.
+		const heroUnlockProgress = getHeroUnlockProgress();
+		if (heroUnlockProgress) {
+			const remainingLabel = heroUnlockProgress.remaining > 0
+				? `${heroUnlockProgress.remaining} ${pluralizeLevels(heroUnlockProgress.remaining)}`
+				: 'Уже пора!';
+			rowTotal = rowTotal + `
+				<div class="endgame-hero-track">
+					<div class="hero-track-portrait locked" aria-hidden="true"><span>?</span></div>
+					<div class="hero-track-body">
+						<div class="hero-track-top">
+							<span class="hero-track-title">До нового героя</span>
+							<span class="hero-track-count">${remainingLabel}</span>
+						</div>
+						<div class="hero-track-bar">
+							<div class="hero-track-fill" data-target-width="${heroUnlockProgress.progressPct}" style="width:0%"></div>
+						</div>
+					</div>
+				</div>`;
+		}
 
         saveGameState();
     }
     return firstRegionFinalClear;
 }
 
+// Универсальный расчёт прогресса до следующего разблокируемого героя — единственный
+// источник этой логики (см. правило 1 в CLAUDE.md про недопустимость дублей), читает
+// его трек-баннер в completeLevel выше. Не завязана на конкретных героях/уровнях —
+// смотрит на gameState.mHero и поля lvlUnlock/unlock каждого героя, поэтому
+// переживёт любую правку lvlUnlock или добавление героя.
+function getHeroUnlockProgress() {
+	const lastCompleted = Number(gameState.lastCompletedLevel) || 0;
+
+	// startsUnlocked — герой доступен с самого начала игры (unlock:true в дефолтном
+	// состоянии), а не разблокирован прохождением. У таких героев lvlUnlock
+	// декоративный/неактуальный (см. luka — unlock:true, но lvlUnlock:3) — учитывать
+	// его как пройденную веху нельзя, иначе бар может показывать 0% сразу после
+	// реального прогресса или прыгать назад, когда lastCompleted "нагоняет" такого
+	// героя. getDefaultGameState() — тот же самый источник правды, что уже
+	// используется при миграции сохранений, ничего не дублируем вручную.
+	const defaults = getDefaultGameState();
+
+	const heroEntries = (gameState.mHero || [])
+		.map(heroKey => ({
+			heroKey,
+			hero: gameState[heroKey],
+			startsUnlocked: !!defaults[heroKey]?.unlock,
+		}))
+		.filter(entry => entry.hero && Number.isFinite(entry.hero.lvlUnlock));
+
+	const nextLocked = heroEntries
+		.filter(entry => !entry.hero.unlock)
+		.sort((a, b) => a.hero.lvlUnlock - b.hero.lvlUnlock)[0];
+
+	if (!nextLocked) return null;
+
+	const prevMilestone = heroEntries
+		.filter(entry => entry.hero.unlock && !entry.startsUnlocked)
+		.reduce((max, entry) => Math.max(max, entry.hero.lvlUnlock), 0);
+
+	const nextMilestone = nextLocked.hero.lvlUnlock;
+	const span = Math.max(1, nextMilestone - prevMilestone);
+	const progressPct = Math.max(0, Math.min(100, Math.round((lastCompleted - prevMilestone) / span * 100)));
+	const remaining = Math.max(0, nextMilestone - lastCompleted);
+
+	return {
+		remaining,
+		progressPct,
+		nextHeroKey: nextLocked.heroKey,
+		nextHeroDispName: nextLocked.hero.dispName,
+	};
+}
+
+// Склонение "уровень/уровня/уровней" для трек-баннера выше.
+function pluralizeLevels(n) {
+	const mod10 = n % 10;
+	const mod100 = n % 100;
+	if (mod10 === 1 && mod100 !== 11) return 'уровень';
+	if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'уровня';
+	return 'уровней';
+}
+
 function addZlat(zlatP) {
-   
-		gameState.zlata = gameState.zlata + zlatP;       
+
+		gameState.zlata = gameState.zlata + zlatP;
         saveGameState();
-		
+
+}
+
+// Глобальная сложность по умолчанию (настройки, index.html) — используется, только
+// пока игрок ещё ни разу не заходил на конкретный уровень ни с какой сложностью (см.
+// getLevelDifficulty ниже). Дефолт 1 — минимальная сложность в игре, отдельного
+// «нулевого»/выключенного варианта нет.
+function getDefaultLevelDifficulty() {
+    const stored = gameState.defaultLevelDifficulty;
+    return Number.isInteger(stored) && stored >= 1 ? stored : 1;
+}
+
+function setDefaultLevelDifficulty(difficulty) {
+    const normalized = Math.max(1, Math.floor(Number(difficulty) || 1));
+    gameState.defaultLevelDifficulty = normalized;
+    saveGameState();
+    return normalized;
+}
+
+// Сложность конкретного уровня — приоритет: (1) число, с которым игрок последний раз
+// НАЧАЛ заход именно на этот уровень (см. setLevelDifficulty — пишется в момент старта,
+// а не прохождения, см. её комментарий), (2) если уровень ещё ни разу не начинали —
+// глобальная сложность по умолчанию из настроек, (3) если и её не задавали — 1.
+function getLevelDifficulty(levelNumber) {
+    const stored = gameState.levelDifficulty[levelNumber];
+    if (Number.isInteger(stored) && stored >= 1) return stored;
+    return getDefaultLevelDifficulty();
+}
+
+// Вызывается из difficulty.js в момент старта уровня (клик «Начать» в окне выбора) —
+// именно старта, не прохождения: пользователь явно уточнил, что запоминаться должно
+// число, с которым НАЧАЛИ заход, независимо от исхода (победа/поражение).
+function setLevelDifficulty(levelNumber, difficulty) {
+    const normalized = Math.max(1, Math.floor(Number(difficulty) || 1));
+    gameState.levelDifficulty[levelNumber] = normalized;
+    saveGameState();
 }
 
 function getAllHeroUpgradeRefund() {
@@ -971,51 +1237,59 @@ function heroUp(heroName, infoMode) {
 }
 
 
-function saveLevelTime(level, timeInSeconds) {
-	
-	const currentTime = gameState.levelTimes[level];
-	
-	let updRecord = false;
-	
-	// если записи нет — добавляем
-	if (currentTime === undefined) {
-		updRecord = true;
-		gameState.levelTimes[level] = timeInSeconds;
+// Правило прозрачности рейтинга (см. окно детализации в index.html, открывается кликом
+// по «Рейтинг» в шапке): показанная сумма ДОЛЖНА быть суммой видимых строк, без единой
+// скрытой добавки. Поэтому здесь больше нет бегущего накопителя (как раньше
+// gameState.skillPoints, который прибавлял дельту, посчитанную по сложности МОМЕНТА
+// улучшения рекорда, — задним числом невозможно понять, откуда взялось число) — вместо
+// этого один ПОЛНЫЙ рекорд на уровень (время + сложность/герой именно этого забега +
+// уже готовые очки), а итог в шапке считается на лету суммированием этих записей
+// (getTotalRatingPoints ниже) — то есть в принципе не может разойтись с таблицей.
+function recordLevelCompletion(level, timeInSeconds) {
+	const existing = gameState.levelRecords[level];
+
+	const difficulty = getCurrentLevelDifficulty();
+	const heroKey = typeof getActiveHeroSaveKey === 'function' ? getActiveHeroSaveKey() : gameState.activeHero;
+	const basePoints = Math.max(0, 600 - timeInSeconds);
+	const finalPoints = Math.round(basePoints * getDifficultyMultiplier());
+
+	// Лучший результат — это лучшие ИТОГОВЫЕ ОЧКИ, а не лучшее время: забег на более
+	// высокой сложности может дать больше очков даже с худшим временем, и такой забег
+	// обязан заменить рекорд (совпадение очков тоже не считается — как и раньше со временем).
+	if (existing && finalPoints <= existing.finalPoints) return;
+
+	if (existing) {
+		rowTotal = rowTotal + `<div class="endgame-record-banner endgame-record-prev">Прошлый лучший результат: ${existing.finalPoints} (время ${formatTime(existing.time)})</div>`;
 	}
 
-	// если новое время меньше старого — обновляем
-	if (timeInSeconds < currentTime) {
-		updRecord = true;
-		gameState.levelTimes[level] = timeInSeconds;
-		//выводим предыдущее время:
-		rowTotal = rowTotal + `<div class="time-line">Лучшее время: <span>${formatTime(currentTime)}</span></div>`;
-	}
-	
+	gameState.levelRecords[level] = { time: timeInSeconds, difficulty, heroKey, basePoints, finalPoints };
 
-	//если рекород не побит то на этом заканчиваем
-	if (!updRecord) {return}
+	const bonusPct = Math.round((getDifficultyMultiplier() - 1) * 100);
+	rowTotal = rowTotal + `<div class="endgame-record-banner endgame-record-new">
+		<span class="endgame-record-badge">🏅 Новый рекорд уровня!</span>
+		<span class="endgame-record-formula">${basePoints} очков + бонус сложности ${bonusPct}%</span>
+		<span class="endgame-record-total">+<span data-count-to="${finalPoints}">0</span> к рейтингу</span>
+	</div>`;
 
-	//если рекород побит то:
-	// считаем общую сумму
-	let totalScore = 0;
+	saveGameState();
+}
 
-	for (const lvl in gameState.levelTimes) {
-		const time = gameState.levelTimes[lvl];
+// Единственный источник итогового рейтинга в игре — шапка (index.html) и итоговая
+// строка окна детализации читают ИМЕННО эту функцию, не отдельно хранимое число.
+function getTotalRatingPoints() {
+	return Object.values(gameState.levelRecords).reduce(
+		(sum, record) => sum + (Number(record?.finalPoints) || 0),
+		0
+	);
+}
 
-		// 1000 - время, но не меньше 0
-		const value = Math.max(0, 600 - time);
-
-		totalScore += value;
-	}
-	
-	const skillPoints = totalScore - gameState.skillPoints;
-	
-	if (skillPoints > 0) {
-		rowTotal = rowTotal + `<div class="time-line">Рекорд побит — очки мастерства: +${skillPoints}!</div>`;
-		gameState.skillPoints = gameState.skillPoints+skillPoints;
-		saveGameState();
-	}
-	
+// Раньше жила в game.js — переехала сюда, потому что нужна и index.html (окно
+// детализации рейтинга), который game.js вообще не грузит, а saveData.js грузят обе
+// страницы.
+function formatTime(seconds) {
+	const mins = Math.floor(seconds / 60);
+	const secs = seconds % 60;
+	return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
 function createGameState() {
@@ -1031,13 +1305,30 @@ function createGameState() {
 function getDefaultGameState() {
     return {
 			schemaVersion: GAME_STATE_VERSION,
-			lastCompletedLevel: 0,			
-			levelTimes: {
+			lastCompletedLevel: 0,
+			// Один рекорд на уровень — время ЛУЧШЕГО прохождения плюс сложность/герой
+			// именно того забега, который его установил, и уже готовые очки (см.
+			// recordLevelCompletion/getTotalRatingPoints). Общий рейтинг в шапке — это
+			// ВСЕГДА живая сумма finalPoints по всем записям здесь, без отдельного
+			// счётчика — окно детализации в index.html должно показывать ровно то, из
+			// чего складывается число в шапке, без расхождений.
+			levelRecords: {
 	          },
-			skillPoints: 0,			  
-			mHero: ['eremei', 'daryana', 'luka', 'dunya', 'mila', 'vas', 'gen', 'gm', 'kir', 'gam', 'gama','gamb','gamc', 'gamd','game','gamf', 'gamg', 'gamh', ],
+			// Сложность, с которой последний раз НАЧАЛИ заход на уровень — ключ: номер
+			// уровня, значение: целое ≥1 (см. getLevelDifficulty/setLevelDifficulty). Тот
+			// же плоский формат, что и у levelRecords выше.
+			levelDifficulty: {
+	          },
+			// Сложность по умолчанию для уровней, на которые ещё ни разу не заходили —
+			// настройки, index.html (см. getDefaultLevelDifficulty/setDefaultLevelDifficulty).
+			defaultLevelDifficulty: 1,
+			mHero: ['eremei', 'daryana', 'luka', 'dunya', 'mila', 'tikhon', 'elisey', 'gm', 'kir', 'gam', 'gama','gamb','gamc', 'gamd','game','gamf', 'gamg', 'gamh', ],
 			activeHero: 'eremei',
-			zlata: 0, 
+			zlata: 0,
+			// Состояние галочки "Повышать на максимум" у кнопки прокачки героя в
+			// index.html (openCharacterSelect/upgradeHero) — глобальная настройка UI, не
+			// привязана к конкретному герою.
+			maxUpgradeMode: false,
 			eremei: {
 				// Ревизия 11: шанс ранения снят целиком (см. startGlobalWoundChance/
 				// woundChanceCap ниже). Ревизия 12: скорость атаки опущена с 30 до 20.
@@ -1587,7 +1878,7 @@ function getDefaultGameState() {
 			// остальных (у Еремея на 141-м даже шире) — явной имбы «если повезёт» нет.
 			// По решению пользователя — играется приятно, останавливаемся здесь, дальше
 			// не тюним.
-			vas: {
+			tikhon: {
 				balanceRevision: 20,
 				name: 'tikhon',
 				permanentGrowthProfile: 'tremor',
@@ -1709,19 +2000,101 @@ function getDefaultGameState() {
 			},
 
 
-			gen: {
-				name: 'luka', 
-				dispName: 'Лука стрелок',
-				image: 'images/hero/3_luka/luka_min.webp',
-				startGlobalDamage: 25,
-				startGlobalCritChance: 0.25,
-				startGlobalCritMultiplier: 1.8,
-				startGlobalWoundChance	: 0.1,
-				startHeroDamageReduction : 0.01,
-				startSHOT_INTERVAL : 360,
-				heroHP : 50,
-				lvlUnlock: 50,
+			// Елисей Медов — «Пчелиный рой». Разблокируется после 49-го уровня кампании
+			// (пасечный уровень, см. description/идеи по уровням.txt). Вместо мгновенного
+			// урона по прицелу поднимает пчёл (до 8 на одну цель, см. checkAimAndDamage/
+			// trySpawnEliseyBee/updateEliseyBees в game.js) — каждая жалит на 1/8 урона
+			// героя по СВОЕМУ независимому таймеру (не хором), из-за чего суммарный темп
+			// попаданий на полном стеке растёт в разы относительно startSHOT_INTERVAL —
+			// компаундящийся рычаг (та же категория, что и damagePerLevel у обычных
+			// героев, см. правило 3 CLAUDE.md про Тихона), поэтому startGlobalDamage
+			// здесь НАМЕРЕННО ближе к тир Дуни (архетип «частые слабые удары»), а не
+			// Луки/Дарьяны — числа первого прохода, требуют подтверждения реальным боем
+			// панели ПОСЛЕ того, как механика заработает (правило 1 — не на глаз).
+			elisey: {
+				name: 'elisey',
+				permanentGrowthProfile: 'apiary',
+				dispName: 'Елисей Медов',
+				image: 'images/hero/7_EliseyMedov/min.webp',
+				fullImage: 'images/hero/7_EliseyMedov/full.webp',
+				weaponImage: 'images/hero/7_EliseyMedov/weapon1.webp',
+				// Второй спрайт пчелы — чередуется по чётности индекса пчелы в её массиве
+				// (см. trySpawnEliseyBee в game.js), чтобы рой не летал "в одну сторону".
+				weaponImage2: 'images/hero/7_EliseyMedov/weapon2.webp',
+				aimImage: 'images/hero/7_EliseyMedov/aim.webp',
+				level: 1,
+				startGlobalDamage: 100,
+				startGlobalCritChance: 0.06,
+				startGlobalCritMultiplier: 1.9,
+				// Шанс ранения заморожен на 0 с самого старта (см. startGlobalWoundChance
+				// ниже) — весь его рост уходит в critMultiplier через уже существующий
+				// редирект в applyHeroPermanentStatUpgrade (тот же механизм, что у Еремея/
+				// Дуни/Милы/Тихона), никакого нового кода для этого не нужно.
+				startGlobalWoundChance	: 0,
+				// Живучесть — «чуть ниже Дарьяны» (heroHP:140, startHeroDamageReduction:0.05,
+				// heroHpCap:1750, heroHpPerLevel:11, defensePerLevel:0.001, defenseCap:0.228),
+				// с запасом ~10-12% ниже по каждому рычагу.
+				startHeroDamageReduction : 0.045,
+				startSHOT_INTERVAL : 720,
+				// Ревизия 2 (правка баланса по отчёту balance-report_2026-08-30_21-55-46.xls,
+				// лист «DPS с апгрейдами», правило 11): Елисей был СИСТЕМАТИЧЕСКИ последним
+				// по DPS на всех 150 строках диапазона без единого исключения (не выброс —
+				// см. правило 6), отношение к Луке падало с 0.86 на герое-уровне 1 до
+				// 0.32-0.35 в хвосте 190-200 — росло хуже с уровнем, а не ровный сдвиг, что
+				// по правилу 3 указывает на рычаг «за уровень», а не на разовую базу.
+				// Раскопал причину: damagePerLevel у него УЖЕ выше, чем у Луки (14 vs 12) —
+				// дело не в уроне. Дело в скорости атаки — она у роя двойного действия:
+				// governs и темп СПАВНА пчёл (набор стека до 8), и темп посадки/урона
+				// КАЖДОЙ пчелы, то есть бьёт по итоговому ДПС куда сильнее, чем обычному
+				// герою. Старое minShotInterval:500/shotIntervalReductionPerLevel:2 против
+				// Луки 120/12 давали ×4.17 разрыв в скорости на потолке — при том что по
+				// самому урону/криту (без скорости) Елисей и так был примерно на ~30% ВЫШЕ
+				// Луки, то есть весь недобор был именно в скорости, не в уроне. Подняты оба
+				// рычага скорости (не один — правило 3), калибровка через реальный прогон
+				// панели ДО/ПОСЛЕ (не аналитика на глаз — правило 1): цель — приблизить
+				// хвостовое отношение к Луке к ~0.85-0.95 (не 1:1 — умышленно чуть ниже
+				// Луки, а не вровень, по прямому решению пользователя не делать его имбой).
+				minShotInterval: 180,
+				heroHP : 125,
+				lvlUnlock: 49,
+				zlataUp: 10,
+				investedZlata: 0,
+				upSpecif: 1,
 				unlock: false,
+				feature: 'Пчелиный рой — <br>атакует роем пчёл,<br>рой жалит ещё 1,5 секунды, даже если герой не наведён на цель.',
+				critChanceCap: 0.35,
+				// Шанс ранения заперт на 0 с самого старта (== woundChanceCap ниже) — весь его
+				// прирост КАЖДЫЙ цикл редиректится в critMultiplier (applyHeroPermanentStatUpgrade,
+				// тот же механизм, что у Тихона/Еремея/Дуни/Милы) — без потолка здесь это тот же
+				// неограниченный разгон, что чинили у Тихона: критMultiplier уже дорастает до
+				// ×6.3 к герою-уровню 175 без единого temporary-апгрейда. Число первого прохода —
+				// подтверждать реальным боем панели (правило 1), просто сам факт потолка обязателен.
+				// Ревизия 2 (правка баланса, диагностика win-rate-diagnostic.js — правило 1,
+				// реальные заходы, не аналитика): при 6.0 Елисей упирался в потолок уже к
+				// герою-уровню ~82 и дальше НЕ РОС по крит-урону вообще до конца диапазона —
+				// а у Луки critMultiplierCap в объекте вообще НЕТ ПОЛЯ (растёт без потолка,
+				// см. Number.isFinite(undefined)===false в applyHeroPermanentStatUpgrade) —
+				// доходит до ×13.7 к герою-уровню 200. Из-за этого шанс Елисея обогнать Луку
+				// в удачном заходе падал с 52% на герое-уровне 1 до 13.8% на 119 и до 0% на
+				// 159-200 (реально измерено, не оценка). Подняты до 12.0 — при текущем
+				// critMultiplierPerLevel:0.05 это не даёт упереться в потолок до самого 200
+				// уровня (та же логика "потолок есть, но не бьёт по факту", что у Луки), а
+				// не снятие потолка совсем — предохранитель от неограниченного разгона (как
+				// у Тихона) остаётся на случай будущей правки этого рычага.
+				critMultiplierCap: 12.0,
+				woundChanceCap: 0,
+				heroHpCap: 1600,
+				damageVariance: 0.10,
+				damagePerLevel: 14,
+				critChancePerLevel: 0.006,
+				critMultiplierPerLevel: 0.05,
+				woundChancePerLevel: 0,
+				// См. подробный комментарий у minShotInterval выше — тот же рычаг «скорость
+				// атаки за уровень», поднят вместе с потолком, а не один из двух.
+				shotIntervalReductionPerLevel: 5,
+				heroHpPerLevel: 10,
+				defensePerLevel: 0.0009,
+				defenseCap: 0.20,
 			},
 			
 			gm: {
