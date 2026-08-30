@@ -12,7 +12,7 @@ const activeHeroObject = gameStateLstorage[activeHeroStr];
 // DOM элементы - будут инициализированы после загрузки страницы
 let gameField = null;          // Основное игровое поле
 let enemiesContainer = null;   // Контейнер для всех врагов
-
+//
 // ГЛОБАЛЬНЫЕ ПАРАМЕТРЫ АНИМАЦИИ - настройки движения и вращения врагов
 const ANIMATION_PARAMS = {
     // Скорости анимации (теперь в единицах в секунду)
