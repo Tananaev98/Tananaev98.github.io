@@ -8,8 +8,8 @@ const { parentPort, workerData } = require('node:worker_threads');
 const { loadPanelWindow, attachNodeEngines } = require('./panel-harness');
 
 async function main() {
-    const { heroKeys, port, workerIndex } = workerData;
-    const { dom, expose } = await loadPanelWindow(port);
+    const { heroKeys, port, workerIndex, attemptsPerStrategy } = workerData;
+    const { dom, expose } = await loadPanelWindow(port, attemptsPerStrategy);
     const { closeAll } = attachNodeEngines(expose, port, heroKeys);
 
     const post = (payload) => parentPort.postMessage(payload);
@@ -43,7 +43,13 @@ async function main() {
                 dpsResults: snapshot.dpsResults,
                 survivalResults: snapshot.survivalResults,
                 dpsUpgradedResults: snapshot.dpsUpgradedResults,
-                survivalUpgradedResults: snapshot.survivalUpgradedResults
+                dpsCeilingResults: snapshot.dpsCeilingResults,
+                survivalUpgradedResults: snapshot.survivalUpgradedResults,
+                // Сырые dpsSamples "с апгрейдами" по каждой строке — нужны, чтобы посчитать
+                // правило 13 CLAUDE.md (шанс обогнать Луку) ПОСЛЕ слияния воркеров в run.js:
+                // здесь, внутри одного воркера, Лука почти всегда достаётся ДРУГОМУ воркеру
+                // (см. computeWinRateVsLuka в admin-balance-panel.html), сравнивать не с чем.
+                dpsSamplesByHero: snapshot.dpsSamplesByHero
             }
         });
     } catch (error) {

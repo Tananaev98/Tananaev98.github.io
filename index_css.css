@@ -688,6 +688,171 @@ a.area-nav-btn:active {
     opacity: 0.75;
 }
 
+/* Манекен — не переход между областями, а отдельный режим, поэтому чуть выделен
+   золотым тоном (тот же язык, что у его собственного счётчика ДПС в dummy.html),
+   а не просто ещё одна area-nav-кнопка. */
+.area-nav-btn.area-nav-dummy {
+    color: #3a2b12;
+    background: linear-gradient(135deg, #ffd682, #d9a441);
+    border-color: #8a5a1e;
+    box-shadow: 0 4px 0 #8a5a1e, 0 8px 18px rgba(40, 24, 12, 0.3);
+}
+
+/* ====== Закладки быстрого перехода по областям ======
+   Горизонтальный ряд ПОД блоком уровней, по ширине .area-block — обычный flex-wrap
+   в потоке страницы. По умолчанию каждая область — квадратик только с иконкой (не
+   «куча» текста), при наведении квадратик РАЗЪЕЗЖАЕТСЯ вширь и открывает название
+   (тот же приём, что в первой версии этих закладок, просто ряд теперь горизонтальный,
+   а не прибитый к краю экрана столбик). Наведения на тачскринах не бывает — там
+   квадратики остаются свёрнутыми (см. @media hover ниже), но текущая область всегда
+   развёрнута и подписана, так что «где я» видно и без мыши.
+   Каждая табличка — в палитре СВОЕЙ области (та же --area-accent* палитра, что и в
+   main_css.css у [data-area="N"], продублирована здесь по data-area-id: это чисто
+   оформление чужих, сейчас неактивных областей, а не игровая логика — дублировать
+   тут нечего). Показываются только уже разблокированные области (renderAreaBookmarks
+   в index.html отфильтровывает остальные ДО рендера — недоступной области нет в DOM
+   вообще, не просто visibility:hidden). */
+.area-bookmarks {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 10px 12px;
+    margin: 26px 0 0;
+    padding: 0;
+}
+
+.area-bookmark {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+    height: 44px;
+    width: 44px;
+    padding: 0 0 0 11px;
+    overflow: hidden;
+    white-space: nowrap;
+    font-family: 'Philosopher', Georgia, serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.015em;
+    color: #fff6e4;
+    text-decoration: none;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    border-radius: 11px;
+    border: 2px solid var(--tab-accent-darker, var(--gp-frame));
+    background: linear-gradient(135deg, var(--tab-accent, var(--gp-wood-light)), var(--tab-accent-dark, var(--gp-wood-dark)));
+    box-shadow:
+        0 3px 0 var(--tab-accent-darker, var(--gp-frame)),
+        0 6px 12px rgba(20, 12, 6, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    cursor: pointer;
+    transition: width 0.26s cubic-bezier(0.2, 0.8, 0.25, 1), transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.area-bookmark-icon {
+    flex: 0 0 auto;
+    font-size: 18px;
+    line-height: 1;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.45));
+}
+
+.area-bookmark-label {
+    flex: 0 0 auto;
+    padding: 0 15px 0 8px;
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: opacity 0.14s ease, transform 0.14s ease;
+}
+
+/* Раскрытие по наведению — только там, где вообще есть наведение мышью (не на
+   тачскрине: там hover либо не срабатывает вовсе, либо «залипает» после тапа). */
+@media (hover: hover) and (pointer: fine) {
+    a.area-bookmark:hover,
+    a.area-bookmark:focus-visible {
+        width: 214px;
+        transform: translateY(-2px);
+        box-shadow:
+            0 5px 0 var(--tab-accent-darker, var(--gp-frame)),
+            0 9px 16px rgba(20, 12, 6, 0.35),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        outline: none;
+    }
+    a.area-bookmark:hover .area-bookmark-label,
+    a.area-bookmark:focus-visible .area-bookmark-label {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+a.area-bookmark:active {
+    transform: translateY(0);
+}
+
+.area-bookmark.is-current {
+    width: 214px;
+    cursor: default;
+    box-shadow:
+        0 3px 0 var(--tab-accent-darker, var(--gp-frame)),
+        0 0 0 3px rgba(255, 226, 150, 0.85),
+        0 6px 14px color-mix(in srgb, var(--tab-accent, var(--gp-frame)) 55%, transparent),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.area-bookmark.is-current .area-bookmark-label {
+    opacity: 1;
+    transform: none;
+}
+
+.area-bookmark.is-current::before {
+    /* Маленький треугольник-указатель сверху — привязывает табличку взглядом
+       к области над ней, «вы здесь». */
+    content: '';
+    position: absolute;
+    left: 22px;
+    top: -7px;
+    width: 0;
+    height: 0;
+    border: 6px solid transparent;
+    border-bottom-color: rgba(255, 226, 150, 0.85);
+}
+
+/* Палитра на табличку — 1:1 значения [data-area="N"] из main_css.css (область 1
+   намеренно без переопределения там же — берёт те же дефолты, что и здесь). */
+.area-bookmark[data-area-id="1"]  { --tab-accent: #8B4513; --tab-accent-dark: #5a3e2b; --tab-accent-darker: #3e2a1c; }
+.area-bookmark[data-area-id="2"]  { --tab-accent: #B8860B; --tab-accent-dark: #6b4f16; --tab-accent-darker: #4a350e; }
+.area-bookmark[data-area-id="3"]  { --tab-accent: #A0522D; --tab-accent-dark: #5c2e18; --tab-accent-darker: #3f1f10; }
+.area-bookmark[data-area-id="4"]  { --tab-accent: #2E7D82; --tab-accent-dark: #1a474a; --tab-accent-darker: #102b2d; }
+.area-bookmark[data-area-id="5"]  { --tab-accent: #A8461E; --tab-accent-dark: #612912; --tab-accent-darker: #3F1A0B; }
+.area-bookmark[data-area-id="6"]  { --tab-accent: #4B5E3A; --tab-accent-dark: #2c3a22; --tab-accent-darker: #1d2716; }
+.area-bookmark[data-area-id="7"]  { --tab-accent: #5B5568; --tab-accent-dark: #33303b; --tab-accent-darker: #211f27; }
+.area-bookmark[data-area-id="8"]  { --tab-accent: #5C7C99; --tab-accent-dark: #364a59; --tab-accent-darker: #24313c; }
+.area-bookmark[data-area-id="9"]  { --tab-accent: #8B2E1F; --tab-accent-dark: #4d1a11; --tab-accent-darker: #2e0f0a; }
+.area-bookmark[data-area-id="10"] { --tab-accent: #7A2E6E; --tab-accent-dark: #451a3f; --tab-accent-darker: #2c1028; }
+
+@media (max-width: 560px) {
+    .area-bookmarks {
+        gap: 8px;
+        margin-top: 18px;
+    }
+    .area-bookmark {
+        height: 40px;
+        width: 40px;
+        padding-left: 9px;
+        border-radius: 10px;
+    }
+    .area-bookmark-icon {
+        font-size: 16px;
+    }
+    .area-bookmark.is-current {
+        width: 190px;
+        font-size: 12px;
+    }
+    .area-bookmark.is-current .area-bookmark-label {
+        padding-right: 12px;
+    }
+}
+
 .level {
     display: flex;
     align-items: center;

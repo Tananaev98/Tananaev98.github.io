@@ -25,16 +25,33 @@ const AUTO_RUN_MARKER = '\nrunAll();';
 const EXPOSE_NAMES = [
     'CombatEngine', 'ProgressionEngine', 'RealUpgradeEngine', 'SurvivalEngine', 'ExcelExport',
     'STRATEGIES', 'ATTEMPTS_PER_LEVEL', 'ATTEMPTS_PER_STRATEGY', 'ATTACK_STAT_IDS',
-    'FIGHTS_PER_LEVEL', 'SURVIVAL_RUNS_PER_LEVEL', 'CAMPAIGN_FINAL_LEVEL',
-    'OVERGRIND_HERO_LEVELS', 'OVERGRIND_CAMPAIGN_LEVEL', 'DEFAULT_UPGRADE_CHOICES',
-    'FIGHTS_PER_ATTEMPT', 'SURVIVAL_RUNS_PER_ATTEMPT', 'INCOMING_CADENCE_MS',
+    'DUMMY_FIGHTS_PER_LEVEL', 'SURVIVAL_RUNS_PER_LEVEL', 'CAMPAIGN_FINAL_LEVEL',
+    'OVERGRIND_HERO_LEVELS', 'OVERGRIND_CAMPAIGN_LEVEL',
+    'SURVIVAL_RUNS_PER_ATTEMPT', 'INCOMING_CADENCE_MS',
+    'DUMMY_RUN_DURATION_SEC', 'DUMMY_UPGRADE_INTERVAL_SEC', 'DUMMY_UPGRADE_WINDOWS',
     'PROBE_SCRIPT_SOURCE', 'runAll',
     // Для точечных диагностик (scripts/balance-sim/*-diagnostic.js) поверх обычного
     // прогона — та же самая функция захода, что и в runAll, не копия.
-    'runOneUpgradedAttempt', 'getPerBossHpList', 'getLevelBossHpTotal', 'mulberry32', 'hashSeed'
+    'runOneUpgradedAttempt', 'runOneCeilingAttempt', 'getPerBossHpList', 'getLevelBossHpTotal', 'mulberry32', 'hashSeed',
+    'CEILING_ATTEMPTS', 'CEILING_POOL_SIZE',
+    // Правило 13 CLAUDE.md (шанс обогнать Луку) — вызывается ещё раз в run.js ПОСЛЕ
+    // слияния воркеров, см. её комментарий в admin-balance-panel.html.
+    'computeWinRateVsLuka'
 ];
 
-function readPanelSourceWithoutAutoRun() {
+// attemptsPerStrategyOverride (опционально) — по прямому запросу пользователя: у листа
+// «DPS с апгрейдами» — 50 попыток/строку (5 стратегий × ATTEMPTS_PER_STRATEGY=10 в
+// admin-balance-panel.html), это даёт статистический шум ±6-7pp на КАЖДОЙ строке (см.
+// обсуждение в чате с Еремеем/Дуней про разброс соседних строк, не связанный с реальными
+// статами). Полный прогон всего ростера (150 строк × 8 героев) при таком шуме и так уже
+// не быстрый (2.5+ мин) — поднимать ATTEMPTS_PER_STRATEGY там нельзя, будет слишком
+// долго. Но при ФОКУСНЫХ прогонах (--heroes=X,luka, обычно ~50с) есть запас, чтобы взять
+// в 2-4 раза больше попыток и заметно придавить шум БЕЗ переписывания ни одной формулы —
+// тот же самый код панели, просто больше замеров. Подменяем текстом сам const в HTML
+// панели ДО создания jsdom-окна (панель — не модуль, значения top-level const нельзя
+// переопределить после парсинга) — только в Node-харнессе, браузерная версия панели не
+// затронута (там override не передаётся никогда).
+function readPanelSourceWithoutAutoRun(attemptsPerStrategyOverride) {
     const html = fs.readFileSync(PANEL_PATH, 'utf8');
     const occurrences = html.split(AUTO_RUN_MARKER).length - 1;
     if (occurrences !== 1) {
@@ -43,7 +60,18 @@ function readPanelSourceWithoutAutoRun() {
             `найдено ${occurrences} — структура панели изменилась, поправьте scripts/balance-sim/panel-harness.js.`
         );
     }
-    return html.replace(AUTO_RUN_MARKER, '\n/* авто-запуск отключён Node-обвязкой scripts/balance-sim */');
+    let patched = html.replace(AUTO_RUN_MARKER, '\n/* авто-запуск отключён Node-обвязкой scripts/balance-sim */');
+    if (Number.isFinite(attemptsPerStrategyOverride) && attemptsPerStrategyOverride > 0) {
+        const marker = 'const ATTEMPTS_PER_STRATEGY = 10;';
+        if (!patched.includes(marker)) {
+            throw new Error(
+                `Не найдена строка "${marker}" в admin-balance-panel.html — структура панели ` +
+                `изменилась, поправьте scripts/balance-sim/panel-harness.js (attemptsPerStrategyOverride).`
+            );
+        }
+        patched = patched.replace(marker, `const ATTEMPTS_PER_STRATEGY = ${Math.round(attemptsPerStrategyOverride)};`);
+    }
+    return patched;
 }
 
 function extractProbeScriptSource(panelHtml) {
@@ -121,10 +149,20 @@ async function loadProgressionApi(port) {
 // CombatEngine.loadHero в браузере, только на отдельном jsdom-окне вместо #combatFrame.
 // gameState в localStorage сеется ДО загрузки документа (beforeParse) — как и в браузере,
 // где localStorage.setItem вызывается перед сменой frameEl.src.
-async function loadHeroCombatProbe(port, heroKey, defaultGameState, probeScriptSource) {
+// overrideHeroState — опциональный (см. CombatEngine.loadHeroAtLevel в admin-balance-
+// panel.html и attachNodeEngines ниже): если передан, gameState[heroKey] сеется этим
+// уже прокачанным объектом (ProgressionEngine.buildHeroAtLevel), а не героем 1 уровня по
+// умолчанию — нужно, чтобы startGlobalDamage/startGlobalCritMultiplier/... (const в
+// game.js, читаются один раз при разборе страницы) отражали РЕАЛЬНЫЙ уровень героя, а не
+// всегда 1-й — иначе магнитуда карточек временных улучшений (buildUpgradeStatEffect)
+// считалась бы неверно на любой строке диапазона выше 1 уровня.
+async function loadHeroCombatProbe(port, heroKey, defaultGameState, probeScriptSource, overrideHeroState) {
     const seedState = JSON.parse(JSON.stringify(defaultGameState));
     seedState.activeHero = heroKey;
     seedState.schemaVersion = defaultGameState.schemaVersion;
+    if (overrideHeroState) {
+        seedState[heroKey] = JSON.parse(JSON.stringify(overrideHeroState));
+    }
 
     const url = `http://127.0.0.1:${port}/level.html?level=1&admin=1&t=${Date.now()}_${Math.random().toString(36).slice(2)}`;
     const dom = await JSDOM.fromURL(url, {
@@ -160,8 +198,8 @@ async function loadHeroCombatProbe(port, heroKey, defaultGameState, probeScriptS
 // вызывающий код патчит только ProgressionEngine.init/discoverHeroes и
 // CombatEngine.loadHero (см. attachNodeEngines), всё остальное — дословно тот же код
 // панели.
-async function loadPanelWindow(port) {
-    const html = readPanelSourceWithoutAutoRun();
+async function loadPanelWindow(port, attemptsPerStrategyOverride) {
+    const html = readPanelSourceWithoutAutoRun(attemptsPerStrategyOverride);
     const url = `http://127.0.0.1:${port}/admin-balance-panel.html`;
     const dom = new JSDOM(html, {
         url,
@@ -191,12 +229,19 @@ async function loadPanelWindow(port) {
 // Подменяет ProgressionEngine.init/discoverHeroes и CombatEngine.loadHero на
 // jsdom-версии, ограничивая discoverHeroes только heroKeys этого воркера (для
 // разбиения героев между потоками — см. worker.js). Все остальные методы этих
-// объектов (buildHeroAtLevel, simulateFight, simulateManyFights, RealUpgradeEngine,
+// объектов (buildHeroAtLevel, simulateDummyFight, simulateManyDummyFights, RealUpgradeEngine,
 // SurvivalEngine, ExcelExport...) остаются буквально теми же функциями, что в панели.
 function attachNodeEngines(expose, port, heroKeys) {
     const allowedHeroKeys = heroKeys ? new Set(heroKeys) : null;
     const probeCache = new Map();
     const openDoms = [];
+    // probe → dom для окон, открытых loadHeroAtLevel (по одному на каждую строку
+    // диапазона "с апгрейдами", см. её комментарий в admin-balance-panel.html) — в
+    // отличие от probeCache (один кэш на героя на весь прогон), эти окна нужно закрывать
+    // СРАЗУ после releaseHeroAtLevel, а не копить до общего closeAll() в конце: при
+    // ~150 строках × 6 героях одновременно открытых jsdom-окон иначе накопилось бы под
+    // тысячу штук, каждое — распарсенный game.js целиком.
+    const rowDoms = new Map();
 
     expose.ProgressionEngine.init = async function () {
         const { dom, api } = await loadProgressionApi(port);
@@ -221,12 +266,36 @@ function attachNodeEngines(expose, port, heroKeys) {
         return probe;
     };
 
+    // Не кэшируется (в отличие от loadHero выше) — КАЖДЫЙ вызов открывает СВЕЖЕЕ окно,
+    // засеянное permanentHero конкретной строки, иначе startGlobalX так и останутся
+    // статами 1 уровня из общего кэша. Вызывающий код (runAll в admin-balance-panel.html)
+    // обязан вызвать releaseHeroAtLevel после того, как закончил с этой строкой.
+    expose.CombatEngine.loadHeroAtLevel = async function (heroKey, permanentHero) {
+        const defaults = expose.ProgressionEngine.api.getDefaultGameState();
+        const { dom, probe } = await loadHeroCombatProbe(port, heroKey, defaults, expose.PROBE_SCRIPT_SOURCE, permanentHero);
+        rowDoms.set(probe, dom);
+        return probe;
+    };
+
+    expose.CombatEngine.releaseHeroAtLevel = function (probe) {
+        const dom = rowDoms.get(probe);
+        if (!dom) return;
+        rowDoms.delete(probe);
+        try { dom.window.close(); } catch (e) { /* окно уже освобождено — не критично */ }
+    };
+
     return {
         closeAll() {
             for (const dom of openDoms) {
                 try { dom.window.close(); } catch (e) { /* окно уже освобождено — не критично */ }
             }
             openDoms.length = 0;
+            // Подстраховка: если прогон прервался (stopRequested/ошибка) до
+            // releaseHeroAtLevel для текущей строки — закрыть и то, что осталось.
+            for (const dom of rowDoms.values()) {
+                try { dom.window.close(); } catch (e) { /* окно уже освобождено — не критично */ }
+            }
+            rowDoms.clear();
         }
     };
 }

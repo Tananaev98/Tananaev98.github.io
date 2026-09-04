@@ -6,7 +6,11 @@
 // же структуры (те же листы/колонки), что и «Экспорт в Excel» в браузерной панели,
 // собран той же функцией ExcelExport.buildWorkbook.
 //
-// Запуск из корня проекта: node scripts/balance-sim/run.js [--workers=N]
+// Запуск из корня проекта: node scripts/balance-sim/run.js [--workers=N] [--heroes=a,b,c]
+// [--attempts-per-strategy=N] — последний флаг только для фокусных сравнений (2-4 героя),
+// поднимает число попыток/строку выше дефолтных 50 (5 стратегий × 10), чтобы придавить
+// статистический шум на отдельных строках; для полного прогона всего ростера запрещён
+// предохранителем (см. main()) — там и так не быстро, а шум CLAUDE.md разрешает принимать.
 'use strict';
 
 const fs = require('node:fs');
@@ -17,12 +21,19 @@ const { startStaticServer } = require('./static-server');
 const { ROOT, loadPanelWindow, attachNodeEngines } = require('./panel-harness');
 
 function parseArgs(argv) {
-    const args = { workers: null, heroes: null };
+    const args = { workers: null, heroes: null, attemptsPerStrategy: null };
     for (const raw of argv) {
         const workersMatch = raw.match(/^--workers=(\d+)$/);
         if (workersMatch) args.workers = Number(workersMatch[1]);
         const heroesMatch = raw.match(/^--heroes=(.+)$/);
         if (heroesMatch) args.heroes = heroesMatch[1].split(',').map((s) => s.trim()).filter(Boolean);
+        // По прямому запросу пользователя: для ФОКУСНЫХ сравнений (--heroes с малым числом
+        // героев) можно поднять число попыток/строку выше дефолтных 10 (=50 попыток/строку,
+        // см. panel-harness.js/readPanelSourceWithoutAutoRun), чтобы придавить статистический
+        // шум ±6-7pp на строку. НЕ использовать на полном прогоне всего ростера — время растёт
+        // пропорционально, 150 строк × 8 героев и так не быстрый прогон.
+        const attemptsMatch = raw.match(/^--attempts-per-strategy=(\d+)$/);
+        if (attemptsMatch) args.attemptsPerStrategy = Number(attemptsMatch[1]);
     }
     return args;
 }
@@ -49,10 +60,10 @@ function partitionHeroesRoundRobin(heroKeys, workerCount) {
     return buckets.filter((bucket) => bucket.length > 0);
 }
 
-function runWorker(workerIndex, heroKeys, port) {
+function runWorker(workerIndex, heroKeys, port, attemptsPerStrategy) {
     return new Promise((resolve, reject) => {
         const worker = new Worker(path.join(__dirname, 'worker.js'), {
-            workerData: { heroKeys, port, workerIndex }
+            workerData: { heroKeys, port, workerIndex, attemptsPerStrategy }
         });
         worker.on('message', (msg) => {
             if (msg.type === 'log') {
@@ -76,14 +87,21 @@ function mergeSnapshots(orderedHeroDescriptors, partialSnapshots) {
     const dpsResults = {};
     const survivalResults = {};
     const dpsUpgradedResults = {};
+    const dpsCeilingResults = {};
     const survivalUpgradedResults = {};
+    // Правило 13 CLAUDE.md (шанс обогнать Луку) — каждый воркер видел только своих
+    // героев, поэтому его сырые dpsSamples нужно собрать здесь ПЕРЕД сравнением с Лукой
+    // (см. вызов computeWinRateVsLuka в buildAndWriteExcel ниже).
+    const dpsSamplesByHero = {};
     let stoppedEarly = false;
 
     for (const snapshot of partialSnapshots) {
         Object.assign(dpsResults, snapshot.dpsResults);
         Object.assign(survivalResults, snapshot.survivalResults);
         Object.assign(dpsUpgradedResults, snapshot.dpsUpgradedResults);
+        Object.assign(dpsCeilingResults, snapshot.dpsCeilingResults);
         Object.assign(survivalUpgradedResults, snapshot.survivalUpgradedResults);
+        Object.assign(dpsSamplesByHero, snapshot.dpsSamplesByHero);
         if (snapshot.stoppedEarly) stoppedEarly = true;
     }
 
@@ -91,7 +109,8 @@ function mergeSnapshots(orderedHeroDescriptors, partialSnapshots) {
         generatedAt: new Date(),
         stoppedEarly,
         heroes: orderedHeroDescriptors,
-        dpsResults, survivalResults, dpsUpgradedResults, survivalUpgradedResults
+        dpsResults, survivalResults, dpsUpgradedResults, dpsCeilingResults, survivalUpgradedResults,
+        dpsSamplesByHero
     };
 }
 
@@ -105,11 +124,16 @@ async function buildAndWriteExcel(port, mergedSnapshot) {
         await expose.ProgressionEngine.init();
         const { ExcelExport } = expose;
         const heroes = mergedSnapshot.heroes;
+        // Правило 13 CLAUDE.md: теперь, когда все воркеры слиты, Лука наконец в тех же
+        // данных, что и остальные герои — считаем реальную долю заходов "с апгрейдами",
+        // где герой превысил средний ДПС Луки (та же функция, что пыталась это сделать
+        // внутри каждого воркера и там молча пропускала — см. её комментарий).
+        expose.computeWinRateVsLuka(heroes, mergedSnapshot.dpsUpgradedResults, mergedSnapshot.dpsSamplesByHero);
         const sheets = [
             ExcelExport.buildSummarySheet(mergedSnapshot),
             ExcelExport.buildDpsSheet('DPS без апгрейдов', heroes, mergedSnapshot.dpsResults),
             ExcelExport.buildSurvivalSheet('Живучесть без апгрейдов', heroes, mergedSnapshot.survivalResults),
-            ExcelExport.buildDpsUpgradedSheet(heroes, mergedSnapshot.dpsUpgradedResults),
+            ExcelExport.buildDpsUpgradedSheet(heroes, mergedSnapshot.dpsUpgradedResults, mergedSnapshot.dpsCeilingResults),
             ExcelExport.buildSurvivalUpgradedSheet(heroes, mergedSnapshot.survivalUpgradedResults),
             ExcelExport.buildBalanceAnalyticsSheet(mergedSnapshot)
         ];
@@ -148,6 +172,30 @@ async function main() {
         }
         console.log(`Героев: ${heroDescriptors.length} (${heroDescriptors.map((h) => h.dispName).join(', ')})`);
 
+        if (args.attemptsPerStrategy) {
+            // Предохранитель: раньше жёстко блокировал >4 героев (чтобы случайно не улететь
+            // на десятки минут при фокусной калибровке). По прямому запросу пользователя —
+            // допустим и полный прогон всего ростера на повышенной выборке, если пользователь
+            // осознанно согласился ждать (15-20 мин), просто ограничиваем ПРОИЗВЕДЕНИЕ героев
+            // × попыток, а не голое число героев — оценка времени калибрована по реальному
+            // замеру полного 8-героя прогона в этой сессии (8×40=320 единиц за 260с ⇒
+            // ~0.81с/единицу; первая прикидка 1.9 была завышена почти вдвое и ложно
+            // блокировала легитимный 150-попыточный прогон, см. чат).
+            const budgetUnits = heroDescriptors.length * args.attemptsPerStrategy;
+            const estimatedSeconds = budgetUnits * 0.85;
+            if (estimatedSeconds > 1500) {
+                throw new Error(
+                    `--attempts-per-strategy=${args.attemptsPerStrategy} для ${heroDescriptors.length} ` +
+                    `героев — оценочное время ~${Math.round(estimatedSeconds / 60)} мин, это за ` +
+                    `предохранителем (макс. ~25 мин). Снизьте --attempts-per-strategy или ограничьте ` +
+                    `--heroes.`
+                );
+            }
+            console.log(`Попыток на стратегию: ${args.attemptsPerStrategy} (дефолт 10) — ` +
+                `${args.attemptsPerStrategy * 5} попыток/строку вместо обычных 50, для подавления шума ` +
+                `(оценочное время ~${Math.round(estimatedSeconds / 60)} мин).`);
+        }
+
         const cpuCount = os.cpus().length;
         const workerCount = Math.max(1, Math.min(
             args.workers || cpuCount,
@@ -160,7 +208,7 @@ async function main() {
         console.log('Разбиение героев по воркерам:', heroKeyBuckets.map((b) => `[${b.join(', ')}]`).join('  '));
 
         const partialSnapshots = await Promise.all(
-            heroKeyBuckets.map((bucket, index) => runWorker(index, bucket, port))
+            heroKeyBuckets.map((bucket, index) => runWorker(index, bucket, port, args.attemptsPerStrategy))
         );
 
         const mergedSnapshot = mergeSnapshots(heroDescriptors, partialSnapshots);

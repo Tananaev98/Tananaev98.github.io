@@ -94,6 +94,59 @@ function getBossHealthLevelMultiplier(level) {
     return 1;
 }
 
+// Режим «Манекен» (dummy.html, window.DUMMY_MODE) — тренировочный бой на фиксированном
+// боссе, вообще без кампанейской прогрессии. Константы вынесены сюда, рядом с
+// единственным местом (calculateBossMaxHealth ниже), где решается HP босса — все
+// остальные места DUMMY_MODE-кода (gameLoop/startBossEvents/applyHeroImpactDamage/
+// Enemy.updateWound/getNextLevelAvailability) просто читают эти же значения, ничего не
+// пересчитывая.
+// HP босса — СТРОГО по таймеру, а не от реального урона героя (по прямому решению
+// пользователя): пилообразно, от 100% до 0% КАЖДУЮ hpCycleSec секунд, затем мгновенный
+// сброс к 100% и новый цикл — имитация «убил фазу босса, началась следующая», а не один
+// плавный спуск на весь забег (см. getDummyBossHpFraction ниже, вызывается каждый кадр
+// из gameLoop). Окно временного улучшения выпадает РОВНО в момент каждого обнуления —
+// gameLoop ниже сверяется с тем же самым hpCycleSec, а не с отдельным полем, поэтому
+// эти два момента физически не могут разойтись. Реальный удар по боссу-манекену НЕ уменьшает его hp вообще
+// (applyHeroImpactDamage/Enemy.updateWound ниже это явно гейтят), только идёт в счётчик
+// ДПС в углу экрана.
+const DUMMY_MODE_CONFIG = Object.freeze({
+    bossMaxHP: 100_000_000_000,   // просто "100%" в удобных единицах — реальный урон эту величину больше не трогает
+    hpCycleSec: 60,                 // длина одного цикла HP (100%→0%) и одновременно интервал окна улучшения
+    upgradeWindows: 4,              // ровно 4 окна улучшений за весь забег (на 60/120/180/240 сек), дальше не выпадает
+    durationSec: 300                // 5 минут — после этого забег завершается
+});
+
+// Доля HP босса-манекена в момент elapsedSec от начала забега — пилообразно: линейно
+// от 1.0 до 0.0 внутри каждого hpCycleSec-секундного цикла, затем сброс к 1.0 и новый
+// цикл (elapsedSec % hpCycleSec). Прямое присвоение каждый кадр (см. вызов в gameLoop),
+// не инкрементальная регенерация — не накапливает рассинхрон и не зависит от порядка
+// кадров.
+function getDummyBossHpFraction(elapsedSec) {
+    const cycleSec = DUMMY_MODE_CONFIG.hpCycleSec;
+    const withinCycle = Math.max(0, elapsedSec) % cycleSec;
+    return 1 - withinCycle / cycleSec;
+}
+
+// Живое состояние забега манекена — читается/пишется только из мест, гейтящих себя
+// window.DUMMY_MODE (applyHeroImpactDamage/Enemy.updateWound/gameLoop ниже,
+// initDummyDpsHud/updateDummyDpsHud в самом низу файла). Для обычных уровней эти
+// переменные объявлены, но никогда не трогаются.
+let dummyTotalDamage = 0;      // суммарный урон по боссу с начала забега — для среднего ДПС
+let dummyWindowDamage = 0;     // урон за последнее скользящее окно — для текущего ДПС
+let dummyWindowStartMs = 0;    // когда началось текущее скользящее окно (activeGameTimeMs)
+let dummyCurrentDps = 0;       // последнее посчитанное значение текущего ДПС
+let dummyMinDps = null;        // минимум текущего ДПС за забег (null — ещё не было ни одного окна)
+let dummyMaxDps = null;        // максимум текущего ДПС за забег
+let dummyUpgradeWindowsShown = 0; // сколько из 4 окон улучшений уже показано
+let dummyResultsShown = false; // защита от повторного показа окна итогов
+
+// Полный лог забега — только для выгрузки в Excel по кнопке на экране итогов
+// (exportDummyRunLog ниже). Ничего из этого не участвует в самой логике боя/ДПС —
+// исключительно запись событий для последующего анализа игроком.
+let dummyHitLog = [];      // { tSec, damage, kind ('hit'|'wound'), cumulative }
+let dummyUpgradeLog = [];  // { windowIndex, tSec, rarity, displayName, effects }
+let dummyDpsTimeline = []; // { windowEndSec, windowDps, runningAverageDps }
+
 // overrides — опционально, только для инструментов вне реальной игры (см.
 // admin-balance-panel.html): позволяет спросить HP босса произвольного уровня
 // кампании без перезагрузки level.html под этот уровень, не трогая формулу и
@@ -101,6 +154,12 @@ function getBossHealthLevelMultiplier(level) {
 // отсутствует, и функция читает те же lvlNumber/bossCombatConfig/
 // levelCompletionConfig, что и раньше — поведение не меняется.
 function calculateBossMaxHealth(type, fallbackBaseHealth, overrides) {
+    // Манекен: фиксированный HP независимо от типа/уровня/сложности — кампанейская
+    // формула ниже здесь совсем не при делах, поэтому просто не доходим до неё.
+    if (typeof window !== 'undefined' && window.DUMMY_MODE) {
+        return DUMMY_MODE_CONFIG.bossMaxHP;
+    }
+
     const balancedBaseHealth = BOSS_HEALTH_BALANCE.baseByType[type];
     if (!Number.isFinite(balancedBaseHealth)) {
         return Math.max(1, Math.floor(fallbackBaseHealth));
@@ -142,9 +201,21 @@ function calculateBossMaxHealth(type, fallbackBaseHealth, overrides) {
     // Сложность уровня (getDifficultyMultiplier, saveData.js) — только здесь, в ветке
     // РЕАЛЬНОГО босса. Ветка выше (fallbackBaseHealth, ранний return) — для атак/
     // не-боссов, которых сложность по правилам фичи не касается (см. её комментарий).
+    // overrides.difficultyMultiplier — опционально, только для панели (см. её комментарий
+    // про "потолок потенциала" в admin-balance-panel.html): позволяет спросить HP босса
+    // ТАК, будто уровень идёт на завышенной сложности (запас HP, чтобы жадный забег на
+    // максимум ДПС не убивал босса за 1-2 удара — короткий бой даёт слишком шумный/
+    // недостоверный ДПС), НЕ трогая при этом урон АТАК босса (calculateBossAttackDamage
+    // читает getDifficultyMultiplier() напрямую, без overrides — живучесть в панели этим
+    // не затрагивается вообще). В реальной игре overrides всегда отсутствует — поведение
+    // не меняется, HP по-прежнему считается по настоящей сложности уровня игрока.
+    const effectiveDifficultyMultiplier = overrides && Number.isFinite(overrides.difficultyMultiplier)
+        ? overrides.difficultyMultiplier
+        : getDifficultyMultiplier();
+
     return Math.max(1, Math.round(
         balancedBaseHealth * levelMultiplier * bossHealthMultiplier * regionFinalMultiplier
-        * levelRangeMultiplier * getDifficultyMultiplier()
+        * levelRangeMultiplier * effectiveDifficultyMultiplier
     ));
 }
 
@@ -794,16 +865,37 @@ updateWound() {
             if (now - this.lastWoundTick >= 300) {
                 // Наносим урон от ранения (целое число)
                 const woundDamage = this.woundDamagePerSecond;
-                this.hp -= woundDamage;
+                const isDummyBoss = this.isBoss && typeof window !== 'undefined' && window.DUMMY_MODE;
+                // Манекен: hp боссу от ранения больше не трогаем вообще — его HP-бар
+                // идёт строго по таймеру (см. DUMMY_MODE_CONFIG/getDummyBossHpFraction
+                // в game.js, применяется каждый кадр в gameLoop), тот же принцип, что и
+                // в applyHeroImpactDamage выше.
+                if (!isDummyBoss) {
+                    this.hp -= woundDamage;
+                }
                 this.lastWoundTick = now;
-                
+
                 // Визуальная обратная связь для урона от ранения
                 this.showWoundDamage(woundDamage);
-                
+
+                // Манекен: урон от ранения тоже идёт в счётчик ДПС, но убить босса не
+                // может — тот же инвариант, что и в applyHeroImpactDamage (game.js).
+                if (isDummyBoss) {
+                    dummyTotalDamage += woundDamage;
+                    dummyWindowDamage += woundDamage;
+                    dummyHitLog.push({
+                        tSec: Math.round((activeGameTimeMs / 1000) * 100) / 100,
+                        damage: Math.round(woundDamage),
+                        kind: 'ранение',
+                        cumulative: Math.round(dummyTotalDamage)
+                    });
+                    return false;
+                }
+
                 // Проверяем, не умер ли враг от ранения
                 if (this.hp <= 0) {
                     return true; // Враг умер от ранения
-					
+
                 }
             }
         }
@@ -956,6 +1048,7 @@ function initGame() {
     initHeroHealth();
 	initTikhonShakeGauge();
 	initEliseyBeeGauge();
+	initDummyDpsHud();
 
 	   // Инициализация полоски здоровья босса
     initBossHealthBar();
@@ -1310,13 +1403,77 @@ function gameLoop(currentTime) {
 	if (currentBoss && bossAlive) {
         updateBossHealthBar();
     }
-	
+
+    // ===== Режим «Манекен» (window.DUMMY_MODE) — HP-бар по таймеру, окна улучшений по
+    // таймеру, счётчик ДПС и завершение забега по 5-минутному лимиту. Полностью
+    // изолировано от обычного игрового цикла — на реальных уровнях DUMMY_MODE
+    // не определён, весь блок ниже просто не выполняется. =====
+    if (typeof window !== 'undefined' && window.DUMMY_MODE) {
+        // HP — прямое присвоение по формуле времени (getDummyBossHpFraction), не
+        // инкрементальная регенерация: реальный урон героя на currentBoss.hp больше не
+        // влияет вообще (applyHeroImpactDamage/Enemy.updateWound ниже это явно гейтят,
+        // см. их комментарии) — только идёт в счётчик ДПС. updateBossHealthBar() тут же,
+        // а не только по хиту, иначе бар не шевелился бы вообще без единого удара.
+        if (currentBoss) {
+            currentBoss.hp = currentBoss.maxHP * getDummyBossHpFraction(timeSec2);
+            updateBossHealthBar();
+        }
+
+        // Текущий (скользящее окно ~5 сек) ДПС — пересчитывается раз в окно, не каждый
+        // кадр, иначе цифра дёргалась бы от кадра к кадру почти бессмысленно.
+        const DUMMY_DPS_WINDOW_MS = 5000;
+        if (activeGameTimeMs - dummyWindowStartMs >= DUMMY_DPS_WINDOW_MS) {
+            const windowSeconds = (activeGameTimeMs - dummyWindowStartMs) / 1000;
+            dummyCurrentDps = windowSeconds > 0 ? dummyWindowDamage / windowSeconds : 0;
+            dummyMinDps = dummyMinDps === null ? dummyCurrentDps : Math.min(dummyMinDps, dummyCurrentDps);
+            dummyMaxDps = dummyMaxDps === null ? dummyCurrentDps : Math.max(dummyMaxDps, dummyCurrentDps);
+            dummyDpsTimeline.push({
+                windowEndSec: Math.round(activeGameTimeMs / 1000),
+                windowDps: Math.round(dummyCurrentDps),
+                runningAverageDps: Math.round(activeGameTimeMs > 0 ? dummyTotalDamage / (activeGameTimeMs / 1000) : 0)
+            });
+            dummyWindowDamage = 0;
+            dummyWindowStartMs = activeGameTimeMs;
+        }
+        updateDummyDpsHud();
+
+        // Окно временного улучшения каждые hpCycleSec секунд (60), ровно 4 раза за весь
+        // забег — совпадает с моментом обнуления HP-цикла (см. getDummyBossHpFraction),
+        // тот же showLevelUpModal(), что и на настоящих уровнях (см. её комментарий),
+        // просто вызывается по таймеру вместо "убил фазу босса".
+        if (
+            dummyUpgradeWindowsShown < DUMMY_MODE_CONFIG.upgradeWindows
+            && timeSec2 >= (dummyUpgradeWindowsShown + 1) * DUMMY_MODE_CONFIG.hpCycleSec
+            && !openLevelUpModal
+        ) {
+            dummyUpgradeWindowsShown++;
+            showLevelUpModal(
+                `⏳ ВРЕМЕННОЕ УЛУЧШЕНИЕ (${dummyUpgradeWindowsShown}/${DUMMY_MODE_CONFIG.upgradeWindows}) ⏳`,
+                'Выберите одно временное улучшение:'
+            );
+        }
+
+        // Через 5 минут забег завершается — итоговый ДПС в отдельном окне, без
+        // completeLevel()/addZlat() (см. showDummyResultsModal): манекен не даёт
+        // прогресса кампании, это чисто тренировочный режим.
+        if (!dummyResultsShown && timeSec2 >= DUMMY_MODE_CONFIG.durationSec) {
+            dummyResultsShown = true;
+            pauseGame();
+            showDummyResultsModal();
+        }
+    }
+
     requestAnimationFrame(gameLoop);
 }
 
 
 
 function startBossEvents() {
+    // Манекен: у босса вообще не бывает атак (правило проекта — "манекен не атакует
+    // игрока"), поэтому вся цепочка планирования атак (scheduleNextBossWave→
+    // executeBossEvent→spawnEnemyWithParams) просто не запускается.
+    if (typeof window !== 'undefined' && window.DUMMY_MODE) return;
+
     const bossObject = mBossDelayAb.find(item => item.boss === bossAliveName);
     bossDelayAbDop = bossObject.bossDelayAbDop;
     bossDelayAb = bossObject.bossDelayAb;
@@ -2404,6 +2561,199 @@ function showEndGameModal(victory, timeSeconds) {
     });
 }
 
+// Экран итогов забега в «Манекене» — сознательно ОТДЕЛЬНАЯ функция, а не ветка
+// showEndGameModal выше: та мутирует настоящий прогресс кампании (completeLevel →
+// gameState.lastCompletedLevel, addZlat, баннеры разблокировки героев) — для
+// тренировочного режима без прогресса это должно быть физически невозможно, а не
+// просто "если ветка не сработает". Переиспользует тот же CSS (level-up-modal/
+// endgame-modal), что и showEndGameModal — визуально тот же язык, без дублирования стилей.
+function showDummyResultsModal() {
+    window.battleMusic?.setCombatActive(false);
+
+    const elapsedSec = Math.floor(activeGameTimeMs / 1000);
+    const averageDps = elapsedSec > 0 ? dummyTotalDamage / elapsedSec : 0;
+    const formatDps = value => Math.round(value).toLocaleString('ru-RU');
+
+    const modal = document.createElement('div');
+    modal.className = 'level-up-modal endgame-modal is-victory';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="endgame-badge">🎯</div>
+            <h2>ЗАБЕГ ЗАВЕРШЁН</h2>
+            <p class="modal-subtitle">Итоги тренировки на манекене</p>
+            <div class="endgame-stats">
+                <div class="endgame-stat-row">
+                    <span class="endgame-stat-icon">⚔️</span>
+                    <span class="endgame-stat-label">Средний ДПС</span>
+                    <span class="endgame-stat-value">${formatDps(averageDps)}</span>
+                </div>
+                <div class="endgame-stat-row">
+                    <span class="endgame-stat-icon">📈</span>
+                    <span class="endgame-stat-label">Мин / Макс текущего ДПС</span>
+                    <span class="endgame-stat-value">${formatDps(dummyMinDps ?? 0)} / ${formatDps(dummyMaxDps ?? 0)}</span>
+                </div>
+                <div class="endgame-stat-row">
+                    <span class="endgame-stat-icon">💥</span>
+                    <span class="endgame-stat-label">Суммарный урон</span>
+                    <span class="endgame-stat-value">${formatDps(dummyTotalDamage)}</span>
+                </div>
+                <div class="endgame-stat-row time-line">
+                    <span class="endgame-stat-icon">⏱</span>
+                    <span class="endgame-stat-label">Время забега</span>
+                    <span class="endgame-stat-value endgame-stat-value--time">${formatTime(elapsedSec)}</span>
+                </div>
+            </div>
+            <div class="endgame-buttons">
+                <button class="endgame-button restart">Ещё разок</button>
+                <button class="endgame-button base">На базу</button>
+                <button class="endgame-button dummy-export">📥 Скачать лог (Excel)</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    modal.querySelector('.restart').addEventListener('click', () => {
+        location.reload();
+    });
+
+    modal.querySelector('.base').addEventListener('click', () => {
+        window.location.href = 'index.html';
+    });
+
+    modal.querySelector('.dummy-export').addEventListener('click', () => {
+        exportDummyRunLog();
+    });
+}
+
+// ==================== ВЫГРУЗКА ЛОГА ЗАБЕГА В EXCEL (режим «Манекен») ====================
+// Компактный аналог ExcelExport из admin-balance-panel.html (та же schemaML-обёртка,
+// тот же принцип cell/sheet/workbook) — не переиспользование напрямую, эти файлы не
+// подключены друг к другу, а формат один и тот же, потому что Excel его понимает.
+// Никакой боевой/балансной логики тут нет вообще — только сериализация уже
+// накопленных в dummyHitLog/dummyUpgradeLog/dummyDpsTimeline событий (см. их запись в
+// applyHeroImpactDamage/Enemy.updateWound/gameLoop/showLevelUpModal выше) — правило 1
+// CLAUDE.md про запрет дублирования формул сюда не относится, дублировать нечего.
+const DummyExcelExport = {
+    escape(value) {
+        return String(value).replace(/[&<>'"]/g, (ch) => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&apos;', '"': '&quot;'
+        }[ch]));
+    },
+    cell(value) {
+        if (value === null || value === undefined || value === '') {
+            return '<Cell><Data ss:Type="String"></Data></Cell>';
+        }
+        if (typeof value === 'number' && Number.isFinite(value)) {
+            return `<Cell><Data ss:Type="Number">${value}</Data></Cell>`;
+        }
+        return `<Cell><Data ss:Type="String">${this.escape(value)}</Data></Cell>`;
+    },
+    headerCell(value) {
+        return `<Cell ss:StyleID="header"><Data ss:Type="String">${this.escape(value)}</Data></Cell>`;
+    },
+    sheet(name, header, rows) {
+        const safeName = this.escape(name).slice(0, 31).replace(/[[\]:*?/\\]/g, ' ');
+        const headerRow = `<Row>${header.map(h => this.headerCell(h)).join('')}</Row>`;
+        const bodyRows = rows.map(row => `<Row>${row.map(v => this.cell(v)).join('')}</Row>`).join('');
+        return `<Worksheet ss:Name="${safeName}"><Table>${headerRow}${bodyRows}</Table></Worksheet>`;
+    },
+    buildWorkbook(sheets) {
+        const body = sheets.map(sheet => this.sheet(sheet.name, sheet.header, sheet.rows)).join('');
+        return `<?xml version="1.0" encoding="UTF-8"?>\n` +
+            `<?mso-application progid="Excel.Sheet"?>\n` +
+            `<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" ` +
+            `xmlns:o="urn:schemas-microsoft-com:office:office" ` +
+            `xmlns:x="urn:schemas-microsoft-com:office:excel" ` +
+            `xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">` +
+            `<Styles><Style ss:ID="header"><Font ss:Bold="1"/><Interior ss:Color="#E5DCC3" ss:Pattern="Solid"/></Style></Styles>` +
+            `${body}</Workbook>`;
+    }
+};
+
+function exportDummyRunLog() {
+    const elapsedSec = Math.floor(activeGameTimeMs / 1000);
+    const averageDps = elapsedSec > 0 ? dummyTotalDamage / elapsedSec : 0;
+    const heroName = activeHeroObject?.dispName || activeHeroStr || '';
+    const nowLabel = new Date().toLocaleString('ru-RU');
+
+    const summarySheet = {
+        name: 'Сводка',
+        header: ['Параметр', 'Значение'],
+        rows: [
+            ['Герой', heroName],
+            ['Дата забега', nowLabel],
+            ['Длительность, сек', elapsedSec],
+            ['Суммарный урон', Math.round(dummyTotalDamage)],
+            ['Средний ДПС (за весь забег)', Math.round(averageDps)],
+            ['Мин. ДПС (по 5-сек окнам)', Math.round(dummyMinDps ?? 0)],
+            ['Макс. ДПС (по 5-сек окнам)', Math.round(dummyMaxDps ?? 0)],
+            ['Всего ударов по боссу', dummyHitLog.length],
+            ['Окон улучшений показано', dummyUpgradeWindowsShown]
+        ]
+    };
+
+    const hitsSheet = {
+        name: 'Удары',
+        header: ['Секунда', 'Урон', 'Тип', 'Накопительный урон'],
+        rows: dummyHitLog.map(hit => [hit.tSec, hit.damage, hit.kind, hit.cumulative])
+    };
+
+    const upgradesSheet = {
+        name: 'Улучшения',
+        header: ['Окно (из 4)', 'Секунда', 'Редкость', 'Название', 'Статы'],
+        rows: dummyUpgradeLog.map(u => [u.windowIndex, u.tSec, u.rarity, u.displayName, u.effects])
+    };
+
+    const dpsTimelineSheet = {
+        name: 'ДПС по времени',
+        header: ['Конец окна, сек', 'ДПС за окно (5 сек)', 'Средний ДПС с начала забега'],
+        rows: dummyDpsTimeline.map(w => [w.windowEndSec, w.windowDps, w.runningAverageDps])
+    };
+
+    const xml = DummyExcelExport.buildWorkbook([summarySheet, hitsSheet, upgradesSheet, dpsTimelineSheet]);
+    const blob = new Blob([xml], { type: 'application/vnd.ms-excel' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    link.href = url;
+    link.download = `dummy-log_${stamp}.xls`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+}
+
+// ==================== СЧЁТЧИК ДПС РЕЖИМА «МАНЕКЕН» ====================
+// HUD в левом верхнем углу (см. dummy.html) — только визуализирует то, что уже
+// копится в dummyTotalDamage/dummyWindowDamage/dummyCurrentDps/dummyMinDps/dummyMaxDps
+// (см. их накопление в applyHeroImpactDamage/Enemy.updateWound/gameLoop выше), никакой
+// собственной боевой логики здесь нет.
+function initDummyDpsHud() {
+    if (typeof window === 'undefined' || !window.DUMMY_MODE) return;
+    const hud = document.getElementById('dummyDpsHud');
+    if (hud) hud.style.display = '';
+}
+
+function updateDummyDpsHud() {
+    const elapsedSec = activeGameTimeMs / 1000;
+    const averageDps = elapsedSec > 0 ? dummyTotalDamage / elapsedSec : 0;
+    const formatDps = value => Math.round(value).toLocaleString('ru-RU');
+
+    const avgEl = document.getElementById('dummyDpsAvg');
+    const currentEl = document.getElementById('dummyDpsCurrent');
+    const minMaxEl = document.getElementById('dummyDpsMinMax');
+    const timerEl = document.getElementById('dummyDpsTimer');
+
+    if (avgEl) avgEl.textContent = formatDps(averageDps);
+    if (currentEl) currentEl.textContent = formatDps(dummyCurrentDps);
+    if (minMaxEl) minMaxEl.textContent = `${formatDps(dummyMinDps ?? 0)} / ${formatDps(dummyMaxDps ?? 0)}`;
+    if (timerEl) {
+        const remainingSec = Math.max(0, DUMMY_MODE_CONFIG.durationSec - Math.floor(elapsedSec));
+        timerEl.textContent = formatTime(remainingSec);
+    }
+}
+
 // ==================== ЭКРАН ЗАГРУЗКИ УРОВНЯ ====================
 // Раньше бой мог начаться (и нанести урон) раньше, чем реально догрузились картинки
 // атак — img.src выставлялся при спавне, но урон считался по таймеру независимо от
@@ -2556,6 +2906,12 @@ function goToLevelWithRememberedDifficulty(levelNumber) {
 }
 
 function getNextLevelAvailability() {
+    // Манекен — не пронумерованный уровень кампании, "следующего уровня" у него нет
+    // и быть не может (см. showLevelUpModal, которая рисует эту кнопку по этому флагу).
+    if (typeof window !== 'undefined' && window.DUMMY_MODE) {
+        return { nextLevelNumber: null, hasNextLevel: false };
+    }
+
     const nextLevelNumber = Math.floor(Number(lvlNumber)) + 1;
     const maxContentLevel = (typeof MAX_LEVEL === 'number' && Number.isFinite(MAX_LEVEL))
         ? MAX_LEVEL
@@ -2878,10 +3234,35 @@ function damageEnemy(enemy, attackMultiplier = 1, attackKind = 'normal', shotInt
 
 function applyHeroImpactDamage(enemy, damageResult, isBoss) {
     const liveIndex = activeEnemies.indexOf(enemy);
-    if (liveIndex === -1 || !enemy?.element || !enemy.element.isConnected || enemy.hp <= 0) return;
+    const isDummyBoss = isBoss && typeof window !== 'undefined' && window.DUMMY_MODE;
+    // Манекен: hp==0 — легитимный, не разовый момент (пилообразный HP-бар проходит через
+    // него каждые hpCycleSec секунд, см. getDummyBossHpFraction) — не "уже мёртв, дальше
+    // не обрабатывать", как для настоящего врага, поэтому isDummyBoss исключён из этой
+    // проверки отдельно.
+    if (liveIndex === -1 || !enemy?.element || !enemy.element.isConnected || (!isDummyBoss && enemy.hp <= 0)) return;
 
-    // Фактический урон наносится только в момент визуального контакта.
-    enemy.hp -= damageResult.damage;
+    // Фактический урон наносится только в момент визуального контакта — КРОМЕ манекена:
+    // его HP-бар теперь идёт строго по таймеру (см. DUMMY_MODE_CONFIG/
+    // getDummyBossHpFraction, применяется каждый кадр в gameLoop), реальный удар его
+    // hp больше не трогает вообще, только счётчик ДПС ниже.
+    if (!isDummyBoss) {
+        enemy.hp -= damageResult.damage;
+    }
+
+    // Манекен: копим урон по боссу для живого счётчика ДПС в углу экрана
+    // (updateDummyDpsHud читает эти накопители каждый кадр из gameLoop) и пишем
+    // в лог удара — для выгрузки в Excel по кнопке на экране итогов
+    // (exportDummyRunLog), к самому бою это не имеет отношения.
+    if (isDummyBoss) {
+        dummyTotalDamage += damageResult.damage;
+        dummyWindowDamage += damageResult.damage;
+        dummyHitLog.push({
+            tSec: Math.round((activeGameTimeMs / 1000) * 100) / 100,
+            damage: Math.round(damageResult.damage),
+            kind: damageResult.isCritical ? 'крит' : 'обычный',
+            cumulative: Math.round(dummyTotalDamage)
+        });
+    }
 
     // Hit-stop у Еремея: тяжёлый удар на миг "вешает" цель в воздухе.
     if (isBoss && activeHeroObject?.name === 'eremei') {
@@ -2927,6 +3308,13 @@ function applyHeroImpactDamage(enemy, damageResult, isBoss) {
         }
     }, 100);
     
+    // Манекен: босс не может умереть ни при каких обстоятельствах (правило проекта) —
+    // hp этой функцией больше не трогается вообще (см. isDummyBoss-гейт выше). hp==0
+    // здесь — легитимное мгновение стыка двух циклов HP (getDummyBossHpFraction в
+    // gameLoop пилообразно доходит до 0 каждые hpCycleSec секунд по дизайну), не повод
+    // для смерти — return ниже просто пропускает боевую логику "враг умер" целиком.
+    if (isDummyBoss) return;
+
     // Проверяем, умер ли враг
     if (enemy.hp <= 0) {
         const isBossDeath = beginEnemyDeathVisual(enemy, 'player');
@@ -3009,7 +3397,7 @@ function calculateDamage(isBoss, target) {
     // Крит только по боссу: отбивание снарядов — обычный удар без крита/тряски.
     if (isBoss) {
         const random = Math.random();
-        if (random < getEffectiveCritChance()) {
+        if (random < getEffectiveCritChance(performance.now(), target)) {
             isCritical = true;
         }
 
@@ -4528,6 +4916,21 @@ function getDaryanaMissingHpMultiplier(target) {
     return 1 + (missingHpFraction * 100 * getDaryanaMissingHpPerPercent());
 }
 
+/**
+ * Клим Глыбов — «Обвал»: КАЖДЫЙ присутствующий % HP цели даёт +1% к шансу крита
+ * (зеркально Дарьяне выше — та же чистая функция от target.hp/maxHP, только читает
+ * ОСТАВШИЕСЯ, а не недостающие проценты, и бьёт по крит-шансу, а не по урону).
+ * Цель на 100% HP → бонус +100% (гарантированный крит, см. Math.min(1,...) в
+ * getEffectiveCritChance ниже), на 60% HP → +60%, и так далее до 0% у почти
+ * добитой цели, где бонус угасает и остаётся только собственный крit-шанс героя.
+ */
+function getKlimCritChanceBonus(target) {
+    if (activeHeroObject?.name !== 'klim') return 0;
+    if (!target || !Number.isFinite(target.maxHP) || target.maxHP <= 0) return 0;
+
+    return Math.max(0, Math.min(1, target.hp / target.maxHP));
+}
+
 function resetHeroFeatureCombatState() {
     eremeiCatchBackUntilMs = 0;
     tikhonShakeStartMs = null;
@@ -4885,13 +5288,16 @@ function isEremeiCatchBackActive(now = performance.now()) {
     return activeHeroObject?.name === 'eremei' && now < eremeiCatchBackUntilMs;
 }
 
-function getHeroFeatureCritChanceBonus(now = performance.now()) {
+function getHeroFeatureCritChanceBonus(now = performance.now(), target = null) {
     if (isEremeiCatchBackActive(now)) return getEremeiCatchBackConfig().critChanceBonus;
-    return getTikhonShakeCritChanceBonus(now);
+    // Тихон и Клим гейтятся каждый по своему activeHeroObject.name внутри — активен
+    // максимум один герой одновременно, поэтому у любого героя, кроме "своего",
+    // соответствующая функция уже возвращает 0 и сложение ничего не меняет.
+    return getTikhonShakeCritChanceBonus(now) + getKlimCritChanceBonus(target);
 }
 
-function getEffectiveCritChance(now = performance.now()) {
-    return Math.min(1, globalCritChance + getHeroFeatureCritChanceBonus(now));
+function getEffectiveCritChance(now = performance.now(), target = null) {
+    return Math.min(1, globalCritChance + getHeroFeatureCritChanceBonus(now, target));
 }
 
 function activateEremeiCatchBack(now = performance.now()) {
@@ -5228,6 +5634,20 @@ function showLevelUpModal(titleHtml, subtitleText) {
             upgradeButton.addEventListener('click', () => {
                 // Применяем всю связку — 3 стата разом.
                 bundle.apply();
+
+                // Манекен: пишем выбранный апгрейд в лог забега — для выгрузки в Excel
+                // на экране итогов (exportDummyRunLog), обычные уровни это не трогает.
+                if (typeof window !== 'undefined' && window.DUMMY_MODE) {
+                    dummyUpgradeLog.push({
+                        windowIndex: dummyUpgradeWindowsShown,
+                        tSec: Math.round(activeGameTimeMs / 1000),
+                        rarity: getRarityName(bundle.rarity),
+                        displayName: bundle.displayName,
+                        effects: bundle.statEffects
+                            .map(effect => `${getLevelUpStatShortLabel(effect.statId)} ${effect.cardText}`)
+                            .join(', ')
+                    });
+                }
 
                 // Закрываем модальное окно
                 document.body.removeChild(modal);

@@ -1,0 +1,252 @@
+
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Monstrous world — Манекен</title>
+    <link rel="stylesheet" href="main_css.css?v=level-difficulty-1">
+    <script src="music/audio-settings.js?v=audio-settings-2026-08-11"></script>
+    <script src="enemyAlphaMasks.js?v=hp-bars-revert-2026-08-06"></script>
+    <script src="difficulty.js?v=level-difficulty-1"></script>
+
+    <style>
+        /* Счётчик ДПС режима «Манекен» — только этот режим его использует, поэтому
+           стиль живёт здесь, а не в main_css.css (не трогаем общие стили ради одного
+           изолированного экрана). */
+        .dummy-dps-hud {
+            position: fixed;
+            top: max(12px, env(safe-area-inset-top));
+            left: max(12px, env(safe-area-inset-left));
+            z-index: 500;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            background: rgba(20, 14, 8, 0.72);
+            border: 1px solid rgba(255, 214, 130, 0.35);
+            color: #f6e4c3;
+            font-family: sans-serif;
+            font-size: 13px;
+            line-height: 1.5;
+            pointer-events: none;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+        }
+        .dummy-dps-hud .dummy-dps-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 14px;
+            white-space: nowrap;
+        }
+        .dummy-dps-hud .dummy-dps-label {
+            opacity: 0.75;
+        }
+        .dummy-dps-hud .dummy-dps-value {
+            font-variant-numeric: tabular-nums;
+            font-weight: 700;
+        }
+        .dummy-dps-hud .dummy-dps-row.is-main .dummy-dps-value {
+            color: #ffd682;
+            font-size: 15px;
+        }
+        .dummy-dps-hud .dummy-dps-timer {
+            margin-top: 4px;
+            padding-top: 4px;
+            border-top: 1px solid rgba(255, 214, 130, 0.25);
+            font-variant-numeric: tabular-nums;
+            opacity: 0.85;
+        }
+    </style>
+
+    <script>
+// Режим «Манекен»: вечный тренировочный бой на одном фиксированном боссе-чучеле
+// («Шуршало», Золотые поля) — отдельная страница, не завязанная на нумерованный
+// список уровней 1-141 (см. MIN_LEVEL/MAX_LEVEL в level.html), чтобы не трогать его
+// проверку диапазона и не путать этот режим с настоящей кампанией. Вся боевая логика
+// (game.js/saveData.js) — та же самая, только читает window.DUMMY_MODE в нескольких
+// явно помеченных местах (см. комментарии у calculateBossMaxHealth/startBossEvents/
+// applyHeroImpactDamage/gameLoop в game.js).
+window.DUMMY_MODE = true;
+
+const GAME_BUILD_VERSION = 'level-difficulty-1';
+// Сложность режима «Манекен» фиксирована — она не влияет на HP/атаки босса (обе
+// переопределены под DUMMY_MODE), но getDifficultyMultiplier() читает её у обычных
+// уровней, оставляем дефолт 1, чтобы ничего постороннего не завязывалось на undefined.
+const LEVEL_DIFFICULTY = 1;
+
+let loadedCount = 0;
+let gameStarted = false;
+let loadFailed = false;
+const totalToLoad = 3; // gameDataDummy + saveData + battleMusic
+
+function showLoadError(message) {
+    if (loadFailed) return;
+    loadFailed = true;
+
+    const renderError = () => {
+        const errorPanel = document.createElement('main');
+        errorPanel.setAttribute('role', 'alert');
+        errorPanel.style.cssText = 'max-width:620px;margin:15vh auto;padding:32px;text-align:center;font-family:sans-serif;color:#3a2418;background:#f6e4c3;border:3px solid #744b2a;border-radius:16px';
+
+        const title = document.createElement('h1');
+        title.textContent = 'Не удалось запустить манекен';
+
+        const description = document.createElement('p');
+        description.textContent = message;
+
+        const backLink = document.createElement('a');
+        backLink.href = 'index.html';
+        backLink.textContent = 'Вернуться к выбору уровня';
+
+        errorPanel.append(title, description, backLink);
+        document.body.replaceChildren(errorPanel);
+    };
+
+    if (document.body) renderError();
+    else document.addEventListener('DOMContentLoaded', renderError, { once: true });
+}
+
+function checkAllLoaded() {
+    if (loadFailed || gameStarted || loadedCount !== totalToLoad || !document.body) return;
+
+    gameStarted = true;
+    const gameScript = document.createElement('script');
+    gameScript.src = `game.js?v=${GAME_BUILD_VERSION}`;
+    gameScript.onerror = () => showLoadError('Файл игрового движка не загрузился.');
+    document.body.appendChild(gameScript);
+}
+
+document.addEventListener('DOMContentLoaded', checkAllLoaded, { once: true });
+document.title = 'Monstrous world — Манекен';
+
+// Тема фона — область 2 «Золотые поля» (там же живёт «Шуршало»), напрямую, без
+// lvlData/areas.js — эта страница не участвует в нумерованном списке уровней, которым
+// areas.js/getAreaByLevel управляют, так что подключать его незачем.
+document.addEventListener('DOMContentLoaded', () => {
+    document.body.dataset.area = '2';
+}, { once: true });
+document.documentElement.dataset.area = '2';
+
+const saveScript = document.createElement('script');
+saveScript.src = `saveData.js?v=${GAME_BUILD_VERSION}`;
+saveScript.onload = () => {
+    // Разблокировка: манекен открывается после зачистки «Золотых полей» (уровни
+    // 16-25) — та же проверка, что index.html использует для "область пройдена"
+    // (currentAreaCleared = gameState.lastCompletedLevel >= currentArea.levelEnd).
+    const DUMMY_UNLOCK_LEVEL = 25;
+    if (typeof gameState === 'undefined' || (Number(gameState.lastCompletedLevel) || 0) < DUMMY_UNLOCK_LEVEL) {
+        showLoadError(`Манекен открывается после зачистки Золотых полей (уровень ${DUMMY_UNLOCK_LEVEL}).`);
+        return;
+    }
+
+    loadedCount++;
+    checkAllLoaded();
+};
+saveScript.onerror = () => showLoadError('Система сохранений не загрузилась.');
+document.head.appendChild(saveScript);
+
+const dataScript = document.createElement('script');
+dataScript.src = `lvlData/gameDataDummy.js?v=${GAME_BUILD_VERSION}`;
+dataScript.onload = () => {
+    loadedCount++;
+    checkAllLoaded();
+};
+dataScript.onerror = () => showLoadError('Данные манекена не загрузились.');
+document.head.appendChild(dataScript);
+
+const musicPlaylistScript = document.createElement('script');
+musicPlaylistScript.src = `music/playlist.js?v=${GAME_BUILD_VERSION}`;
+musicPlaylistScript.onload = () => {
+    const musicPlayerScript = document.createElement('script');
+    musicPlayerScript.src = `music/battle-music.js?v=${GAME_BUILD_VERSION}`;
+    musicPlayerScript.onload = () => {
+        loadedCount++;
+        checkAllLoaded();
+    };
+    musicPlayerScript.onerror = () => showLoadError('Плеер боевой музыки не загрузился.');
+    document.head.appendChild(musicPlayerScript);
+};
+musicPlaylistScript.onerror = () => showLoadError('Плейлист боевой музыки не загрузился.');
+document.head.appendChild(musicPlaylistScript);
+    </script>
+
+</head>
+<body>
+
+
+
+<div class="main_menu_image">
+	<div class="hero-status-bar" id="heroStatusBar">
+		<img src="images/hero/1_babka/dunya_min.webp" class="heroImageClass" id="heroImage" alt="">
+		<div class="hero-health-container">
+			<div class="health-bar-container" id="hpCont">
+				<div class="health-bar" id="heroHealthBar"></div>
+				<div class="health-text" id="heroHealthText">Вихревая бабка</div>
+			</div>
+			<div class="tikhon-shake-gauge" id="tikhonShakeGauge" style="display:none;">
+				<div class="tikhon-shake-track" id="tikhonShakeTrack">
+					<img src="images/hero/6_TihonRechkin/bottle.webp" class="tikhon-shake-bottle" id="tikhonShakeBottle" alt="Дрожащая рука">
+				</div>
+			</div>
+			<div class="elisey-bee-gauge" id="eliseyBeeGauge" style="display:none;">
+				<div class="elisey-bee-slot"></div>
+				<div class="elisey-bee-slot"></div>
+				<div class="elisey-bee-slot"></div>
+				<div class="elisey-bee-slot"></div>
+				<div class="elisey-bee-slot"></div>
+				<div class="elisey-bee-slot"></div>
+				<div class="elisey-bee-slot"></div>
+				<div class="elisey-bee-slot"></div>
+			</div>
+		</div>
+		<div class="statusbar-util-buttons">
+			<button type="button" class="statusbar-util-btn restart" id="statusbarRestartBtn" aria-label="Начать заново" title="Начать заново">⟳</button>
+			<button type="button" class="statusbar-util-btn base" id="statusbarBaseBtn" aria-label="На базу" title="На базу">🏠</button>
+		</div>
+	</div>
+
+	<!-- Элемент прицела -->
+	<div id="aim" class="aim"></div>
+
+	<!-- Контейнер для текста урона -->
+	<div id="damage-container"></div>
+</div>
+
+<!-- Живой счётчик ДПС манекена — только здесь, только в этом режиме
+     (initDummyDpsHud/updateDummyDpsHud в game.js, гейтятся window.DUMMY_MODE).
+     СОЗНАТЕЛЬНО вне .main_menu_image (как и .boss-health-container ниже) — у него
+     иногда анимируется transform на удар Еремея (.eremei-screen-shake/-punch,
+     main_css.css), а transform на предке превращает position:fixed внутри него в
+     фактический position:absolute относительно этого предка — HUD дёргался бы вместе
+     с тряской экрана вместо того чтобы жёстко стоять в углу. -->
+<div class="dummy-dps-hud" id="dummyDpsHud" style="display:none;">
+	<div class="dummy-dps-row is-main">
+		<span class="dummy-dps-label">Средний ДПС</span>
+		<span class="dummy-dps-value" id="dummyDpsAvg">0</span>
+	</div>
+	<div class="dummy-dps-row">
+		<span class="dummy-dps-label">Текущий</span>
+		<span class="dummy-dps-value" id="dummyDpsCurrent">0</span>
+	</div>
+	<div class="dummy-dps-row">
+		<span class="dummy-dps-label">Мин / Макс</span>
+		<span class="dummy-dps-value" id="dummyDpsMinMax">0 / 0</span>
+	</div>
+	<div class="dummy-dps-timer" id="dummyDpsTimer">5:00</div>
+</div>
+
+
+<div class="boss-health-container" id="bossHealthContainer">
+    <div class="boss-health-bar" id="bossHealthBar">
+        <div class="boss-health-delayed" id="bossHealthDelayed"></div>
+        <div class="boss-health-fill" id="bossHealthFill"></div>
+        <div class="boss-health-ornament-left"></div>
+        <div class="boss-health-ornament-right"></div>
+        <div class="boss-name" id="bossName"></div>
+    </div>
+</div>
+
+
+
+</body>
+</html>
