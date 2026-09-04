@@ -355,7 +355,7 @@ const HERO_ATTACK_TIMING = Object.freeze({
     minDeflectCycleMs: 120,
     maxDeflectCycleMs: 220,
     deflectImpactAt: 0.68,
-    animatedHeroes: Object.freeze(['eremei', 'dunya', 'luka', 'daryana', 'mila', 'tikhon'])
+    animatedHeroes: Object.freeze(['eremei', 'dunya', 'luka', 'daryana', 'mila', 'tikhon', 'klim'])
 });
 const pendingHeroAttackTimers = new Set();
 
@@ -3210,6 +3210,7 @@ function damageEnemy(enemy, attackMultiplier = 1, attackKind = 'normal', shotInt
         showDaryanaBossImpact(enemy, damageResult.isCritical, timing);
         showMilaBossImpact(enemy, damageResult.isCritical, timing);
         showTikhonBossImpact(enemy, damageResult.isCritical, timing);
+        showKlimBossImpact(enemy, damageResult.isCritical, timing);
     } else if (predictedDestroyed) {
         showEremeiDeflectImpact(enemy, damageResult.isCritical, timing);
         showDunyaDeflectImpact(enemy, damageResult.isCritical, timing);
@@ -3218,6 +3219,7 @@ function damageEnemy(enemy, attackMultiplier = 1, attackKind = 'normal', shotInt
         showMilaDeflectImpact(enemy, damageResult.isCritical, timing);
         showTikhonDeflectImpact(enemy, damageResult.isCritical, timing);
         showEliseyDeflectImpact(enemy, damageResult.isCritical, timing);
+        showKlimDeflectImpact(enemy, damageResult.isCritical, timing);
     }
 
     if (!isBoss) {
@@ -4176,6 +4178,148 @@ function showTikhonDeflectImpact(attackEnemy, isCritical = false, timing = getHe
     enemiesContainer.appendChild(impact);
 
     window.setTimeout(() => impact.remove(), swingDurationMs + 220);
+}
+
+// Клим: земляная глыба падает на цель — появляется огромной, коротко "зависает",
+// затем стремительно летит вниз с сужением размера, впечатываясь в цель синхронно с
+// реальным уроном (timing.impactDelayMs — тот же централизованный тайминг, что и у
+// остальных героев, см. damageEnemy/scheduleHeroImpact — здесь НЕ переопределяется
+// заново, только визуально совпадает). Двухслойная mount/impact-схема — ТОЧНО как у
+// стрелы Луки (см. syncLukaArrowMount/showLukaArrowImpact выше): mount синхронизирован
+// с позицией/размером/поворотом цели целиком (следует за её покачиванием), а impact
+// внутри него ставится в процентах САМОГО mount (то есть относительно силуэта цели —
+// hit.x/hit.y приходят именно в этой системе координат из getEnemyOpaqueSamples), а
+// не в процентах всего игрового поля — раньше здесь была ровно эта ошибка, из-за
+// которой глыба улетала в произвольную точку экрана вместо цели. При крите глыба
+// крупнее и тряска экрана сильнее — оба чисто визуальных масштаба, ни одна боевая
+// формула не дублируется.
+function syncKlimBoulderMount(mount, enemyEl) {
+    if (!mount?.isConnected) return;
+
+    if (enemyEl?.isConnected) {
+        const renderedStyle = getComputedStyle(enemyEl);
+        mount.style.left = enemyEl.style.left || '0%';
+        mount.style.top = enemyEl.style.top || '0%';
+        mount.style.transform = renderedStyle.transform === 'none'
+            ? 'none'
+            : renderedStyle.transform;
+    }
+
+    requestAnimationFrame(() => syncKlimBoulderMount(mount, enemyEl));
+}
+
+// Отбитая "атака" (isMini) — по прямому запросу пользователя НЕ использует сценарий
+// падения/тряски/пыли-кольца-вспышки вообще (правило 12 CLAUDE.md и так гарантирует,
+// что реальный урон по атаке уже применён синхронно ДО этого вызова — здесь только
+// картинка): глыба просто появляется чуть меньше размера самой атаки и исчезает
+// ровно через полсекунды — фиксированная длительность, не завязанная на боевой
+// тайминг (см. spawnAt ниже).
+const KLIM_DEFLECT_LIFETIME_MS = 500;
+const KLIM_DEFLECT_SIZE_RATIO = 0.78;
+
+function showKlimBoulderImpact(
+    enemyEl,
+    {
+        isMini = false,
+        isCritical = false,
+        timing = getHeroAttackTiming(SHOT_INTERVAL)
+    } = {}
+) {
+    if (!enemyEl || !enemiesContainer) return;
+
+    const spawnAt = (hit) => {
+        if (!hit || !enemyEl.isConnected || !enemiesContainer) return;
+        if (enemyEl.offsetWidth < 2 || enemyEl.offsetHeight < 2) return;
+
+        pruneImpactNodes(isMini ? '.klim-boulder-mount.is-mini' : '.klim-boulder-mount:not(.is-mini)', isMini ? 3 : 8);
+
+        const mount = document.createElement('div');
+        mount.className = `klim-boulder-mount${isMini ? ' is-mini' : ''}`;
+        mount.style.left = enemyEl.style.left || '0%';
+        mount.style.top = enemyEl.style.top || '0%';
+        mount.style.width = `${Math.max(1, enemyEl.offsetWidth)}px`;
+        mount.style.height = `${Math.max(1, enemyEl.offsetHeight)}px`;
+        mount.style.transform = enemyEl.style.transform || 'none';
+        mount.style.transformOrigin = getComputedStyle(enemyEl).transformOrigin || '50% 50%';
+        mount.setAttribute('aria-hidden', 'true');
+
+        const impact = document.createElement('div');
+        impact.className = `klim-boss-impact${isCritical ? ' klim-boss-impact-critical' : ''}`;
+        impact.style.left = `${(hit.x * 100).toFixed(3)}%`;
+        impact.style.top = `${(hit.y * 100).toFixed(3)}%`;
+
+        if (isMini) {
+            const attackSize = Math.max(enemyEl.offsetWidth, enemyEl.offsetHeight);
+            const boulderSize = Math.max(16, Math.round(attackSize * KLIM_DEFLECT_SIZE_RATIO));
+            impact.style.setProperty('--klim-deflect-size', `${boulderSize}px`);
+            impact.innerHTML = '<span class="klim-boulder-deflect"></span>';
+            mount.appendChild(impact);
+            enemiesContainer.appendChild(mount);
+            window.setTimeout(() => mount.remove(), KLIM_DEFLECT_LIFETIME_MS);
+            return;
+        }
+
+        // Полноценный сценарий "глыба падает на живого босса": появляется огромной,
+        // коротко зависает, стремительно летит вниз с сужением — и исчезает СРАЗУ по
+        // приземлению (без задержки "прилипания" к цели), по прямому запросу
+        // пользователя.
+        const fallDurationMs = Math.max(220, timing.impactDelayMs);
+        impact.style.setProperty('--klim-fall-duration', `${fallDurationMs}ms`);
+        impact.style.setProperty('--klim-drift-x', `${(Math.random() * 24 - 12).toFixed(1)}px`);
+        impact.innerHTML = `
+            <span class="klim-boulder-shadow"></span>
+            <span class="klim-boulder-dust"></span>
+            <span class="klim-boulder"></span>
+            <span class="klim-impact-ring"></span>
+            <span class="klim-impact-flash"></span>
+        `;
+        mount.appendChild(impact);
+        enemiesContainer.appendChild(mount);
+        // Глыба в живом боссе следует за его покачиванием, как стрела Луки.
+        syncKlimBoulderMount(mount, enemyEl);
+
+        // Тряска экрана строго на момент контакта (та же доля цикла, что и у
+        // финальной фазы падения глыбы в CSS-keyframes ниже), не на весь полёт.
+        const contactAtMs = Math.round(fallDurationMs * 0.86);
+        window.setTimeout(() => triggerKlimScreenShake(isCritical), contactAtMs);
+
+        window.setTimeout(() => mount.remove(), fallDurationMs);
+    };
+
+    const ready = pickOpaqueHitNormFromSamples(getEnemyOpaqueSamples(enemyEl));
+    if (ready) {
+        spawnAt(ready);
+        return;
+    }
+
+    ensureEnemyOpaqueSamples(enemyEl).then((samples) => {
+        spawnAt(pickOpaqueHitNormFromSamples(samples) || { x: 0.5, y: 0.45 });
+    });
+}
+
+function showKlimBossImpact(boss, isCritical = false, timing = getHeroAttackTiming(SHOT_INTERVAL)) {
+    if (activeHeroObject?.name !== 'klim' || !boss?.element || !enemiesContainer || !gameField) return;
+    showKlimBoulderImpact(boss.element, { isMini: false, isCritical, timing });
+}
+
+function showKlimDeflectImpact(attackEnemy, isCritical = false, timing = getHeroDeflectTiming()) {
+    if (activeHeroObject?.name !== 'klim' || !attackEnemy?.element || !enemiesContainer || !gameField) return;
+    showKlimBoulderImpact(attackEnemy.element, { isMini: true, isCritical, timing });
+}
+
+// Крит Клима: тряска заметно сильнее и дольше обычного удара — единственная
+// разница между двумя классами ниже в амплитуде/длительности CSS-keyframes,
+// никакого влияния на реальный урон/шанс крита (те считаются в calculateDamage).
+function triggerKlimScreenShake(isCritical = false) {
+    if (!gameField) return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches) return;
+
+    const shakeClass = isCritical ? 'klim-screen-shake-crit' : 'klim-screen-shake';
+    const durationMs = isCritical ? 460 : 260;
+    gameField.classList.remove('klim-screen-shake', 'klim-screen-shake-crit');
+    void gameField.offsetWidth;
+    gameField.classList.add(shakeClass);
+    window.setTimeout(() => gameField?.classList.remove(shakeClass), durationMs + 40);
 }
 
 // Еремей: цикл двуручных ударов дубиной (горизонталь / overhead / диагонали / sweep / chop).
