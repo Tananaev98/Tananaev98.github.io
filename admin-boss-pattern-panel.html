@@ -75,6 +75,20 @@
     <div class="dist-grid" id="distGrid"></div>
   </div>
 
+  <div class="panel" id="chainDistPanel" style="display:none;">
+    <h2>Распределение формы «атакующей цепи» по роли (только уровни области V)</h2>
+    <p class="subhead" style="margin:0 0 12px;">
+      Форма (vertical/diagonal/zigzag/arc/irregular) и характер скорости
+      (constant/gentle-decay/steep-decay/irregular-speed) считаются по реальным
+      xPos/customSpeed каждой isChain-комбинации (раздел 13.7 lvlData/Правила
+      создания уровня.txt), не по тексту комментария. Красным — форма, взявшая
+      больше 30% для этой роли (тот же перекос, что §1.1 описывает для
+      movementStyle, — уже подтверждён на практике для уровней 41/42/43,
+      см. комментарий у classifyChainShape в коде этой страницы).
+    </p>
+    <div class="dist-grid" id="chainDistGrid"></div>
+  </div>
+
   <div class="panel" id="tablePanel" style="display:none;">
     <h2>Таблица по каждому боссу каждого уровня</h2>
     <div class="table-scroll"><table id="mainTable"></table></div>
@@ -108,11 +122,29 @@ function extractComments(source) {
         else if (source[i] === '}') { depth--; if (depth === 0) { endIdx = i; break; } }
     }
     const bossesBlock = braceStart >= 0 && endIdx > 0 ? source.slice(braceStart, endIdx + 1) : '';
+    // Brace-depth-aware scan (not a flat [^}]* regex) — a boss entry can itself
+    // contain nested braces (e.g. phaseMessages: { 2: '...', 3: '...' }), and a
+    // naive [^}]* stops at the FIRST '}' it meets, which is the inner one, not
+    // the boss object's real closing brace. That silently broke archetype
+    // extraction the moment phaseMessages was added to every boss (see level
+    // rules section 12 — appearMessage/phaseMessages apply to ALL bosses, not
+    // just multi-phase ones), even though the underlying gameData was correct.
     const archetypes = {};
-    const archRe = /(enem[1-5]):\s*\{[^}]*\}\s*,?\s*(?:\/\/\s*([^\n\r]*))?/g;
-    let m;
-    while ((m = archRe.exec(bossesBlock))) {
-        archetypes[m[1]] = (m[2] || '').trim();
+    const keyRe = /(enem[1-5]):\s*\{/g;
+    let km;
+    while ((km = keyRe.exec(bossesBlock))) {
+        const boss = km[1];
+        const objBraceStart = km.index + km[0].lastIndexOf('{');
+        let depth = 0, objEnd = -1;
+        for (let i = objBraceStart; i < bossesBlock.length; i++) {
+            if (bossesBlock[i] === '{') depth++;
+            else if (bossesBlock[i] === '}') { depth--; if (depth === 0) { objEnd = i; break; } }
+        }
+        if (objEnd < 0) continue;
+        const trailing = bossesBlock.slice(objEnd + 1, objEnd + 200);
+        const trailingMatch = trailing.match(/^\s*,?\s*\/\/\s*([^\n\r]*)/);
+        archetypes[boss] = trailingMatch ? trailingMatch[1].trim() : '';
+        keyRe.lastIndex = objEnd + 1;
     }
 
     const dopIdx = source.indexOf('const bossAbilitiesDop');
@@ -141,9 +173,71 @@ function evalLevel(source) {
         sandbox.bossCombatConfig = bossCombatConfig;
         sandbox.ENEMY_TYPES = ENEMY_TYPES;
         sandbox.bossAbilities = typeof bossAbilities !== 'undefined' ? bossAbilities : [];
+        sandbox.bossAbilitiesDop = typeof bossAbilitiesDop !== 'undefined' ? bossAbilitiesDop : [];
     `);
     fn(sandbox);
     return sandbox;
+}
+
+// «Атакующая цепь» (область V) — форма/скорость каждой isChain-комбинации это
+// ТЕ ЖЕ переменные уникальности, что и обычная геометрия (раздел 1 правил
+// уровня), просто у отдельной механики. Подтверждённый случай (2026-09-05):
+// без явного отслеживания уровни 41/42/43 три раза подряд получили ОДИН И ТОТ
+// ЖЕ шаблон формы цепи по ролям (вертикаль/зигзаг/диагональ/рваные
+// скачки/широкая дуга для enem1..enem5 соответственно) — ровно тот же
+// статистический перекос по роли, что раздел 1.1 уже описывает для
+// movementStyle, просто на новой механике, которую никто не считал. Форма
+// классифицируется по РЕАЛЬНЫМ xPos/customSpeed каждой цепи (не по названию
+// архетипа в комментарии — комментарий может не совпадать с тем, что реально
+// в данных, см. правило 1 CLAUDE.md).
+function classifyChainShape(xPositions) {
+    if (xPositions.length < 2) return 'n/a';
+    const span = Math.max(...xPositions) - Math.min(...xPositions);
+    if (span <= 6) return 'vertical';
+    const directions = [];
+    for (let i = 1; i < xPositions.length; i++) {
+        const d = xPositions[i] - xPositions[i - 1];
+        if (Math.abs(d) > 1) directions.push(d > 0 ? 1 : -1);
+    }
+    if (directions.length === 0) return 'vertical';
+    let reversals = 0;
+    for (let i = 1; i < directions.length; i++) if (directions[i] !== directions[i - 1]) reversals++;
+    if (reversals === 0) return 'diagonal';
+    if (reversals === 1) return 'arc';
+    if (reversals >= directions.length - 1) return 'zigzag';
+    return 'irregular';
+}
+
+function classifyChainSpeedPattern(speeds) {
+    const uniq = new Set(speeds);
+    if (uniq.size === 1) return 'constant';
+    const nonIncreasing = speeds.every((s, i) => i === 0 || s <= speeds[i - 1]);
+    if (!nonIncreasing) return 'irregular-speed';
+    const ratio = speeds[0] / speeds[speeds.length - 1];
+    return ratio >= 2 ? 'steep-decay' : 'gentle-decay';
+}
+
+// Возвращает per-boss список цепей { length, shape, speedPattern } — реальные
+// значения из bossAbilitiesDop/bossAbilities, ничего не переизобретено.
+function chainProfilesByBoss(bossAbilities, bossAbilitiesDop) {
+    const abilitiesByBoss = {};
+    for (const a of bossAbilities) (abilitiesByBoss[a.boss] ||= []).push(a);
+
+    const result = {};
+    for (const combo of bossAbilitiesDop) {
+        if (!combo.isChain) continue;
+        const abilities = abilitiesByBoss[combo.boss] || [];
+        const members = combo.indexAbilities.map((i) => abilities[i]).filter(Boolean);
+        if (!members.length) continue;
+        const xPositions = members.map((m) => m.xPos);
+        const speeds = members.map((m) => m.customSpeed);
+        (result[combo.boss] ||= []).push({
+            length: members.length,
+            shape: classifyChainShape(xPositions),
+            speedPattern: classifyChainSpeedPattern(speeds)
+        });
+    }
+    return result;
 }
 
 function speedRangeByBoss(bossAbilities) {
@@ -161,9 +255,11 @@ function speedRangeByBoss(bossAbilities) {
 
 async function loadLevelRow(level) {
     const source = await fetchText(`lvlData/gameData${level}.js`);
-    const { bossCombatConfig, ENEMY_TYPES } = evalLevel(source);
+    const evaluated = evalLevel(source);
+    const { bossCombatConfig, ENEMY_TYPES } = evaluated;
     const { archetypes, notes } = extractComments(source);
-    const speeds = speedRangeByBoss(evalLevel(source).bossAbilities);
+    const speeds = speedRangeByBoss(evaluated.bossAbilities);
+    const chains = chainProfilesByBoss(evaluated.bossAbilities, evaluated.bossAbilitiesDop);
 
     return ['enem1', 'enem2', 'enem3', 'enem4', 'enem5'].map((boss) => {
         const profile = bossCombatConfig?.bosses?.[boss] || {};
@@ -171,6 +267,7 @@ async function loadLevelRow(level) {
         const bossNotes = notes[boss] || [];
         const sig = bossNotes.find((c) => /сигнатур|опасн/i.test(c)) || '';
         const twist = bossNotes.find((c) => /нежданчик|chunk-break|same-start/i.test(c)) || '';
+        const bossChains = chains[boss] || [];
         return {
             level, boss, role: ROLE_LABEL[boss],
             name: ENEMY_TYPES?.[boss]?.dispName || '',
@@ -182,7 +279,11 @@ async function loadLevelRow(level) {
             damageMultiplier: profile.damageMultiplier ?? '',
             healthMultiplier: profile.healthMultiplier ?? '',
             speedRange: s.min !== undefined ? `${s.min}-${s.max} (${s.distinctCount})` : '',
-            signature: sig, twist
+            signature: sig, twist,
+            chains: bossChains,
+            chainLengths: bossChains.map((c) => c.length).join('+'),
+            chainShapes: bossChains.map((c) => c.shape).join('+'),
+            chainSpeedPatterns: bossChains.map((c) => c.speedPattern).join('+')
         };
     });
 }
@@ -207,12 +308,39 @@ function renderDistribution(rows) {
     $('distPanel').style.display = '';
 }
 
+const ALL_CHAIN_SHAPES = ['vertical', 'diagonal', 'zigzag', 'arc', 'irregular'];
+
+function renderChainDistribution(rows) {
+    const byRole = {};
+    for (const r of rows) {
+        for (const c of r.chains) {
+            (byRole[r.boss] ||= {});
+            byRole[r.boss][c.shape] = (byRole[r.boss][c.shape] || 0) + 1;
+        }
+    }
+    const grid = $('chainDistGrid');
+    const entries = Object.entries(byRole);
+    if (!entries.length) { $('chainDistPanel').style.display = 'none'; return; }
+    grid.innerHTML = entries.map(([boss, dist]) => {
+        const total = Object.values(dist).reduce((a, b) => a + b, 0);
+        const rowsHtml = ALL_CHAIN_SHAPES.map((shape) => {
+            const count = dist[shape] || 0;
+            const pct = total > 0 ? (count / total * 100) : 0;
+            const cls = pct > 30 ? 'num-bad' : '';
+            return `<div class="dist-row"><span>${shape}</span><span class="${cls}">${count} (${pct.toFixed(0)}%)</span></div>`;
+        }).join('');
+        return `<div class="dist-card"><h3>${ROLE_LABEL[boss] || boss}</h3>${rowsHtml}</div>`;
+    }).join('');
+    $('chainDistPanel').style.display = '';
+}
+
 function renderTable(rows) {
     const table = $('mainTable');
     const thead = `<thead><tr>
         <th>Ур.</th><th>Босс</th><th>Роль</th><th>Имя</th><th>movementStyle</th>
         <th>Архетип</th><th>cadence</th><th>telegraphMs</th><th>speedMult</th>
         <th>dmgMult</th><th>hpMult</th><th>customSpeed</th><th>Сигнатура</th><th>Нежданчик</th>
+        <th>Цепь: длины</th><th>Цепь: форма</th><th>Цепь: скорость</th>
     </tr></thead>`;
     const byRole = {};
     for (const r of rows) {
@@ -222,16 +350,31 @@ function renderTable(rows) {
     const totalByRole = {};
     for (const [boss, dist] of Object.entries(byRole)) totalByRole[boss] = Object.values(dist).reduce((a, b) => a + b, 0);
 
+    // Точное повторение ФОРМЫ цепи у той же роли — не только перекос >30% (как у
+    // movementStyle), а любое буквальное совпадение сигнатуры "форма+форма" —
+    // именно так уровни 41/42/43 остались бы незамеченными (перекос там был
+    // не статистический шум, а СТОПРОЦЕНТНЫЙ повтор одного и того же шаблона).
+    const chainSigByRole = {};
+    for (const r of rows) {
+        if (!r.chainShapes) continue;
+        (chainSigByRole[r.boss] ||= {});
+        chainSigByRole[r.boss][r.chainShapes] = (chainSigByRole[r.boss][r.chainShapes] || 0) + 1;
+    }
+
     const body = rows.map((r) => {
         const total = totalByRole[r.boss] || 1;
         const count = byRole[r.boss]?.[r.movementStyle] || 0;
         const warn = (count / total) > 0.30 && total >= 5;
+        const chainWarn = r.chainShapes && (chainSigByRole[r.boss]?.[r.chainShapes] || 0) > 1;
         return `<tr class="${warn ? 'stat-warn' : ''}">
             <td>${r.level}</td><td>${r.boss}</td><td>${r.role}</td><td>${r.name}</td>
             <td class="${warn ? 'num-bad' : ''}">${r.movementStyle}</td>
             <td>${r.archetype}</td><td>${r.cadence}</td><td>${r.telegraphMs}</td>
             <td>${r.speedMultiplier}</td><td>${r.damageMultiplier}</td><td>${r.healthMultiplier}</td>
             <td>${r.speedRange}</td><td>${r.signature}</td><td>${r.twist}</td>
+            <td>${r.chainLengths}</td>
+            <td class="${chainWarn ? 'num-bad' : ''}">${r.chainShapes}</td>
+            <td>${r.chainSpeedPatterns}</td>
         </tr>`;
     }).join('');
     table.innerHTML = thead + `<tbody>${body}</tbody>`;
@@ -257,6 +400,7 @@ async function run() {
         }
         $('statusLine').textContent = `Готово: ${allRows.length} строк, уровни 1-${through} (LEVEL_HANDCRAFTED_THROUGH из lvlData/areas.js).`;
         renderDistribution(allRows);
+        renderChainDistribution(allRows);
         renderTable(allRows);
     } catch (err) {
         $('statusLine').textContent = `Ошибка: ${err.message}`;

@@ -1391,9 +1391,10 @@ function gameLoop(currentTime) {
             // Атака достигла героя - наносим урон
             const damage = enemy.getDamageToHero();
             damageHero(damage);
-            
+
             console.log(`${enemy.type} достиг героя и нанёс ${damage} урона!`);
-            
+
+            resolveChainMember(enemy);
             enemy.remove();
             activeEnemies.splice(i, 1);
         }
@@ -1853,10 +1854,62 @@ function executeBossEvent() {
     const movementStyle = getBossMovementStyle();
     const shotDelay = Math.max(config.minShotDelay, bossDelayAb * profile.cadence * phase.cadence);
     const telegraphMs = Math.max(config.minTelegraphMs, profile.telegraphMs * phase.telegraphMultiplier);
+
+    // «Атакующая цепь» (область V «Беспокойная деревня») — уровень явно включает
+    // это через bossCombatConfig.attackChains; конкретное комбо становится цепью
+    // ТОЛЬКО если автор явно пометил его isChain:true в bossAbilitiesDop (см.
+    // linkAttackChain ниже) — не по одной длине: обычные, не-цепные комбо на этом
+    // уровне тоже сплошь и рядом длиной 3-7 (норма для этого движка, раздел 6
+    // lvlData/Правила создания уровня.txt), и без явного флага в цепь превратился
+    // бы вообще весь бой. Длина всё же проверяется отдельно — предохранитель
+    // формата данных, а не сам триггер.
+    const chainSlot = (
+        config.attackChains
+        && selectedCombo.isChain
+        && selectedAbilityIndexes.length >= ATTACK_CHAIN_MIN_LENGTH
+        && selectedAbilityIndexes.length <= ATTACK_CHAIN_MAX_LENGTH
+    ) ? { prevMember: null, prevSpeed: undefined } : null;
+
+    // ПОДТВЕРЖДЁННЫЙ БАГ (пользователь поймал живьём на уровнях 41/42, раздел 13.7
+    // lvlData/Правила создания уровня.txt): звенья цепи брались из обычного пула
+    // способностей (задуманного для рассеянных по полю обычных комбо) и просто
+    // помечались isChain — из-за этого звенья одной цепи летели с разных концов
+    // поля, на разной высоте появления и с НЕмонотонной скоростью (более позднее
+    // звено — быстрее раннего). Итог: звенья визуально не читались как очередь
+    // («кучей»), могли обгонять и перекрывать друг друга, и в худшем случае
+    // (быстрое позднее звено, появившееся близко к герою) физически не оставляли
+    // игроку времени разобраться с предыдущими звеньями первыми — цепь становилась
+    // нечестной независимо от навыка. Ниже — предохранитель ДВИЖКА, работающий
+    // ВСЕГДА, независимо от того, что задано в gameData (та же философия, что и
+    // правило 18 CLAUDE.md: игра не должна полагаться на то, что данные уровня
+    // всегда написаны идеально):
+    //   1) ни одно звено не может появиться ближе цели, чем CHAIN_MAX_SPAWN_Y —
+    //      гарантирует минимальную дистанцию/время на реакцию даже последнему
+    //      звену самой длинной (7) цепи;
+    //   2) скорость первого звена не может превышать CHAIN_MAX_HEAD_SPEED, а
+    //      каждое следующее звено не может лететь быстрее предыдущего живого —
+    //      это одновременно (а) не даёт звеньям обгонять и перекрывать друг
+    //      друга и (б) держит все НЕголовные (неуязвимые) звенья медленными;
+    //   3) минимальный шаг между появлением звеньев одной цепи поднят настолько,
+    //      чтобы при максимально разрешённой скорости они не появлялись друг у
+    //      друга «на голове» (см. CHAIN_MIN_SPAWN_GAP_PERCENT ниже) — не «кучей».
+    // Расчёт честности (сколько времени есть на убийство всей цепи по очереди до
+    // прилёта последнего звена) — раздел 13.7 того же файла; здесь только сами
+    // ограничения, откалиброванные так, чтобы этот расчёт сходился для цепи
+    // длиной вплоть до ATTACK_CHAIN_MAX_LENGTH (7) с запасом.
+    let effectiveShotDelay = shotDelay;
+    if (chainSlot) {
+        const firstChainType = bossAb[selectedAbilityIndexes[0]]?.type;
+        const chainBaseSpeed = (firstChainType && ENEMY_TYPES[firstChainType]?.baseSpeed) || 0.020;
+        const maxHeadSpeedPercentPerSec = chainBaseSpeed * CHAIN_MAX_HEAD_SPEED * ANIMATION_PARAMS.BASE_SPEED;
+        const minChainGapMs = (CHAIN_MIN_SPAWN_GAP_PERCENT / maxHeadSpeedPercentPerSec) * 1000;
+        effectiveShotDelay = Math.max(shotDelay, minChainGapMs);
+    }
+
     const attackScheduleOffsets = getBossAttackScheduleOffsets(
         selectedAbilityIndexes,
         bossAb,
-        shotDelay,
+        effectiveShotDelay,
         phase,
         profile
     );
@@ -1867,8 +1920,23 @@ function executeBossEvent() {
 
         scheduleBossTask(() => {
             if (!bossAlive || isGameOver) return;
-            const speed = getBalancedAttackSpeed(attack, phase, profile, shotIndex);
-            showAttackTelegraph(attack, telegraphMs, movementStyle, speed);
+            let speed = getBalancedAttackSpeed(attack, phase, profile, shotIndex);
+            let spawnYPos = attack.yPos;
+
+            // Раздел 13.7 lvlData/Правила создания уровня.txt — см. развёрнутый
+            // комментарий у объявления chainSlot выше. Клампы применяются и к
+            // телеграфу (ниже), и к самому спавну — иначе телеграф показал бы
+            // одну точку появления, а атака появилась бы в другой.
+            if (chainSlot) {
+                spawnYPos = Math.min(spawnYPos, CHAIN_MAX_SPAWN_Y);
+                const speedCeiling = chainSlot.prevSpeed !== undefined ? chainSlot.prevSpeed : CHAIN_MAX_HEAD_SPEED;
+                speed = Math.min(speed, speedCeiling);
+                chainSlot.prevSpeed = speed;
+            }
+
+            const telegraphAttack = chainSlot ? { ...attack, yPos: spawnYPos } : attack;
+            showAttackTelegraph(telegraphAttack, telegraphMs, movementStyle, speed);
+
             scheduleBossTask(() => {
                 if (!bossAlive || isGamePaused || isGameOver) return;
                 const activeBossAttacks = activeEnemies.filter(enemy => enemy.isCustom && !enemy.isBoss).length;
@@ -1881,10 +1949,10 @@ function executeBossEvent() {
                     config.damageMultiplier,
                     lvlNumber
                 );
-                spawnEnemyWithParams(
+                const spawnedAttack = spawnEnemyWithParams(
                     attack.type,
                     attack.xPos,
-                    attack.yPos,
+                    spawnYPos,
                     attack.customHP,
                     damage,
                     speed,
@@ -1894,11 +1962,208 @@ function executeBossEvent() {
                         ? { waveAmplitude: attack.waveAmplitude, waveFrequency: attack.waveFrequency, wavePhase: attack.wavePhase }
                         : null
                 );
+
+                if (chainSlot && spawnedAttack) {
+                    linkNextChainMember(chainSlot, spawnedAttack);
+                }
             }, telegraphMs);
         }, attackScheduleOffsets[shotIndex]);
     });
 
     bossWaveCounter++;
+}
+
+// ==================== Область V («Беспокойная деревня»): «Атакующая цепь» ====================
+// Региональная механика уровня, не геройская — включается per-level флагом
+// bossCombatConfig.attackChains (сейчас только у lvlData/gameData41.js). Когда
+// босс спавнит комбо длиной 3-7 атак, все они, появляясь одна за другой (обычный
+// шаг shotDelay, ничего не меняли в таймингах), связываются в цепь — сквозной
+// образ всей области (упряжь, бельевая верёвка, связка ключей, катушка льна).
+//
+// Правило: убить можно только ГОЛОВУ цепи (самое раннее ещё живое звено) — все
+// остальные звенья временно неуязвимы для урона игрока (см. гейт в damageEnemy),
+// но продолжают лететь как обычно и могут САМИ дойти до героя и нанести урон —
+// неуязвимость это не неподвижность и не иммунитет к столкновению с героем.
+//
+// Убийство головы игроком просто продвигает очередь на одно звено вперёд (следующее
+// становится новой головой той же цепи). Если долетает до героя НЕ голова (кто-то
+// из середины) — цепь физически рвётся в этой точке: всё, что было ДО неё, остаётся
+// своим отдельным куском (как было), а всё, что ПОСЛЕ — становится НОВОЙ независимой
+// цепью, чья первая атака сразу становится головой. Ни то, ни другое не меняет HP
+// атаки — она по-прежнему умирает ровно с одного удара, когда бьётся именно голова
+// (тот же инвариант, что и everywhere else, см. комментарий у класса Enemy).
+const ATTACK_CHAIN_MIN_LENGTH = 3;
+const ATTACK_CHAIN_MAX_LENGTH = 7;
+
+// Раздел 13.7 lvlData/Правила создания уровня.txt — жёсткие геометрические
+// гарантии честности цепи, применяются ДВИЖКОМ независимо от того, что задано
+// в gameData (см. развёрнутый комментарий у chainSlot в executeBossEvent):
+// CHAIN_MAX_HEAD_SPEED — потолок скорости первого (самого быстрого) звена, все
+// следующие звенья дополнительно не могут превышать скорость предыдущего живого
+// звена (см. clamp в executeBossEvent) — вместе это не даёт звеньям обгонять и
+// перекрывать друг друга и держит неголовные звенья медленными;
+// CHAIN_MAX_SPAWN_Y — ни одно звено не может появиться ближе цели (% высоты
+// поля, GAME_CONFIG.TARGET_Y), чем это — минимальная дистанция на реакцию даже
+// последнему звену самой длинной (ATTACK_CHAIN_MAX_LENGTH) цепи;
+// CHAIN_MIN_SPAWN_GAP_PERCENT — минимальный визуальный разрыв (% высоты поля)
+// между соседними звеньями в момент появления нового — не даёт им лететь «кучей»
+// (используется в executeBossEvent для расчёта минимального шага появления).
+// ПОДТВЕРЖДЁННЫЙ СЛУЧАЙ (см. «Баланс сложности и проходимости» в начале
+// lvlData/Правила создания уровня.txt): первый проход этих чисел (потолок
+// скорости 10, минимальная дистанция до 14%) давал запас ~2.5с на звено — цепь
+// стала формально честной, но перестала быть угрозой вообще. Текущие значения
+// (потолок скорости 18, минимальная дистанция до 26%) дают запас ~0.8-0.9с на
+// звено при данных, реально использующих этот потолок (см. gameData41/42.js).
+// Эти константы — ВЕРХНЯЯ ГРАНИЦА страховки движка (максимум, что он разрешит),
+// а не рекомендация для самих данных уровня: раздел 13.7 требует держать
+// фактический запас в районе ~0.5-1с на звено, используя доступный диапазон,
+// а не оставляя gameData искусственно медленной. Числа ниже подобраны так,
+// чтобы движок физически не мог пропустить нечестную (отрицательный запас)
+// цепь максимальной длины (7), но и не навязывал избыточный запас сам по себе.
+const CHAIN_MAX_HEAD_SPEED = 18;
+const CHAIN_MAX_SPAWN_Y = 26;
+const CHAIN_MIN_SPAWN_GAP_PERCENT = 12;
+
+// ПОДТВЕРЖДЁННЫЙ БАГ (по прямому отчёту пользователя): первая версия собирала
+// ВСЕХ участников цепи в массив и связывала их одним махом только когда спавнилось
+// ПОСЛЕДНЕЕ звено. Атаки одной цепи спавнятся не одновременно, а с шагом
+// shotDelay — то есть между спавном 1-го и последнего звена проходит заметное
+// время, в течение которого более ранние звенья — ЕЩЁ ОБЫЧНЫЕ, НЕСВЯЗАННЫЕ атаки
+// (chainVulnerable ещё не выставлен). Быстрый игрок успевал убить голову ДО того,
+// как цепь вообще была построена — а построение всё равно слепо проставляло
+// chainPrev на уже мёртвую ссылку следующему звену. Раз голова уже мертва, её
+// resolveChainMember никогда не вызовется повторно — следующее звено НИКОГДА не
+// получало обещанного повышения до головы и оставалось неуязвимым НАВСЕГДА, даже
+// когда никакой видимой цепи на экране уже не было. Это и есть баг «атака не
+// уничтожается, хотя цепи нет» — категорически недопустимый по прямому требованию
+// пользователя.
+//
+// ИСПРАВЛЕНИЕ: связывать НЕ пакетом в конце, а ИНКРЕМЕНТАЛЬНО, в момент спавна
+// каждого следующего звена (linkNextChainMember ниже) — и каждый раз явно
+// проверять, жив ли ещё предыдущий претендент на chainPrev. Если жив — обычное
+// связывание. Если уже мёртв (убит игроком или сам долетел до героя раньше, чем
+// это звено успело появиться) — новое звено НЕ наследует мёртвую ссылку, а сразу
+// само становится головой. Окна "спавнено, но ещё не участвует в цепи" по
+// конструкции больше не существует вообще — звено становится частью графа цепи
+// в тот же кадр, что и появляется на поле.
+function linkNextChainMember(chainSlot, member) {
+    if (!member?.element) return;
+
+    const candidatePrev = chainSlot.prevMember;
+    const prevStillAlive = !!candidatePrev && activeEnemies.includes(candidatePrev);
+    const prev = prevStillAlive ? candidatePrev : null;
+
+    member.chainPrev = prev;
+    member.chainNext = null;
+    member.chainVulnerable = !prev;
+    applyChainVisualState(member);
+
+    if (prev) {
+        prev.chainNext = member;
+        createChainLink(prev, member);
+    }
+
+    chainSlot.prevMember = member;
+}
+
+function createChainLink(fromEnemy, toEnemy) {
+    if (!fromEnemy?.element || !toEnemy?.element || !enemiesContainer) return;
+    const lineEl = document.createElement('div');
+    // is-active-lead сразу при создании — на случай, если fromEnemy УЖЕ голова
+    // цепи в момент, когда к ней только сейчас пристыковалось следующее звено.
+    lineEl.className = `attack-chain-link${fromEnemy.chainVulnerable ? ' is-active-lead' : ''}`;
+    lineEl.setAttribute('aria-hidden', 'true');
+    enemiesContainer.appendChild(lineEl);
+    fromEnemy.chainLineToNext = lineEl;
+    syncChainLink(lineEl, fromEnemy.element, toEnemy.element);
+}
+
+// RAF-рекурсия по образцу syncKlimBoulderMount/syncLukaArrowMount — следует за
+// двумя независимо летящими звеньями через классический приём "повёрнутый div =
+// линия" (Math.atan2/Math.hypot). Одна цепь из N звеньев — это N-1 таких сегментов,
+// каждый привязан к СВОЕЙ паре (звено, его chainNext) и живёт, пока оба на поле.
+function syncChainLink(lineEl, elA, elB) {
+    if (!lineEl.isConnected || !elA?.isConnected || !elB?.isConnected || !enemiesContainer) return;
+
+    const rectA = elA.getBoundingClientRect();
+    const rectB = elB.getBoundingClientRect();
+    const fieldRect = enemiesContainer.getBoundingClientRect();
+    const ax = rectA.left + rectA.width / 2 - fieldRect.left;
+    const ay = rectA.top + rectA.height / 2 - fieldRect.top;
+    const bx = rectB.left + rectB.width / 2 - fieldRect.left;
+    const by = rectB.top + rectB.height / 2 - fieldRect.top;
+    const dx = bx - ax;
+    const dy = by - ay;
+
+    lineEl.style.left = `${ax}px`;
+    lineEl.style.top = `${ay}px`;
+    lineEl.style.width = `${Math.hypot(dx, dy)}px`;
+    lineEl.style.transform = `rotate(${Math.atan2(dy, dx) * 180 / Math.PI}deg)`;
+
+    requestAnimationFrame(() => syncChainLink(lineEl, elA, elB));
+}
+
+function removeChainLink(enemy) {
+    const lineEl = enemy.chainLineToNext;
+    enemy.chainLineToNext = null;
+    if (!lineEl || !lineEl.isConnected) return;
+    lineEl.classList.add('is-snapping');
+    window.setTimeout(() => lineEl.remove(), 160);
+}
+
+// Голова цепи (chainVulnerable===true) выглядит иначе, чем ещё неуязвимые звенья —
+// игрок должен на глаз видеть, в кого сейчас можно попасть, а не гадать. Заодно
+// подсвечивается сегмент верёвки, ВЫХОДЯЩИЙ из головы (если он уже существует) —
+// взгляд идёт от золотого свечения цели вдоль цепи к следующему звену.
+function applyChainVisualState(enemy) {
+    if (!enemy?.element) return;
+    enemy.element.classList.toggle('is-chain-vulnerable', enemy.chainVulnerable === true);
+    enemy.element.classList.toggle('is-chain-invulnerable', enemy.chainVulnerable === false);
+    enemy.chainLineToNext?.classList.toggle('is-active-lead', enemy.chainVulnerable === true);
+}
+
+// Вызывается при выбытии ЛЮБОГО звена цепи — убито игроком (возможно только если
+// оно уже было головой, см. гейт в damageEnemy) или само долетело до героя (может
+// случиться с любым звеном, головой или нет). Если у выбывшего звена был prev —
+// цепь физически рвётся здесь: prev теряет продолжение как есть, а next становится
+// головой НОВОЙ независимой цепи. Если prev не было (это и была голова) — обычное
+// продвижение очереди на шаг, next становится новой головой ТОЙ ЖЕ цепи. Один и тот
+// же код без ветвления по причине выбытия — см. комментарий у класса выше. Для атак
+// вне цепи (chainPrev/chainNext ни разу не выставлялись) — no-op.
+function resolveChainMember(enemy) {
+    if (!enemy || (enemy.chainPrev === undefined && enemy.chainNext === undefined)) return;
+
+    const prev = enemy.chainPrev;
+    const next = enemy.chainNext;
+
+    removeChainLink(enemy);
+
+    if (prev) {
+        removeChainLink(prev);
+        prev.chainNext = null;
+    }
+
+    if (next) {
+        next.chainPrev = null;
+        next.chainVulnerable = true;
+        applyChainVisualState(next);
+    }
+
+    enemy.chainPrev = undefined;
+    enemy.chainNext = undefined;
+    enemy.chainVulnerable = undefined;
+}
+
+// Полная зачистка на рестарт уровня/смену героя — по образцу clearAllEliseyBees,
+// см. вызов в resetHeroFeatureCombatState.
+function clearAllAttackChains() {
+    activeEnemies.forEach(enemy => {
+        enemy.chainPrev = undefined;
+        enemy.chainNext = undefined;
+        enemy.chainVulnerable = undefined;
+        enemy.chainLineToNext = null;
+    });
+    document.querySelectorAll('.attack-chain-link').forEach(el => el.remove());
 }
 
 
@@ -2143,8 +2408,7 @@ function applyMilaHeroRegen(deltaTime) {
 
 function damageHero(damage) {
     if (isGameOver) return;
-    
-	
+
 	damage = Math.floor((damage * (1-heroDamageReduction)));
 	
     // Запускаем анимацию удара по герою
@@ -3188,6 +3452,17 @@ function damageEnemy(enemy, attackMultiplier = 1, attackKind = 'normal', shotInt
     if (!enemy?.element || !enemy.element.isConnected) return;
 
 	const isBoss = bossM.includes(enemy.type);
+
+    // «Атакующая цепь» (область V) — не-голова цепи неуязвима для урона игрока:
+    // прицел по ней ничего не даёт (короткая вспышка попадания без урона/смерти),
+    // пока не убита предыдущая голова (см. linkAttackChain/resolveChainMember).
+    // Сама атака при этом продолжает лететь как обычно и может сама дойти до
+    // героя — неуязвимость это не неподвижность и не иммунитет к столкновению.
+    if (!isBoss && enemy.chainVulnerable === false) {
+        animateEnemyHit(enemy);
+        return;
+    }
+
     const damageResult = calculateDamage(isBoss, enemy);
     const woundBaseDamage = damageResult.damage;
     const multipliedDamage = damageResult.damage * attackMultiplier;
@@ -3319,6 +3594,7 @@ function applyHeroImpactDamage(enemy, damageResult, isBoss) {
 
     // Проверяем, умер ли враг
     if (enemy.hp <= 0) {
+        resolveChainMember(enemy);
         const isBossDeath = beginEnemyDeathVisual(enemy, 'player');
         const currentIndex = activeEnemies.indexOf(enemy);
         if (currentIndex !== -1) activeEnemies.splice(currentIndex, 1);
@@ -5079,6 +5355,7 @@ function resetHeroFeatureCombatState() {
     eremeiCatchBackUntilMs = 0;
     tikhonShakeStartMs = null;
     clearAllEliseyBees();
+    clearAllAttackChains();
 }
 
 function getTikhonShakeConfig() {

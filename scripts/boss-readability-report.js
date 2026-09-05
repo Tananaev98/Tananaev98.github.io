@@ -135,7 +135,7 @@ assert.match(gameSource, /const MIN_FAST_CROSSFIRE_GAP_MS = 720;/);
 assert.match(gameSource, /function getBossAttackScheduleOffsets\(/);
 assert.match(gameSource, /attackScheduleOffsets\[shotIndex\]/);
 assert.match(gameSource, /function getBossAttackDangerIntensity\(/);
-assert.match(gameSource, /showAttackTelegraph\(attack, telegraphMs, movementStyle, speed\)/);
+assert.match(gameSource, /showAttackTelegraph\(telegraphAttack, telegraphMs, movementStyle, speed\)/);
 assert.match(gameSource, /applyBossAttackSpeedVisual\(enemy\.element, customSpeed\)/);
 assert.match(gameStyles, /var\(--telegraph-border-color/);
 assert.match(gameStyles, /var\(--attack-speed-filter\)/);
