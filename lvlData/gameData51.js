@@ -1,343 +1,492 @@
-// ЗАГЛУШКА уровня 51 — контент ещё не написан, это ПОЛНАЯ КОПИЯ механик
-// gameData1.js (расстановка атак, комбо, спрайты — всё как на уровне 1). Единственное,
-// что реально отличается от уровня 1 — damageMultiplier и HP боссов ниже: они посчитаны
-// по формулам, уже используемым в проекте для этой цели (см. scripts/balance-report.js
-// bossHealthMultiplier для HP и историю getBossDamageProgressionMultiplier в saveData.js
-// для урона — revision 9 убрала эту кривую из движка и перенесла в данные, здесь она и
-// применена). Уровень безопасно проходим (числа посчитаны, не взяты с потолка), но
-// ИГРОВОГО ДИЗАЙНА тут нет — просто более сильная версия уровня 1.
+// Уровень 51 «Огород» — одиннадцатый уровень области V, обычный (пять
+// разных монстров, как 41-44/46-49).
 //
-// ПОМЕТКА ДЛЯ ТОГО, КТО (человек или ИИ) будет переписывать механики этого уровня:
-// при замене расстановки атак/комбо НЕ меняйте баланс сложности произвольно — сверяйтесь
-// с тем, на каком уровне героя игрок примерно окажется к этой точке кампании (см.
-// buildFocusedHeroProgression / focusedProgression в scripts/boss-damage-report.js,
-// scripts/temporary-upgrade-report.js — экономика злата уже посчитана) и с его текущими
-// HP/защитой/DPS на этом уровне героя (scripts/balance-report.js, admin-balance-panel.html
-// — там реальная симуляция боя). Итоговый урон удара считается как
-// customDamage × bossMultiplier × phaseMultiplier × damageMultiplier (см.
-// calculateBossAttackDamage в saveData.js) — если поднимаете урон конкретной атаки/босса/фазы, проверяйте, что герой всё ещё
-// не гибнет от одного удара и не тонет в комбо на своём типичном для этого уровня HP,
-// иначе уровень станет непроходимым.
-let lvlNumber = 51; 
+// ДВОЙНАЯ ПРОВЕРКА УНИКАЛЬНОСТИ (раздел 1.2) — ШАГ 1 выполнен 2026-09-12 по
+// admin-boss-pattern-panel.html, 250 строк, уровни 1-50, обе таблицы
+// распределения плюс колонка «Архетип» по всем пяти ролям целиком.
+//
+// АРТ (images/enemies/regions/5_dom_dvor/lvl51/) — все 5 картинок открыты и
+// сверены лично:
+// 1.webp — толстый кочан с рваными листьями-капюшоном, кольца среза на
+//   макушке, ОБЕ когтистые лапы подняты симметрично. Архетип — атаки
+//   появляются расширяющимися концентрическими «слоями», как капустные
+//   листья, снимаемые один за другим наружу (роль enem1, знакомство) —
+//   сверено: PEELING_LAYERS новый, ни один архетип enem1 не завязан на
+//   концентрическое расширение слоями.
+// 2.webp — жёлтая репа: круглое тяжёлое тело, низкий присед, когти вперёд.
+//   Обоснование скорости для роли «быстрые серии»: именно КРУГЛАЯ форма
+//   даёт неожиданную быстроту — набрав инерцию, репа катится и отскакивает
+//   между немногими точками намного резче, чем можно ожидать от тяжёлого
+//   тела. Архетип — быстрые отскоки между 2-3 фиксированными точками низко
+//   над землёй (роль enem2) — сверено: ROLL_BOUNCE новый.
+// 3.webp — огуречная плеть с закручивающимися усиками, длинные плетевидные
+//   конечности. Архетип — усик заметно СКРУЧИВАЕТСЯ (несколько импульсов
+//   из одной точки во время затяжного телеграфа), затем один длинный
+//   хлёсткий бросок — редкий и тяжёлый (роль enem3) — сверено: TENDRIL_
+//   COIL_SNAP новый; отличен от Плескуна (48, CHAIN_WHIP_REACH — там нет
+//   фазы видимого закручивания, только далёкий бросок с фиксированного
+//   якоря) — здесь именно НАКОПЛЕНИЕ энергии в скручивании видно ДО броска.
+// 4.webp — пугало: рыхлая соломенная фигура, драная рубаха, грабли в руке.
+//   Архетип — большую часть времени висит почти безвольно (как ткань без
+//   ветра), затем ВНЕЗАПНЫЙ порыв — все конечности разом дёргаются в
+//   короткой вспышке (роль enem4, нервный) — сверено: WIND_FLAP новый,
+//   отличается от MATTED_LASH Свалявшейся (50, непрерывное хаотичное
+//   дёрганье без пауз) тем, что здесь именно ПОРЫВИСТОСТЬ — долгое затишье,
+//   затем короткий взрыв активности сразу по всем направлениям, как
+//   реальный порыв ветра, а не постоянный хаос.
+// 5.webp — хозяин грядок: тяпка в одной руке (рубящий инструмент), лейка с
+//   льющейся водой в другой. Архетип — чередует один резкий рубящий удар
+//   тяпкой с направленной «поливочной струёй» — несколькими каплями подряд
+//   вдоль одной линии, как реальный полив грядки (роль enem5, финал) —
+//   сверено: HOE_AND_SHOWER новый, отличен от Багорыча (48, HOOK_AND_ROPE —
+//   там оба инструмента дают ОДИНОЧНЫЕ дальние атаки) — здесь поливочная
+//   струя даёт СЕРИЮ капель вдоль направления, а не один снаряд, и отличен
+//   от Урожаища (47, фоновый пассивный дождь) — струя лейки прицельная и
+//   активная, не фоновая.
+//
+// ДВИЖЕНИЕ (movementStyle) — сверено с полным распределением 1-50 (все роли
+// ≤25% до этого уровня): Кочанище — straight (прямое симметричное давление)
+// 14%→15.9%; Реписько — drift (неконтролируемая инерция качения) 10%→13.6%;
+// Плетень — weave (сама плеть извивается перед броском) 12%→13.6%;
+// Драняк — wave (обвисшая ткань колышется, потом рывок) 12%→13.6%;
+// Грядочник — straight (прямой уверенный подход хозяина) 16%→18.2%.
+//
+// ЦЕПИ (13.6/13.7) — форма выбрана ИЗ образа и сверена с полным
+// распределением: Кочанище — arc(3)+zigzag(4): лист разворачивается дугой,
+// затем неровно отгибается зигзагом (у enem1 обе были по 15% — самые
+// низкие, ЧИНЯТ уже пограничный vertical 30%, доля падает до 27.3% —
+// впервые под порогом); Реписько — vertical(3)+irregular(5): репа катится
+// по прямой вниз, затем отскакивает хаотично (у enem2 vertical было 20%,
+// irregular 15% — самое низкое, ЧИНЯТ пограничный arc 25%, доля падает до
+// 22.7%); Плетень — vertical(4)+irregular(5): плеть закручивается почти на
+// месте, затем хаотичный бросок (у enem3 обе были по 15% — самые низкие,
+// ЧИНЯТ уже пограничный diagonal 30%, доля падает до 27.3% — впервые под
+// порогом); Драняк — diagonal(3)+arc(4): порыв ветра сносит фигуру в одну
+// сторону, затем дугой обратно (у enem4 обе были по 15% — самые низкие,
+// ЧИНЯТ пограничные zigzag/irregular по 25%, обе падают до 22.7%);
+// Грядочник — arc(3)+diagonal(4): тяпка бьёт дугой, лейка льёт по прямой
+// линии (у enem5 arc было 15% — самое низкое, diagonal 20% — среднее, ЧИНЯТ
+// пограничный zigzag 25%, доля падает до 22.7%).
+let lvlNumber = 51;
 
-// Полный профиль боя уровня: движок только исполняет эти настройки.
 const bossCombatConfig = {
 	scaleLongComboDamage: true,
 	scaleShortComboDamage: true,
 	levelCadence: 1.00,
-	damageMultiplier: 2.044,
+	damageMultiplier: 1.782,
 	minWaveDelay: 2600,
 	minShotDelay: 175,
 	minTelegraphMs: 600,
+	attackChains: true,
 	phases: [
-		{ phase: 1, minHp: 0.66, cadence: 1.00, speed: 0.94, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.06, maxActiveAttacks: 11, excludedDangerousCombos: 2 },
-		{ phase: 2, minHp: 0.31, cadence: 0.88, speed: 1.03, damage: 1.07, telegraphMultiplier: 0.96, surpriseChance: 0.12, maxActiveAttacks: 13 },
-		{ phase: 3, minHp: 0.00, cadence: 0.76, speed: 1.10, damage: 1.14, telegraphMultiplier: 0.90, surpriseChance: 0.20, maxActiveAttacks: 15 }
+		{ phase: 1, minHp: 0.65, cadence: 1.00, speed: 0.95, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.06, maxActiveAttacks: 10 },
+		{ phase: 2, minHp: 0.31, cadence: 0.90, speed: 1.05, damage: 1.12, telegraphMultiplier: 0.95, surpriseChance: 0.12, maxActiveAttacks: 12 },
+		{ phase: 3, minHp: 0.00, cadence: 0.80, speed: 1.12, damage: 1.22, telegraphMultiplier: 0.90, surpriseChance: 0.18, maxActiveAttacks: 14 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'lateRush', cadence: 1.03, telegraphMs: 920, speedMultiplier: 0.94, damageMultiplier: 0.92, speedVariance: [0.78, 0.88, 0.98, 1.08, 1.18] }, // TOP_HOPS: спокойный прыжок → рывок
-		enem2: { movementStyle: 'drift', cadence: 1.00, telegraphMs: 860, speedMultiplier: 0.98, damageMultiplier: 0.97, speedVariance: [0.90, 0.96, 1.02, 1.08, 1.14] }, // PACK_PAIRS: пары сходятся к центру
-		enem3: { movementStyle: 'pause', cadence: 1.18, telegraphMs: 1080, speedMultiplier: 0.78, damageMultiplier: 1.18, speedVariance: [0.80, 0.86, 0.93, 1.00, 1.08] }, // HEAVY_PRESS: тяжёлые остановки
-		enem4: { movementStyle: 'accelerate', cadence: 0.90, telegraphMs: 720, speedMultiplier: 1.08, damageMultiplier: 1.02, speedVariance: [0.88, 0.98, 1.08, 1.16, 1.22] }, // ASYM_FOX: резкая смена давления
-		enem5: { movementStyle: 'weave', cadence: 0.82, telegraphMs: 780, speedMultiplier: 1.05, damageMultiplier: 1.10, speedVariance: [0.86, 0.94, 1.03, 1.12, 1.20] } // EDGE_ROLL: катится вдоль краёв
+		enem1: {
+			// Кочанище: PEELING_LAYERS — атаки расширяющимися концентрическими слоями
+			movementStyle: 'straight', cadence: 1.02, telegraphMs: 900, speedMultiplier: 0.94, damageMultiplier: 0.90,
+			speedVariance: [0.82, 0.92, 1.00, 1.08, 1.16]
+		}, // Кочанище: PEELING_LAYERS — атаки расширяющимися концентрическими слоями
+		enem2: {
+			// Реписько: ROLL_BOUNCE — быстрые отскоки между немногими точками низко над землёй
+			movementStyle: 'drift', cadence: 0.90, telegraphMs: 760, speedMultiplier: 1.06, damageMultiplier: 1.00,
+			speedVariance: [0.86, 0.95, 1.05, 1.14, 1.22]
+		}, // Реписько: ROLL_BOUNCE — быстрые отскоки между немногими точками низко над землёй
+		enem3: {
+			// Плетень: TENDRIL_COIL_SNAP — усик заметно скручивается, затем один длинный хлёсткий бросок
+			movementStyle: 'weave', cadence: 1.16, telegraphMs: 1020, speedMultiplier: 0.83, damageMultiplier: 1.17,
+			speedVariance: [0.80, 0.88, 0.96, 1.04, 1.12]
+		}, // Плетень: TENDRIL_COIL_SNAP — усик заметно скручивается, затем один длинный хлёсткий бросок
+		enem4: {
+			// Драняк: WIND_FLAP — долгое затишье, затем внезапный порыв разом по всем направлениям
+			movementStyle: 'wave', cadence: 0.86, telegraphMs: 690, speedMultiplier: 1.13, damageMultiplier: 1.04,
+			speedVariance: [0.88, 0.98, 1.08, 1.18, 1.26]
+		}, // Драняк: WIND_FLAP — долгое затишье, затем внезапный порыв разом по всем направлениям
+		enem5: {
+			// Грядочник: HOE_AND_SHOWER — рубящий удар тяпкой + направленная поливочная струя
+			movementStyle: 'straight', cadence: 0.81, telegraphMs: 970, speedMultiplier: 1.07, damageMultiplier: 1.15,
+			speedVariance: [0.86, 0.94, 1.03, 1.12, 1.20]
+		} // Грядочник: HOE_AND_SHOWER — рубящий удар тяпкой + направленная поливочная струя
 	}
 };
 
 const ENEMY_TYPES = {
-	
-	enem11: {  
-        name: 'enem11',                     
-        image: 'images/enemies/regions/1_smesh_les/lvl1/11.webp',  
-        baseHP: 100,                     
-        baseSpeed: 0.020,                  
-        baseDamage: 20,                    
-        spawnWeight: 5,                  
-		baseExp: 0,                     
-        size: '6%'                        
+
+	enem11: { name: 'enem11', image: 'images/enemies/regions/5_dom_dvor/lvl51/11.webp', baseHP: 100, baseSpeed: 0.020, baseDamage: 20, spawnWeight: 5, baseExp: 0, size: '6%' },
+	enem22: { name: 'enem22', image: 'images/enemies/regions/5_dom_dvor/lvl51/22.webp', baseHP: 100, baseSpeed: 0.020, baseDamage: 20, spawnWeight: 5, baseExp: 0, size: '6%' },
+	enem33: { name: 'enem33', image: 'images/enemies/regions/5_dom_dvor/lvl51/33.webp', baseHP: 100, baseSpeed: 0.020, baseDamage: 20, spawnWeight: 5, baseExp: 0, size: '6%' },
+	enem44: { name: 'enem44', image: 'images/enemies/regions/5_dom_dvor/lvl51/44.webp', baseHP: 100, baseSpeed: 0.020, baseDamage: 20, spawnWeight: 5, baseExp: 0, size: '6%' },
+	enem55: { name: 'enem55', image: 'images/enemies/regions/5_dom_dvor/lvl51/55.webp', baseHP: 100, baseSpeed: 0.020, baseDamage: 20, spawnWeight: 5, baseExp: 0, size: '6%' },
+
+	enem1: {
+        name: 'enem1',
+		dispName: 'Кочанище',
+        image: 'images/enemies/regions/5_dom_dvor/lvl51/1.webp',
+        baseHP: 13471,
+        baseSpeed: 0,
+        baseDamage: 20,
+        spawnWeight: 5,
+		baseExp: 250,
+        size: '23%',
+        deathAnimation: { preset: 'default', durationMs: 900 }
     },
-	
-	enem22: {  
-        name: 'enem22',                     
-        image: 'images/enemies/regions/1_smesh_les/lvl1/22.webp',  
-        baseHP: 100,                      
-        baseSpeed: 0.020,                  
-        baseDamage: 20,                    
-        spawnWeight: 5,                  
-		baseExp: 0,                      
-        size: '6%'                        
-    },
-	
-	enem33: {  
-        name: 'enem33',                     
-        image: 'images/enemies/regions/1_smesh_les/lvl1/33.webp',  
-        baseHP: 100,                      
-        baseSpeed: 0.020,                 
-        baseDamage: 20,                    
-        spawnWeight: 5,                  
-		baseExp: 0,                     
-        size: '6%'                        
-    },
-	
-	enem44: {  
-        name: 'enem44',                     
-        image: 'images/enemies/regions/1_smesh_les/lvl1/44.webp',  
-        baseHP: 100,                      
-        baseSpeed: 0.020,                 
-        baseDamage: 20,                    
-        spawnWeight: 5,                  
-		baseExp: 0,                       
-        size: '6%'                       
-    },
-	
-	enem55: {  
-        name: 'enem55',                     
-        image: 'images/enemies/regions/1_smesh_les/lvl1/55.webp',  
-        baseHP: 100,                      
-        baseSpeed: 0.020,                 
-        baseDamage: 20,                    
-        spawnWeight: 5,                  
-		baseExp: 0,                      
-        size: '6%'                       
-    },
-	
-    enem1: {  
-        name: 'enem1',                   
-		dispName:  'Побегайчик',
-        image: 'images/enemies/regions/1_smesh_les/lvl1/1.webp',  
-        baseHP: 8783,                      
-        baseSpeed: 0,                  
-        baseDamage: 20,                    
-        spawnWeight: 5,                   
-		baseExp: 250,                      
-        size: '25%',
-        deathAnimation: { preset: 'hopCollapse', durationMs: 1100 }                        
-    },
-    enem2: {  
+    enem2: {
         name: 'enem2',
-		dispName:  'Любитель бочков',
-        image: 'images/enemies/regions/1_smesh_les/lvl1/2.webp',
-        baseHP: 52699,
+		dispName: 'Реписько',
+        image: 'images/enemies/regions/5_dom_dvor/lvl51/2.webp',
+        baseHP: 33678,
         baseSpeed: 0,
         baseDamage: 22,
-        spawnWeight: 15,                  
-		baseExp: 400, 
-        size: '25%',
-        deathAnimation: { preset: 'packBurst', durationMs: 1000 }
+        spawnWeight: 15,
+		baseExp: 400,
+        size: '23%',
+        deathAnimation: { preset: 'default', durationMs: 900 }
     },
-    enem3: {  
+    enem3: {
         name: 'enem3',
-		dispName:  'Косолапый',
-        image: 'images/enemies/regions/1_smesh_les/lvl1/3.webp',
-        baseHP: 70265,
+		dispName: 'Плетень',
+        image: 'images/enemies/regions/5_dom_dvor/lvl51/3.webp',
+        baseHP: 59565,
         baseSpeed: 0,
         baseDamage: 24,
         spawnWeight: 20,
-		baseExp: 600, 
+		baseExp: 600,
         size: '25%',
-        deathAnimation: { preset: 'heavySink', durationMs: 1400 }                        
-    }, 
-	
-	enem4: {  
+        deathAnimation: { preset: 'default', durationMs: 950 }
+    },
+
+	enem4: {
         name: 'enem4',
-		dispName:  'Сестричка',
-        image: 'images/enemies/regions/1_smesh_les/lvl1/4.webp',
-        baseHP: 210795,
+		dispName: 'Драняк',
+        image: 'images/enemies/regions/5_dom_dvor/lvl51/4.webp',
+        baseHP: 95761,
         baseSpeed: 0,
         baseDamage: 26,
         spawnWeight: 10,
-		baseExp: 800, 
-        size: '25%',
-        deathAnimation: { preset: 'spinAway', durationMs: 1200 }                        
+		baseExp: 800,
+        size: '24%',
+        deathAnimation: { preset: 'default', durationMs: 950 }
     },
-	
-	enem5: {  
+
+	enem5: {
         name: 'enem5',
-		dispName:  'Колобок',
-        image: 'images/enemies/regions/1_smesh_les/lvl1/5.webp',
-        baseHP: 263494,
+		dispName: 'Грядочник',
+        image: 'images/enemies/regions/5_dom_dvor/lvl51/5.webp',
+        baseHP: 145009,
         baseSpeed: 0,
         baseDamage: 28,
         spawnWeight: 5,
-		baseExp: 0, 
-        size: '25%',
-        deathAnimation: { preset: 'rollOff', durationMs: 1300 }                        
+		baseExp: 0,
+        size: '26%',
+        deathAnimation: { preset: 'default', durationMs: 1000 }
     },
 
-	
+
 };
 
  let bossM = ['enem1', 'enem2', 'enem3', 'enem4', 'enem5'];
  let timeNextBoss = 5;
  const bossInterval = 5;
- 
+
   //spawnEnemyWithParams(type, xPos, yPos, customHP, customDamage, customSpeed)
- //spawnEnemyWithParams('enem4', 40, 20, 1, 200, 40 )
- 
- 
- 
- // Уровень 1 — звери и Колобок
- // Атаки по краям (x≤18 / x≥78) или ниже босса; быстрые (speed≥16) — y≤12.
- // У каждого босса свой архетип под образ.
+
+ // Скорости и высоты появления подобраны по разделу 5: speed≥20 → yPos 5-10;
+ // speed 16-18 → yPos≤12; speed≤10 может стартовать ниже (46-52).
 
  const bossAbilities = [
-	// ===== Побегайчик: TOP_HOPS — заячьи скачки сверху с краёв =====
-	{ boss: 'enem1', type: 'enem11', xPos: 10, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 5 },  //0
-	{ boss: 'enem1', type: 'enem11', xPos: 14, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 4 },  //1
-	{ boss: 'enem1', type: 'enem11', xPos: 90, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 5 },  //2
-	{ boss: 'enem1', type: 'enem11', xPos: 86, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 4 },  //3
-	{ boss: 'enem1', type: 'enem11', xPos: 8,  yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 3 },  //4
-	{ boss: 'enem1', type: 'enem11', xPos: 92, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 3 },  //5
-	// быстрые скачки — 5 сверху
-	{ boss: 'enem1', type: 'enem11', xPos: 8,  yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 22 }, //6
-	{ boss: 'enem1', type: 'enem11', xPos: 14, yPos: 7,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 26 }, //7
-	{ boss: 'enem1', type: 'enem11', xPos: 18, yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 20 }, //8
-	{ boss: 'enem1', type: 'enem11', xPos: 86, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 24 }, //9
-	{ boss: 'enem1', type: 'enem11', xPos: 92, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 28 }, //10
-	// микс: лапка + рывок
-	{ boss: 'enem1', type: 'enem11', xPos: 10, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, //11
-	{ boss: 'enem1', type: 'enem11', xPos: 90, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 14 }, //12
-	{ boss: 'enem1', type: 'enem11', xPos: 12, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 24 }, //13
-	{ boss: 'enem1', type: 'enem11', xPos: 88, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 22 }, //14
-	{ boss: 'enem1', type: 'enem11', xPos: 10, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 4 },  //15
+	// ===== Кочанище: PEELING_LAYERS — расширяющиеся концентрические слои,
+	// как капустные листья, снимаемые один за другим наружу =====
+	{ boss: 'enem1', type: 'enem11', xPos: 45, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 4 },  //0  слой 1 (ближний)
+	{ boss: 'enem1', type: 'enem11', xPos: 55, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 4 },  //1  слой 1
+	{ boss: 'enem1', type: 'enem11', xPos: 30, yPos: 20, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 6 },  //2  слой 2
+	{ boss: 'enem1', type: 'enem11', xPos: 70, yPos: 20, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 6 },  //3  слой 2
+	{ boss: 'enem1', type: 'enem11', xPos: 15, yPos: 10, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 5 },  //4  слой 3 (внешний)
+	{ boss: 'enem1', type: 'enem11', xPos: 85, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 5 },  //5  слой 3
+	{ boss: 'enem1', type: 'enem11', xPos: 10, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 20 }, //6
+	{ boss: 'enem1', type: 'enem11', xPos: 90, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 22 }, //7
+	{ boss: 'enem1', type: 'enem11', xPos: 15, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 18 }, //8
+	{ boss: 'enem1', type: 'enem11', xPos: 85, yPos: 7,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 24 }, //9
+	{ boss: 'enem1', type: 'enem11', xPos: 40, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 3 },  //10
+	{ boss: 'enem1', type: 'enem11', xPos: 60, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 2 },  //11
+	{ boss: 'enem1', type: 'enem11', xPos: 20, yPos: 32, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, //12 — нежданчик: внешний слой появляется раньше среднего
+	{ boss: 'enem1', type: 'enem11', xPos: 80, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 13 }, //13
+	{ boss: 'enem1', type: 'enem11', xPos: 25, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 5 },  //14
+	{ boss: 'enem1', type: 'enem11', xPos: 75, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 5 },  //15
+	// звенья «атакующей цепи» — лист разворачивается дугой, затем неровно
+	// отгибается зигзагом (arc+zigzag), раздел 13.7.
+	{ boss: 'enem1', type: 'enem11', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 18 }, //16 цепь-A звено 1 (голова)
+	{ boss: 'enem1', type: 'enem11', xPos: 55, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 14 }, //17 цепь-A звено 2
+	{ boss: 'enem1', type: 'enem11', xPos: 35, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 10 }, //18 цепь-A звено 3
+	{ boss: 'enem1', type: 'enem11', xPos: 20, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 18 }, //19 цепь-B звено 1 (голова)
+	{ boss: 'enem1', type: 'enem11', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 14 }, //20 цепь-B звено 2
+	{ boss: 'enem1', type: 'enem11', xPos: 25, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 11 }, //21 цепь-B звено 3
+	{ boss: 'enem1', type: 'enem11', xPos: 55, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 8 },  //22 цепь-B звено 4
 
-	// ===== Любитель бочков: PACK_PAIRS — волчья стая, пары L+R на одной Y =====
-	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 12, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 4 },  //0
-	{ boss: 'enem2', type: 'enem22', xPos: 90, yPos: 12, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 5 },  //1
-	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 24, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 3 },  //2
-	{ boss: 'enem2', type: 'enem22', xPos: 90, yPos: 24, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 4 },  //3
-	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 36, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 5 },  //4
-	{ boss: 'enem2', type: 'enem22', xPos: 90, yPos: 36, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 3 },  //5
-	{ boss: 'enem2', type: 'enem22', xPos: 8,  yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 4 },  //6
-	{ boss: 'enem2', type: 'enem22', xPos: 92, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 5 },  //7
-	// рывок стаи — 3 быстрых сверху с обоих краёв
-	{ boss: 'enem2', type: 'enem22', xPos: 12, yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 22 }, //8
-	{ boss: 'enem2', type: 'enem22', xPos: 88, yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 26 }, //9
-	{ boss: 'enem2', type: 'enem22', xPos: 16, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 20 }, //10
-	// микс: пара + рывок
-	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 12 }, //11
-	{ boss: 'enem2', type: 'enem22', xPos: 90, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 14 }, //12
-	{ boss: 'enem2', type: 'enem22', xPos: 14, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 24 }, //13
-	{ boss: 'enem2', type: 'enem22', xPos: 86, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 24 }, //14
-	{ boss: 'enem2', type: 'enem22', xPos: 90, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 4 },  //15
+	// ===== Реписько: ROLL_BOUNCE — быстрые отскоки между 2-3 фиксированными
+	// точками низко над землёй =====
+	{ boss: 'enem2', type: 'enem22', xPos: 20, yPos: 10, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 5 },  //0  точка A
+	{ boss: 'enem2', type: 'enem22', xPos: 50, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 4 },  //1  точка B
+	{ boss: 'enem2', type: 'enem22', xPos: 80, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 5 },  //2  точка C
+	{ boss: 'enem2', type: 'enem22', xPos: 20, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 12 }, //3  точка A
+	{ boss: 'enem2', type: 'enem22', xPos: 80, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 13 }, //4  точка C
+	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 22 }, //5
+	{ boss: 'enem2', type: 'enem22', xPos: 90, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 24 }, //6
+	{ boss: 'enem2', type: 'enem22', xPos: 20, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 20 }, //7  точка A, быстрый акцент
+	{ boss: 'enem2', type: 'enem22', xPos: 80, yPos: 7,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 26 }, //8  точка C, быстрый акцент
+	{ boss: 'enem2', type: 'enem22', xPos: 50, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 4 },  //9  точка B низ
+	{ boss: 'enem2', type: 'enem22', xPos: 50, yPos: 32, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 11 }, //10 точка B
+	{ boss: 'enem2', type: 'enem22', xPos: 20, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 18 }, //11
+	{ boss: 'enem2', type: 'enem22', xPos: 80, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 20 }, //12 — нежданчик: отскок сразу в третью точку, минуя среднюю
+	{ boss: 'enem2', type: 'enem22', xPos: 50, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 5 },  //13
+	{ boss: 'enem2', type: 'enem22', xPos: 15, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 5 },  //14
+	{ boss: 'enem2', type: 'enem22', xPos: 85, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 5 },  //15
+	// звенья «атакующей цепи» — репа катится по прямой вниз, затем
+	// отскакивает хаотично (vertical+irregular), раздел 13.7.
+	{ boss: 'enem2', type: 'enem22', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 18 }, //16 цепь-A звено 1 (голова)
+	{ boss: 'enem2', type: 'enem22', xPos: 52, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 14 }, //17 цепь-A звено 2
+	{ boss: 'enem2', type: 'enem22', xPos: 49, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 10 }, //18 цепь-A звено 3
+	{ boss: 'enem2', type: 'enem22', xPos: 70, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 18 }, //19 цепь-B звено 1 (голова)
+	{ boss: 'enem2', type: 'enem22', xPos: 55, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 15 }, //20 цепь-B звено 2
+	{ boss: 'enem2', type: 'enem22', xPos: 40, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 12 }, //21 цепь-B звено 3
+	{ boss: 'enem2', type: 'enem22', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 10 }, //22 цепь-B звено 4
+	{ boss: 'enem2', type: 'enem22', xPos: 35, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 8 },  //23 цепь-B звено 5
 
-	// ===== Косолапый: HEAVY_PRESS — тяжёлые лапы снизу + редкий рык сверху =====
-	{ boss: 'enem3', type: 'enem33', xPos: 12, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 2 },  //0
-	{ boss: 'enem3', type: 'enem33', xPos: 28, yPos: 52, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3 },  //1
-	{ boss: 'enem3', type: 'enem33', xPos: 44, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 2 },  //2
-	{ boss: 'enem3', type: 'enem33', xPos: 60, yPos: 52, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3 },  //3
-	{ boss: 'enem3', type: 'enem33', xPos: 76, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 2 },  //4
-	{ boss: 'enem3', type: 'enem33', xPos: 8,  yPos: 22, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 4 },  //5
-	{ boss: 'enem3', type: 'enem33', xPos: 92, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 5 },  //6
-	{ boss: 'enem3', type: 'enem33', xPos: 10, yPos: 36, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3 },  //7
-	// рык — 2 быстрых сверху
-	{ boss: 'enem3', type: 'enem33', xPos: 10, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 20 }, //8
-	{ boss: 'enem3', type: 'enem33', xPos: 90, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 24 }, //9
-	// микс: лапа + рык
-	{ boss: 'enem3', type: 'enem33', xPos: 36, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3 },  //10
-	{ boss: 'enem3', type: 'enem33', xPos: 12, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 22 }, //11
-	{ boss: 'enem3', type: 'enem33', xPos: 72, yPos: 52, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 2 },  //12
-	{ boss: 'enem3', type: 'enem33', xPos: 88, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 22 }, //13
-	{ boss: 'enem3', type: 'enem33', xPos: 8,  yPos: 40, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 4 },  //14
-	{ boss: 'enem3', type: 'enem33', xPos: 92, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 5 },  //15
+	// ===== Плетень: TENDRIL_COIL_SNAP — усик заметно скручивается на месте
+	// во время долгого телеграфа, затем один длинный хлёсткий бросок =====
+	{ boss: 'enem3', type: 'enem33', xPos: 30, yPos: 10, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 4 },  //0
+	{ boss: 'enem3', type: 'enem33', xPos: 30, yPos: 12, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3 },  //1  та же точка — «скручивание»
+	{ boss: 'enem3', type: 'enem33', xPos: 70, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 4 },  //2
+	{ boss: 'enem3', type: 'enem33', xPos: 20, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 11 }, //3
+	{ boss: 'enem3', type: 'enem33', xPos: 80, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 12 }, //4
+	{ boss: 'enem3', type: 'enem33', xPos: 40, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3 },  //5
+	{ boss: 'enem3', type: 'enem33', xPos: 60, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 2 },  //6
+	{ boss: 'enem3', type: 'enem33', xPos: 10, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 20 }, //7
+	{ boss: 'enem3', type: 'enem33', xPos: 90, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 22 }, //8
+	{ boss: 'enem3', type: 'enem33', xPos: 15, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 18 }, //9
+	{ boss: 'enem3', type: 'enem33', xPos: 85, yPos: 7,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 24 }, //10 — длинный хлёсткий бросок (после скручивания 0-1)
+	{ boss: 'enem3', type: 'enem33', xPos: 35, yPos: 32, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 10 }, //11
+	{ boss: 'enem3', type: 'enem33', xPos: 65, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 13 }, //12
+	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 46, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 4 },  //13
+	{ boss: 'enem3', type: 'enem33', xPos: 25, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 5 },  //14 — нежданчик: бросок без скручивания, сразу
+	{ boss: 'enem3', type: 'enem33', xPos: 75, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 5 },  //15
+	// звенья «атакующей цепи» — плеть закручивается почти на месте, затем
+	// хаотичный бросок (vertical+irregular), раздел 13.7.
+	{ boss: 'enem3', type: 'enem33', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 18 }, //16 цепь-A звено 1 (голова)
+	{ boss: 'enem3', type: 'enem33', xPos: 32, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 14 }, //17 цепь-A звено 2
+	{ boss: 'enem3', type: 'enem33', xPos: 29, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 11 }, //18 цепь-A звено 3
+	{ boss: 'enem3', type: 'enem33', xPos: 31, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 8 },  //19 цепь-A звено 4
+	{ boss: 'enem3', type: 'enem33', xPos: 70, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 18 }, //20 цепь-B звено 1 (голова)
+	{ boss: 'enem3', type: 'enem33', xPos: 55, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 15 }, //21 цепь-B звено 2
+	{ boss: 'enem3', type: 'enem33', xPos: 40, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 12 }, //22 цепь-B звено 3
+	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 10 }, //23 цепь-B звено 4
+	{ boss: 'enem3', type: 'enem33', xPos: 35, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 8 },  //24 цепь-B звено 5
 
-	// ===== Сестричка: ASYM_FOX — хитрая: густо слева, сюрприз справа =====
-	{ boss: 'enem4', type: 'enem44', xPos: 8,  yPos: 10, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 4 },  //0
-	{ boss: 'enem4', type: 'enem44', xPos: 10, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 5 },  //1
-	{ boss: 'enem4', type: 'enem44', xPos: 12, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 3 },  //2
-	{ boss: 'enem4', type: 'enem44', xPos: 8,  yPos: 34, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 4 },  //3
-	{ boss: 'enem4', type: 'enem44', xPos: 14, yPos: 42, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 5 },  //4
-	{ boss: 'enem4', type: 'enem44', xPos: 10, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 3 },  //5
-	// редкие «обманки» справа
-	{ boss: 'enem4', type: 'enem44', xPos: 90, yPos: 22, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 4 },  //6
-	{ boss: 'enem4', type: 'enem44', xPos: 92, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 5 },  //7
-	// сюрприз-рывки — 4 справа сверху
-	{ boss: 'enem4', type: 'enem44', xPos: 88, yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 24 }, //8
-	{ boss: 'enem4', type: 'enem44', xPos: 92, yPos: 7,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 28 }, //9
-	{ boss: 'enem4', type: 'enem44', xPos: 86, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 22 }, //10
-	{ boss: 'enem4', type: 'enem44', xPos: 90, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 26 }, //11
-	// микс: левый хвост + правый рывок
-	{ boss: 'enem4', type: 'enem44', xPos: 10, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 12 }, //12
-	{ boss: 'enem4', type: 'enem44', xPos: 90, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 24 }, //13
-	{ boss: 'enem4', type: 'enem44', xPos: 8,  yPos: 40, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 4 },  //14
-	{ boss: 'enem4', type: 'enem44', xPos: 92, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 20 }, //15
+	// ===== Драняк: WIND_FLAP — долгое затишье, будто ткань без ветра,
+	// затем внезапный порыв разом по всем направлениям =====
+	{ boss: 'enem4', type: 'enem44', xPos: 15, yPos: 10, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 6 },  //0
+	{ boss: 'enem4', type: 'enem44', xPos: 85, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 6 },  //1
+	{ boss: 'enem4', type: 'enem44', xPos: 40, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 14 }, //2
+	{ boss: 'enem4', type: 'enem44', xPos: 60, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 15 }, //3
+	{ boss: 'enem4', type: 'enem44', xPos: 10, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 24 }, //4
+	{ boss: 'enem4', type: 'enem44', xPos: 90, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 26 }, //5
+	{ boss: 'enem4', type: 'enem44', xPos: 25, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 13 }, //6
+	{ boss: 'enem4', type: 'enem44', xPos: 75, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 14 }, //7
+	{ boss: 'enem4', type: 'enem44', xPos: 8,  yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 22 }, //8
+	{ boss: 'enem4', type: 'enem44', xPos: 92, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 20 }, //9
+	{ boss: 'enem4', type: 'enem44', xPos: 50, yPos: 10, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 7 },  //10
+	{ boss: 'enem4', type: 'enem44', xPos: 35, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 5 },  //11
+	{ boss: 'enem4', type: 'enem44', xPos: 65, yPos: 46, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 4 },  //12
+	{ boss: 'enem4', type: 'enem44', xPos: 18, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 18 }, //13 — нежданчик: порыв длится дольше обычного, вторая волна следом
+	{ boss: 'enem4', type: 'enem44', xPos: 82, yPos: 7,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 19 }, //14
+	{ boss: 'enem4', type: 'enem44', xPos: 45, yPos: 32, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 12 }, //15
+	// звенья «атакующей цепи» — порыв ветра сносит фигуру в одну сторону,
+	// затем дугой обратно (diagonal+arc), раздел 13.7.
+	{ boss: 'enem4', type: 'enem44', xPos: 80, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 18 }, //16 цепь-A звено 1 (голова)
+	{ boss: 'enem4', type: 'enem44', xPos: 60, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 14 }, //17 цепь-A звено 2
+	{ boss: 'enem4', type: 'enem44', xPos: 40, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 10 }, //18 цепь-A звено 3
+	{ boss: 'enem4', type: 'enem44', xPos: 20, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 18 }, //19 цепь-B звено 1 (голова)
+	{ boss: 'enem4', type: 'enem44', xPos: 40, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 14 }, //20 цепь-B звено 2
+	{ boss: 'enem4', type: 'enem44', xPos: 55, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 11 }, //21 цепь-B звено 3
+	{ boss: 'enem4', type: 'enem44', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 8 },  //22 цепь-B звено 4
 
-	// ===== Колобок: EDGE_ROLL — катится по периметру флангов =====
-	{ boss: 'enem5', type: 'enem55', xPos: 8,  yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 5 },  //0
-	{ boss: 'enem5', type: 'enem55', xPos: 8,  yPos: 20, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //1
-	{ boss: 'enem5', type: 'enem55', xPos: 8,  yPos: 32, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 5 },  //2
-	{ boss: 'enem5', type: 'enem55', xPos: 8,  yPos: 44, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 3 },  //3
-	{ boss: 'enem5', type: 'enem55', xPos: 92, yPos: 12, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //4
-	{ boss: 'enem5', type: 'enem55', xPos: 92, yPos: 24, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 5 },  //5
-	{ boss: 'enem5', type: 'enem55', xPos: 92, yPos: 36, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 3 },  //6
-	{ boss: 'enem5', type: 'enem55', xPos: 92, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //7
-	// ускорение качения — 3 быстрых сверху
-	{ boss: 'enem5', type: 'enem55', xPos: 10, yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 22 }, //8
-	{ boss: 'enem5', type: 'enem55', xPos: 90, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 26 }, //9
-	{ boss: 'enem5', type: 'enem55', xPos: 14, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 24 }, //10
-	// микс: оборот + рывок
-	{ boss: 'enem5', type: 'enem55', xPos: 8,  yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 12 }, //11
-	{ boss: 'enem5', type: 'enem55', xPos: 92, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14 }, //12
-	{ boss: 'enem5', type: 'enem55', xPos: 12, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 20 }, //13
-	{ boss: 'enem5', type: 'enem55', xPos: 88, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 24 }, //14
-	{ boss: 'enem5', type: 'enem55', xPos: 10, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //15
+	// ===== Грядочник: HOE_AND_SHOWER — резкий рубящий удар тяпкой + серия
+	// капель вдоль направления полива =====
+	{ boss: 'enem5', type: 'enem55', xPos: 30, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 5 },  //0  удар тяпкой
+	{ boss: 'enem5', type: 'enem55', xPos: 70, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 5 },  //1  удар тяпкой
+	{ boss: 'enem5', type: 'enem55', xPos: 20, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 12 }, //2  струя капля 1
+	{ boss: 'enem5', type: 'enem55', xPos: 20, yPos: 40, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 10 }, //3  струя капля 2 (та же линия)
+	{ boss: 'enem5', type: 'enem55', xPos: 80, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 13 }, //4  струя капля 1
+	{ boss: 'enem5', type: 'enem55', xPos: 80, yPos: 38, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 11 }, //5  струя капля 2
+	{ boss: 'enem5', type: 'enem55', xPos: 10, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 22 }, //6
+	{ boss: 'enem5', type: 'enem55', xPos: 90, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 24 }, //7
+	{ boss: 'enem5', type: 'enem55', xPos: 15, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 20 }, //8
+	{ boss: 'enem5', type: 'enem55', xPos: 85, yPos: 7,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 26 }, //9
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //10
+	{ boss: 'enem5', type: 'enem55', xPos: 40, yPos: 46, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 5 },  //11
+	{ boss: 'enem5', type: 'enem55', xPos: 60, yPos: 46, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 5 },  //12
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 28 }, //13 — нежданчик: тяпка бьёт по центру без привычного полива перед ней
+	{ boss: 'enem5', type: 'enem55', xPos: 25, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 6 },  //14
+	{ boss: 'enem5', type: 'enem55', xPos: 75, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 6 },  //15
+	// звенья «атакующей цепи» — тяпка бьёт дугой, лейка льёт по прямой
+	// линии (arc+diagonal), раздел 13.7.
+	{ boss: 'enem5', type: 'enem55', xPos: 70, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 18 }, //16 цепь-A звено 1 (голова)
+	{ boss: 'enem5', type: 'enem55', xPos: 45, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14 }, //17 цепь-A звено 2
+	{ boss: 'enem5', type: 'enem55', xPos: 65, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 10 }, //18 цепь-A звено 3
+	{ boss: 'enem5', type: 'enem55', xPos: 80, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 18 }, //19 цепь-B звено 1 (голова)
+	{ boss: 'enem5', type: 'enem55', xPos: 60, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14 }, //20 цепь-B звено 2
+	{ boss: 'enem5', type: 'enem55', xPos: 40, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 10 }, //21 цепь-B звено 3
+	{ boss: 'enem5', type: 'enem55', xPos: 20, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 8 },  //22 цепь-B звено 4
 ];
 
  const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 280, bossDelayAbDop: 5200 }, // скачет часто
-	{ boss: 'enem2', bossDelayAb: 320, bossDelayAbDop: 5600 }, // стая давит ритмом
-	{ boss: 'enem3', bossDelayAb: 380, bossDelayAbDop: 6400 }, // тяжёлый, длинная пауза
-	{ boss: 'enem4', bossDelayAb: 260, bossDelayAbDop: 5000 }, // хитрая вспышка
-	{ boss: 'enem5', bossDelayAb: 240, bossDelayAbDop: 4800 }, // катится без остановки
-];
+	{ boss: 'enem1', bossDelayAb: 310, bossDelayAbDop: 5700 }, // ровное давление слоями
+	{ boss: 'enem2', bossDelayAb: 220, bossDelayAbDop: 4300 }, // самый частый — быстрые отскоки
+	{ boss: 'enem3', bossDelayAb: 410, bossDelayAbDop: 6900 }, // самый долгий отдых — закручивание требует времени
+	{ boss: 'enem4', bossDelayAb: 195, bossDelayAbDop: 3500 }, // долгое затишье, но короткий шаг внутри порыва
+	{ boss: 'enem5', bossDelayAb: 255, bossDelayAbDop: 5100 }, // собранный финал
+ ];
 
  const bossAbilitiesDop = [
-	// Побегайчик
-	{ boss: 'enem1', indexAbilities: [0, 1, 2, 3] },
-	{ boss: 'enem1', indexAbilities: [6, 7, 8, 9, 10] },
-	{ boss: 'enem1', indexAbilities: [6, 8, 10, 7, 9] },
-	{ boss: 'enem1', indexAbilities: [0, 6, 2, 9] },
-	{ boss: 'enem1', indexAbilities: [4, 5, 13, 14] },
-	{ boss: 'enem1', indexAbilities: [11, 13, 12, 14, 15] },
+	// Кочанище — PEELING_LAYERS
 	{ boss: 'enem1', indexAbilities: [0, 1] },
 	{ boss: 'enem1', indexAbilities: [2, 3] },
+	{ boss: 'enem1', indexAbilities: [4, 5] },
+	{ boss: 'enem1', indexAbilities: [0, 1, 2, 3] },
+	{ boss: 'enem1', indexAbilities: [6, 8, 7, 9] },
+	{ boss: 'enem1', indexAbilities: [0, 1, 6] }, // same-start с [0,1], расходится быстрым акцентом
+	{ boss: 'enem1', indexAbilities: [16, 17, 18], isChain: true }, // ← цепь-A (3, arc)
+	{ boss: 'enem1', indexAbilities: [19, 20, 21, 22], isChain: true }, // ← цепь-B (4, zigzag)
+	{ boss: 'enem1', indexAbilities: [12, 13, 4, 5] }, // нежданчик: внешний слой появляется раньше среднего
+	{ boss: 'enem1', indexAbilities: [0, 1, 2, 3, 4, 5] }, // сигнатурная: все три слоя разом наружу
 
-	// Любитель бочков
-	{ boss: 'enem2', indexAbilities: [0, 1, 2, 3, 4, 5] },
-	{ boss: 'enem2', indexAbilities: [0, 1, 6, 7] },
-	{ boss: 'enem2', indexAbilities: [8, 9, 10] },
-	{ boss: 'enem2', indexAbilities: [8, 10, 9] },
-	{ boss: 'enem2', indexAbilities: [2, 8, 3, 9] },
-	{ boss: 'enem2', indexAbilities: [11, 13, 12, 14, 15] },
-	{ boss: 'enem2', indexAbilities: [0, 2, 4] },
-	{ boss: 'enem2', indexAbilities: [1, 3, 5] },
+	// Реписько — ROLL_BOUNCE
+	{ boss: 'enem2', indexAbilities: [0, 1, 2] },
+	{ boss: 'enem2', indexAbilities: [3, 4] },
+	{ boss: 'enem2', indexAbilities: [5, 6] },
+	{ boss: 'enem2', indexAbilities: [7, 8] },
+	{ boss: 'enem2', indexAbilities: [9, 10] },
+	{ boss: 'enem2', indexAbilities: [0, 1, 5] }, // same-start с [0,1], расходится быстрым акцентом
+	{ boss: 'enem2', indexAbilities: [16, 17, 18], isChain: true }, // ← цепь-A (3, vertical)
+	{ boss: 'enem2', indexAbilities: [19, 20, 21, 22, 23], isChain: true }, // ← цепь-B (5, irregular)
+	{ boss: 'enem2', indexAbilities: [12, 13] }, // нежданчик: отскок сразу в третью точку, минуя среднюю
+	{ boss: 'enem2', indexAbilities: [0, 1, 2, 0, 2, 1] }, // сигнатурная: полный тройной отскок туда-сюда
 
-	// Косолапый
-	{ boss: 'enem3', indexAbilities: [0, 1, 2, 3, 4] },
-	{ boss: 'enem3', indexAbilities: [0, 2, 4, 5, 6] },
-	{ boss: 'enem3', indexAbilities: [8, 9] },
-	{ boss: 'enem3', indexAbilities: [5, 8, 6, 9] },
-	{ boss: 'enem3', indexAbilities: [10, 11, 12, 13] },
-	{ boss: 'enem3', indexAbilities: [1, 7, 11, 14, 15] },
-	{ boss: 'enem3', indexAbilities: [0, 2, 4] },
-	{ boss: 'enem3', indexAbilities: [5, 7] },
+	// Плетень — TENDRIL_COIL_SNAP
+	{ boss: 'enem3', indexAbilities: [0, 1, 10] },
+	{ boss: 'enem3', indexAbilities: [2, 4] },
+	{ boss: 'enem3', indexAbilities: [5, 6] },
+	{ boss: 'enem3', indexAbilities: [7, 8] },
+	{ boss: 'enem3', indexAbilities: [9, 10] },
+	{ boss: 'enem3', indexAbilities: [0, 1, 7] }, // same-start с [0,1], расходится быстрым акцентом
+	{ boss: 'enem3', indexAbilities: [16, 17, 18, 19], isChain: true }, // ← цепь-A (4, vertical)
+	{ boss: 'enem3', indexAbilities: [20, 21, 22, 23, 24], isChain: true }, // ← цепь-B (5, irregular)
+	{ boss: 'enem3', indexAbilities: [14] }, // нежданчик: бросок без скручивания, сразу
+	{ boss: 'enem3', indexAbilities: [0, 1, 10, 11, 4, 12] }, // сигнатурная: скручивание и бросок с обеих сторон подряд
 
-	// Сестричка
-	{ boss: 'enem4', indexAbilities: [0, 1, 2, 3, 4, 5] },
-	{ boss: 'enem4', indexAbilities: [0, 2, 4, 6] },
-	{ boss: 'enem4', indexAbilities: [8, 9, 10, 11] },
-	{ boss: 'enem4', indexAbilities: [8, 10, 9, 11] },
-	{ boss: 'enem4', indexAbilities: [1, 8, 5, 11] },
-	{ boss: 'enem4', indexAbilities: [12, 13, 14, 15] },
-	{ boss: 'enem4', indexAbilities: [0, 1, 2] },
+	// Драняк — WIND_FLAP
+	{ boss: 'enem4', indexAbilities: [0, 1, 2, 3] },
+	{ boss: 'enem4', indexAbilities: [4, 5] },
 	{ boss: 'enem4', indexAbilities: [6, 7] },
+	{ boss: 'enem4', indexAbilities: [8, 9] },
+	{ boss: 'enem4', indexAbilities: [11, 12] },
+	{ boss: 'enem4', indexAbilities: [0, 1, 4] }, // same-start с [0,1], расходится быстрым акцентом
+	{ boss: 'enem4', indexAbilities: [16, 17, 18], isChain: true }, // ← цепь-A (3, diagonal)
+	{ boss: 'enem4', indexAbilities: [19, 20, 21, 22], isChain: true }, // ← цепь-B (4, arc)
+	{ boss: 'enem4', indexAbilities: [13, 10, 15] }, // нежданчик: порыв длится дольше обычного, вторая волна следом
+	{ boss: 'enem4', indexAbilities: [0, 2, 4, 8, 1, 3, 5, 9] }, // сигнатурная: порыв разом по всем направлениям
 
-	// Колобок
-	{ boss: 'enem5', indexAbilities: [0, 1, 2, 3] },
-	{ boss: 'enem5', indexAbilities: [4, 5, 6, 7] },
-	{ boss: 'enem5', indexAbilities: [0, 1, 2, 3, 4, 5, 6, 7] },
-	{ boss: 'enem5', indexAbilities: [8, 9, 10] },
-	{ boss: 'enem5', indexAbilities: [0, 8, 4, 9] },
-	{ boss: 'enem5', indexAbilities: [11, 13, 12, 14, 15] },
-	{ boss: 'enem5', indexAbilities: [0, 1, 2] },
-	{ boss: 'enem5', indexAbilities: [4, 5, 6] },
-];
+	// Грядочник — HOE_AND_SHOWER, финальный облик
+	{ boss: 'enem5', indexAbilities: [0, 1] },
+	{ boss: 'enem5', indexAbilities: [2, 3] },
+	{ boss: 'enem5', indexAbilities: [4, 5] },
+	{ boss: 'enem5', indexAbilities: [6, 7] },
+	{ boss: 'enem5', indexAbilities: [10, 11, 12] },
+	{ boss: 'enem5', indexAbilities: [0, 2, 3] }, // same-start с [0], расходится поливом
+	{ boss: 'enem5', indexAbilities: [16, 17, 18], isChain: true }, // ← цепь-A (3, arc)
+	{ boss: 'enem5', indexAbilities: [19, 20, 21, 22], isChain: true }, // ← цепь-B (4, diagonal)
+	{ boss: 'enem5', indexAbilities: [13] }, // нежданчик: тяпка бьёт по центру без привычного полива перед ней
+	{ boss: 'enem5', indexAbilities: [0, 2, 3, 1, 4, 5, 14, 15] }, // сигнатурная кульминация: удар тяпкой и полив с обеих сторон разом
+ ];
+
+// Лорные названия связок временных улучшений — у каждого босса свой словарь
+// образов конкретно ЕГО материала/повадки (раздел 12.1), полных совпадений
+// фраз между боссами уровня нет (проверено программно).
+const UPGRADE_VARIANT_NAMES = {
+    // Кочанище — кочан капусты: лист, кочерыжка, слой, срез, жилка.
+    enem1: {
+        variant1: 'Кочанный кураж', variant2: 'Листовая хватка', variant3: 'Кочерыжка-таран',
+        variant4: 'Слоистый напор', variant5: 'Меткий лист', variant6: 'Бешеный лист',
+        variant7: 'Кочанищный норов', variant8: 'Крепкий срез', variant9: 'Ударный лист',
+        variant10: 'Живучая жилка', variant11: 'Колючий лист', variant12: 'Лист и в темноту',
+        variant13: 'Толстый лист', variant14: 'Неутомимый лист', variant15: 'Пружинистый лист',
+        variant16: 'Острая жилка, зоркий глаз', variant17: 'Слоистая удача', variant18: 'Верный лист',
+        variant19: 'Молниеносный лист', variant20: 'Слоистый нюх', variant21: 'Цепкая жилка',
+        variant22: 'Юркий для своего кочана', variant23: 'Кочанная стойкость', variant24: 'Долгий слой, зоркий глаз',
+        variant25: 'Ускользающий лист', variant26: 'Дикий лист', variant27: 'Стойкий срез',
+        variant28: 'Лист наповал', variant29: 'Крепкий кочан', variant30: 'Слоистая мощь',
+        variant31: 'Лист с оглядкой', variant32: 'Живучий срез', variant33: 'Юркий и слоистый',
+        variant34: 'Кочанная прыть', variant35: 'Быстрый лист, крепкая жилка'
+    },
+    // Реписько — репа: земля, корень, круглый бок, ботва, отскок.
+    enem2: {
+        variant1: 'Репный кураж', variant2: 'Корневая хватка', variant3: 'Бок-таран',
+        variant4: 'Земляной напор', variant5: 'Меткий отскок', variant6: 'Бешеный отскок',
+        variant7: 'Реписьковый норов', variant8: 'Крепкий бок', variant9: 'Ударный отскок',
+        variant10: 'Живучий корень', variant11: 'Колючая ботва', variant12: 'Отскок и в темноту',
+        variant13: 'Толстый бок', variant14: 'Неутомимый отскок', variant15: 'Пружинистый отскок',
+        variant16: 'Острый корень, зоркий глаз', variant17: 'Земляная удача', variant18: 'Верный отскок',
+        variant19: 'Молниеносный отскок', variant20: 'Земляной нюх', variant21: 'Цепкий корень',
+        variant22: 'Юркий, несмотря на вес', variant23: 'Репная стойкость', variant24: 'Долгий разгон, зоркий глаз',
+        variant25: 'Ускользающий отскок', variant26: 'Дикий отскок', variant27: 'Стойкая ботва',
+        variant28: 'Отскок наповал', variant29: 'Крепкое реписько', variant30: 'Земляная мощь',
+        variant31: 'Отскок с оглядкой', variant32: 'Живучая ботва', variant33: 'Юркий и круглый',
+        variant34: 'Репная прыть', variant35: 'Быстрый отскок, крепкий бок'
+    },
+    // Плетень — огуречная плеть: усик, стебель, колючка, завиток, хлыст.
+    enem3: {
+        variant1: 'Плетёный кураж', variant2: 'Усиковая хватка', variant3: 'Стебель-таран',
+        variant4: 'Вьющийся напор', variant5: 'Меткий хлыст', variant6: 'Бешеный хлыст',
+        variant7: 'Плетнёвый норов', variant8: 'Крепкий стебель', variant9: 'Ударный завиток',
+        variant10: 'Живучий усик', variant11: 'Колючий стебель', variant12: 'Хлыст и в темноту',
+        variant13: 'Толстый стебель', variant14: 'Неутомимый хлыст', variant15: 'Пружинистый завиток',
+        variant16: 'Острая колючка, зоркий глаз', variant17: 'Вьющаяся удача', variant18: 'Верный хлыст',
+        variant19: 'Молниеносный хлыст', variant20: 'Вьющийся нюх', variant21: 'Цепкий усик',
+        variant22: 'Юркий, несмотря на длину', variant23: 'Плетнёвая стойкость', variant24: 'Долгое скручивание, зоркий глаз',
+        variant25: 'Ускользающий хлыст', variant26: 'Дикий хлыст', variant27: 'Стойкий стебель',
+        variant28: 'Хлыст наповал', variant29: 'Крепкий плетень', variant30: 'Вьющаяся мощь',
+        variant31: 'Завиток с оглядкой', variant32: 'Живучий стебель', variant33: 'Юркий и вьющийся',
+        variant34: 'Плетнёвая прыть', variant35: 'Быстрый хлыст, крепкий усик'
+    },
+    // Драняк — пугало: солома, дыра, ветер, ткань, рубаха.
+    enem4: {
+        variant1: 'Соломенный кураж', variant2: 'Дырявая хватка', variant3: 'Грабли-таран',
+        variant4: 'Ветреный напор', variant5: 'Меткий порыв', variant6: 'Бешеный порыв',
+        variant7: 'Дрянячий норов', variant8: 'Крепкая солома', variant9: 'Ударный порыв',
+        variant10: 'Живучая дыра', variant11: 'Колючая солома', variant12: 'Порыв и в темноту',
+        variant13: 'Толстая ткань', variant14: 'Неутомимый порыв', variant15: 'Пружинистый порыв',
+        variant16: 'Острые грабли, зоркий глаз', variant17: 'Ветреная удача', variant18: 'Верный порыв',
+        variant19: 'Молниеносный порыв', variant20: 'Ветреный нюх', variant21: 'Цепкая солома',
+        variant22: 'Юркий, несмотря на дыры', variant23: 'Соломенная стойкость', variant24: 'Долгое затишье, зоркий глаз',
+        variant25: 'Ускользающий порыв', variant26: 'Дикий порыв', variant27: 'Стойкая ткань',
+        variant28: 'Порыв наповал', variant29: 'Крепкий драняк', variant30: 'Ветреная мощь',
+        variant31: 'Порыв с оглядкой', variant32: 'Живучая ткань', variant33: 'Юркий и рваный',
+        variant34: 'Соломенная прыть', variant35: 'Быстрый порыв, крепкая солома'
+    },
+    // Грядочник — хозяин грядок: тяпка, лейка, земля, урожай, полив.
+    enem5: {
+        variant1: 'Грядочный кураж', variant2: 'Лейковая хватка', variant3: 'Тяпка-таран',
+        variant4: 'Поливочный напор', variant5: 'Меткий взмах', variant6: 'Бешеный взмах',
+        variant7: 'Грядочников норов', variant8: 'Крепкая тяпка', variant9: 'Ударная струя',
+        variant10: 'Живучая лейка', variant11: 'Колючая тяпка', variant12: 'Взмах и в темноту',
+        variant13: 'Толстый черенок', variant14: 'Неутомимый взмах', variant15: 'Пружинистый взмах',
+        variant16: 'Острая тяпка, зоркий глаз', variant17: 'Поливочная удача', variant18: 'Верный взмах',
+        variant19: 'Молниеносный взмах', variant20: 'Урожайный нюх', variant21: 'Цепкая лейка',
+        variant22: 'Юркий, несмотря на инвентарь', variant23: 'Грядочная стойкость', variant24: 'Долгий полив, зоркий глаз',
+        variant25: 'Ускользающий взмах', variant26: 'Дикий взмах', variant27: 'Стойкий черенок',
+        variant28: 'Взмах наповал', variant29: 'Крепкий грядочник', variant30: 'Поливочная мощь',
+        variant31: 'Взмах с оглядкой', variant32: 'Живучий черенок', variant33: 'Юркий и грядочный',
+        variant34: 'Грядочная прыть', variant35: 'Быстрый взмах, крепкая лейка'
+    }
+};
