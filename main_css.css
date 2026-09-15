@@ -503,6 +503,61 @@ body {
     --attack-state-filter: contrast(1.2) brightness(1.06);
 }
 
+/* «Баррикада» (раздел 13.8 lvlData/Правила создания уровня.txt, область VI
+   «Глухой край») — стоит на месте несколько секунд, требует нескольких
+   попаданий. Холодный синеватый отблеск ("укреплено, держит удар") — третий,
+   намеренно отличный от золотого (цепь, "активная цель") и обычного красного
+   (просто высокая скорость) визуальный язык, чтобы игрок с одного взгляда не
+   путал баррикаду с прочими состояниями атак. */
+.enemy.enemy-attack.boss-attack-barricade {
+    --attack-state-filter: brightness(1.08) saturate(1.05) drop-shadow(0 0 10px rgba(140, 200, 255, 0.85));
+}
+
+/* Сорвалась с места — синий "щит" сменяется тревожным красным (та же логика,
+   что у .boss-attack-rush, но с более высокой специфичностью, поэтому
+   побеждает при одновременных классах barricade+rush во время самого рывка). */
+.enemy.enemy-attack.boss-attack-barricade.boss-attack-rush {
+    --attack-state-filter: contrast(1.25) brightness(1.1) drop-shadow(0 0 14px rgba(255, 110, 80, 0.85));
+}
+
+/* Круговой индикатор HP баррикады — отдельный mount (enemy.element это <img>,
+   дочерние узлы в него не вставить), позиция копируется из left/top/transform
+   атаки каждый rAF (см. createBarricadeRingMount/syncBarricadeRingMount). */
+.barricade-ring-mount {
+    position: absolute;
+    z-index: 6;
+    pointer-events: none;
+}
+
+.barricade-ring {
+    width: 100%;
+    height: 100%;
+    display: block;
+    transform: rotate(-90deg); /* заливка стартует сверху, а не сбоку */
+    overflow: visible;
+}
+
+.barricade-ring-bg {
+    fill: none;
+    stroke: rgba(20, 30, 45, 0.45);
+    stroke-width: 2.4;
+}
+
+.barricade-ring-fill {
+    fill: none;
+    stroke: rgba(150, 210, 255, 0.95);
+    stroke-width: 2.4;
+    stroke-linecap: round;
+    filter: drop-shadow(0 0 4px rgba(150, 210, 255, 0.7));
+    transition: stroke-dashoffset 120ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .barricade-ring-fill {
+        transition: none;
+    }
+}
+
 /* «Атакующая цепь» (область V «Беспокойная деревня», см. linkAttackChain/
    syncChainLink в game.js) — сегмент цепи между двумя соседними по порядку
    звеньями. Позиция/длина/угол выставляются инлайном из JS каждый кадр

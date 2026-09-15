@@ -238,6 +238,11 @@ let bossHealthDelayedFill = null;
 let bossHealthContainer = null;
 let bossNameElement = null;
 let currentBoss = null;
+// «Баррикада» (раздел 13.8 lvlData/Правила создания уровня.txt) — момент
+// последнего успешного спавна баррикады, сбрасывается на каждой смене
+// босса/облика (см. showBossHealthBar). Используется вместе с
+// BARRICADE_MIN_SPAWN_GAP_MS ниже — страховка движка, не авторская настройка.
+let lastBarricadeSpawnTime = 0;
 let bossDeathSequenceActive = false;
 let countDefeatBoss = 0;
 let bossDisplayedHpPercent = 100;
@@ -500,6 +505,19 @@ class Enemy {
         this.hasPausedMidFlight = false;
         this.pauseUntil = 0;
         this.hasTriggeredRush = false;
+        // «Баррикада» (область VI «Глухой край», см. раздел 13.8 lvlData/Правила
+        // создания уровня.txt) — атака, которая не гибнет с одного удара: стоит
+        // неподвижно barricadeHoldUntil (задаётся per-атаку из данных уровня, см.
+        // spawnEnemyWithParams), затем срывается вперёд с ускорением
+        // barricadeRushSpeedMultiplier. Сама многоударность — обычный enemy.hp/
+        // maxHP (см. applyHeroImpactDamage), новых полей для этого не требуется;
+        // здесь только состояние тайминга паузы-рывка и ссылка на визуальное
+        // кольцо HP (см. createBarricadeRingMount).
+        this.isBarricade = false;
+        this.barricadeHoldUntil = 0;
+        this.barricadeRushSpeedMultiplier = 1;
+        this.hasRushed = false;
+        this.ringMount = null;
         this.hitStopUntil = 0; // короткая заморозка движения в момент мощного попадания (hit-stop)
         // Параметры движения 'wave' — задаются per-атаку из bossAbilities (см. ниже, спавн),
         // а не хардкодятся в движке. Значения по умолчанию используются, только если
@@ -594,7 +612,25 @@ class Enemy {
         let movementMultiplier = 1;
 
         if (this.isCustom) {
-            if (this.movementStyle === 'accelerate') {
+            if (this.isBarricade) {
+                // «Баррикада» — стоит на месте, пока не истечёт её собственный
+                // (заданный per-атаку из gameData, не хардкод) barricadeHoldUntil,
+                // затем СРАЗУ и ГАРАНТИРОВАННО срывается вперёд — рывок не зависит
+                // от того, ударил её игрок или нет, поэтому она физически не может
+                // «зависнуть» безопасной навечно (та же философия, что правило 18
+                // CLAUDE.md требует для других механик с ограниченным перехватом).
+                if (!this.hasRushed) {
+                    if (performance.now() < this.barricadeHoldUntil) {
+                        movementMultiplier = 0;
+                    } else {
+                        this.hasRushed = true;
+                        this.element.classList.add('boss-attack-rush');
+                    }
+                }
+                if (this.hasRushed) {
+                    movementMultiplier = this.barricadeRushSpeedMultiplier;
+                }
+            } else if (this.movementStyle === 'accelerate') {
                 movementMultiplier = 0.72 + travelProgress * 0.90;
             } else if (this.movementStyle === 'lateRush') {
                 movementMultiplier = travelProgress < 0.55 ? 0.72 : 1.48;
@@ -827,6 +863,16 @@ class Enemy {
      * Удаляет врага из игры (из DOM и из памяти)
      */
     remove() {
+        // Кольцо HP баррикады (если было) — убираем здесь одним местом, а не на
+        // каждом из путей удаления атаки по отдельности: ВСЕ они (смерть от
+        // игрока/ранения, долёт до героя, разлёт атак вслед за умершим боссом)
+        // в итоге вызывают именно этот метод (единственное место в файле, где
+        // this.element реально удаляется из DOM — см. комментарий у правила 18
+        // CLAUDE.md про то же самое для похожих случаев).
+        if (this.ringMount && this.ringMount.parentNode) {
+            this.ringMount.parentNode.removeChild(this.ringMount);
+            this.ringMount = null;
+        }
         // Проверяем, существует ли элемент и его родитель
         if (this.element && this.element.parentNode) {
             // Удаляем элемент из DOM
@@ -1209,7 +1255,7 @@ function getRandomXPosition() {
  */
 
 
-function spawnEnemyWithParams(type, xPos, yPos, customHP, customDamage, customSpeed, isCustom=false, movementStyle='straight', waveOptions=null) {
+function spawnEnemyWithParams(type, xPos, yPos, customHP, customDamage, customSpeed, isCustom=false, movementStyle='straight', waveOptions=null, barricadeOptions=null) {
 
     if(!bossAlive && !bossM.includes(type)){return};
     
@@ -1265,7 +1311,18 @@ function spawnEnemyWithParams(type, xPos, yPos, customHP, customDamage, customSp
         if (enemy.isCustom && customSpeed !== undefined) {
             applyBossAttackSpeedVisual(enemy.element, customSpeed);
         }
-        
+
+        // «Баррикада» (раздел 13.8 lvlData/Правила создания уровня.txt) — параметры
+        // паузы/рывка приходят ЦЕЛИКОМ из данных уровня (barricadeOptions приходит
+        // уже посчитанным из executeBossEvent); здесь только применение состояния,
+        // ни одно число не хардкожено.
+        if (isCustom && barricadeOptions) {
+            enemy.isBarricade = true;
+            enemy.barricadeHoldUntil = performance.now() + barricadeOptions.pauseMs;
+            enemy.barricadeRushSpeedMultiplier = barricadeOptions.rushSpeedMultiplier;
+            enemy.element.classList.add('boss-attack-barricade');
+        }
+
         // Обновляем позицию элемента в DOM
         enemy.applyPositionTransform(0);
         // Атаки босса сразу ставим так, чтобы не пересекаться с силуэтом
@@ -1274,7 +1331,11 @@ function spawnEnemyWithParams(type, xPos, yPos, customHP, customDamage, customSp
             enemy.movementOriginX = enemy.x;
             enemy.applyPositionTransform(0);
         }
-        
+
+        if (enemy.isBarricade) {
+            enemy.ringMount = createBarricadeRingMount(enemy);
+        }
+
         // Добавляем в активные враги
         activeEnemies.push(enemy);
         
@@ -1949,18 +2010,43 @@ function executeBossEvent() {
                     config.damageMultiplier,
                     lvlNumber
                 );
+
+                // «Баррикада» (раздел 13.8 lvlData/Правила создания уровня.txt) —
+                // atack.barricadeHpPercent помечает атаку как баррикаду; её реальный
+                // HP считается ЗДЕСЬ (не в gameData) как процент от maxHP ТЕКУЩЕГО
+                // облика босса — та же логика "формула в движке, число в данных",
+                // что и у centralized HP боссов. Страховка BARRICADE_MAX_CONCURRENT/
+                // BARRICADE_MIN_SPAWN_GAP_MS применяется независимо от gameData: если
+                // условия не выполнены, атака тихо спавнится ОБЫЧНОЙ (customHP как
+                // обычно), бой не пропускает и не блокирует её.
+                let barricadeOptions = null;
+                let resolvedHp = attack.customHP;
+                if (attack.barricadeHpPercent && !chainSlot && currentBoss?.maxHP) {
+                    const activeBarricades = activeEnemies.filter(e => e.isBarricade).length;
+                    const cooledDown = (performance.now() - lastBarricadeSpawnTime) >= BARRICADE_MIN_SPAWN_GAP_MS;
+                    if (activeBarricades < BARRICADE_MAX_CONCURRENT && cooledDown) {
+                        resolvedHp = Math.max(1, Math.round(currentBoss.maxHP * attack.barricadeHpPercent / 100));
+                        barricadeOptions = {
+                            pauseMs: attack.barricadePauseMs,
+                            rushSpeedMultiplier: attack.barricadeRushSpeedMultiplier
+                        };
+                        lastBarricadeSpawnTime = performance.now();
+                    }
+                }
+
                 const spawnedAttack = spawnEnemyWithParams(
                     attack.type,
                     attack.xPos,
                     spawnYPos,
-                    attack.customHP,
+                    resolvedHp,
                     damage,
                     speed,
                     true,
                     movementStyle,
                     movementStyle === 'wave'
                         ? { waveAmplitude: attack.waveAmplitude, waveFrequency: attack.waveFrequency, wavePhase: attack.wavePhase }
-                        : null
+                        : null,
+                    barricadeOptions
                 );
 
                 if (chainSlot && spawnedAttack) {
@@ -2023,6 +2109,24 @@ const ATTACK_CHAIN_MAX_LENGTH = 7;
 const CHAIN_MAX_HEAD_SPEED = 18;
 const CHAIN_MAX_SPAWN_Y = 26;
 const CHAIN_MIN_SPAWN_GAP_PERCENT = 12;
+
+// Раздел 13.8 lvlData/Правила создания уровня.txt — «Баррикада» (область VI
+// «Глухой край»): атака, требующая нескольких попаданий вместо одного. Прямое
+// требование пользователя (2026-09-15): нельзя допустить уровень, где игрок
+// вынужден бесконечно бить баррикады вместо самого босса, и нельзя допустить
+// две баррикады одновременно (игрок физически не разорвётся между двумя
+// многоударными целями И остальными летящими атаками сразу). Как и у
+// CHAIN_MAX_HEAD_SPEED/CHAIN_MAX_SPAWN_Y/CHAIN_MIN_SPAWN_GAP_PERCENT выше —
+// это ВЕРХНЯЯ ГРАНИЦА страховки движка, применяется ВСЕГДА независимо от
+// того, что задано в gameData (см. executeBossEvent): если автор уровня
+// случайно поставил барrikadeHpPercent на атаку, которая пришлась бы раньше
+// BARRICADE_MIN_SPAWN_GAP_MS после предыдущей, или пока предыдущая баррикада
+// ещё жива — движок просто спавнит эту атаку ОБЫЧНОЙ (по attack.customHP),
+// не бросает и не блокирует бой. Числа не меняются per-уровень — конкретную
+// частоту/силу баррикад авторы уровня выбирают ЧЕРЕЗ ритм bossDelayAb и
+// собственные barricadeHpPercent/barricadePauseMs, а не через эти константы.
+const BARRICADE_MAX_CONCURRENT = 1;
+const BARRICADE_MIN_SPAWN_GAP_MS = 7000;
 
 // ПОДТВЕРЖДЁННЫЙ БАГ (по прямому отчёту пользователя): первая версия собирала
 // ВСЕХ участников цепи в массив и связывала их одним махом только когда спавнилось
@@ -2270,8 +2374,10 @@ function startBossHpCatchUp(targetPercent) {
  */
 function showBossHealthBar(boss) {
     if (!bossHealthContainer || !bossHealthFill || !bossHealthDelayedFill || !bossNameElement) return;
-    
+
     currentBoss = boss;
+    // Новый облик/босс — счётчик кулдауна баррикад стартует заново (раздел 13.8).
+    lastBarricadeSpawnTime = 0;
     
     // Убедимся, что у босса есть maxHP
     if (!boss.maxHP) {
@@ -3524,6 +3630,9 @@ function applyHeroImpactDamage(enemy, damageResult, isBoss) {
     // hp больше не трогает вообще, только счётчик ДПС ниже.
     if (!isDummyBoss) {
         enemy.hp -= damageResult.damage;
+        if (enemy.isBarricade) {
+            updateBarricadeRing(enemy);
+        }
     }
 
     // Манекен: копим урон по боссу для живого счётчика ДПС в углу экрана
@@ -4065,6 +4174,61 @@ function syncLukaArrowMount(mount, enemyEl) {
     // Для уничтоженной атаки оставляем стрелу в последней позиции;
     // у живого босса продолжаем повторять покачивание до исчезновения эффекта.
     requestAnimationFrame(() => syncLukaArrowMount(mount, enemyEl));
+}
+
+// «Баррикада» (раздел 13.8 lvlData/Правила создания уровня.txt, область VI
+// «Глухой край») — круговой индикатор оставшегося HP вокруг атаки, которая не
+// гибнет с одного удара. enemy.element — <img>, дочерние узлы в него не
+// вставить, поэтому кольцо — отдельный mount, синхронизируемый с left/top/
+// transform атаки каждый rAF (тот же приём, что и у стрелы Луки выше). Радиус
+// и вся математика круга — геометрия отрисовки, не игровые данные: ни процент
+// HP, ни длительность паузы, ни множитель рывка здесь не хранятся, только
+// читаются из enemy в момент апдейта (см. updateBarricadeRing).
+const BARRICADE_RING_RADIUS = 16;
+const BARRICADE_RING_CIRCUMFERENCE = 2 * Math.PI * BARRICADE_RING_RADIUS;
+
+function createBarricadeRingMount(enemy) {
+    if (!enemy?.element || !enemiesContainer) return null;
+
+    const mount = document.createElement('div');
+    mount.className = 'barricade-ring-mount';
+    mount.innerHTML = `<svg class="barricade-ring" viewBox="0 0 36 36">` +
+        `<circle class="barricade-ring-bg" cx="18" cy="18" r="${BARRICADE_RING_RADIUS}"></circle>` +
+        `<circle class="barricade-ring-fill" cx="18" cy="18" r="${BARRICADE_RING_RADIUS}" ` +
+        `stroke-dasharray="${BARRICADE_RING_CIRCUMFERENCE}" stroke-dashoffset="0"></circle>` +
+        `</svg>`;
+    enemiesContainer.appendChild(mount);
+    syncBarricadeRingMount(mount, enemy.element);
+    updateBarricadeRing(enemy);
+    return mount;
+}
+
+function syncBarricadeRingMount(mount, enemyEl) {
+    if (!mount?.isConnected) return;
+
+    if (enemyEl?.isConnected) {
+        const renderedStyle = getComputedStyle(enemyEl);
+        mount.style.left = enemyEl.style.left || '0%';
+        mount.style.top = enemyEl.style.top || '0%';
+        mount.style.width = enemyEl.style.width || renderedStyle.width;
+        mount.style.height = renderedStyle.height;
+        mount.style.transform = renderedStyle.transform === 'none'
+            ? 'none'
+            : renderedStyle.transform;
+    }
+
+    // Тот же принцип, что у syncLukaArrowMount: как только mount убран из DOM
+    // (см. Enemy.remove()), проверка выше сразу вернёт false и цикл сам
+    // остановится — отдельный флаг/таймер отмены не нужен.
+    requestAnimationFrame(() => syncBarricadeRingMount(mount, enemyEl));
+}
+
+function updateBarricadeRing(enemy) {
+    if (!enemy?.isBarricade || !enemy.ringMount) return;
+    const fillCircle = enemy.ringMount.querySelector('.barricade-ring-fill');
+    if (!fillCircle) return;
+    const fraction = enemy.maxHP > 0 ? Math.max(0, Math.min(1, enemy.hp / enemy.maxHP)) : 0;
+    fillCircle.style.strokeDashoffset = String(BARRICADE_RING_CIRCUMFERENCE * (1 - fraction));
 }
 
 function showLukaArrowImpact(
