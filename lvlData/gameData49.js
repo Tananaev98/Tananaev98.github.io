@@ -302,17 +302,19 @@ const ENEMY_TYPES = {
 	{ boss: 'enem4', type: 'enem44', xPos: 18, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 18 }, //13 — нежданчик: удар почти без паузы после предыдущего
 	{ boss: 'enem4', type: 'enem44', xPos: 82, yPos: 7,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 19 }, //14
 	{ boss: 'enem4', type: 'enem44', xPos: 45, yPos: 32, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 12 }, //15
-	// звенья «атакующей цепи» — рамка бьёт по прямой, второй заход —
-	// нервный сбой (vertical+irregular), раздел 13.7.
-	{ boss: 'enem4', type: 'enem44', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 18 }, //16 цепь-A звено 1 (голова)
-	{ boss: 'enem4', type: 'enem44', xPos: 52, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 14 }, //17 цепь-A звено 2
-	{ boss: 'enem4', type: 'enem44', xPos: 48, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 11 }, //18 цепь-A звено 3
-	{ boss: 'enem4', type: 'enem44', xPos: 51, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 9 },  //19 цепь-A звено 4
-	{ boss: 'enem4', type: 'enem44', xPos: 20, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 18 }, //20 цепь-B звено 1 (голова)
-	{ boss: 'enem4', type: 'enem44', xPos: 35, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 15 }, //21 цепь-B звено 2
-	{ boss: 'enem4', type: 'enem44', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 12 }, //22 цепь-B звено 3
-	{ boss: 'enem4', type: 'enem44', xPos: 40, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 10 }, //23 цепь-B звено 4
-	{ boss: 'enem4', type: 'enem44', xPos: 55, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 8 },  //24 цепь-B звено 5
+	// звенья «атакующей цепи» — правка 2026-09-16 (снята дубликат-пара с
+	// уровня 48). Обе цепи — irregular: рамка мечется без явного шаблона то
+	// щитом, то оружием, буквально FRAME_FEINT воплощённый в геометрии цепи.
+	{ boss: 'enem4', type: 'enem44', xPos: 20, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 18 }, //16 цепь-A звено 1 (голова, irregular)
+	{ boss: 'enem4', type: 'enem44', xPos: 44, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 15 }, //17 цепь-A звено 2
+	{ boss: 'enem4', type: 'enem44', xPos: 68, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 12 }, //18 цепь-A звено 3
+	{ boss: 'enem4', type: 'enem44', xPos: 44, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 9 },  //19 цепь-A звено 4
+	{ boss: 'enem4', type: 'enem44', xPos: 68, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 7 },  //20 цепь-A звено 5
+	{ boss: 'enem4', type: 'enem44', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 17 }, //21 цепь-B звено 1 (голова, irregular)
+	{ boss: 'enem4', type: 'enem44', xPos: 54, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 14 }, //22 цепь-B звено 2
+	{ boss: 'enem4', type: 'enem44', xPos: 78, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 11 }, //23 цепь-B звено 3
+	{ boss: 'enem4', type: 'enem44', xPos: 54, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 8 },  //24 цепь-B звено 4
+	{ boss: 'enem4', type: 'enem44', xPos: 78, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 6 },  //25 цепь-B звено 5
 
 	// ===== Ульевластница: HIVE_COMMAND — властный покой в начале, резкая
 	// ярость к третьей фазе =====
@@ -332,16 +334,24 @@ const ENEMY_TYPES = {
 	{ boss: 'enem5', type: 'enem55', xPos: 25, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 6 },  //13
 	{ boss: 'enem5', type: 'enem55', xPos: 75, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 6 },  //14
 	{ boss: 'enem5', type: 'enem55', xPos: 45, yPos: 32, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 13 }, //15
-	// звенья «атакующей цепи» — коготь бьёт зигзагом сверху короны, затем
-	// тяжёлый прямой удар вниз (zigzag+vertical), раздел 13.7.
-	{ boss: 'enem5', type: 'enem55', xPos: 20, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 18 }, //16 цепь-A звено 1 (голова)
-	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14 }, //17 цепь-A звено 2
-	{ boss: 'enem5', type: 'enem55', xPos: 25, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 11 }, //18 цепь-A звено 3
-	{ boss: 'enem5', type: 'enem55', xPos: 55, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 8 },  //19 цепь-A звено 4
-	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 18 }, //20 цепь-B звено 1 (голова)
-	{ boss: 'enem5', type: 'enem55', xPos: 52, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14 }, //21 цепь-B звено 2
-	{ boss: 'enem5', type: 'enem55', xPos: 49, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 11 }, //22 цепь-B звено 3
-	{ boss: 'enem5', type: 'enem55', xPos: 51, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 8 },  //23 цепь-B звено 4
+	// звенья «атакующей цепи» — правка 2026-09-16: пространство пар форм для
+	// enem5 почти исчерпано (проверено по всей кампании) — та же пара
+	// "zigzag+vertical", что и на уровне 46, но с ЯВНО другой длиной и
+	// геометрией (зигзаг удлинён с 4 до 7 звеньев — коготь мотает короной
+	// заметно дольше, другое ощущение боя, не тот же паттерн под другим
+	// ярлыком). Раздел 13.8 (широкая уникальность) допускает это как
+	// осознанное исключение при доказанном исчерпании пространства форм.
+	{ boss: 'enem5', type: 'enem55', xPos: 15, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 18 }, //16 цепь-A звено 1 (голова, zigzag×7)
+	{ boss: 'enem5', type: 'enem55', xPos: 45, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 16 }, //17 цепь-A звено 2
+	{ boss: 'enem5', type: 'enem55', xPos: 15, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14 }, //18 цепь-A звено 3
+	{ boss: 'enem5', type: 'enem55', xPos: 45, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 12 }, //19 цепь-A звено 4
+	{ boss: 'enem5', type: 'enem55', xPos: 15, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 10 }, //20 цепь-A звено 5
+	{ boss: 'enem5', type: 'enem55', xPos: 45, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 8 },  //21 цепь-A звено 6
+	{ boss: 'enem5', type: 'enem55', xPos: 15, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 6 },  //22 цепь-A звено 7
+	{ boss: 'enem5', type: 'enem55', xPos: 70, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 16 }, //23 цепь-B звено 1 (голова, vertical)
+	{ boss: 'enem5', type: 'enem55', xPos: 74, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 12 }, //24 цепь-B звено 2
+	{ boss: 'enem5', type: 'enem55', xPos: 68, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 9 },  //25 цепь-B звено 3
+	{ boss: 'enem5', type: 'enem55', xPos: 72, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 7 }   //26 цепь-B звено 4
 ];
 
  const mBossDelayAb = [
@@ -396,8 +406,8 @@ const ENEMY_TYPES = {
 	{ boss: 'enem4', indexAbilities: [6, 7] },
 	{ boss: 'enem4', indexAbilities: [8, 9, 10] },
 	{ boss: 'enem4', indexAbilities: [0, 1, 4] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem4', indexAbilities: [16, 17, 18, 19], isChain: true }, // ← цепь-A (4, vertical)
-	{ boss: 'enem4', indexAbilities: [20, 21, 22, 23, 24], isChain: true }, // ← цепь-B (5, irregular)
+	{ boss: 'enem4', indexAbilities: [16, 17, 18, 19, 20], isChain: true }, // ← цепь-A (5, irregular)
+	{ boss: 'enem4', indexAbilities: [21, 22, 23, 24, 25], isChain: true }, // ← цепь-B (5, irregular)
 	{ boss: 'enem4', indexAbilities: [13, 14] }, // нежданчик: удар почти без паузы после предыдущего
 	{ boss: 'enem4', indexAbilities: [0, 1, 2, 3, 11, 12, 15] }, // сигнатурная: полный захват по всему полю на скорости
 
@@ -408,8 +418,8 @@ const ENEMY_TYPES = {
 	{ boss: 'enem5', indexAbilities: [5, 6] },
 	{ boss: 'enem5', indexAbilities: [9, 10, 11] },
 	{ boss: 'enem5', indexAbilities: [0, 1, 3] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem5', indexAbilities: [16, 17, 18, 19], isChain: true }, // ← цепь-A (4, zigzag)
-	{ boss: 'enem5', indexAbilities: [20, 21, 22, 23], isChain: true }, // ← цепь-B (4, vertical)
+	{ boss: 'enem5', indexAbilities: [16, 17, 18, 19, 20, 21, 22], isChain: true }, // ← цепь-A (7, zigzag)
+	{ boss: 'enem5', indexAbilities: [23, 24, 25, 26], isChain: true }, // ← цепь-B (4, vertical)
 	{ boss: 'enem5', indexAbilities: [12] }, // нежданчик: удар без единого мгновения предупредительного покоя
 	{ boss: 'enem5', indexAbilities: [1, 2, 5, 6, 3, 4, 13, 14] }, // сигнатурная кульминация: вся ярость улья разом по всему полю
  ];

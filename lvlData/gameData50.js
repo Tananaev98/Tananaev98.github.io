@@ -242,14 +242,18 @@ const ENEMY_TYPES = {
 	{ boss: 'enem1', type: 'enem11', xPos: 25, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 5 },  //13 — нежданчик: дуга вдруг рвётся обратным рывком с середины
 	{ boss: 'enem1', type: 'enem11', xPos: 75, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 5 },  //14
 	{ boss: 'enem1', type: 'enem11', xPos: 50, yPos: 32, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, //15
-	// звенья «атакующей цепи» — ровная нить в одну сторону, дважды
-	// (diagonal+diagonal), раздел 13.7.
-	{ boss: 'enem1', type: 'enem11', xPos: 20, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 18 }, //16 цепь-A звено 1 (голова)
-	{ boss: 'enem1', type: 'enem11', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 14 }, //17 цепь-A звено 2
-	{ boss: 'enem1', type: 'enem11', xPos: 80, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 10 }, //18 цепь-A звено 3
-	{ boss: 'enem1', type: 'enem11', xPos: 15, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 18 }, //19 цепь-B звено 1 (голова)
-	{ boss: 'enem1', type: 'enem11', xPos: 45, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 14 }, //20 цепь-B звено 2
-	{ boss: 'enem1', type: 'enem11', xPos: 75, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 10 }, //21 цепь-B звено 3
+	// звенья «атакующей цепи» — правка 2026-09-16 (снята дубликат-пара с
+	// уровня 45). Цепь-A (irregular, 5) — спутывающийся хватающий рывок без
+	// шаблона. Цепь-B (arc, 4) — один committed заход по дуге.
+	{ boss: 'enem1', type: 'enem11', xPos: 20, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 18 }, //16 цепь-A звено 1 (голова, irregular)
+	{ boss: 'enem1', type: 'enem11', xPos: 44, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 15 }, //17 цепь-A звено 2
+	{ boss: 'enem1', type: 'enem11', xPos: 68, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, //18 цепь-A звено 3
+	{ boss: 'enem1', type: 'enem11', xPos: 44, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 9 },  //19 цепь-A звено 4
+	{ boss: 'enem1', type: 'enem11', xPos: 68, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 7 },  //20 цепь-A звено 5
+	{ boss: 'enem1', type: 'enem11', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 17 }, //21 цепь-B звено 1 (голова, arc)
+	{ boss: 'enem1', type: 'enem11', xPos: 52, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 14 }, //22 цепь-B звено 2
+	{ boss: 'enem1', type: 'enem11', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 11 }, //23 цепь-B звено 3
+	{ boss: 'enem1', type: 'enem11', xPos: 8,  yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 8 },  //24 цепь-B звено 4
 
 	// ===== Спутанная: SNATCH_TANGLE — быстрые хватающие рывки, как
 	// выдёргивание запутанной нити =====
@@ -389,8 +393,8 @@ const ENEMY_TYPES = {
 	{ boss: 'enem1', indexAbilities: [7, 8] },
 	{ boss: 'enem1', indexAbilities: [9, 10] },
 	{ boss: 'enem1', indexAbilities: [0, 1, 7] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem1', indexAbilities: [16, 17, 18], isChain: true }, // ← цепь-A (3)
-	{ boss: 'enem1', indexAbilities: [19, 20, 21], isChain: true }, // ← цепь-B (3)
+	{ boss: 'enem1', indexAbilities: [16, 17, 18, 19, 20], isChain: true }, // ← цепь-A (5, irregular)
+	{ boss: 'enem1', indexAbilities: [21, 22, 23, 24], isChain: true }, // ← цепь-B (4, arc)
 	{ boss: 'enem1', indexAbilities: [13, 6, 7] }, // нежданчик: дуга вдруг рвётся обратным рывком с середины
 	{ boss: 'enem1', indexAbilities: [0, 1, 2, 3, 4, 14] }, // сигнатурная: полная дуга слева направо разом
 

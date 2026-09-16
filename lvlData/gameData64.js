@@ -130,7 +130,7 @@ const ENEMY_TYPES = {
         baseDamage: 20,
         spawnWeight: 5,
 		baseExp: 250,
-        size: '20%',
+        size: '32%',
         deathAnimation: { preset: 'default', durationMs: 900 }
     },
     enem2: {
@@ -142,7 +142,7 @@ const ENEMY_TYPES = {
         baseDamage: 22,
         spawnWeight: 15,
 		baseExp: 400,
-        size: '24%',
+        size: '32%',
         deathAnimation: { preset: 'default', durationMs: 900 }
     },
     enem3: {
@@ -154,7 +154,7 @@ const ENEMY_TYPES = {
         baseDamage: 24,
         spawnWeight: 20,
 		baseExp: 600,
-        size: '23%',
+        size: '32%',
         deathAnimation: { preset: 'default', durationMs: 950 }
     },
 
@@ -167,7 +167,7 @@ const ENEMY_TYPES = {
         baseDamage: 26,
         spawnWeight: 10,
 		baseExp: 800,
-        size: '24%',
+        size: '32%',
         deathAnimation: { preset: 'default', durationMs: 950 }
     },
 
@@ -180,7 +180,7 @@ const ENEMY_TYPES = {
         baseDamage: 28,
         spawnWeight: 5,
 		baseExp: 0,
-        size: '27%',
+        size: '32%',
         deathAnimation: { preset: 'default', durationMs: 1000 }
     },
 

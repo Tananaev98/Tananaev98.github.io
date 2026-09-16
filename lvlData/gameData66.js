@@ -70,26 +70,42 @@
 // панели ПОСЛЕ записи файла (verify66.js + STEP 2).
 //
 // БАРРИКАДЫ (раздел 16 lvlData/Правила создания уровня.txt) — у КАЖДОГО из
-// пяти противников есть ровно ОДНА barricade-комбинация (у Засеченя — как
-// у главного носителя темы — сюжетно оправдана именно связкой кольев,
+// пяти противников есть ровно ОДНА barricade-комбинация, у Засеченя — ДВЕ
+// (как у главного носителя темы — сюжетно оправдана именно связкой кольев,
 // которую он в буквальном смысле бросает как метательный барьер).
-// Проценты/паузы посчитаны и ПРОВЕРЕНЫ реальным расчётом раздела 16.2
-// (barricade66.js, три контрольных героя на опорной прокачке кампании 66 —
-// герой-уровень 84 по интерполяции таблицы раздела 13 CLAUDE.md; худший
-// урон отбоя — Лука, 391): enem1 6% (barricadeHP≈1030, 3 удара, 900мс на
-// уничтожение, пауза 1200мс, запас ×1.33); enem2 5% (≈2145, 6 ударов,
-// 1800мс, пауза 2000мс, запас ×1.11); enem3 3% (≈2277, 6 ударов, 1800мс,
-// пауза 2200мс, запас ×1.22); enem4 2.2% (≈2687, 7 ударов, 2100мс, пауза
-// 2600мс, запас ×1.24); enem5 1.8% (≈3327, 9 ударов, 2700мс, пауза 3200мс,
-// запас ×1.19). У enem3-enem5 процент СОЗНАТЕЛЬНО ниже общего рабочего
-// диапазона 3-6% (раздел 16.1) — при буквальных 3-6% для этих ролей число
-// ударов улетало до 9-17 при том же HP отбоя (см. первый прогон
-// barricade66.js), это уже не «несколько секунд», а неоправданно долгий
-// разбор одной атаки; раздел 16.1 прямо разрешает выходить за диапазон
-// «после отдельного расчёта по разделу 16.2» — расчёт сделан, оставлен
-// здесь как след проверки. Ни одна barricade-способность не входит в
-// isChain-комбо (ограничение раздела 16.4). Частота — 1-2 из 8-9 комбо на
-// босса (раздел 16.3), не в каждой серии.
+//
+// ПРАВКА 2026-09-16 (пользователь поймал живьём — «баррикады плохо
+// сбалансированы»): изначальная версия считала HP баррикады как процент от
+// maxHP босса и снимала его РЕАЛЬНЫМ уроном удара — из-за этого число
+// попаданий плавало от героя к герою и от крита к криту (иногда 1 крит
+// убивал баррикаду мгновенно, иногда без крита требовался явный избыток
+// попаданий сверх расчёта), плюс раздел 16.2 в исходной версии заставлял
+// снижать процент ниже заявленного рабочего диапазона для тяжёлых ролей
+// (иначе число ударов улетало до 9-17). Оба симптома — следствие одной
+// причины: честность была завязана на УРОН, который сам по себе шумный
+// (крит/апгрейды/выбор героя). Заменено на честный СЧЁТЧИК УДАРОВ
+// (`barricadeHits`, целое число 3-7, не зависит ни от героя, ни от урона,
+// ни от maxHP босса — см. game.js, applyHeroImpactDamage, ветка
+// enemy.isBarricade снимает ровно 1 HP за попадание). Круговой индикатор
+// оставлен без изменений — он и раньше работал через долю enemy.hp/maxHP,
+// ему всё равно, что именно эти числа означают.
+//
+// СТРОГОЕ ПРАВИЛО БАЛАНСА (прямое требование пользователя, зафиксировано в
+// разделе 16.2): чем больше ударов нужно на баррикаду, тем ДОЛЬШЕ она обязана
+// стоять на месте перед рывком — barricadePauseMs = barricadeHits × 400мс,
+// одна и та же константа для ВСЕХ баррикад игры (не подбирается по герою).
+// Это одновременно даёт строгую монотонность (число ударов растёт → пауза
+// растёт, без исключений) и постоянный запас честности: реальное минимальное
+// время на N ударов подряд — N × 300мс (SHOT_INTERVAL не-боссовых атак,
+// checkAimAndDamage) — то есть пауза всегда ровно в 1.33 раза больше
+// теоретического минимума, независимо от героя и его урона. По ролям:
+// enem1 3 удара/1200мс, enem2 4/1600, enem3 5/2000, enem4 6/2400 (обе
+// способности), enem5 7/2800 — эскалация сложности ролей 1:1 совпадает с
+// эскалацией числа ударов, что и требуется финалу области.
+//
+// Ни одна barricade-способность не входит в isChain-комбо (ограничение
+// раздела 16.4). Частота — 1-2 из 8-9 комбо на босса (раздел 16.3), не в
+// каждой серии.
 let lvlNumber = 66;
 
 const bossCombatConfig = {
@@ -152,7 +168,7 @@ const ENEMY_TYPES = {
         baseDamage: 20,
         spawnWeight: 5,
 		baseExp: 250,
-        size: '20%',
+        size: '32%',
         deathAnimation: { preset: 'default', durationMs: 900 }
     },
     enem2: {
@@ -164,7 +180,7 @@ const ENEMY_TYPES = {
         baseDamage: 22,
         spawnWeight: 15,
 		baseExp: 400,
-        size: '23%',
+        size: '32%',
         deathAnimation: { preset: 'default', durationMs: 900 }
     },
     enem3: {
@@ -176,7 +192,7 @@ const ENEMY_TYPES = {
         baseDamage: 24,
         spawnWeight: 20,
 		baseExp: 600,
-        size: '22%',
+        size: '32%',
         deathAnimation: { preset: 'default', durationMs: 950 }
     },
 
@@ -189,7 +205,7 @@ const ENEMY_TYPES = {
         baseDamage: 26,
         spawnWeight: 10,
 		baseExp: 800,
-        size: '25%',
+        size: '32%',
         deathAnimation: { preset: 'default', durationMs: 950 }
     },
 
@@ -202,7 +218,7 @@ const ENEMY_TYPES = {
         baseDamage: 28,
         spawnWeight: 5,
 		baseExp: 0,
-        size: '28%',
+        size: '32%',
         deathAnimation: { preset: 'default', durationMs: 1000 }
     },
 
@@ -240,7 +256,7 @@ const ENEMY_TYPES = {
 	// БАРРИКАДА (раздел 16): толстая обломившаяся ветвь, застревает в
 	// воздухе — требует несколько ударов, прежде чем сорвётся вперёд.
 	{ boss: 'enem1', type: 'enem11', xPos: 50, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 6,
-	  barricadeHpPercent: 6, barricadePauseMs: 1200, barricadeRushSpeedMultiplier: 2.2 }, //16b
+	  barricadeHits: 3, barricadePauseMs: 1200, barricadeRushSpeedMultiplier: 2.2 }, //16b
 	// звенья «атакующей цепи» — широкий хлёст веткой по дуге, затем
 	// прямой лёгкий удар наискось (arc+diagonal), раздел 13.7.
 	{ boss: 'enem1', type: 'enem11', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 18 }, //17 цепь-A звено 1 (голова)
@@ -272,7 +288,7 @@ const ENEMY_TYPES = {
 	// БАРРИКАДА (раздел 16): застывший ком смолы, твёрдый и вязкий —
 	// нужно расколоть несколькими ударами, прежде чем он долетит.
 	{ boss: 'enem2', type: 'enem22', xPos: 50, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 6,
-	  barricadeHpPercent: 5, barricadePauseMs: 2000, barricadeRushSpeedMultiplier: 2.3 }, //16b
+	  barricadeHits: 4, barricadePauseMs: 1600, barricadeRushSpeedMultiplier: 2.3 }, //16b
 	// звенья «атакующей цепи» — бросок смолы широкой дугой, затем капля
 	// падает прямо вниз (arc+vertical), раздел 13.7.
 	{ boss: 'enem2', type: 'enem22', xPos: 20, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 18 }, //17 цепь-A звено 1 (голова)
@@ -304,7 +320,7 @@ const ENEMY_TYPES = {
 	// БАРРИКАДА (раздел 16): ком вырванной дёрном земли и корней,
 	// подброшенный лапой — плотный, требует несколько ударов.
 	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 6,
-	  barricadeHpPercent: 3, barricadePauseMs: 2200, barricadeRushSpeedMultiplier: 2.4 }, //16b
+	  barricadeHits: 5, barricadePauseMs: 2000, barricadeRushSpeedMultiplier: 2.4 }, //16b
 	// звенья «атакующей цепи» — наступающий шаг по диагонали, затем
 	// прямой клевок вниз (diagonal+vertical), раздел 13.7.
 	{ boss: 'enem3', type: 'enem33', xPos: 25, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 18 }, //17 цепь-A звено 1 (голова)
@@ -339,9 +355,9 @@ const ENEMY_TYPES = {
 	// (сюжетно оправдано — это его основной инструмент, не случайная
 	// деталь), но не в каждой серии (раздел 16.3: 2 из 9 комбо этого босса).
 	{ boss: 'enem4', type: 'enem44', xPos: 30, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 5,
-	  barricadeHpPercent: 2.2, barricadePauseMs: 2600, barricadeRushSpeedMultiplier: 2.5 }, //16b
+	  barricadeHits: 6, barricadePauseMs: 2400, barricadeRushSpeedMultiplier: 2.5 }, //16b
 	{ boss: 'enem4', type: 'enem44', xPos: 70, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 5,
-	  barricadeHpPercent: 2.2, barricadePauseMs: 2600, barricadeRushSpeedMultiplier: 2.5 }, //17b
+	  barricadeHits: 6, barricadePauseMs: 2400, barricadeRushSpeedMultiplier: 2.5 }, //17b
 	// звенья «атакующей цепи» — два одинаковых прямых удара топором
 	// подряд, методичный рубящий ритм (vertical+vertical), раздел 13.7.
 	{ boss: 'enem4', type: 'enem44', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 18 }, //18 цепь-A звено 1 (голова)
@@ -374,7 +390,7 @@ const ENEMY_TYPES = {
 	// БАРРИКАДА (раздел 16): цельный обломок корня, самая крупная и
 	// стойкая баррикада уровня — соответствует финальной роли Дымокора.
 	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 6,
-	  barricadeHpPercent: 1.8, barricadePauseMs: 3200, barricadeRushSpeedMultiplier: 2.6 }, //16b
+	  barricadeHits: 7, barricadePauseMs: 2800, barricadeRushSpeedMultiplier: 2.6 }, //16b
 	// звенья «атакующей цепи» — два решительных броска корнем с
 	// нарастающей длиной (diagonal+diagonal), раздел 13.7 — финальная
 	// кульминация, самая длинная цепь уровня.

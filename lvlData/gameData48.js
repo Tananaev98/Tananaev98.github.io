@@ -218,16 +218,19 @@ const ENEMY_TYPES = {
 	{ boss: 'enem1', type: 'enem11', xPos: 55, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 5 },  //13
 	{ boss: 'enem1', type: 'enem11', xPos: 20, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 20 }, //14 точка A
 	{ boss: 'enem1', type: 'enem11', xPos: 80, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 22 }, //15 точка B
-	// звенья «атакующей цепи» — прыжок по дуге, затем разбросанные точки
-	// хвата (arc+irregular), раздел 13.7.
-	{ boss: 'enem1', type: 'enem11', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 18 }, //16 цепь-A звено 1 (голова)
-	{ boss: 'enem1', type: 'enem11', xPos: 55, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 14 }, //17 цепь-A звено 2
-	{ boss: 'enem1', type: 'enem11', xPos: 35, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 11 }, //18 цепь-A звено 3
-	{ boss: 'enem1', type: 'enem11', xPos: 70, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 18 }, //19 цепь-B звено 1 (голова)
-	{ boss: 'enem1', type: 'enem11', xPos: 55, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 15 }, //20 цепь-B звено 2
-	{ boss: 'enem1', type: 'enem11', xPos: 40, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, //21 цепь-B звено 3
-	{ boss: 'enem1', type: 'enem11', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 10 }, //22 цепь-B звено 4
-	{ boss: 'enem1', type: 'enem11', xPos: 35, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 8 },  //23 цепь-B звено 5
+	// звенья «атакующей цепи» — правка 2026-09-16 (снята дубликат-пара с
+	// уровня 44). Цепь-A (irregular, 5) — хват мечется по разбросанным точкам
+	// без явного шаблона. Цепь-B (diagonal, 4) — один решительный проход по
+	// диагонали.
+	{ boss: 'enem1', type: 'enem11', xPos: 15, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 18 }, //16 цепь-A звено 1 (голова, irregular)
+	{ boss: 'enem1', type: 'enem11', xPos: 39, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 15 }, //17 цепь-A звено 2
+	{ boss: 'enem1', type: 'enem11', xPos: 63, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, //18 цепь-A звено 3
+	{ boss: 'enem1', type: 'enem11', xPos: 39, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 9 },  //19 цепь-A звено 4
+	{ boss: 'enem1', type: 'enem11', xPos: 63, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 7 },  //20 цепь-A звено 5
+	{ boss: 'enem1', type: 'enem11', xPos: 12, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 16 }, //21 цепь-B звено 1 (голова, diagonal)
+	{ boss: 'enem1', type: 'enem11', xPos: 32, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, //22 цепь-B звено 2
+	{ boss: 'enem1', type: 'enem11', xPos: 52, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 9 },  //23 цепь-B звено 3
+	{ boss: 'enem1', type: 'enem11', xPos: 72, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 6 },  //24 цепь-B звено 4
 
 	// ===== Кандальник: FOUR_LIMB_LASH — атаки вращаются по четырём точкам
 	// разом, быстро, без явного порядка =====
@@ -336,17 +339,15 @@ const ENEMY_TYPES = {
 	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 28 }, //13 — нежданчик: багор и канат разом с обеих сторон
 	{ boss: 'enem5', type: 'enem55', xPos: 25, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 6 },  //14
 	{ boss: 'enem5', type: 'enem55', xPos: 75, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 6 },  //15
-	// звенья «атакующей цепи» — багор дёргается зигзагом, канат метёт
-	// хаотичной дугой (zigzag+irregular), раздел 13.7.
-	{ boss: 'enem5', type: 'enem55', xPos: 25, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 18 }, //16 цепь-A звено 1 (голова)
-	{ boss: 'enem5', type: 'enem55', xPos: 55, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14 }, //17 цепь-A звено 2
-	{ boss: 'enem5', type: 'enem55', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 11 }, //18 цепь-A звено 3
-	{ boss: 'enem5', type: 'enem55', xPos: 60, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 8 },  //19 цепь-A звено 4
-	{ boss: 'enem5', type: 'enem55', xPos: 70, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 18 }, //20 цепь-B звено 1 (голова)
-	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 15 }, //21 цепь-B звено 2
-	{ boss: 'enem5', type: 'enem55', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 12 }, //22 цепь-B звено 3
-	{ boss: 'enem5', type: 'enem55', xPos: 45, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 10 }, //23 цепь-B звено 4
-	{ boss: 'enem5', type: 'enem55', xPos: 25, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 8 },  //24 цепь-B звено 5
+	// звенья «атакующей цепи» — правка 2026-09-16 (снята дубликат-пара с
+	// уровня 47). Цепь-A (arc, 3) — багор взмахивает и возвращается. Цепь-B
+	// (vertical, 3) — канат наматывается почти на одном месте.
+	{ boss: 'enem5', type: 'enem55', xPos: 25, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 16 }, //16 цепь-A звено 1 (голова, arc)
+	{ boss: 'enem5', type: 'enem55', xPos: 47, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 12 }, //17 цепь-A звено 2
+	{ boss: 'enem5', type: 'enem55', xPos: 25, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 9 },  //18 цепь-A звено 3
+	{ boss: 'enem5', type: 'enem55', xPos: 70, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 15 }, //19 цепь-B звено 1 (голова, vertical)
+	{ boss: 'enem5', type: 'enem55', xPos: 74, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 11 }, //20 цепь-B звено 2
+	{ boss: 'enem5', type: 'enem55', xPos: 68, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 8 }   //21 цепь-B звено 3
 ];
 
  const mBossDelayAb = [
@@ -365,8 +366,8 @@ const ENEMY_TYPES = {
 	{ boss: 'enem1', indexAbilities: [6, 7] },
 	{ boss: 'enem1', indexAbilities: [8, 14, 9, 15] },
 	{ boss: 'enem1', indexAbilities: [0, 1, 6] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem1', indexAbilities: [16, 17, 18], isChain: true }, // ← цепь-A (3, arc)
-	{ boss: 'enem1', indexAbilities: [19, 20, 21, 22, 23], isChain: true }, // ← цепь-B (5, irregular)
+	{ boss: 'enem1', indexAbilities: [16, 17, 18, 19, 20], isChain: true }, // ← цепь-A (5, irregular)
+	{ boss: 'enem1', indexAbilities: [21, 22, 23, 24], isChain: true }, // ← цепь-B (4, diagonal)
 	{ boss: 'enem1', indexAbilities: [12, 13] }, // нежданчик: большой прыжок в новую точку
 	{ boss: 'enem1', indexAbilities: [0, 1, 10, 2, 3, 11] }, // сигнатурная: обе точки хвата разом на полной скорости
 
@@ -413,8 +414,8 @@ const ENEMY_TYPES = {
 	{ boss: 'enem5', indexAbilities: [6, 7] },
 	{ boss: 'enem5', indexAbilities: [10, 11, 12] },
 	{ boss: 'enem5', indexAbilities: [0, 1, 4] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem5', indexAbilities: [16, 17, 18, 19], isChain: true }, // ← цепь-A (4, zigzag)
-	{ boss: 'enem5', indexAbilities: [20, 21, 22, 23, 24], isChain: true }, // ← цепь-B (5, irregular)
+	{ boss: 'enem5', indexAbilities: [16, 17, 18], isChain: true }, // ← цепь-A (3, arc)
+	{ boss: 'enem5', indexAbilities: [19, 20, 21], isChain: true }, // ← цепь-B (3, vertical)
 	{ boss: 'enem5', indexAbilities: [13] }, // нежданчик: багор и канат разом с обеих сторон
 	{ boss: 'enem5', indexAbilities: [0, 2, 6, 1, 3, 7, 14, 15] }, // сигнатурная кульминация: багор и канат по всему полю подряд
  ];

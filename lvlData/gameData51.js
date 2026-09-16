@@ -129,7 +129,7 @@ const ENEMY_TYPES = {
         baseDamage: 20,
         spawnWeight: 5,
 		baseExp: 250,
-        size: '23%',
+        size: '35%',
         deathAnimation: { preset: 'default', durationMs: 900 }
     },
     enem2: {
@@ -141,7 +141,7 @@ const ENEMY_TYPES = {
         baseDamage: 22,
         spawnWeight: 15,
 		baseExp: 400,
-        size: '23%',
+        size: '35%',
         deathAnimation: { preset: 'default', durationMs: 900 }
     },
     enem3: {
@@ -153,7 +153,7 @@ const ENEMY_TYPES = {
         baseDamage: 24,
         spawnWeight: 20,
 		baseExp: 600,
-        size: '25%',
+        size: '35%',
         deathAnimation: { preset: 'default', durationMs: 950 }
     },
 
@@ -166,7 +166,7 @@ const ENEMY_TYPES = {
         baseDamage: 26,
         spawnWeight: 10,
 		baseExp: 800,
-        size: '24%',
+        size: '35%',
         deathAnimation: { preset: 'default', durationMs: 950 }
     },
 
@@ -179,7 +179,7 @@ const ENEMY_TYPES = {
         baseDamage: 28,
         spawnWeight: 5,
 		baseExp: 0,
-        size: '26%',
+        size: '40%',
         deathAnimation: { preset: 'default', durationMs: 1000 }
     },
 
@@ -271,17 +271,18 @@ const ENEMY_TYPES = {
 	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 46, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 4 },  //13
 	{ boss: 'enem3', type: 'enem33', xPos: 25, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 5 },  //14 — нежданчик: бросок без скручивания, сразу
 	{ boss: 'enem3', type: 'enem33', xPos: 75, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 5 },  //15
-	// звенья «атакующей цепи» — плеть закручивается почти на месте, затем
-	// хаотичный бросок (vertical+irregular), раздел 13.7.
-	{ boss: 'enem3', type: 'enem33', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 18 }, //16 цепь-A звено 1 (голова)
-	{ boss: 'enem3', type: 'enem33', xPos: 32, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 14 }, //17 цепь-A звено 2
-	{ boss: 'enem3', type: 'enem33', xPos: 29, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 11 }, //18 цепь-A звено 3
-	{ boss: 'enem3', type: 'enem33', xPos: 31, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 8 },  //19 цепь-A звено 4
-	{ boss: 'enem3', type: 'enem33', xPos: 70, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 18 }, //20 цепь-B звено 1 (голова)
-	{ boss: 'enem3', type: 'enem33', xPos: 55, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 15 }, //21 цепь-B звено 2
-	{ boss: 'enem3', type: 'enem33', xPos: 40, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 12 }, //22 цепь-B звено 3
-	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 10 }, //23 цепь-B звено 4
-	{ boss: 'enem3', type: 'enem33', xPos: 35, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 8 },  //24 цепь-B звено 5
+	// звенья «атакующей цепи» — правка 2026-09-16 (снята дубликат-пара с
+	// уровня 46). Цепь-A (irregular, 5) — плеть закручивается без явного
+	// шаблона. Цепь-B (zigzag, 4) — резкие чёткие броски туда-сюда.
+	{ boss: 'enem3', type: 'enem33', xPos: 20, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 18 }, //16 цепь-A звено 1 (голова, irregular)
+	{ boss: 'enem3', type: 'enem33', xPos: 44, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 15 }, //17 цепь-A звено 2
+	{ boss: 'enem3', type: 'enem33', xPos: 68, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 12 }, //18 цепь-A звено 3
+	{ boss: 'enem3', type: 'enem33', xPos: 44, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 9 },  //19 цепь-A звено 4
+	{ boss: 'enem3', type: 'enem33', xPos: 68, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 7 },  //20 цепь-A звено 5
+	{ boss: 'enem3', type: 'enem33', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 17 }, //21 цепь-B звено 1 (голова, zigzag)
+	{ boss: 'enem3', type: 'enem33', xPos: 5,  yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 13 }, //22 цепь-B звено 2
+	{ boss: 'enem3', type: 'enem33', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 9 },  //23 цепь-B звено 3
+	{ boss: 'enem3', type: 'enem33', xPos: 5,  yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 6 },  //24 цепь-B звено 4
 
 	// ===== Драняк: WIND_FLAP — долгое затишье, будто ткань без ветра,
 	// затем внезапный порыв разом по всем направлениям =====
@@ -380,8 +381,8 @@ const ENEMY_TYPES = {
 	{ boss: 'enem3', indexAbilities: [7, 8] },
 	{ boss: 'enem3', indexAbilities: [9, 10] },
 	{ boss: 'enem3', indexAbilities: [0, 1, 7] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem3', indexAbilities: [16, 17, 18, 19], isChain: true }, // ← цепь-A (4, vertical)
-	{ boss: 'enem3', indexAbilities: [20, 21, 22, 23, 24], isChain: true }, // ← цепь-B (5, irregular)
+	{ boss: 'enem3', indexAbilities: [16, 17, 18, 19, 20], isChain: true }, // ← цепь-A (5, irregular)
+	{ boss: 'enem3', indexAbilities: [21, 22, 23, 24], isChain: true }, // ← цепь-B (4, zigzag)
 	{ boss: 'enem3', indexAbilities: [14] }, // нежданчик: бросок без скручивания, сразу
 	{ boss: 'enem3', indexAbilities: [0, 1, 10, 11, 4, 12] }, // сигнатурная: скручивание и бросок с обеих сторон подряд
 

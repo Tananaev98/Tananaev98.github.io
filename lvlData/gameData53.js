@@ -121,7 +121,7 @@ const ENEMY_TYPES = {
         baseDamage: 20,
         spawnWeight: 5,
 		baseExp: 250,
-        size: '25%',
+        size: '32%',
         deathAnimation: { preset: 'default', durationMs: 900 }
     },
     enem2: {
@@ -133,7 +133,7 @@ const ENEMY_TYPES = {
         baseDamage: 22,
         spawnWeight: 15,
 		baseExp: 400,
-        size: '22%',
+        size: '32%',
         deathAnimation: { preset: 'default', durationMs: 900 }
     },
     enem3: {
@@ -145,7 +145,7 @@ const ENEMY_TYPES = {
         baseDamage: 24,
         spawnWeight: 20,
 		baseExp: 600,
-        size: '24%',
+        size: '32%',
         deathAnimation: { preset: 'default', durationMs: 950 }
     },
 
@@ -158,7 +158,7 @@ const ENEMY_TYPES = {
         baseDamage: 26,
         spawnWeight: 10,
 		baseExp: 800,
-        size: '24%',
+        size: '32%',
         deathAnimation: { preset: 'default', durationMs: 950 }
     },
 
@@ -171,7 +171,7 @@ const ENEMY_TYPES = {
         baseDamage: 28,
         spawnWeight: 5,
 		baseExp: 0,
-        size: '26%',
+        size: '32%',
         deathAnimation: { preset: 'default', durationMs: 1000 }
     },
 
@@ -206,17 +206,19 @@ const ENEMY_TYPES = {
 	{ boss: 'enem1', type: 'enem11', xPos: 25, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 18 }, //13 — нежданчик: второй замах сразу следом без обычной большой паузы
 	{ boss: 'enem1', type: 'enem11', xPos: 75, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 5 },  //14
 	{ boss: 'enem1', type: 'enem11', xPos: 50, yPos: 46, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 4 },  //15
-	// звенья «атакующей цепи» — замах раскачивается зигзагом, доигрывая
-	// инерцию, затем хаотичный отскок (zigzag+irregular), раздел 13.7.
-	{ boss: 'enem1', type: 'enem11', xPos: 20, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 18 }, //16 цепь-A звено 1 (голова)
-	{ boss: 'enem1', type: 'enem11', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 14 }, //17 цепь-A звено 2
-	{ boss: 'enem1', type: 'enem11', xPos: 25, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 11 }, //18 цепь-A звено 3
-	{ boss: 'enem1', type: 'enem11', xPos: 55, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 8 },  //19 цепь-A звено 4
-	{ boss: 'enem1', type: 'enem11', xPos: 70, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 18 }, //20 цепь-B звено 1 (голова)
-	{ boss: 'enem1', type: 'enem11', xPos: 55, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 15 }, //21 цепь-B звено 2
-	{ boss: 'enem1', type: 'enem11', xPos: 40, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, //22 цепь-B звено 3
-	{ boss: 'enem1', type: 'enem11', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 10 }, //23 цепь-B звено 4
-	{ boss: 'enem1', type: 'enem11', xPos: 35, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 8 },  //24 цепь-B звено 5
+	// звенья «атакующей цепи» — правка 2026-09-16 (снята дубликат-пара с
+	// уровня 47). Обе цепи — irregular: замах теряет счёт собственной
+	// инерции, мотается без единого шаблона в обоих заходах.
+	{ boss: 'enem1', type: 'enem11', xPos: 15, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 18 }, //16 цепь-A звено 1 (голова, irregular)
+	{ boss: 'enem1', type: 'enem11', xPos: 39, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 15 }, //17 цепь-A звено 2
+	{ boss: 'enem1', type: 'enem11', xPos: 63, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, //18 цепь-A звено 3
+	{ boss: 'enem1', type: 'enem11', xPos: 39, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 9 },  //19 цепь-A звено 4
+	{ boss: 'enem1', type: 'enem11', xPos: 63, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 7 },  //20 цепь-A звено 5
+	{ boss: 'enem1', type: 'enem11', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 17 }, //21 цепь-B звено 1 (голова, irregular)
+	{ boss: 'enem1', type: 'enem11', xPos: 54, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 14 }, //22 цепь-B звено 2
+	{ boss: 'enem1', type: 'enem11', xPos: 78, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 11 }, //23 цепь-B звено 3
+	{ boss: 'enem1', type: 'enem11', xPos: 54, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 8 },  //24 цепь-B звено 4
+	{ boss: 'enem1', type: 'enem11', xPos: 78, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 6 },  //25 цепь-B звено 5
 
 	// ===== Батожок: MARIONETTE_JERK — быстрые дискретные «прыжки» между
 	// позициями без плавного перехода, как кукла на нитях =====
@@ -236,16 +238,20 @@ const ENEMY_TYPES = {
 	{ boss: 'enem2', type: 'enem22', xPos: 78, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 20 }, //13
 	{ boss: 'enem2', type: 'enem22', xPos: 45, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 5 },  //14
 	{ boss: 'enem2', type: 'enem22', xPos: 60, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 4 },  //15
-	// звенья «атакующей цепи» — дёрганые рывки нитей вразнобой, затем
-	// прямой укол дубинкой (irregular+vertical), раздел 13.7.
-	{ boss: 'enem2', type: 'enem22', xPos: 20, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 18 }, //16 цепь-A звено 1 (голова)
+	// звенья «атакующей цепи» — правка 2026-09-16 (снята дубликат-пара с
+	// уровня 46). Цепь-A (irregular, 5) не тронута. Цепь-B теперь тоже
+	// irregular (6) — второй заход дёргается так же непредсказуемо, вместо
+	// прямого укола дубинкой.
+	{ boss: 'enem2', type: 'enem22', xPos: 20, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 18 }, //16 цепь-A звено 1 (голова, irregular)
 	{ boss: 'enem2', type: 'enem22', xPos: 35, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 15 }, //17 цепь-A звено 2
 	{ boss: 'enem2', type: 'enem22', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 12 }, //18 цепь-A звено 3
 	{ boss: 'enem2', type: 'enem22', xPos: 40, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 10 }, //19 цепь-A звено 4
 	{ boss: 'enem2', type: 'enem22', xPos: 55, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 8 },  //20 цепь-A звено 5
-	{ boss: 'enem2', type: 'enem22', xPos: 70, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 18 }, //21 цепь-B звено 1 (голова)
-	{ boss: 'enem2', type: 'enem22', xPos: 72, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 14 }, //22 цепь-B звено 2
-	{ boss: 'enem2', type: 'enem22', xPos: 69, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 10 }, //23 цепь-B звено 3
+	{ boss: 'enem2', type: 'enem22', xPos: 60, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 17 }, //21 цепь-B звено 1 (голова, irregular)
+	{ boss: 'enem2', type: 'enem22', xPos: 84, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 14 }, //22 цепь-B звено 2
+	{ boss: 'enem2', type: 'enem22', xPos: 92, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 11 }, //23 цепь-B звено 3
+	{ boss: 'enem2', type: 'enem22', xPos: 68, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 8 },  //24 цепь-B звено 4
+	{ boss: 'enem2', type: 'enem22', xPos: 92, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 6 },  //25 цепь-B звено 5
 
 	// ===== Гиревик: SCALE_TIP — весы медленно клонятся то в одну, то в
 	// другую сторону, изредка резко перевешивают обеими чашами разом =====
@@ -265,16 +271,20 @@ const ENEMY_TYPES = {
 	{ boss: 'enem3', type: 'enem33', xPos: 25, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 5 },  //13 — нежданчик: перевес раньше привычного долгого клонения
 	{ boss: 'enem3', type: 'enem33', xPos: 75, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 5 },  //14
 	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 32, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 12 }, //15
-	// звенья «атакующей цепи» — чаша уходит вниз дугой, затем полный
-	// хаотичный перевес (arc+irregular), раздел 13.7.
-	{ boss: 'enem3', type: 'enem33', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 18 }, //16 цепь-A звено 1 (голова)
-	{ boss: 'enem3', type: 'enem33', xPos: 55, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 14 }, //17 цепь-A звено 2
-	{ boss: 'enem3', type: 'enem33', xPos: 35, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 10 }, //18 цепь-A звено 3
-	{ boss: 'enem3', type: 'enem33', xPos: 70, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 18 }, //19 цепь-B звено 1 (голова)
-	{ boss: 'enem3', type: 'enem33', xPos: 55, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 15 }, //20 цепь-B звено 2
-	{ boss: 'enem3', type: 'enem33', xPos: 40, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 12 }, //21 цепь-B звено 3
-	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 10 }, //22 цепь-B звено 4
-	{ boss: 'enem3', type: 'enem33', xPos: 35, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 8 },  //23 цепь-B звено 5
+	// звенья «атакующей цепи» — правка 2026-09-16 (снята дубликат-пара с
+	// уровня 44). Обе цепи теперь irregular — весы клонятся то в одну, то в
+	// другую сторону без предсказуемого нарастания, полный хаотичный перевес
+	// в обоих заходах.
+	{ boss: 'enem3', type: 'enem33', xPos: 15, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 18 }, //16 цепь-A звено 1 (голова, irregular)
+	{ boss: 'enem3', type: 'enem33', xPos: 39, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 14 }, //17 цепь-A звено 2
+	{ boss: 'enem3', type: 'enem33', xPos: 63, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 10 }, //18 цепь-A звено 3
+	{ boss: 'enem3', type: 'enem33', xPos: 39, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 7 },  //19 цепь-A звено 4
+	{ boss: 'enem3', type: 'enem33', xPos: 63, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 5 },  //20 цепь-A звено 5
+	{ boss: 'enem3', type: 'enem33', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 17 }, //21 цепь-B звено 1 (голова, irregular)
+	{ boss: 'enem3', type: 'enem33', xPos: 54, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 14 }, //22 цепь-B звено 2
+	{ boss: 'enem3', type: 'enem33', xPos: 62, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 11 }, //23 цепь-B звено 3
+	{ boss: 'enem3', type: 'enem33', xPos: 38, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 8 },  //24 цепь-B звено 4
+	{ boss: 'enem3', type: 'enem33', xPos: 62, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 6 },  //25 цепь-B звено 5
 
 	// ===== Горлопан: HAWKER_BARRAGE — непрерывный частый залп одиночных
 	// выкриков-ударов почти без пауз =====
@@ -350,8 +360,8 @@ const ENEMY_TYPES = {
 	{ boss: 'enem1', indexAbilities: [3, 4] },
 	{ boss: 'enem1', indexAbilities: [5, 6] },
 	{ boss: 'enem1', indexAbilities: [0, 1] }, // same-start-стиль пара двух одиночных замахов подряд
-	{ boss: 'enem1', indexAbilities: [16, 17, 18, 19], isChain: true }, // ← цепь-A (4, zigzag)
-	{ boss: 'enem1', indexAbilities: [20, 21, 22, 23, 24], isChain: true }, // ← цепь-B (5, irregular)
+	{ boss: 'enem1', indexAbilities: [16, 17, 18, 19, 20], isChain: true }, // ← цепь-A (5, irregular)
+	{ boss: 'enem1', indexAbilities: [21, 22, 23, 24, 25], isChain: true }, // ← цепь-B (5, irregular)
 	{ boss: 'enem1', indexAbilities: [13, 9] }, // нежданчик: второй замах сразу следом без обычной паузы
 	{ boss: 'enem1', indexAbilities: [0, 3, 5, 1, 4, 6] }, // сигнатурная: серия силовых замахов по всему полю подряд
 
@@ -363,7 +373,7 @@ const ENEMY_TYPES = {
 	{ boss: 'enem2', indexAbilities: [8, 9, 14, 15] },
 	{ boss: 'enem2', indexAbilities: [0, 1, 4] }, // same-start с [0,1], расходится быстрым акцентом
 	{ boss: 'enem2', indexAbilities: [16, 17, 18, 19, 20], isChain: true }, // ← цепь-A (5, irregular)
-	{ boss: 'enem2', indexAbilities: [21, 22, 23], isChain: true }, // ← цепь-B (3, vertical)
+	{ boss: 'enem2', indexAbilities: [21, 22, 23, 24, 25], isChain: true }, // ← цепь-B (5, irregular)
 	{ boss: 'enem2', indexAbilities: [12, 13] }, // нежданчик: прыжок сразу через всё поле по диагонали
 	{ boss: 'enem2', indexAbilities: [0, 2, 4, 6, 1, 3, 5, 7] }, // сигнатурная: серия резких прыжков по всему полю подряд
 
@@ -374,8 +384,8 @@ const ENEMY_TYPES = {
 	{ boss: 'enem3', indexAbilities: [7, 8] },
 	{ boss: 'enem3', indexAbilities: [9, 10] },
 	{ boss: 'enem3', indexAbilities: [0, 1, 7] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem3', indexAbilities: [16, 17, 18], isChain: true }, // ← цепь-A (3, arc)
-	{ boss: 'enem3', indexAbilities: [19, 20, 21, 22, 23], isChain: true }, // ← цепь-B (5, irregular)
+	{ boss: 'enem3', indexAbilities: [16, 17, 18, 19, 20], isChain: true }, // ← цепь-A (5, irregular)
+	{ boss: 'enem3', indexAbilities: [21, 22, 23, 24, 25], isChain: true }, // ← цепь-B (5, irregular)
 	{ boss: 'enem3', indexAbilities: [13, 14] }, // нежданчик: перевес раньше привычного долгого клонения
 	{ boss: 'enem3', indexAbilities: [0, 2, 10, 1, 3, 11] }, // сигнатурная: полный перевес с обеих чаш разом
 

@@ -354,18 +354,35 @@ function renderTable(rows) {
     // movementStyle), а любое буквальное совпадение сигнатуры "форма+форма" —
     // именно так уровни 41/42/43 остались бы незамеченными (перекос там был
     // не статистический шум, а СТОПРОЦЕНТНЫЙ повтор одного и того же шаблона).
+    //
+    // Ревизия 2026-09-16 (раздел 13.8 lvlData/Правила создания уровня.txt):
+    // пространство пар форм (5 форм × 2 цепи = 25 комбинаций на роль) к
+    // уровню ~55 оказалось математически исчерпано для всех пяти ролей —
+    // подтверждено разбором campaign-wide, не один нашумевший случай. Когда
+    // свежей формы физически не остаётся, допустимое исключение — та же
+    // форма, но с ЯВНО другой длиной цепи (не разница в 1 звено, а заметно
+    // другое ощущение боя). Сигнатура дубликата поэтому включает длину
+    // (`форма@длины`), а не только форму — иначе панель продолжала бы
+    // ошибочно ругаться на уже осознанно разведённые по длине пары (см.
+    // историю правок уровней 49/50/52/54/55 — Жалохват/Ульевластница/
+    // Свалявшаяся Кикимора/Жерновик/Скрипень/Скамейник/Глазок/Домовой/
+    // Оскорблённый Домовой). Голая форма без длины по-прежнему видна в
+    // столбце «ЦЕПЬ: ФОРМА» — просто перестаёт быть ЕДИНСТВЕННЫМ критерием
+    // дубликата.
     const chainSigByRole = {};
     for (const r of rows) {
         if (!r.chainShapes) continue;
+        const sig = r.chainShapes + '@' + r.chainLengths;
         (chainSigByRole[r.boss] ||= {});
-        chainSigByRole[r.boss][r.chainShapes] = (chainSigByRole[r.boss][r.chainShapes] || 0) + 1;
+        chainSigByRole[r.boss][sig] = (chainSigByRole[r.boss][sig] || 0) + 1;
     }
 
     const body = rows.map((r) => {
         const total = totalByRole[r.boss] || 1;
         const count = byRole[r.boss]?.[r.movementStyle] || 0;
         const warn = (count / total) > 0.30 && total >= 5;
-        const chainWarn = r.chainShapes && (chainSigByRole[r.boss]?.[r.chainShapes] || 0) > 1;
+        const chainSig = r.chainShapes ? (r.chainShapes + '@' + r.chainLengths) : '';
+        const chainWarn = chainSig && (chainSigByRole[r.boss]?.[chainSig] || 0) > 1;
         return `<tr class="${warn ? 'stat-warn' : ''}">
             <td>${r.level}</td><td>${r.boss}</td><td>${r.role}</td><td>${r.name}</td>
             <td class="${warn ? 'num-bad' : ''}">${r.movementStyle}</td>

@@ -2012,20 +2012,25 @@ function executeBossEvent() {
                 );
 
                 // «Баррикада» (раздел 13.8 lvlData/Правила создания уровня.txt) —
-                // atack.barricadeHpPercent помечает атаку как баррикаду; её реальный
-                // HP считается ЗДЕСЬ (не в gameData) как процент от maxHP ТЕКУЩЕГО
-                // облика босса — та же логика "формула в движке, число в данных",
-                // что и у centralized HP боссов. Страховка BARRICADE_MAX_CONCURRENT/
+                // ПРАВКА 2026-09-16: раньше HP баррикады считался как процент от
+                // maxHP босса и снимался НАСТОЯЩИМ уроном удара — из-за этого число
+                // реальных попаданий плавало от героя к герою и от крита к криту
+                // (иногда 1 крит убивал баррикаду, иногда без крита требовался
+                // избыток попаданий сверх расчёта). Теперь честность считается не
+                // от урона, а от КОЛИЧЕСТВА УДАРОВ: attack.barricadeHits — целое
+                // число (3-7), не зависящее ни от героя, ни от урона, ни от maxHP
+                // босса. Реальное снятие HP на 1 за удар — см. applyHeroImpactDamage
+                // (ветка enemy.isBarricade). Страховка BARRICADE_MAX_CONCURRENT/
                 // BARRICADE_MIN_SPAWN_GAP_MS применяется независимо от gameData: если
                 // условия не выполнены, атака тихо спавнится ОБЫЧНОЙ (customHP как
                 // обычно), бой не пропускает и не блокирует её.
                 let barricadeOptions = null;
                 let resolvedHp = attack.customHP;
-                if (attack.barricadeHpPercent && !chainSlot && currentBoss?.maxHP) {
+                if (attack.barricadeHits && !chainSlot) {
                     const activeBarricades = activeEnemies.filter(e => e.isBarricade).length;
                     const cooledDown = (performance.now() - lastBarricadeSpawnTime) >= BARRICADE_MIN_SPAWN_GAP_MS;
                     if (activeBarricades < BARRICADE_MAX_CONCURRENT && cooledDown) {
-                        resolvedHp = Math.max(1, Math.round(currentBoss.maxHP * attack.barricadeHpPercent / 100));
+                        resolvedHp = Math.max(1, Math.round(attack.barricadeHits));
                         barricadeOptions = {
                             pauseMs: attack.barricadePauseMs,
                             rushSpeedMultiplier: attack.barricadeRushSpeedMultiplier
@@ -2119,12 +2124,12 @@ const CHAIN_MIN_SPAWN_GAP_PERCENT = 12;
 // CHAIN_MAX_HEAD_SPEED/CHAIN_MAX_SPAWN_Y/CHAIN_MIN_SPAWN_GAP_PERCENT выше —
 // это ВЕРХНЯЯ ГРАНИЦА страховки движка, применяется ВСЕГДА независимо от
 // того, что задано в gameData (см. executeBossEvent): если автор уровня
-// случайно поставил барrikadeHpPercent на атаку, которая пришлась бы раньше
+// случайно поставил barricadeHits на атаку, которая пришлась бы раньше
 // BARRICADE_MIN_SPAWN_GAP_MS после предыдущей, или пока предыдущая баррикада
 // ещё жива — движок просто спавнит эту атаку ОБЫЧНОЙ (по attack.customHP),
 // не бросает и не блокирует бой. Числа не меняются per-уровень — конкретную
 // частоту/силу баррикад авторы уровня выбирают ЧЕРЕЗ ритм bossDelayAb и
-// собственные barricadeHpPercent/barricadePauseMs, а не через эти константы.
+// собственные barricadeHits/barricadePauseMs, а не через эти константы.
 const BARRICADE_MAX_CONCURRENT = 1;
 const BARRICADE_MIN_SPAWN_GAP_MS = 7000;
 
@@ -3629,7 +3634,11 @@ function applyHeroImpactDamage(enemy, damageResult, isBoss) {
     // getDummyBossHpFraction, применяется каждый кадр в gameLoop), реальный удар его
     // hp больше не трогает вообще, только счётчик ДПС ниже.
     if (!isDummyBoss) {
-        enemy.hp -= damageResult.damage;
+        // Баррикада (раздел 13.8 lvlData/Правила создания уровня.txt, правка
+        // 2026-09-16) снимает РОВНО 1 единицу HP за удар независимо от реального
+        // урона попадания (крит/апгрейды/герой не влияют на число нужных ударов) —
+        // честность считается по attack.barricadeHits (целое число), не по урону.
+        enemy.hp -= enemy.isBarricade ? 1 : damageResult.damage;
         if (enemy.isBarricade) {
             updateBarricadeRing(enemy);
         }

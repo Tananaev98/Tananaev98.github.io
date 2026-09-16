@@ -128,7 +128,7 @@ const ENEMY_TYPES = {
         baseDamage: 20,
         spawnWeight: 5,
 		baseExp: 250,
-        size: '23%',
+        size: '32%',
         deathAnimation: { preset: 'default', durationMs: 900 }
     },
     enem2: {
@@ -140,7 +140,7 @@ const ENEMY_TYPES = {
         baseDamage: 22,
         spawnWeight: 15,
 		baseExp: 400,
-        size: '23%',
+        size: '32%',
         deathAnimation: { preset: 'default', durationMs: 900 }
     },
     enem3: {
@@ -152,7 +152,7 @@ const ENEMY_TYPES = {
         baseDamage: 24,
         spawnWeight: 20,
 		baseExp: 600,
-        size: '25%',
+        size: '32%',
         deathAnimation: { preset: 'default', durationMs: 950 }
     },
 
@@ -165,7 +165,7 @@ const ENEMY_TYPES = {
         baseDamage: 26,
         spawnWeight: 10,
 		baseExp: 800,
-        size: '24%',
+        size: '32%',
         deathAnimation: { preset: 'default', durationMs: 950 }
     },
 
@@ -178,7 +178,7 @@ const ENEMY_TYPES = {
         baseDamage: 28,
         spawnWeight: 5,
 		baseExp: 0,
-        size: '27%',
+        size: '32%',
         deathAnimation: { preset: 'default', durationMs: 1000 }
     },
 
@@ -213,16 +213,18 @@ const ENEMY_TYPES = {
 	{ boss: 'enem1', type: 'enem11', xPos: 47, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 18 }, //13 — нежданчик: тройной залп из одной точки подряд
 	{ boss: 'enem1', type: 'enem11', xPos: 25, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 5 },  //14
 	{ boss: 'enem1', type: 'enem11', xPos: 75, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 5 },  //15
-	// звенья «атакующей цепи» — облако пыли расходится дугой, затем оседает
-	// хаотично (arc+irregular), раздел 13.7.
-	{ boss: 'enem1', type: 'enem11', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 18 }, //16 цепь-A звено 1 (голова)
-	{ boss: 'enem1', type: 'enem11', xPos: 55, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 14 }, //17 цепь-A звено 2
-	{ boss: 'enem1', type: 'enem11', xPos: 35, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 10 }, //18 цепь-A звено 3
-	{ boss: 'enem1', type: 'enem11', xPos: 70, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 18 }, //19 цепь-B звено 1 (голова)
-	{ boss: 'enem1', type: 'enem11', xPos: 55, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 15 }, //20 цепь-B звено 2
-	{ boss: 'enem1', type: 'enem11', xPos: 40, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, //21 цепь-B звено 3
-	{ boss: 'enem1', type: 'enem11', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 10 }, //22 цепь-B звено 4
-	{ boss: 'enem1', type: 'enem11', xPos: 35, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 8 },  //23 цепь-B звено 5
+	// звенья «атакующей цепи» — правка 2026-09-16 (снята дубликат-пара с
+	// уровня 44). Цепь-A (irregular, 5) — облако пыли оседает без явного
+	// шаблона. Цепь-B (zigzag, 4) — резкие чёткие вздохи ветра туда-сюда.
+	{ boss: 'enem1', type: 'enem11', xPos: 20, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 18 }, //16 цепь-A звено 1 (голова, irregular)
+	{ boss: 'enem1', type: 'enem11', xPos: 44, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 15 }, //17 цепь-A звено 2
+	{ boss: 'enem1', type: 'enem11', xPos: 68, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, //18 цепь-A звено 3
+	{ boss: 'enem1', type: 'enem11', xPos: 44, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 9 },  //19 цепь-A звено 4
+	{ boss: 'enem1', type: 'enem11', xPos: 68, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 7 },  //20 цепь-A звено 5
+	{ boss: 'enem1', type: 'enem11', xPos: 80, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 17 }, //21 цепь-B звено 1 (голова, zigzag)
+	{ boss: 'enem1', type: 'enem11', xPos: 55, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 13 }, //22 цепь-B звено 2
+	{ boss: 'enem1', type: 'enem11', xPos: 80, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 9 },  //23 цепь-B звено 3
+	{ boss: 'enem1', type: 'enem11', xPos: 55, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 6 },  //24 цепь-B звено 4
 
 	// ===== Ковшан: PADDLE_SWING — быстрые маятниковые взмахи из
 	// фиксированной точки поворота-шарнира =====
@@ -356,8 +358,8 @@ const ENEMY_TYPES = {
 	{ boss: 'enem1', indexAbilities: [4, 5] },
 	{ boss: 'enem1', indexAbilities: [6, 8, 7, 9] },
 	{ boss: 'enem1', indexAbilities: [0, 1, 4] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem1', indexAbilities: [16, 17, 18], isChain: true }, // ← цепь-A (3, arc)
-	{ boss: 'enem1', indexAbilities: [19, 20, 21, 22, 23], isChain: true }, // ← цепь-B (5, irregular)
+	{ boss: 'enem1', indexAbilities: [16, 17, 18, 19, 20], isChain: true }, // ← цепь-A (5, irregular)
+	{ boss: 'enem1', indexAbilities: [21, 22, 23, 24], isChain: true }, // ← цепь-B (4, zigzag)
 	{ boss: 'enem1', indexAbilities: [13, 10, 1] }, // нежданчик: тройной залп из одной точки подряд
 	{ boss: 'enem1', indexAbilities: [0, 2, 10, 1, 3, 13] }, // сигнатурная: полное сжатие мешка на пределе
 
