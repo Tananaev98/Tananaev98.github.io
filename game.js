@@ -665,7 +665,21 @@ class Enemy {
             this.x = 50;
         } else {
             this.swayTime += this.swaySpeed * deltaSeconds;
-            if (this.isCustom && this.movementStyle === 'weave') {
+            if (this.isCustom && this.isBarricade) {
+                // «Баррикада» обязана честно СТОЯТЬ на месте (раздел 16.1 lvlData/
+                // Правила создания уровня.txt) — movementMultiplier=0 выше замораживает
+                // только вертикальное продвижение (this.pixelY). Без этой ветки боковое
+                // покачивание (weave/wave/drift/дефолтный sway), унаследованное от
+                // movementStyle босса, всё равно двигало бы this.x каждый кадр — та же
+                // раскачка, что даёт нужное разнообразие обычным атакам, здесь превращала
+                // честную неподвижную цель в мишень, уклоняющуюся от прицела игрока
+                // (особенно ощутимо для героев с медленным темпом атаки, у которых мало
+                // попыток попасть). ПОДТВЕРЖДЁННЫЙ СЛУЧАЙ, пользователь поймал живьём
+                // (2026-09-16): «баррикад которые уклоняются от прицела быть не должно —
+                // это уже не сложность, а нечестность». this.x остаётся неизменным на
+                // всё время жизни баррикады (и стойку, и рывок) — рывок сообщается только
+                // скоростью (barricadeRushSpeedMultiplier), не боковым манёвром.
+            } else if (this.isCustom && this.movementStyle === 'weave') {
                 this.x = this.clampHorizontal(this.movementOriginX + Math.sin(this.swayTime * 1.35) * 5.5);
             } else if (this.isCustom && this.movementStyle === 'wave') {
                 // В отличие от 'weave' (фиксированная амплитуда/частота), у 'wave' траектория
@@ -691,9 +705,29 @@ class Enemy {
         this.pixelY = (this.y / 100) * this.fieldHeight;
         
         // Наклон врага (вращение)
-        this.tiltTime += this.tiltSpeed * deltaSeconds;
-        const tiltAngle = Math.sin(this.tiltTime) * ANIMATION_PARAMS.TILT_AMPLITUDE;
-        
+        let tiltAngle;
+        if (this.isCustom && this.isBarricade) {
+            // ПОДТВЕРЖДЁННЫЙ СЛУЧАЙ, продолжение раздела 16.5 lvlData/Правила создания
+            // уровня.txt: заморозка бокового sway (см. выше) убрала уход баррикады
+            // В СТОРОНУ, но покачивание НАКЛОНОМ (±20°, синус от this.tiltTime) — это
+            // отдельный, независимый процесс, который тоже крутил её каждый кадр.
+            // Прицел игрока — неподвижная точка на экране; пока силуэт под ней
+            // вращается, ровно та же самая точка может уйти с непрозрачной части
+            // силуэта на прозрачную и обратно чисто от поворота, даже если сама
+            // картинка не сдвинулась ни на пиксель — то же самое честно выглядящее
+            // "стой и получай удары" превращается в реально уклоняющуюся мишень.
+            // Пользователь, дословно (2026-09-16): «нет я имел ввиду отскок при
+            // наведении» — уточнение к тому же самому баг-репорту про боковой sway,
+            // указавшее на ЭТУ, вторую независимую причину того же эффекта.
+            // this.tiltTime не увеличивается, пока баррикада жива — угол остаётся
+            // тем же, что был выставлен при спавне (0, см. applyPositionTransform(0)
+            // в spawnEnemyWithParams), и на всё время удержания и рывка не меняется.
+            tiltAngle = this.currentTiltAngle || 0;
+        } else {
+            this.tiltTime += this.tiltSpeed * deltaSeconds;
+            tiltAngle = Math.sin(this.tiltTime) * ANIMATION_PARAMS.TILT_AMPLITUDE;
+        }
+
         // Применяем позицию и вращение (у босса left=50% + translateX(-50%) = визуальный центр)
         this.applyPositionTransform(tiltAngle);
         
@@ -775,7 +809,29 @@ class Enemy {
         }
 
         const widthPct = attack.width;
-        const preferLeft = attack.cx <= boss.cx;
+
+        // ПОДТВЕРЖДЁННЫЙ БАГ (2026-09-16): раньше preferLeft/extraSpread считались от
+        // ТЕКУЩЕГО attack.cx — то есть от уже скорректированной этой же функцией на
+        // прошлый вызов позиции. Функция вызывается каждый кадр, пока атака пересекает
+        // босса (например обычная, не-баррикадная атака падает и её Y на несколько
+        // кадров проходит сквозь вертикальный диапазон босса) — поэтому решение "куда
+        // сдвигать" каждый раз пересчитывалось от РЕЗУЛЬТАТА предыдущего сдвига, а не от
+        // исходного авторского xPos. Итог: как только скорректированная позиция сама
+        // оказывалась «по другую сторону» от центра босса (или разгоняла extraSpread за
+        // пределы поля, требуя клампа), на следующем кадре функция решала толкать атаку
+        // УЖЕ В ДРУГУЮ сторону — атака реально прыгала между краями поля кадр за кадром.
+        // Пользователь, дословно: «именно когда наводишь прицел на атаку - она не
+        // умирает а вместо этого отскакивает вправо или влево и иногда это делает и не
+        // один раз ещё» — атака, которую пытаешься отбить, вместо честной мгновенной
+        // смерти (правило 12 CLAUDE.md) телепортировалась через всё поле, иногда
+        // несколько раз подряд, физически уходя из-под прицела игрока.
+        // Фикс — использовать СТАБИЛЬНЫЙ ориентир (исходный `this.movementOriginX`,
+        // который эта функция не трогает) вместо текущей, потенциально уже сдвинутой
+        // позиции: одно и то же исходное xPos теперь всегда даёт одно и то же итоговое
+        // место, повторный вызов на следующем кадре не находит overlap (позиция уже вне
+        // границ босса) и сразу возвращается по раннему `return` выше — без колебаний.
+        const originCx = this.movementOriginX + widthPct / 2;
+        const preferLeft = originCx <= boss.cx;
 
         // Помимо обязательного минимума (чтобы не залезать на босса), добавляем сдвиг,
         // зависящий от исходного xPos атаки: чем дальше атака была от центра босса до
@@ -783,7 +839,7 @@ class Enemy {
         // прилипали ровно к одной и той же точке (boss.left - widthPct / boss.right),
         // независимо от того, насколько разными были их авторские xPos в gameData —
         // визуально это выглядело как "снаряды всегда летят в одну и ту же точку".
-        const distanceFromBossCenter = Math.abs(attack.cx - boss.cx);
+        const distanceFromBossCenter = Math.abs(originCx - boss.cx);
         const extraSpread = Math.min(widthPct * 2, distanceFromBossCenter * 0.6);
 
         const tryPlaceX = (leftEdge) => {
@@ -1423,7 +1479,7 @@ function gameLoop(currentTime) {
 		// «Вы разозлили Бабу-Ягу!» между обликами одного и того же противника).
 		const appearMessage = getLevelCombatConfig().bosses[bossAliveName]?.appearMessage;
 		if (appearMessage) {
-			showCenterText(appearMessage, 1600, 'boss');
+			showCenterText(appearMessage, 3000, 'boss'); // не короче 3с — игрок должен успеть прочитать (прямой запрос пользователя, 2026-09-16)
 		}
 
 		startBossEvents();
@@ -1901,7 +1957,7 @@ function executeBossEvent() {
         bossCombatPhase = phase.phase;
         const phaseMessage = profile.phaseMessages?.[phase.phase]
             || `ФАЗА ${phase.phase === 2 ? 'II' : 'III'}`;
-        showCenterText(phaseMessage, 1100, 'boss');
+        showCenterText(phaseMessage, 3000, 'boss'); // не короче 3с — игрок должен успеть прочитать (прямой запрос пользователя, 2026-09-16)
     }
 
     const selectedCombo = selectBossCombo(bossAbD, bossAb, phase);
