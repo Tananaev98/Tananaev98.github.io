@@ -8,6 +8,11 @@ let factorChar = (lvlNumber * 5) / 100;
 // и тот же противник, но эпитет перед ним меняется по явлению, а не по
 // формуле «злая / очень злая / взбешенная» (зной → марево → угли → венец).
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	levelCadence: 0.72, damageMultiplier: 1.440, minWaveDelay: 1950, minShotDelay: 132, minTelegraphMs: 500,
 	musicMood: 'heroic',
 	phases: [
@@ -16,35 +21,30 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.64, speed: 1.24, damage: 1.32, telegraphMultiplier: 0.80, surpriseChance: 0.40, maxActiveAttacks: 23 }
 	],
 	bosses: {
-		enem1: {
-			movementStyle: 'drift', cadence: 1.00, telegraphMs: 900, speedMultiplier: 0.90, damageMultiplier: 0.95,
+		enem1: { combatIdentity: "Серп в полуденном мареве", combatTrick: "медленный первый снаряд остаётся фоном для более срочного второго", signatureEvery: 4, movementStyle: 'drift', cadence: 1.00, telegraphMs: 900, speedMultiplier: 0.90, damageMultiplier: 0.95,
 			healthMultiplier: 1.50,
 			speedVariance: [0.86, 0.94, 1.02, 1.10, 1.18],
 			phaseMessages: { 2: 'ЗНОЙ СВОДИТ С УМА', 3: 'МАРЕВО ГУСТЕЕТ УГРОЗОЙ' }
 		}, // ЗНОЙНАЯ ПОЛУДНИЦА: зигзаг марева над бороздой, без нижней стены
-		enem2: {
-			movementStyle: 'weave', cadence: 0.88, telegraphMs: 730, speedMultiplier: 1.08, damageMultiplier: 0.92,
+		enem2: { combatIdentity: "Отражённый замах", combatTrick: "повторяет удар в прежнем секторе вместо ожидаемого чередования", signatureEvery: 4, movementStyle: 'weave', cadence: 0.88, telegraphMs: 730, speedMultiplier: 1.08, damageMultiplier: 0.92,
 			healthMultiplier: 1.50,
 			speedVariance: [0.84, 0.95, 1.06, 1.17, 1.28],
 			appearMessage: 'ДВОИТСЯ ОТ ЗЛОБЫ',
 			phaseMessages: { 2: 'ОТРАЖЕНИЯ ОБЕЗУМЕЛИ', 3: 'МАРЕВО ЖАЖДЕТ ДОБЫЧИ' }
 		}, // МАРЕВАЯ ПОЛУДНИЦА: парные удары-двойники с флангов, симметричный мираж
-		enem3: {
-			movementStyle: 'accelerate', cadence: 1.22, telegraphMs: 990, speedMultiplier: 0.82, damageMultiplier: 1.22,
+		enem3: { combatIdentity: "Жар между борозд", combatTrick: "разводит две цели, затем закрывает оставленную между ними полосу", signatureEvery: 4, movementStyle: 'accelerate', cadence: 1.22, telegraphMs: 990, speedMultiplier: 0.82, damageMultiplier: 1.22,
 			healthMultiplier: 1.50,
 			speedVariance: [0.74, 0.85, 0.98, 1.11, 1.24],
 			appearMessage: 'УГЛИ ПЫШУТ ЖАРОМ',
 			phaseMessages: { 2: 'УГЛИ РАЗГОРАЮТСЯ СИЛЬНЕЕ', 3: 'ГОРИТ БЕЗ ПОЩАДЫ' }
 		}, // ЖАРОВАЯ ПОЛУДНИЦА: редкие тяжёлые вспышки углей, долгая пауза
-		enem4: {
-			movementStyle: 'lateRush', cadence: 0.74, telegraphMs: 590, speedMultiplier: 1.24, damageMultiplier: 0.68,
+		enem4: { combatIdentity: "Венец раскрывается", combatTrick: "сводит угрозы с краёв к внутренним полосам, затем размыкает рисунок", signatureEvery: 4, movementStyle: 'lateRush', cadence: 0.74, telegraphMs: 590, speedMultiplier: 1.24, damageMultiplier: 0.68,
 			healthMultiplier: 1.50,
 			speedVariance: [0.93, 1.07, 1.21, 1.35, 1.49],
 			appearMessage: 'ВЕНЕЦ ПЫЛАЕТ ЗЛОБОЙ',
 			phaseMessages: { 2: 'ВЕНЕЦ ПЫШЕТ ЖАРОМ', 3: 'ВЕНЕЦ ГОРИТ БЕЗ ПОЩАДЫ' }
 		}, // ВЕНЦЕНОСНАЯ ПОЛУДНИЦА: нервные вспышки лучей только из четырёх углов
-		enem5: {
-			movementStyle: 'pause', cadence: 0.68, telegraphMs: 610, speedMultiplier: 1.22, damageMultiplier: 1.16,
+		enem5: { combatIdentity: "Последний солнечный обман", combatTrick: "показывает боковой замах, но заканчивает серединой; позднее конец возвращается на край", signatureEvery: 4, movementStyle: 'pause', cadence: 0.68, telegraphMs: 610, speedMultiplier: 1.22, damageMultiplier: 1.16,
 			healthMultiplier: 1.50,
 			speedVariance: [0.80, 0.94, 1.08, 1.22, 1.36],
 			appearMessage: 'ЯВИЛА ИСТИННЫЙ ГНЕВ',
@@ -307,66 +307,89 @@ const bossAbilities = [
 	{ boss: 'enem5', type: 'enem55', xPos: 69, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //12
 	{ boss: 'enem5', type: 'enem55', xPos: 89, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //13 конец ряда — марево накрыло всю ширину поля
 	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 28, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 12 } //14 неожиданный удар из центра после смыкания зноя
+,
+    // Приёмы из scripts/combat-designs.js; индексы считаются отдельно для каждого босса.
+    {boss: "enem1",type: "enem11",xPos: 18,yPos: 12,customHP: 1,customDamage: 15,customSpeed: 16},
+    {boss: "enem1",type: "enem11",xPos: 82,yPos: 20,customHP: 1,customDamage: 15,customSpeed: 14},
+    {boss: "enem1",type: "enem11",xPos: 36,yPos: 6,customHP: 1,customDamage: 15,customSpeed: 21},
+    {boss: "enem1",type: "enem11",xPos: 18,yPos: 24,customHP: 1,customDamage: 15,customSpeed: 7},
+    {boss: "enem1",type: "enem11",xPos: 18,yPos: 8,customHP: 1,customDamage: 15,customSpeed: 20},
+    {boss: "enem1",type: "enem11",xPos: 68,yPos: 12,customHP: 1,customDamage: 15,customSpeed: 18},
+    {boss: "enem2",type: "enem22",xPos: 80,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 16},
+    {boss: "enem2",type: "enem22",xPos: 70,yPos: 20,customHP: 1,customDamage: 14,customSpeed: 14},
+    {boss: "enem2",type: "enem22",xPos: 22,yPos: 6,customHP: 1,customDamage: 14,customSpeed: 21},
+    {boss: "enem2",type: "enem22",xPos: 80,yPos: 40,customHP: 1,customDamage: 14,customSpeed: 7},
+    {boss: "enem2",type: "enem22",xPos: 80,yPos: 8,customHP: 1,customDamage: 14,customSpeed: 20},
+    {boss: "enem2",type: "enem22",xPos: 38,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 18},
+    {boss: "enem3",type: "enem33",xPos: 14,yPos: 12,customHP: 1,customDamage: 16,customSpeed: 16},
+    {boss: "enem3",type: "enem33",xPos: 50,yPos: 20,customHP: 1,customDamage: 16,customSpeed: 14},
+    {boss: "enem3",type: "enem33",xPos: 86,yPos: 6,customHP: 1,customDamage: 16,customSpeed: 21},
+    {boss: "enem3",type: "enem33",xPos: 14,yPos: 40,customHP: 1,customDamage: 16,customSpeed: 7},
+    {boss: "enem3",type: "enem33",xPos: 14,yPos: 8,customHP: 1,customDamage: 16,customSpeed: 20},
+    {boss: "enem3",type: "enem33",xPos: 50,yPos: 12,customHP: 1,customDamage: 16,customSpeed: 18},
+    {boss: "enem4",type: "enem44",xPos: 24,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 16},
+    {boss: "enem4",type: "enem44",xPos: 38,yPos: 20,customHP: 1,customDamage: 14,customSpeed: 14},
+    {boss: "enem4",type: "enem44",xPos: 84,yPos: 6,customHP: 1,customDamage: 14,customSpeed: 21},
+    {boss: "enem4",type: "enem44",xPos: 24,yPos: 40,customHP: 1,customDamage: 14,customSpeed: 7},
+    {boss: "enem4",type: "enem44",xPos: 24,yPos: 8,customHP: 1,customDamage: 14,customSpeed: 20},
+    {boss: "enem4",type: "enem44",xPos: 65,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 18},
+    {boss: "enem5",type: "enem55",xPos: 86,yPos: 12,customHP: 1,customDamage: 16,customSpeed: 16},
+    {boss: "enem5",type: "enem55",xPos: 68,yPos: 20,customHP: 1,customDamage: 16,customSpeed: 14},
+    {boss: "enem5",type: "enem55",xPos: 12,yPos: 6,customHP: 1,customDamage: 16,customSpeed: 21},
+    {boss: "enem5",type: "enem55",xPos: 86,yPos: 40,customHP: 1,customDamage: 16,customSpeed: 7},
+    {boss: "enem5",type: "enem55",xPos: 86,yPos: 8,customHP: 1,customDamage: 16,customSpeed: 20},
+    {boss: "enem5",type: "enem55",xPos: 54,yPos: 12,customHP: 1,customDamage: 16,customSpeed: 18}
 ];
 
 const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 380, bossDelayAbDop: 6200 }, // спокойное марево, щедрая передышка
-	{ boss: 'enem2', bossDelayAb: 280, bossDelayAbDop: 5000 }, // удары-двойники, смена ритма
-	{ boss: 'enem3', bossDelayAb: 440, bossDelayAbDop: 6800 }, // редкие тяжёлые вспышки, самая долгая пауза
-	{ boss: 'enem4', bossDelayAb: 225, bossDelayAbDop: 4500 }, // нервные лучи из углов
-	{ boss: 'enem5', bossDelayAb: 250, bossDelayAbDop: 4100 }, // истинный облик: плотнее всех, но телеграф честный
+	{ boss: 'enem1', bossDelayAb: 380, bossDelayAbDop: 6806, firstWaveDelayMs: 2400 }, // спокойное марево, щедрая передышка
+	{ boss: 'enem2', bossDelayAb: 280, bossDelayAbDop: 5750, firstWaveDelayMs: 2400 }, // удары-двойники, смена ритма
+	{ boss: 'enem3', bossDelayAb: 440, bossDelayAbDop: 5780, firstWaveDelayMs: 2400 }, // редкие тяжёлые вспышки, самая долгая пауза
+	{ boss: 'enem4', bossDelayAb: 225, bossDelayAbDop: 5175, firstWaveDelayMs: 2400 }, // нервные лучи из углов
+	{ boss: 'enem5', bossDelayAb: 250, bossDelayAbDop: 4715, firstWaveDelayMs: 2263 }, // истинный облик: плотнее всех, но телеграф честный
 ];
 
 const bossAbilitiesDop = [
-	// Знойная Полудница
-	{ boss: 'enem1', indexAbilities: [0] },
-	{ boss: 'enem1', indexAbilities: [1] },
-	{ boss: 'enem1', indexAbilities: [0, 1] },
-	{ boss: 'enem1', indexAbilities: [2, 3, 4] },
-	{ boss: 'enem1', indexAbilities: [6, 7, 8, 9] },
-	{ boss: 'enem1', indexAbilities: [11, 9, 12] }, // ритмическая: медленно → быстро → медленно
-	{ boss: 'enem1', indexAbilities: [0, 2, 4, 6, 8, 10] }, // опасная сигнатурная: нарастающее марево к резкому финалу
-	{ boss: 'enem1', indexAbilities: [13, 10, 14, 15] }, // смешанная поздняя: волна из центра → быстрый верх
-
-	// Маревая Полудница
-	{ boss: 'enem2', indexAbilities: [0] },
-	{ boss: 'enem2', indexAbilities: [1] },
-	{ boss: 'enem2', indexAbilities: [0, 1] },
-	{ boss: 'enem2', indexAbilities: [2, 3] },
-	{ boss: 'enem2', indexAbilities: [4, 5] },
-	{ boss: 'enem2', indexAbilities: [6, 10, 7] }, // ритмическая: тяжело → средне → легко
-	{ boss: 'enem2', indexAbilities: [0, 1, 2, 3, 4, 5, 8] }, // опасная сигнатурная: все двойники + центр
-	{ boss: 'enem2', indexAbilities: [9, 12, 13, 15] }, // смешанная поздняя
-
-	// Жаровая Полудница
-	{ boss: 'enem3', indexAbilities: [0] },
-	{ boss: 'enem3', indexAbilities: [1] },
-	{ boss: 'enem3', indexAbilities: [0, 1] },
-	{ boss: 'enem3', indexAbilities: [2, 3, 4] },
-	{ boss: 'enem3', indexAbilities: [5, 6, 7] },
-	{ boss: 'enem3', indexAbilities: [13, 11, 14] }, // ритмическая: самая медленная → резкая искра → снова медленная
-	{ boss: 'enem3', indexAbilities: [0, 2, 4, 7, 9, 15] }, // опасная сигнатурная
-	{ boss: 'enem3', indexAbilities: [8, 10, 12] }, // смешанная поздняя
-
-	// Венценосная Полудница
-	{ boss: 'enem4', indexAbilities: [0] },
-	{ boss: 'enem4', indexAbilities: [1] },
-	{ boss: 'enem4', indexAbilities: [0, 1] },
-	{ boss: 'enem4', indexAbilities: [6, 7] },
-	{ boss: 'enem4', indexAbilities: [2, 3, 10, 11] },
-	{ boss: 'enem4', indexAbilities: [4, 12, 5] }, // ритмическая: резкий луч → пауза-тяжесть → резкий луч
-	{ boss: 'enem4', indexAbilities: [0, 2, 4, 8, 13, 15] }, // опасная сигнатурная: смешение всех четырёх углов
-	{ boss: 'enem4', indexAbilities: [1, 3, 9, 14] }, // смешанная поздняя
-
-	// Истинная Полудница — сводит воедино приёмы всех четырёх предыдущих обликов
-	{ boss: 'enem5', indexAbilities: [0] },
-	{ boss: 'enem5', indexAbilities: [3] },
-	{ boss: 'enem5', indexAbilities: [0, 3] },
-	{ boss: 'enem5', indexAbilities: [1, 2] },
-	{ boss: 'enem5', indexAbilities: [4, 5] },
-	{ boss: 'enem5', indexAbilities: [7, 8, 6] }, // ритмическая: два боковых луча сверху → резкий центр
-	{ boss: 'enem5', indexAbilities: [9, 10, 11, 12, 13, 14] }, // сигнатура: полдень смыкается над полем → удар из центра
-	{ boss: 'enem5', indexAbilities: [0, 4, 7, 9, 14] }, // смешанная поздняя: мотивы всех четырёх обликов
+    {boss: "enem1",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem1",indexAbilities: [1]},
+    {boss: "enem1",indexAbilities: [0,1]},
+    {boss: "enem1",indexAbilities: [2,3,4]},
+    {boss: "enem1",indexAbilities: [6,7,8,9]},
+    {boss: "enem1",indexAbilities: [19,18],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Серп в полуденном мареве — знакомство",openingOrder: 1},
+    {boss: "enem1",indexAbilities: [19,18,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Серп в полуденном мареве — иной конец"},
+    {boss: "enem1",indexAbilities: [19,21,18,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Серп в полуденном мареве — завершение"},
+    {boss: "enem2",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem2",indexAbilities: [1]},
+    {boss: "enem2",indexAbilities: [0,1]},
+    {boss: "enem2",indexAbilities: [2,3]},
+    {boss: "enem2",indexAbilities: [4,5]},
+    {boss: "enem2",indexAbilities: [16,20,17],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Отражённый замах — знакомство",openingOrder: 1},
+    {boss: "enem2",indexAbilities: [16,20,18],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Отражённый замах — иной конец"},
+    {boss: "enem2",indexAbilities: [21,18,21,17],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Отражённый замах — завершение"},
+    {boss: "enem3",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem3",indexAbilities: [1]},
+    {boss: "enem3",indexAbilities: [0,1]},
+    {boss: "enem3",indexAbilities: [2,3,4]},
+    {boss: "enem3",indexAbilities: [5,6,7]},
+    {boss: "enem3",indexAbilities: [16,18,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Жар между борозд — знакомство",openingOrder: 1},
+    {boss: "enem3",indexAbilities: [16,18,17],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Жар между борозд — иной конец"},
+    {boss: "enem3",indexAbilities: [20,18,21,17],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Жар между борозд — завершение"},
+    {boss: "enem4",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem4",indexAbilities: [1]},
+    {boss: "enem4",indexAbilities: [0,1]},
+    {boss: "enem4",indexAbilities: [6,7]},
+    {boss: "enem4",indexAbilities: [2,3,10,11]},
+    {boss: "enem4",indexAbilities: [16,18,17,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Венец раскрывается — знакомство",openingOrder: 1},
+    {boss: "enem4",indexAbilities: [16,18,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Венец раскрывается — иной конец"},
+    {boss: "enem4",indexAbilities: [17,21,16,18],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Венец раскрывается — завершение"},
+    {boss: "enem5",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem5",indexAbilities: [3]},
+    {boss: "enem5",indexAbilities: [0,3]},
+    {boss: "enem5",indexAbilities: [1,2]},
+    {boss: "enem5",indexAbilities: [4,5]},
+    {boss: "enem5",indexAbilities: [15,16,20],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Последний солнечный обман — знакомство",openingOrder: 1},
+    {boss: "enem5",indexAbilities: [15,16,19],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Последний солнечный обман — иной конец"},
+    {boss: "enem5",indexAbilities: [17,20,16,19],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Последний солнечный обман — завершение"}
 ];
 
 // Лорные названия связок. Уровень 25 — Полудница (одна сущность, 5 нарастающих

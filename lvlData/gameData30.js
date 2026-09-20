@@ -25,6 +25,11 @@ let factorChar = (lvlNumber * 5) / 100;
 // подтянуты, паузы-отдых между сериями сокращены. Финал региона обязан быть
 // испытанием, а не рядовым уровнем — см. §13.1.
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	scaleLongComboDamage: true,
 	scaleShortComboDamage: true,
 	levelCadence: 0.76, damageMultiplier: 1.90, minWaveDelay: 1900, minShotDelay: 132, minTelegraphMs: 500,
@@ -35,34 +40,29 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.60, speed: 1.30, damage: 1.38, telegraphMultiplier: 0.76, surpriseChance: 0.44, maxActiveAttacks: 26 }
 	],
 	bosses: {
-		enem1: {
-			movementStyle: 'straight', cadence: 0.95, telegraphMs: 850, speedMultiplier: 0.95, damageMultiplier: 0.85,
+		enem1: { combatIdentity: "Горошины с подлокотника", combatTrick: "две короткие группы разделены паузой; вторая группа меняет сторону", signatureEvery: 4, movementStyle: 'straight', cadence: 0.95, telegraphMs: 850, speedMultiplier: 0.95, damageMultiplier: 0.85,
 			healthMultiplier: 1.50,
 			speedVariance: [0.86, 0.94, 1.02, 1.10, 1.18],
 			appearMessage: 'ПРЕЗРИТЕЛЬНО СМЕЁТСЯ'
 		}, // ЦАРЬ ГОРОХ: THRONE_ROLL — ровные ленивые залпы с трона, самый честный телеграф уровня
-		enem2: {
-			movementStyle: 'accelerate', cadence: 1.05, telegraphMs: 800, speedMultiplier: 1.00, damageMultiplier: 0.95,
+		enem2: { combatIdentity: "Трещина меняет выход", combatTrick: "показывает боковой замах, но заканчивает серединой; позднее конец возвращается на край", signatureEvery: 4, movementStyle: 'accelerate', cadence: 1.05, telegraphMs: 800, speedMultiplier: 1.00, damageMultiplier: 0.95,
 			healthMultiplier: 1.50,
 			speedVariance: [0.82, 0.93, 1.05, 1.17, 1.29],
 			appearMessage: 'ЯРОСТЬ РВЁТСЯ ЧЕРЕЗ ТРЕЩИНУ'
 		}, // ТРЕСНУВШИЙ ЦАРЬ ГОРОХ: CRACK_SHOT — гнев прорывается через трещину ускоряющимися выстрелами
-		enem3: {
-			movementStyle: 'weave', cadence: 1.10, telegraphMs: 900, speedMultiplier: 0.92, damageMultiplier: 1.05,
+		enem3: { combatIdentity: "Стража и отставший", combatTrick: "повторяет удар в прежнем секторе вместо ожидаемого чередования", signatureEvery: 4, movementStyle: 'weave', cadence: 1.10, telegraphMs: 900, speedMultiplier: 0.92, damageMultiplier: 1.05,
 			healthMultiplier: 1.50,
 			speedVariance: [0.80, 0.90, 1.01, 1.12, 1.23],
 			appearMessage: 'В ГНЕВЕ ЗОВЁТ СТРАЖУ'
 		}, // ИЗРАНЕННЫЙ ЦАРЬ ГОРОХ: GUARD_VOLLEY — рваные зигзаги гороховой стражи, менее предсказуемые пути
-		enem4: {
-			movementStyle: 'drift', cadence: 1.00, telegraphMs: 950, speedMultiplier: 0.85, damageMultiplier: 1.20,
+		enem4: { combatIdentity: "Угольный след трона", combatTrick: "медленный первый снаряд остаётся фоном для более срочного второго", signatureEvery: 4, movementStyle: 'drift', cadence: 1.00, telegraphMs: 950, speedMultiplier: 0.85, damageMultiplier: 1.20,
 			healthMultiplier: 1.50,
 			speedVariance: [0.77, 0.87, 0.98, 1.09, 1.20],
 			appearMessage: 'ПЫШЕТ ГНЕВНЫМИ ИСКРАМИ'
 		}, // ПЫЛАЮЩИЙ ЦАРЬ ГОРОХ: EMBER_DRIFT — тяжёлые сносимые вбок искры, самый долгий честный телеграф уровня
-		enem5: {
-			movementStyle: 'pause', cadence: 0.82, telegraphMs: 720, speedMultiplier: 1.10, damageMultiplier: 0.82,
+		enem5: { combatIdentity: "Царский салют с ответом", combatTrick: "разводит две цели, затем закрывает оставленную между ними полосу", signatureEvery: 4, movementStyle: 'pause', cadence: 0.82, telegraphMs: 720, speedMultiplier: 1.10, damageMultiplier: 0.82,
 			healthMultiplier: 1.50,
-			speedVariance: [0.83, 0.96, 1.09, 1.22, 1.35], minFastSideSwitchMs: 850,
+			speedVariance: [0.83, 0.96, 1.09, 1.22, 1.35],
 			appearMessage: 'ОБЕЗУМЕЛ ОТ ГНЕВА'
 		} // ГНЕВНЫЙ ЦАРЬ ГОРОХ: ROYAL_SALUTE — несёт кульминацию региона. Первая версия читалась как
 		  // «стена слева + стена справа, блокируется в два действия» — исправлено: залп теперь
@@ -223,66 +223,89 @@ const bossAbilities = [
 	{ boss: 'enem5', type: 'enem55', xPos: 38, yPos: 10, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 22 }, //13 нежданчик: бьёт сразу после волны, асимметрично — не по центру и не по краям
 	{ boss: 'enem5', type: 'enem55', xPos: 63, yPos: 9,  customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 23 }, //14 второй асимметричный нежданчик
 	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 7,  customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 26 }  //15 финальный самый резкий выстрел, чистый центр
+,
+    // Приёмы из scripts/combat-designs.js; индексы считаются отдельно для каждого босса.
+    {boss: "enem1",type: "enem11",xPos: 14,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 16},
+    {boss: "enem1",type: "enem11",xPos: 24,yPos: 20,customHP: 1,customDamage: 14,customSpeed: 14},
+    {boss: "enem1",type: "enem11",xPos: 70,yPos: 6,customHP: 1,customDamage: 14,customSpeed: 21},
+    {boss: "enem1",type: "enem11",xPos: 14,yPos: 40,customHP: 1,customDamage: 14,customSpeed: 7},
+    {boss: "enem1",type: "enem11",xPos: 14,yPos: 8,customHP: 1,customDamage: 14,customSpeed: 20},
+    {boss: "enem1",type: "enem11",xPos: 84,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 18},
+    {boss: "enem2",type: "enem22",xPos: 82,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 16},
+    {boss: "enem2",type: "enem22",xPos: 65,yPos: 20,customHP: 1,customDamage: 14,customSpeed: 14},
+    {boss: "enem2",type: "enem22",xPos: 18,yPos: 6,customHP: 1,customDamage: 14,customSpeed: 21},
+    {boss: "enem2",type: "enem22",xPos: 82,yPos: 40,customHP: 1,customDamage: 14,customSpeed: 7},
+    {boss: "enem2",type: "enem22",xPos: 82,yPos: 8,customHP: 1,customDamage: 14,customSpeed: 20},
+    {boss: "enem2",type: "enem22",xPos: 51,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 18},
+    {boss: "enem3",type: "enem33",xPos: 22,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 16},
+    {boss: "enem3",type: "enem33",xPos: 32,yPos: 20,customHP: 1,customDamage: 14,customSpeed: 14},
+    {boss: "enem3",type: "enem33",xPos: 78,yPos: 6,customHP: 1,customDamage: 14,customSpeed: 21},
+    {boss: "enem3",type: "enem33",xPos: 22,yPos: 40,customHP: 1,customDamage: 14,customSpeed: 7},
+    {boss: "enem3",type: "enem33",xPos: 22,yPos: 8,customHP: 1,customDamage: 14,customSpeed: 20},
+    {boss: "enem3",type: "enem33",xPos: 88,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 18},
+    {boss: "enem4",type: "enem44",xPos: 86,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 16},
+    {boss: "enem4",type: "enem44",xPos: 16,yPos: 20,customHP: 1,customDamage: 14,customSpeed: 14},
+    {boss: "enem4",type: "enem44",xPos: 68,yPos: 6,customHP: 1,customDamage: 14,customSpeed: 21},
+    {boss: "enem4",type: "enem44",xPos: 86,yPos: 24,customHP: 1,customDamage: 14,customSpeed: 7},
+    {boss: "enem4",type: "enem44",xPos: 86,yPos: 8,customHP: 1,customDamage: 14,customSpeed: 20},
+    {boss: "enem4",type: "enem44",xPos: 34,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 18},
+    {boss: "enem5",type: "enem55",xPos: 18,yPos: 12,customHP: 1,customDamage: 24,customSpeed: 16},
+    {boss: "enem5",type: "enem55",xPos: 48,yPos: 20,customHP: 1,customDamage: 24,customSpeed: 14},
+    {boss: "enem5",type: "enem55",xPos: 82,yPos: 6,customHP: 1,customDamage: 24,customSpeed: 21},
+    {boss: "enem5",type: "enem55",xPos: 18,yPos: 40,customHP: 1,customDamage: 24,customSpeed: 7},
+    {boss: "enem5",type: "enem55",xPos: 18,yPos: 8,customHP: 1,customDamage: 24,customSpeed: 20},
+    {boss: "enem5",type: "enem55",xPos: 48,yPos: 12,customHP: 1,customDamage: 24,customSpeed: 18}
 ];
 
 const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 340, bossDelayAbDop: 5400 }, // державное спокойствие, самая щедрая передышка первой фазы
-	{ boss: 'enem2', bossDelayAb: 240, bossDelayAbDop: 4200 }, // гнев прорывается через трещину
-	{ boss: 'enem3', bossDelayAb: 280, bossDelayAbDop: 4700 }, // стража перестраивается
-	{ boss: 'enem4', bossDelayAb: 390, bossDelayAbDop: 5900 }, // тяжёлые искры, пауза перед новой волной короче, чем в первой версии боя
-	{ boss: 'enem5', bossDelayAb: 190, bossDelayAbDop: 6200 }, // гневный облик: внутри залпа плотно, отдых после него — самый долгий во всей области, но уже не такой щедрый, как в первой версии
+	{ boss: 'enem1', bossDelayAb: 340, bossDelayAbDop: 6210, firstWaveDelayMs: 2400 }, // державное спокойствие, самая щедрая передышка первой фазы
+	{ boss: 'enem2', bossDelayAb: 240, bossDelayAbDop: 4830, firstWaveDelayMs: 2318 }, // гнев прорывается через трещину
+	{ boss: 'enem3', bossDelayAb: 280, bossDelayAbDop: 4964, firstWaveDelayMs: 2383 }, // стража перестраивается
+	{ boss: 'enem4', bossDelayAb: 390, bossDelayAbDop: 5132, firstWaveDelayMs: 2400 }, // тяжёлые искры, пауза перед новой волной короче, чем в первой версии боя
+	{ boss: 'enem5', bossDelayAb: 190, bossDelayAbDop: 5616, firstWaveDelayMs: 2400 }, // гневный облик: внутри залпа плотно, отдых после него — самый долгий во всей области, но уже не такой щедрый, как в первой версии
 ];
 
 const bossAbilitiesDop = [
-	// Царь Горох
-	{ boss: 'enem1', indexAbilities: [0, 1] },
-	{ boss: 'enem1', indexAbilities: [6, 7] },
-	{ boss: 'enem1', indexAbilities: [2, 3, 10] },
-	{ boss: 'enem1', indexAbilities: [4, 5, 11] },
-	{ boss: 'enem1', indexAbilities: [0, 2, 4, 6] }, // ритмическая: ровное нарастание
-	{ boss: 'enem1', indexAbilities: [0, 1, 8, 9] }, // опасная сигнатурная — same-start с [0,1]
-	{ boss: 'enem1', indexAbilities: [0, 1] }, // chunk-break
-	{ boss: 'enem1', indexAbilities: [12, 13, 14, 15] }, // смешанная поздняя
-
-	// Треснувший Царь Горох
-	{ boss: 'enem2', indexAbilities: [0, 1] },
-	{ boss: 'enem2', indexAbilities: [6, 7] },
-	{ boss: 'enem2', indexAbilities: [2, 3, 10] },
-	{ boss: 'enem2', indexAbilities: [4, 5, 11] },
-	{ boss: 'enem2', indexAbilities: [8, 9, 0, 1] }, // ритмическая
-	{ boss: 'enem2', indexAbilities: [0, 1, 6, 7] }, // опасная сигнатурная — same-start с [0,1]
-	{ boss: 'enem2', indexAbilities: [0, 1] }, // chunk-break
-	{ boss: 'enem2', indexAbilities: [12, 13, 14, 15] }, // смешанная поздняя
-
-	// Израненный Царь Горох
-	{ boss: 'enem3', indexAbilities: [0, 1] },
-	{ boss: 'enem3', indexAbilities: [2, 3] },
-	{ boss: 'enem3', indexAbilities: [4, 5, 12] },
-	{ boss: 'enem3', indexAbilities: [6, 7, 13] },
-	{ boss: 'enem3', indexAbilities: [0, 1, 2, 3] }, // ритмическая
-	{ boss: 'enem3', indexAbilities: [0, 1, 14, 15] }, // опасная сигнатурная — same-start с [0,1]
-	{ boss: 'enem3', indexAbilities: [0, 1] }, // chunk-break
-	{ boss: 'enem3', indexAbilities: [8, 9, 10, 11] }, // смешанная поздняя
-
-	// Пылающий Царь Горох
-	{ boss: 'enem4', indexAbilities: [0, 2] },
-	{ boss: 'enem4', indexAbilities: [1, 3] },
-	{ boss: 'enem4', indexAbilities: [4, 5, 12] },
-	{ boss: 'enem4', indexAbilities: [6, 7, 13] },
-	{ boss: 'enem4', indexAbilities: [0, 2, 4, 5] }, // ритмическая
-	{ boss: 'enem4', indexAbilities: [0, 2, 10, 11] }, // опасная сигнатурная — same-start с [0,2]
-	{ boss: 'enem4', indexAbilities: [0, 2] }, // chunk-break
-	{ boss: 'enem4', indexAbilities: [8, 9, 14, 15] }, // смешанная поздняя
-
-	// Гневный Царь Горох — «Царский залп», кульминация всей области III (2-sync герольд → 5-sync строй → 10-sync волна)
-	{ boss: 'enem5', indexAbilities: [0, 1] }, // Труба возвещает (2-sync)
-	{ boss: 'enem5', indexAbilities: [12] }, // solo — теперь по-настоящему тяжёлый одиночный удар, не пустышка
-	{ boss: 'enem5', indexAbilities: [13, 14] }, // асимметричная пара нежданчиков сама по себе — опасность не только по краям поля
-	{ boss: 'enem5', indexAbilities: [0, 1, 2, 3, 4] }, // Стража строится (5-sync, промежуточная)
-	{ boss: 'enem5', indexAbilities: [0, 1, 2, 3, 4, 12] }, // ритмическая: строй → тяжёлый одиночный
-	{ boss: 'enem5', indexAbilities: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13] }, // ЦАРСКИЙ ЗАЛП + мгновенный нежданчик сразу после волны — расслабляться нельзя (опасная сигнатурная, кульминация области)
-	{ boss: 'enem5', indexAbilities: [2, 3, 4, 5] }, // chunk-break: обрывается на четверти сигнатурной
-	{ boss: 'enem5', indexAbilities: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 14, 15] }, // смешанная поздняя: герольд + полная волна + оба нежданчика, самая длинная связка во всей игре
+    {boss: "enem1",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem1",indexAbilities: [6,7]},
+    {boss: "enem1",indexAbilities: [2,3,10]},
+    {boss: "enem1",indexAbilities: [4,5,11]},
+    {boss: "enem1",indexAbilities: [0,2,4,6]},
+    {boss: "enem1",indexAbilities: [16,20,18,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Горошины с подлокотника — знакомство",openingOrder: 1,shotGapsMs: [360,900,360]},
+    {boss: "enem1",indexAbilities: [16,20,21],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Горошины с подлокотника — иной конец",shotGapsMs: [360,900,360]},
+    {boss: "enem1",indexAbilities: [18,21,16,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Горошины с подлокотника — завершение",shotGapsMs: [360,900,360]},
+    {boss: "enem2",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem2",indexAbilities: [6,7]},
+    {boss: "enem2",indexAbilities: [2,3,10]},
+    {boss: "enem2",indexAbilities: [4,5,11]},
+    {boss: "enem2",indexAbilities: [8,9,0,1]},
+    {boss: "enem2",indexAbilities: [16,17,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Трещина меняет выход — знакомство",openingOrder: 1},
+    {boss: "enem2",indexAbilities: [16,17,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Трещина меняет выход — иной конец"},
+    {boss: "enem2",indexAbilities: [18,21,17,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Трещина меняет выход — завершение"},
+    {boss: "enem3",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem3",indexAbilities: [2,3]},
+    {boss: "enem3",indexAbilities: [4,5,12]},
+    {boss: "enem3",indexAbilities: [6,7,13]},
+    {boss: "enem3",indexAbilities: [0,1,2,3]},
+    {boss: "enem3",indexAbilities: [16,20,17],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Стража и отставший — знакомство",openingOrder: 1},
+    {boss: "enem3",indexAbilities: [16,20,18],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Стража и отставший — иной конец"},
+    {boss: "enem3",indexAbilities: [21,18,21,17],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Стража и отставший — завершение"},
+    {boss: "enem4",indexAbilities: [0,2],openingOrder: 0},
+    {boss: "enem4",indexAbilities: [1,3]},
+    {boss: "enem4",indexAbilities: [4,5,12]},
+    {boss: "enem4",indexAbilities: [6,7,13]},
+    {boss: "enem4",indexAbilities: [0,2,4,5]},
+    {boss: "enem4",indexAbilities: [19,18],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Угольный след трона — знакомство",openingOrder: 1},
+    {boss: "enem4",indexAbilities: [19,18,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Угольный след трона — иной конец"},
+    {boss: "enem4",indexAbilities: [19,21,18,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Угольный след трона — завершение"},
+    {boss: "enem5",indexAbilities: [0,1]},
+    {boss: "enem5",indexAbilities: [12],openingOrder: 0},
+    {boss: "enem5",indexAbilities: [13,14]},
+    {boss: "enem5",indexAbilities: [0,1,2,3,4]},
+    {boss: "enem5",indexAbilities: [0,1,2,3,4,12]},
+    {boss: "enem5",indexAbilities: [16,18,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Царский салют с ответом — знакомство",openingOrder: 1},
+    {boss: "enem5",indexAbilities: [16,18,17],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Царский салют с ответом — иной конец"},
+    {boss: "enem5",indexAbilities: [20,18,21,17],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Царский салют с ответом — завершение"}
 ];
 
 // Лорные названия связок. Уровень 30 — Царь Горох (одна сущность, 5 нарастающих

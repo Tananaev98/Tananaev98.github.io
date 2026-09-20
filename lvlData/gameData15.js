@@ -7,6 +7,11 @@ let factorChar = (lvlNumber * 5) / 100;
 // (иначе движок не читает уровень), но каждый следующий приём — явный шаг её
 // перерождения, а финал сводит воедино приёмы всех четырёх предыдущих обликов.
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	levelCadence: 0.70, damageMultiplier: 1.750, minWaveDelay: 1950, minShotDelay: 130, minTelegraphMs: 460,
 	// Один и тот же противник от начала и до конца уровня — фоновая музыка
 	// не должна плыть по настроению вслед за архетипами, поэтому здесь задан
@@ -19,34 +24,34 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.60, speed: 1.28, damage: 1.34, telegraphMultiplier: 0.82, surpriseChance: 0.42, maxActiveAttacks: 24 }
 	],
 	bosses: {
-		enem1: {
+		enem1: { signatureEvery: 4,
 			movementStyle: 'drift', cadence: 1.05, telegraphMs: 880, speedMultiplier: 0.92, damageMultiplier: 0.92,
 			healthMultiplier: 1.50,
 			speedVariance: [0.86, 0.94, 1.02, 1.10, 1.18],
 			phaseMessages: { 2: 'ПОСОХ ЖАЖДЕТ КРОВИ', 3: 'ПОСОХ НЕ ЗНАЕТ ПОЩАДЫ' }
 		}, // БАБА-ЯГА: зигзаг посоха, испытывает игрока
-		enem2: {
+		enem2: { signatureEvery: 4,
 			movementStyle: 'straight', cadence: 0.90, telegraphMs: 740, speedMultiplier: 1.06, damageMultiplier: 0.90,
 			healthMultiplier: 1.50,
 			speedVariance: [0.85, 0.95, 1.05, 1.15, 1.25],
 			appearMessage: 'ВЗБЕСИЛАСЬ ОТ ЗЛОСТИ',
 			phaseMessages: { 2: 'КОГТИ РВУТСЯ В БОЙ', 3: 'КОГТИ ЖАЖДУТ КРОВИ' }
 		}, // ЗЛАЯ БАБА-ЯГА: парные когтистые выпады с флангов
-		enem3: {
+		enem3: { signatureEvery: 4,
 			movementStyle: 'weave', cadence: 1.18, telegraphMs: 980, speedMultiplier: 0.85, damageMultiplier: 1.18,
 			healthMultiplier: 1.50,
 			speedVariance: [0.76, 0.86, 0.98, 1.10, 1.22],
 			appearMessage: 'ПРОКЛЯТЬЯ КЛОКОЧУТ В ГОРЛЕ',
 			phaseMessages: { 2: 'ПРОКЛЯТЬЯ КИПЯТ', 3: 'ОХВАЧЕНА БЕЗУМИЕМ' }
 		}, // ОЧЕНЬ ЗЛАЯ БАБА-ЯГА: редкие тяжёлые проклятия, долгие паузы
-		enem4: {
+		enem4: { signatureEvery: 4,
 			movementStyle: 'lateRush', cadence: 0.76, telegraphMs: 610, speedMultiplier: 1.20, damageMultiplier: 0.66,
 			healthMultiplier: 1.50,
 			speedVariance: [0.90, 1.03, 1.16, 1.29, 1.42],
 			appearMessage: 'ВЗОРВАЛАСЬ ЯРОСТЬЮ',
 			phaseMessages: { 2: 'ПЫШЕТ ОГНЁМ', 3: 'ПЫЛАЕТ ЯРОСТЬЮ' }
 		}, // ВЗБЕШЕННАЯ БАБА-ЯГА: нервные вспышки только из четырёх углов
-		enem5: {
+		enem5: { signatureEvery: 4,
 			movementStyle: 'pause', cadence: 0.72, telegraphMs: 640, speedMultiplier: 1.15, damageMultiplier: 1.10,
 			healthMultiplier: 1.50,
 			speedVariance: [0.84, 0.97, 1.10, 1.23, 1.36],
@@ -317,11 +322,11 @@ const bossAbilities = [
 ];
 
 const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 380, bossDelayAbDop: 6200 }, // спокойное испытание, щедрая передышка
-	{ boss: 'enem2', bossDelayAb: 280, bossDelayAbDop: 5000 }, // парные выпады, смена ритма
-	{ boss: 'enem3', bossDelayAb: 440, bossDelayAbDop: 6800 }, // редкие тяжёлые проклятия, самая долгая пауза
-	{ boss: 'enem4', bossDelayAb: 230, bossDelayAbDop: 4600 }, // нервные вспышки из углов
-	{ boss: 'enem5', bossDelayAb: 270, bossDelayAbDop: 4300 }, // финал: плотнее всех, но телеграф честный
+	{ boss: 'enem1', bossDelayAb: 380, bossDelayAbDop: 6200, firstWaveDelayMs: 2400 }, // спокойное испытание, щедрая передышка
+	{ boss: 'enem2', bossDelayAb: 280, bossDelayAbDop: 5000, firstWaveDelayMs: 2400 }, // парные выпады, смена ритма
+	{ boss: 'enem3', bossDelayAb: 440, bossDelayAbDop: 6800, firstWaveDelayMs: 2400 }, // редкие тяжёлые проклятия, самая долгая пауза
+	{ boss: 'enem4', bossDelayAb: 230, bossDelayAbDop: 4600, firstWaveDelayMs: 2208 }, // нервные вспышки из углов
+	{ boss: 'enem5', bossDelayAb: 270, bossDelayAbDop: 4300, firstWaveDelayMs: 2064 }, // финал: плотнее всех, но телеграф честный
 ];
 
 const bossAbilitiesDop = [

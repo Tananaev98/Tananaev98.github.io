@@ -2,6 +2,11 @@ let lvlNumber = 13;
 let factorChar = (lvlNumber * 5) / 100;
 
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	scaleLongComboDamage: true,
 	scaleShortComboDamage: true,
 	levelCadence: 0.79, damageMultiplier: 0.629, minWaveDelay: 2230, minShotDelay: 145, minTelegraphMs: 480,
@@ -11,11 +16,11 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.64, speed: 1.22, damage: 1.26, telegraphMultiplier: 0.84, surpriseChance: 0.32, maxActiveAttacks: 21 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'lateRush', cadence: 1.02, telegraphMs: 780, speedMultiplier: 1.04, damageMultiplier: 1.04, speedVariance: [0.88, 0.96, 1.04, 1.12, 1.20] }, // RIGHT_DESCENT: спокойный спуск справа
-		enem2: { movementStyle: 'pause', cadence: 0.96, telegraphMs: 700, speedMultiplier: 1.08, damageMultiplier: 1.06, speedVariance: [0.82, 0.94, 1.06, 1.16, 1.26] }, // CORNER_WHISPER: углы с паузой
-		enem3: { movementStyle: 'drift', cadence: 1.14, telegraphMs: 900, speedMultiplier: 0.90, damageMultiplier: 1.28, speedVariance: [0.76, 0.88, 1.00, 1.12, 1.22] }, // LANE_CLOSE: редкие тяжёлые закрытия
-		enem4: { movementStyle: 'weave', cadence: 0.88, telegraphMs: 620, speedMultiplier: 1.14, damageMultiplier: 0.72, speedVariance: [0.92, 1.00, 1.08, 1.16, 1.24] }, // LEFT_COLUMN: частая колонна, дробный урон
-		enem5: { movementStyle: 'accelerate', cadence: 0.70, telegraphMs: 610, speedMultiplier: 1.16, damageMultiplier: 1.20, speedVariance: [0.84, 0.98, 1.12, 1.24, 1.34] } // FAN_THEN_BOOM: веер + удар
+		enem1: { signatureEvery: 4, movementStyle: 'lateRush', cadence: 1.02, telegraphMs: 780, speedMultiplier: 1.04, damageMultiplier: 1.04, speedVariance: [0.88, 0.96, 1.04, 1.12, 1.20] }, // RIGHT_DESCENT: спокойный спуск справа
+		enem2: { signatureEvery: 4, movementStyle: 'pause', cadence: 0.96, telegraphMs: 700, speedMultiplier: 1.08, damageMultiplier: 1.06, speedVariance: [0.82, 0.94, 1.06, 1.16, 1.26] }, // CORNER_WHISPER: углы с паузой
+		enem3: { signatureEvery: 4, movementStyle: 'drift', cadence: 1.14, telegraphMs: 900, speedMultiplier: 0.90, damageMultiplier: 1.28, speedVariance: [0.76, 0.88, 1.00, 1.12, 1.22] }, // LANE_CLOSE: редкие тяжёлые закрытия
+		enem4: { signatureEvery: 4, movementStyle: 'weave', cadence: 0.88, telegraphMs: 620, speedMultiplier: 1.14, damageMultiplier: 0.72, speedVariance: [0.92, 1.00, 1.08, 1.16, 1.24] }, // LEFT_COLUMN: частая колонна, дробный урон
+		enem5: { signatureEvery: 4, movementStyle: 'accelerate', cadence: 0.70, telegraphMs: 610, speedMultiplier: 1.16, damageMultiplier: 1.20, speedVariance: [0.84, 0.98, 1.12, 1.24, 1.34] } // FAN_THEN_BOOM: веер + удар
 	}
 };
 
@@ -265,11 +270,11 @@ const bossAbilities = [
 
 
 const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 290, bossDelayAbDop: 5600 }, // спокойный спуск
-	{ boss: 'enem2', bossDelayAb: 250, bossDelayAbDop: 5200 }, // углы: смена ритма
-	{ boss: 'enem3', bossDelayAb: 340, bossDelayAbDop: 6000 }, // тяжёлые закрытия
-	{ boss: 'enem4', bossDelayAb: 230, bossDelayAbDop: 5000 }, // peck-колонна
-	{ boss: 'enem5', bossDelayAb: 210, bossDelayAbDop: 4700 }, // веер + boom
+	{ boss: 'enem1', bossDelayAb: 290, bossDelayAbDop: 5600, firstWaveDelayMs: 2400 }, // спокойный спуск
+	{ boss: 'enem2', bossDelayAb: 250, bossDelayAbDop: 5200, firstWaveDelayMs: 2400 }, // углы: смена ритма
+	{ boss: 'enem3', bossDelayAb: 340, bossDelayAbDop: 6000, firstWaveDelayMs: 2400 }, // тяжёлые закрытия
+	{ boss: 'enem4', bossDelayAb: 230, bossDelayAbDop: 5000, firstWaveDelayMs: 2400 }, // peck-колонна
+	{ boss: 'enem5', bossDelayAb: 210, bossDelayAbDop: 4700, firstWaveDelayMs: 2256 }, // веер + boom
 ];
 
 const bossAbilitiesDop = [

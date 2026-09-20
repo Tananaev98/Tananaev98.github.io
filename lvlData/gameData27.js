@@ -25,6 +25,11 @@ let factorChar = (lvlNumber * 5) / 100;
 //                  смешивает четырёх предыдущих по-своему (без клише «впервые
 //                  перекрывает низ поля разом»).
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	scaleLongComboDamage: true,
 	scaleShortComboDamage: true,
 	levelCadence: 0.89, damageMultiplier: 1.78, minWaveDelay: 2120, minShotDelay: 148, minTelegraphMs: 550,
@@ -34,11 +39,11 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.73, speed: 1.19, damage: 1.26, telegraphMultiplier: 0.86, surpriseChance: 0.34, maxActiveAttacks: 20 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'accelerate', cadence: 1.06, telegraphMs: 890, speedMultiplier: 0.90, damageMultiplier: 0.88, speedVariance: [0.80, 0.90, 1.00, 1.10, 1.20] }, // Пупырчик: TENDRIL_CREEP — усики раскручиваются и разгоняются
-		enem2: { movementStyle: 'drift',      cadence: 0.96, telegraphMs: 770, speedMultiplier: 1.01, damageMultiplier: 0.97, speedVariance: [0.86, 0.95, 1.04, 1.13, 1.22] }, // Сочень: BURST_SPILL — сок расползается вбок
-		enem3: { movementStyle: 'pause',      cadence: 1.16, telegraphMs: 990, speedMultiplier: 0.86, damageMultiplier: 1.20, speedVariance: [0.78, 0.87, 0.97, 1.07, 1.17], minFastSideSwitchMs: 860 }, // Кочерыжка: LEAF_UNFURL — синхронный рывок (6-sync)
-		enem4: { movementStyle: 'straight',   cadence: 0.78, telegraphMs: 630, speedMultiplier: 1.19, damageMultiplier: 0.76, speedVariance: [0.90, 1.02, 1.14, 1.26, 1.38] }, // Дёргач: YANK_PULL — без трюка движения, нервность через ритм
-		enem5: { movementStyle: 'weave',      cadence: 0.86, telegraphMs: 710, speedMultiplier: 1.06, damageMultiplier: 1.10, speedVariance: [0.84, 0.95, 1.06, 1.17, 1.28] }  // Пустоглав: HOLLOW_SWAY — непредсказуемое мотание пустого фонаря
+		enem1: { combatIdentity: "Усики огурца", combatTrick: "сводит угрозы с краёв к внутренним полосам, затем размыкает рисунок", signatureEvery: 4, movementStyle: 'accelerate', cadence: 1.06, telegraphMs: 890, speedMultiplier: 0.90, damageMultiplier: 0.88, speedVariance: [0.80, 0.90, 1.00, 1.10, 1.20] }, // Пупырчик: TENDRIL_CREEP — усики раскручиваются и разгоняются
+		enem2: { combatIdentity: "Брызги спелой мякоти", combatTrick: "разводит две цели, затем закрывает оставленную между ними полосу", signatureEvery: 4, movementStyle: 'drift',      cadence: 0.96, telegraphMs: 770, speedMultiplier: 1.01, damageMultiplier: 0.97, speedVariance: [0.86, 0.95, 1.04, 1.13, 1.22] }, // Сочень: BURST_SPILL — сок расползается вбок
+		enem3: { combatIdentity: "Кочан раскрывает следующий лист", combatTrick: "две короткие группы разделены паузой; вторая группа меняет сторону", signatureEvery: 4, movementStyle: 'pause',      cadence: 1.16, telegraphMs: 990, speedMultiplier: 0.86, damageMultiplier: 1.20, speedVariance: [0.78, 0.87, 0.97, 1.07, 1.17] }, // Кочерыжка: LEAF_UNFURL — синхронный рывок (6-sync)
+		enem4: { combatIdentity: "Морковный рывок", combatTrick: "короткий первый заход продолжается более быстрым довеском с прежнего края", signatureEvery: 4, movementStyle: 'straight',   cadence: 0.78, telegraphMs: 630, speedMultiplier: 1.19, damageMultiplier: 0.76, speedVariance: [0.90, 1.02, 1.14, 1.26, 1.38] }, // Дёргач: YANK_PULL — без трюка движения, нервность через ритм
+		enem5: { combatIdentity: "Пустая тыква даёт отзвук", combatTrick: "повторяет удар в прежнем секторе вместо ожидаемого чередования", signatureEvery: 4, movementStyle: 'weave',      cadence: 0.86, telegraphMs: 710, speedMultiplier: 1.06, damageMultiplier: 1.10, speedVariance: [0.84, 0.95, 1.06, 1.17, 1.28] }  // Пустоглав: HOLLOW_SWAY — непредсказуемое мотание пустого фонаря
 	}
 };
 
@@ -184,66 +189,89 @@ const bossAbilities = [
 	{ boss: 'enem5', type: 'enem55', xPos: 6,  yPos: 6,  customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 26 }, //13 самый быстрый — отголосок Дёргача
 	{ boss: 'enem5', type: 'enem55', xPos: 40, yPos: 32, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 8 },  //14 тихая пара — отголосок рывка Кочерыжки (без паузы)
 	{ boss: 'enem5', type: 'enem55', xPos: 60, yPos: 32, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 8 }   //15 тихая пара — отголосок рывка Кочерыжки (без паузы)
+,
+    // Приёмы из scripts/combat-designs.js; индексы считаются отдельно для каждого босса.
+    {boss: "enem1",type: "enem11",xPos: 18,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 16},
+    {boss: "enem1",type: "enem11",xPos: 32,yPos: 20,customHP: 1,customDamage: 13,customSpeed: 14},
+    {boss: "enem1",type: "enem11",xPos: 82,yPos: 6,customHP: 1,customDamage: 13,customSpeed: 21},
+    {boss: "enem1",type: "enem11",xPos: 18,yPos: 40,customHP: 1,customDamage: 13,customSpeed: 7},
+    {boss: "enem1",type: "enem11",xPos: 18,yPos: 8,customHP: 1,customDamage: 13,customSpeed: 20},
+    {boss: "enem1",type: "enem11",xPos: 66,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 18},
+    {boss: "enem2",type: "enem22",xPos: 24,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 16},
+    {boss: "enem2",type: "enem22",xPos: 54,yPos: 20,customHP: 1,customDamage: 13,customSpeed: 14},
+    {boss: "enem2",type: "enem22",xPos: 84,yPos: 6,customHP: 1,customDamage: 13,customSpeed: 21},
+    {boss: "enem2",type: "enem22",xPos: 24,yPos: 40,customHP: 1,customDamage: 13,customSpeed: 7},
+    {boss: "enem2",type: "enem22",xPos: 24,yPos: 8,customHP: 1,customDamage: 13,customSpeed: 20},
+    {boss: "enem2",type: "enem22",xPos: 54,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 18},
+    {boss: "enem3",type: "enem33",xPos: 82,yPos: 12,customHP: 1,customDamage: 17,customSpeed: 16},
+    {boss: "enem3",type: "enem33",xPos: 70,yPos: 20,customHP: 1,customDamage: 17,customSpeed: 14},
+    {boss: "enem3",type: "enem33",xPos: 16,yPos: 6,customHP: 1,customDamage: 17,customSpeed: 21},
+    {boss: "enem3",type: "enem33",xPos: 82,yPos: 40,customHP: 1,customDamage: 17,customSpeed: 7},
+    {boss: "enem3",type: "enem33",xPos: 82,yPos: 8,customHP: 1,customDamage: 17,customSpeed: 20},
+    {boss: "enem3",type: "enem33",xPos: 28,yPos: 12,customHP: 1,customDamage: 17,customSpeed: 18},
+    {boss: "enem4",type: "enem44",xPos: 14,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 16},
+    {boss: "enem4",type: "enem44",xPos: 24,yPos: 20,customHP: 1,customDamage: 13,customSpeed: 14},
+    {boss: "enem4",type: "enem44",xPos: 74,yPos: 6,customHP: 1,customDamage: 13,customSpeed: 21},
+    {boss: "enem4",type: "enem44",xPos: 14,yPos: 40,customHP: 1,customDamage: 13,customSpeed: 7},
+    {boss: "enem4",type: "enem44",xPos: 14,yPos: 8,customHP: 1,customDamage: 13,customSpeed: 20},
+    {boss: "enem4",type: "enem44",xPos: 86,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 18},
+    {boss: "enem5",type: "enem55",xPos: 78,yPos: 12,customHP: 1,customDamage: 16,customSpeed: 16},
+    {boss: "enem5",type: "enem55",xPos: 88,yPos: 20,customHP: 1,customDamage: 16,customSpeed: 14},
+    {boss: "enem5",type: "enem55",xPos: 22,yPos: 6,customHP: 1,customDamage: 16,customSpeed: 21},
+    {boss: "enem5",type: "enem55",xPos: 78,yPos: 40,customHP: 1,customDamage: 16,customSpeed: 7},
+    {boss: "enem5",type: "enem55",xPos: 78,yPos: 8,customHP: 1,customDamage: 16,customSpeed: 20},
+    {boss: "enem5",type: "enem55",xPos: 36,yPos: 12,customHP: 1,customDamage: 16,customSpeed: 18}
 ];
 
 const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 330, bossDelayAbDop: 5700 }, // спокойный разгон, не вялый
-	{ boss: 'enem2', bossDelayAb: 290, bossDelayAbDop: 5100 }, // сок держит ритм
-	{ boss: 'enem3', bossDelayAb: 440, bossDelayAbDop: 6800 }, // самая долгая пауза — «тянут-потянут», цепочка длиннее чем на 26-м
-	{ boss: 'enem4', bossDelayAb: 190, bossDelayAbDop: 4000 }, // нервность через ритм — самый частый на уровне
-	{ boss: 'enem5', bossDelayAb: 255, bossDelayAbDop: 4600 }, // финал плотнее среднего, но честный
+	{ boss: 'enem1', bossDelayAb: 330, bossDelayAbDop: 5700, firstWaveDelayMs: 2400 }, // спокойный разгон, не вялый
+	{ boss: 'enem2', bossDelayAb: 290, bossDelayAbDop: 5100, firstWaveDelayMs: 2400 }, // сок держит ритм
+	{ boss: 'enem3', bossDelayAb: 440, bossDelayAbDop: 6800, firstWaveDelayMs: 2400 }, // самая долгая пауза — «тянут-потянут», цепочка длиннее чем на 26-м
+	{ boss: 'enem4', bossDelayAb: 190, bossDelayAbDop: 4000, firstWaveDelayMs: 1920 }, // нервность через ритм — самый частый на уровне
+	{ boss: 'enem5', bossDelayAb: 255, bossDelayAbDop: 4600, firstWaveDelayMs: 2208 }, // финал плотнее среднего, но честный
 ];
 
 const bossAbilitiesDop = [
-	// Пупырчик
-	{ boss: 'enem1', indexAbilities: [0, 1] },
-	{ boss: 'enem1', indexAbilities: [4, 5] },
-	{ boss: 'enem1', indexAbilities: [2, 3, 12] },
-	{ boss: 'enem1', indexAbilities: [6, 7, 13] },
-	{ boss: 'enem1', indexAbilities: [0, 1, 8, 9] }, // ритмическая
-	{ boss: 'enem1', indexAbilities: [0, 1, 10, 11] }, // опасная сигнатурная — same-start с [0,1]
-	{ boss: 'enem1', indexAbilities: [0, 1] }, // chunk-break: тот же префикс, обрывается сразу
-	{ boss: 'enem1', indexAbilities: [12, 14, 15] }, // смешанная поздняя
-
-	// Сочень
-	{ boss: 'enem2', indexAbilities: [0, 1] },
-	{ boss: 'enem2', indexAbilities: [6, 7] },
-	{ boss: 'enem2', indexAbilities: [2, 3, 14] },
-	{ boss: 'enem2', indexAbilities: [12, 13, 4] },
-	{ boss: 'enem2', indexAbilities: [8, 10, 9, 11] }, // ритмическая
-	{ boss: 'enem2', indexAbilities: [6, 7, 8, 10] }, // опасная сигнатурная — same-start с [6,7]
-	{ boss: 'enem2', indexAbilities: [6, 7] }, // chunk-break
-	{ boss: 'enem2', indexAbilities: [14, 15, 2, 3] }, // смешанная поздняя
-
-	// Кочерыжка — «тянем-потянем» (длиннее, чем на 26-м уровне: до 6-sync)
-	{ boss: 'enem3', indexAbilities: [0, 1] }, // Дедка тянет (2-sync)
-	{ boss: 'enem3', indexAbilities: [12] }, // solo — контраст без синхронии
-	{ boss: 'enem3', indexAbilities: [2, 3, 4, 5] }, // Бабка и внучка (4-sync)
-	{ boss: 'enem3', indexAbilities: [13, 14, 12] }, // смена стороны/скорости
-	{ boss: 'enem3', indexAbilities: [0, 1, 13, 14] }, // ритмическая: sync → соло
-	{ boss: 'enem3', indexAbilities: [6, 7, 8, 9, 10, 11] }, // Мышка тоже пришла! (6-sync, опасная сигнатурная)
-	{ boss: 'enem3', indexAbilities: [2, 3, 4, 5] }, // chunk-break: тот же префикс, что и 4-sync, но без продолжения
-	{ boss: 'enem3', indexAbilities: [0, 1, 6, 7, 8, 9, 10, 11] }, // смешанная поздняя: полная цепочка, редчайшая
-
-	// Дёргач
-	{ boss: 'enem4', indexAbilities: [0, 1] },
-	{ boss: 'enem4', indexAbilities: [4, 5] },
-	{ boss: 'enem4', indexAbilities: [2, 3, 10] },
-	{ boss: 'enem4', indexAbilities: [6, 7, 11] },
-	{ boss: 'enem4', indexAbilities: [8, 10, 9, 11] }, // ритмическая
-	{ boss: 'enem4', indexAbilities: [0, 1, 8, 9] }, // опасная сигнатурная — same-start с [0,1]
-	{ boss: 'enem4', indexAbilities: [0, 1] }, // chunk-break
-	{ boss: 'enem4', indexAbilities: [12, 13, 14, 15] }, // смешанная поздняя
-
-	// Пустоглав
-	{ boss: 'enem5', indexAbilities: [0, 1] },
-	{ boss: 'enem5', indexAbilities: [8, 12] },
-	{ boss: 'enem5', indexAbilities: [2, 3, 4] },
-	{ boss: 'enem5', indexAbilities: [9, 10, 11] },
-	{ boss: 'enem5', indexAbilities: [14, 15, 6] }, // ритмическая — тихий отголосок Кочерыжки
-	{ boss: 'enem5', indexAbilities: [0, 1, 5, 6, 7] }, // опасная сигнатурная — same-start с [0,1]
-	{ boss: 'enem5', indexAbilities: [0, 1, 5] }, // chunk-break
-	{ boss: 'enem5', indexAbilities: [8, 9, 13, 14, 15] }, // смешанная поздняя
+    {boss: "enem1",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem1",indexAbilities: [4,5]},
+    {boss: "enem1",indexAbilities: [2,3,12]},
+    {boss: "enem1",indexAbilities: [6,7,13]},
+    {boss: "enem1",indexAbilities: [0,1,8,9]},
+    {boss: "enem1",indexAbilities: [16,18,17,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Усики огурца — знакомство",openingOrder: 1},
+    {boss: "enem1",indexAbilities: [16,18,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Усики огурца — иной конец"},
+    {boss: "enem1",indexAbilities: [17,21,16,18],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Усики огурца — завершение"},
+    {boss: "enem2",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem2",indexAbilities: [6,7]},
+    {boss: "enem2",indexAbilities: [2,3,14]},
+    {boss: "enem2",indexAbilities: [12,13,4]},
+    {boss: "enem2",indexAbilities: [8,10,9,11]},
+    {boss: "enem2",indexAbilities: [16,18,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Брызги спелой мякоти — знакомство",openingOrder: 1},
+    {boss: "enem2",indexAbilities: [16,18,17],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Брызги спелой мякоти — иной конец"},
+    {boss: "enem2",indexAbilities: [20,18,21,17],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Брызги спелой мякоти — завершение"},
+    {boss: "enem3",indexAbilities: [0,1]},
+    {boss: "enem3",indexAbilities: [12],openingOrder: 0},
+    {boss: "enem3",indexAbilities: [2,3,4,5]},
+    {boss: "enem3",indexAbilities: [13,14,12]},
+    {boss: "enem3",indexAbilities: [0,1,13,14]},
+    {boss: "enem3",indexAbilities: [16,20,18,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Кочан раскрывает следующий лист — знакомство",openingOrder: 1,shotGapsMs: [360,900,360]},
+    {boss: "enem3",indexAbilities: [16,20,21],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Кочан раскрывает следующий лист — иной конец",shotGapsMs: [360,900,360]},
+    {boss: "enem3",indexAbilities: [18,21,16,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Кочан раскрывает следующий лист — завершение",shotGapsMs: [360,900,360]},
+    {boss: "enem4",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem4",indexAbilities: [4,5]},
+    {boss: "enem4",indexAbilities: [2,3,10]},
+    {boss: "enem4",indexAbilities: [6,7,11]},
+    {boss: "enem4",indexAbilities: [8,10,9,11]},
+    {boss: "enem4",indexAbilities: [19,20,16],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Морковный рывок — знакомство",openingOrder: 1},
+    {boss: "enem4",indexAbilities: [19,20,18],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Морковный рывок — иной конец"},
+    {boss: "enem4",indexAbilities: [21,17,21,18,16],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Морковный рывок — завершение"},
+    {boss: "enem5",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem5",indexAbilities: [8,12]},
+    {boss: "enem5",indexAbilities: [2,3,4]},
+    {boss: "enem5",indexAbilities: [9,10,11]},
+    {boss: "enem5",indexAbilities: [14,15,6]},
+    {boss: "enem5",indexAbilities: [16,20,17],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Пустая тыква даёт отзвук — знакомство",openingOrder: 1},
+    {boss: "enem5",indexAbilities: [16,20,18],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Пустая тыква даёт отзвук — иной конец"},
+    {boss: "enem5",indexAbilities: [21,18,21,17],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Пустая тыква даёт отзвук — завершение"}
 ];
 
 // Лорные названия связок. Уровень 27 — грядка: Пупырчик (огурец), Сочень (помидор),

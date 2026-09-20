@@ -1,0 +1,7106 @@
+[
+  {
+    "number": 1,
+    "title": "Уровень 1 (Звери и Колобок)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Побегайчик",
+        "movement": "weave",
+        "structure": "N2,N2,N4,N4,N4,N5,N5,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5356,
+          4713,
+          4071
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem2",
+        "name": "Любитель бочков",
+        "movement": "accelerate",
+        "structure": "N3,N3,N3,N3,N4,N4,N5,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5600,
+          4928,
+          4256
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem3",
+        "name": "Косолапый",
+        "movement": "lateRush",
+        "structure": "N2,N2,N3,N4,N4,N5,N5,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          7552,
+          6646,
+          5740
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem4",
+        "name": "Сестричка",
+        "movement": "pause",
+        "structure": "N2,N3,N4,N4,N4,N4,N4,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4500,
+          3960,
+          3420
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem5",
+        "name": "Колобок",
+        "movement": "drift",
+        "structure": "N3,N3,N3,N4,N4,N4,N5,N8",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3936,
+          3464,
+          2991
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 8
+      }
+    ]
+  },
+  {
+    "number": 2,
+    "title": "Уровень 2 (Грибное семейство)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Боровик",
+        "movement": "accelerate",
+        "structure": "N3,N3,N4,N4,N4,N4,N4,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          6252,
+          5440,
+          4689
+        ],
+        "identity": "Шляпка и ножка",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem2",
+        "name": "Груздь",
+        "movement": "lateRush",
+        "structure": "N3,N4,N4,N4,N4,N4,N4,N7",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5954,
+          5180,
+          4466
+        ],
+        "identity": "Тяжёлый бок груздя",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem3",
+        "name": "Рыжик",
+        "movement": "pause",
+        "structure": "N3,N3,N3,N4,N4,N4,N4,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5610,
+          4880,
+          4207
+        ],
+        "identity": "Кольца рыжика",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem4",
+        "name": "Подберезовик",
+        "movement": "drift",
+        "structure": "N2,N3,N3,N4,N4,N4,N5,N8",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4939,
+          4297,
+          3704
+        ],
+        "identity": "Длинная ножка",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 8
+      },
+      {
+        "role": "enem5",
+        "name": "Лисичка",
+        "movement": "straight",
+        "structure": "N3,N3,N4,N4,N4,N4,N6,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3763,
+          3274,
+          2822
+        ],
+        "identity": "Лисий край шляпки",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      }
+    ]
+  },
+  {
+    "number": 3,
+    "title": "Уровень 3 (Сказка «Гуси-лебеди»)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Колючий",
+        "movement": "lateRush",
+        "structure": "N2,N3,N4,N4,N4,N5,N5,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4977,
+          4280,
+          3683
+        ],
+        "identity": "Иглы проводника",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem2",
+        "name": "Шипун",
+        "movement": "pause",
+        "structure": "N3,N3,N4,N4,N4,N4,N4,N6",
+        "firstGeometry": null,
+        "firstStructure": "2/enem1",
+        "intervals": [
+          5875,
+          5053,
+          4348
+        ],
+        "identity": "Птичья шея",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem3",
+        "name": "Уф",
+        "movement": "drift",
+        "structure": "N3,N3,N4,N4,N4,N4,N4,N6",
+        "firstGeometry": null,
+        "firstStructure": "2/enem1",
+        "intervals": [
+          5914,
+          5086,
+          4376
+        ],
+        "identity": "Печной выдох",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem4",
+        "name": "Румяная",
+        "movement": "straight",
+        "structure": "N3,N3,N3,N4,N4,N4,N4,N8",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5476,
+          4709,
+          4052
+        ],
+        "identity": "Ветка с яблоками",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 8
+      },
+      {
+        "role": "enem5",
+        "name": "Кисельный берег",
+        "movement": "weave",
+        "structure": "N2,N2,N3,N4,N4,N4,N5,N8",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          7442,
+          6400,
+          5507
+        ],
+        "identity": "Вязкий кисель",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 8
+      }
+    ]
+  },
+  {
+    "number": 4,
+    "title": "Уровень 4 (Люди в лесу)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Дровосек",
+        "movement": "pause",
+        "structure": "N3,N4,N4,N4,N4,N4,N5,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5670,
+          4820,
+          4139
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem2",
+        "name": "Грибник",
+        "movement": "drift",
+        "structure": "N3,N4,N4,N4,N4,N4,N5,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          6294,
+          5350,
+          4595
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem3",
+        "name": "Охотник",
+        "movement": "straight",
+        "structure": "N2,N4,N4,N4,N4,N4,N5,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4324,
+          3675,
+          3157
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem4",
+        "name": "Пастух",
+        "movement": "weave",
+        "structure": "N2,N3,N4,N5,N6,N6,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          7159,
+          6085,
+          5226
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem5",
+        "name": "Лесник",
+        "movement": "accelerate",
+        "structure": "N3,N3,N3,N4,N4,N5,N6,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4008,
+          3407,
+          2926
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      }
+    ]
+  },
+  {
+    "number": 5,
+    "title": "Уровень 5 (Ночные хищники и оборотень)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "УУ-х",
+        "movement": "drift",
+        "structure": "N2,N2,N4,N4,N4,N5,N6,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4946,
+          4155,
+          3561
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem2",
+        "name": "Мурка",
+        "movement": "straight",
+        "structure": "N2,N3,N3,N4,N4,N4,N5,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5060,
+          4250,
+          3643
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem3",
+        "name": "Секач",
+        "movement": "weave",
+        "structure": "N2,N3,N3,N4,N4,N4,N5,N8",
+        "firstGeometry": null,
+        "firstStructure": "2/enem4",
+        "intervals": [
+          7132,
+          5991,
+          5135
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 8
+      },
+      {
+        "role": "enem4",
+        "name": "Царапка",
+        "movement": "accelerate",
+        "structure": "N3,N3,N4,N4,N5,N5,N5,N7",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3923,
+          3295,
+          2824
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem5",
+        "name": "Волчок",
+        "movement": "lateRush",
+        "structure": "N3,N3,N4,N4,N5,N5,N5,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3444,
+          2893,
+          2480
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      }
+    ]
+  },
+  {
+    "number": 6,
+    "title": "Уровень 6 (Болотная живность)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Шипелка",
+        "movement": "straight",
+        "structure": "N3,N3,N4,N4,N4,N5,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5011,
+          4209,
+          3558
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem2",
+        "name": "Висячий",
+        "movement": "weave",
+        "structure": "N3,N3,N4,N4,N4,N4,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5692,
+          4781,
+          4041
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem3",
+        "name": "Жужжалка",
+        "movement": "accelerate",
+        "structure": "N4,N4,N4,N5,N5,N5,N8",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3321,
+          2790,
+          2400
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 8
+      },
+      {
+        "role": "enem4",
+        "name": "Квакуша",
+        "movement": "lateRush",
+        "structure": "N2,N4,N4,N4,N5,N5,N8",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          7099,
+          5963,
+          5040
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 8
+      },
+      {
+        "role": "enem5",
+        "name": "Присоска",
+        "movement": "pause",
+        "structure": "N3,N3,N4,N4,N4,N5,N8",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3888,
+          3266,
+          2760
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 8
+      }
+    ]
+  },
+  {
+    "number": 7,
+    "title": "Уровень 7 (Ожившие лесные находки)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Колунчик",
+        "movement": "accelerate",
+        "structure": "N3,N3,N3,N3,N4,N4,N8",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5317,
+          4413,
+          3722
+        ],
+        "identity": "Рубка колуна",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 8
+      },
+      {
+        "role": "enem2",
+        "name": "Свистуха",
+        "movement": "lateRush",
+        "structure": "N3,N3,N3,N3,N4,N4,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          6308,
+          5236,
+          4415
+        ],
+        "identity": "Покос свистухи",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem3",
+        "name": "Хваталка",
+        "movement": "pause",
+        "structure": "N2,N3,N4,N4,N4,N4,N8",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4308,
+          3576,
+          3016
+        ],
+        "identity": "Захлоп корзины",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 8
+      },
+      {
+        "role": "enem4",
+        "name": "Лапоток",
+        "movement": "drift",
+        "structure": "N2,N3,N3,N3,N4,N4,N8",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3450,
+          2863,
+          2415
+        ],
+        "identity": "Пинок лаптя",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 8
+      },
+      {
+        "role": "enem5",
+        "name": "Пыхтелкин",
+        "movement": "weave",
+        "structure": "N3,N4,N4,N4,N4,N4,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          2996,
+          2486,
+          2370
+        ],
+        "identity": "Выброс из носика",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      }
+    ]
+  },
+  {
+    "number": 8,
+    "title": "Уровень 8 (Ожившая еда)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Жарёныш",
+        "movement": "lateRush",
+        "structure": "N3,N3,N3,N3,N4,N5,N8",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4740,
+          3887,
+          3271
+        ],
+        "identity": "Горячий край пирожка",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 8
+      },
+      {
+        "role": "enem2",
+        "name": "Скользыш",
+        "movement": "pause",
+        "structure": "N2,N3,N3,N3,N3,N4,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4668,
+          3828,
+          3221
+        ],
+        "identity": "Скольжение блина",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem3",
+        "name": "Буханка",
+        "movement": "drift",
+        "structure": "N2,N3,N3,N4,N4,N4,N8",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          6596,
+          5409,
+          4551
+        ],
+        "identity": "Складки каравая",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 8
+      },
+      {
+        "role": "enem4",
+        "name": "Катёныш",
+        "movement": "straight",
+        "structure": "N3,N3,N3,N3,N4,N4,N8",
+        "firstGeometry": null,
+        "firstStructure": "7/enem1",
+        "intervals": [
+          3234,
+          2652,
+          2340
+        ],
+        "identity": "Отскок яблока",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 8
+      },
+      {
+        "role": "enem5",
+        "name": "Щелкун",
+        "movement": "accelerate",
+        "structure": "N2,N3,N3,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3399,
+          2787,
+          2345
+        ],
+        "identity": "Щелчок скорлупы",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      }
+    ]
+  },
+  {
+    "number": 9,
+    "title": "Уровень 9 (Растения-гиганты)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Жгучка",
+        "movement": "pause",
+        "structure": "N3,N3,N4,N4,N4,N4,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4106,
+          3326,
+          2792
+        ],
+        "identity": "Хлёст крапивы",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem2",
+        "name": "Цеплялка",
+        "movement": "drift",
+        "structure": "N2,N2,N3,N4,N4,N6,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5055,
+          4095,
+          3437
+        ],
+        "identity": "Колючий зацеп",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem3",
+        "name": "Брызгун",
+        "movement": "straight",
+        "structure": "N3,N3,N3,N4,N4,N5,N8",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3145,
+          2547,
+          2310
+        ],
+        "identity": "Струя борщевика",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 8
+      },
+      {
+        "role": "enem4",
+        "name": "Шиповка",
+        "movement": "weave",
+        "structure": "N2,N2,N3,N3,N4,N4,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4435,
+          3593,
+          3016
+        ],
+        "identity": "Двойной шип",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem5",
+        "name": "Хлестун",
+        "movement": "lateRush",
+        "structure": "N2,N3,N3,N4,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3427,
+          2776,
+          2330
+        ],
+        "identity": "Обхват лозы",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      }
+    ]
+  },
+  {
+    "number": 10,
+    "title": "Уровень 10 (Болотная трясина)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Утяжка",
+        "movement": "drift",
+        "structure": "N2,N2,N3,N4,N4,N5,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4799,
+          3839,
+          3215
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem2",
+        "name": "Прыгунец",
+        "movement": "straight",
+        "structure": "N2,N3,N3,N3,N4,N5,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3640,
+          2912,
+          2439
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem3",
+        "name": "Обманка",
+        "movement": "weave",
+        "structure": "N2,N4,N4,N5,N5,N6,N8",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          6474,
+          5179,
+          4338
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 8
+      },
+      {
+        "role": "enem4",
+        "name": "Лезвилка",
+        "movement": "accelerate",
+        "structure": "N2,N3,N4,N4,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3675,
+          2940,
+          2462
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Ильник",
+        "movement": "pause",
+        "structure": "N3,N4,N4,N4,N4,N4,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3440,
+          2752,
+          2304
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 5
+      }
+    ]
+  },
+  {
+    "number": 11,
+    "title": "Уровень 11 (Лесные ремесленники)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Молотобой",
+        "movement": "straight",
+        "structure": "N2,N3,N3,N4,N4,N4,N8",
+        "firstGeometry": null,
+        "firstStructure": "8/enem3",
+        "intervals": [
+          4959,
+          3918,
+          3273
+        ],
+        "identity": "Удар и искры",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 8
+      },
+      {
+        "role": "enem2",
+        "name": "Пильщик",
+        "movement": "weave",
+        "structure": "N2,N3,N3,N3,N4,N5,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3674,
+          2902,
+          2425
+        ],
+        "identity": "Пропил и обратный ход",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem3",
+        "name": "Горшечник",
+        "movement": "accelerate",
+        "structure": "N3,N3,N3,N4,N4,N4,N8",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4008,
+          3166,
+          2645
+        ],
+        "identity": "Осколки горшка",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 8
+      },
+      {
+        "role": "enem4",
+        "name": "Ниточник",
+        "movement": "lateRush",
+        "structure": "N3,N3,N3,N3,N4,N5,N8",
+        "firstGeometry": null,
+        "firstStructure": "8/enem1",
+        "intervals": [
+          3995,
+          3156,
+          2637
+        ],
+        "identity": "Переплетение нити",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 8
+      },
+      {
+        "role": "enem5",
+        "name": "Обручник",
+        "movement": "drift",
+        "structure": "N2,N3,N3,N3,N4,N4,N8",
+        "firstGeometry": null,
+        "firstStructure": "7/enem4",
+        "intervals": [
+          3011,
+          2379,
+          2260
+        ],
+        "identity": "Замыкание обруча",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 8
+      }
+    ]
+  },
+  {
+    "number": 12,
+    "title": "Уровень 12 (Военные люди)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Строевик",
+        "movement": "weave",
+        "structure": "N2,N3,N4,N4,N5,N6,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4301,
+          3355,
+          2753
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem2",
+        "name": "Колчанчик",
+        "movement": "accelerate",
+        "structure": "N1,N3,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4234,
+          3302,
+          2710
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Дубинщик",
+        "movement": "lateRush",
+        "structure": "N2,N3,N4,N4,N4,N5,N7",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5475,
+          4271,
+          3504
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem4",
+        "name": "Сабелька",
+        "movement": "pause",
+        "structure": "N2,N3,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3910,
+          3050,
+          2503
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Барабань",
+        "movement": "straight",
+        "structure": "N2,N2,N2,N2,N4,N5,N8",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          2611,
+          2250,
+          2250
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 8
+      }
+    ]
+  },
+  {
+    "number": 13,
+    "title": "Уровень 13 (Хищные птицы и лесные охотники)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Когтехват",
+        "movement": "lateRush",
+        "structure": "N2,N2,N3,N3,N3,N4,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4512,
+          3520,
+          2888
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem2",
+        "name": "Ухух",
+        "movement": "pause",
+        "structure": "N2,N2,N2,N2,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3944,
+          3076,
+          2524
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Хаптун",
+        "movement": "drift",
+        "structure": "N2,N2,N2,N3,N3,N4,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5404,
+          4215,
+          3458
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem4",
+        "name": "Долбун",
+        "movement": "weave",
+        "structure": "N2,N3,N3,N3,N4,N4,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3476,
+          2711,
+          2230
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem5",
+        "name": "Токовик",
+        "movement": "accelerate",
+        "structure": "N2,N2,N3,N3,N4,N5,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          2599,
+          2230,
+          2230
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 5
+      }
+    ]
+  },
+  {
+    "number": 14,
+    "title": "Уровень 14",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Баюнище",
+        "movement": "pause",
+        "structure": "N2,N2,N3,N3,N3,N4,N4,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4406,
+          3393,
+          2776
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem2",
+        "name": "Каркун-Вещун",
+        "movement": "drift",
+        "structure": "N2,N2,N3,N3,N3,N4,N4,N5",
+        "firstGeometry": null,
+        "firstStructure": "14/enem1",
+        "intervals": [
+          3643,
+          2805,
+          2295
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem3",
+        "name": "Цепняк",
+        "movement": "straight",
+        "structure": "N1,N1,N2,N3,N3,N3,N4,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4082,
+          3143,
+          2572
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem4",
+        "name": "Ступолёт",
+        "movement": "accelerate",
+        "structure": "N2,N2,N3,N3,N3,N3,N5,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3145,
+          2422,
+          2000
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem5",
+        "name": "Избач",
+        "movement": "lateRush",
+        "structure": "N1,N1,N2,N2,N3,N4,N5,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          2268,
+          2000,
+          2000
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      }
+    ]
+  },
+  {
+    "number": 15,
+    "title": "Уровень 15 (Избушка и Баба-яга)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Баба-Яга",
+        "movement": "drift",
+        "structure": "N1,N1,N2,N3,N3,N4,N4,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4557,
+          3372,
+          2734
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem2",
+        "name": "Злая Баба-Яга",
+        "movement": "straight",
+        "structure": "N1,N1,N2,N2,N2,N3,N4,N7",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3150,
+          2331,
+          1950
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem3",
+        "name": "Очень злая Баба-Яга",
+        "movement": "weave",
+        "structure": "N1,N1,N2,N3,N3,N3,N3,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5617,
+          4156,
+          3370
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem4",
+        "name": "Взбешенная Баба-Яга",
+        "movement": "lateRush",
+        "structure": "N1,N1,N2,N2,N3,N4,N4,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          2447,
+          1950,
+          1950
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem5",
+        "name": "Обезумевшая Баба-Яга",
+        "movement": "pause",
+        "structure": "N1,N1,N2,N2,N2,N3,N5,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          2167,
+          1950,
+          1950
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      }
+    ]
+  },
+  {
+    "number": 16,
+    "title": "Уровень 16 (Пробуждение нивы)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Босовик",
+        "movement": "straight",
+        "structure": "N1,N1,N2,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5828,
+          5012,
+          4254
+        ],
+        "identity": "Шаг сеятеля",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Сеюшка",
+        "movement": "weave",
+        "structure": "N1,N1,N2,N3,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4136,
+          3557,
+          3019
+        ],
+        "identity": "Зёрна из лукошка",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Звонец",
+        "movement": "accelerate",
+        "structure": "N1,N1,N2,N3,N3,N3,N3,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          7670,
+          6597,
+          5599
+        ],
+        "identity": "Пикирование жаворонка",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem4",
+        "name": "Дед-Всевсей",
+        "movement": "pause",
+        "structure": "N1,N1,N2,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "16/enem1",
+        "intervals": [
+          3519,
+          3027,
+          2569
+        ],
+        "identity": "Двойной приказ",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Зубец",
+        "movement": "drift",
+        "structure": "N1,N1,N2,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "16/enem1",
+        "intervals": [
+          3102,
+          2668,
+          2264
+        ],
+        "identity": "Зубья бороны",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      }
+    ]
+  },
+  {
+    "number": 17,
+    "title": "Уровень 17 (Стражи посевов)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Притайка",
+        "movement": "weave",
+        "structure": "N1,N1,N2,N2,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          6182,
+          5255,
+          4451
+        ],
+        "identity": "Вылазка перепёлки",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Щекан",
+        "movement": "accelerate",
+        "structure": "N1,N1,N2,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "16/enem1",
+        "intervals": [
+          3675,
+          3124,
+          2646
+        ],
+        "identity": "Щёки с зерном",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Столбик",
+        "movement": "lateRush",
+        "structure": "N1,N1,N2,N2,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          8050,
+          6843,
+          5796
+        ],
+        "identity": "Выпад из норы",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Трещотник",
+        "movement": "drift",
+        "structure": "N1,N1,N2,N2,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "17/enem1",
+        "intervals": [
+          3174,
+          2698,
+          2285
+        ],
+        "identity": "Треск и обратный щелчок",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Шуршало",
+        "movement": "straight",
+        "structure": "N1,N1,N2,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "16/enem1",
+        "intervals": [
+          2848,
+          2421,
+          2150
+        ],
+        "identity": "Соломенный размах",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      }
+    ]
+  },
+  {
+    "number": 18,
+    "title": "Уровень 18 (Жатвенные орудия)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Кривозуб",
+        "movement": "accelerate",
+        "structure": "N1,N1,N2,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "16/enem1",
+        "intervals": [
+          5783,
+          4858,
+          4106
+        ],
+        "identity": "Крюк серпа",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Тройчатка",
+        "movement": "lateRush",
+        "structure": "N1,N1,N3,N3,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3599,
+          3023,
+          2555
+        ],
+        "identity": "Три зубца вил",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Чесалка",
+        "movement": "pause",
+        "structure": "N1,N1,N2,N3,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "16/enem2",
+        "intervals": [
+          7576,
+          6364,
+          5379
+        ],
+        "identity": "Загребание зубьев",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Скрипуха",
+        "movement": "straight",
+        "structure": "N1,N1,N2,N2,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "17/enem1",
+        "intervals": [
+          3078,
+          2586,
+          2185
+        ],
+        "identity": "Ремень сноповязки",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Шестерило",
+        "movement": "weave",
+        "structure": "N1,N1,N2,N2,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "17/enem1",
+        "intervals": [
+          2792,
+          2345,
+          2100
+        ],
+        "identity": "Обратный зуб шестерни",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      }
+    ]
+  },
+  {
+    "number": 19,
+    "title": "Уровень 19 (Пожиратели урожая)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Прожорень",
+        "movement": "pause",
+        "structure": "N1,N1,N2,N3,N4,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4094,
+          3398,
+          2866
+        ],
+        "identity": "Два всплеска роя",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Латник",
+        "movement": "drift",
+        "structure": "N1,N1,N2,N2,N2,N2,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4085,
+          3391,
+          2860
+        ],
+        "identity": "Панцирь и укус",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Зубоскал",
+        "movement": "weave",
+        "structure": "N1,N1,N2,N2,N2,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3124,
+          2593,
+          2187
+        ],
+        "identity": "Нора и запасной выход",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Хлебокрад",
+        "movement": "accelerate",
+        "structure": "N1,N1,N2,N3,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "16/enem2",
+        "intervals": [
+          3916,
+          3250,
+          2741
+        ],
+        "identity": "Кража зерна с разворотом",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Ненасыть",
+        "movement": "lateRush",
+        "structure": "N1,N1,N2,N2,N2,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "19/enem3",
+        "intervals": [
+          2766,
+          2296,
+          2080
+        ],
+        "identity": "Голодное схождение",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      }
+    ]
+  },
+  {
+    "number": 20,
+    "title": "Уровень 20 (Сердце полей)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Колючень",
+        "movement": "drift",
+        "structure": "N1,N1,N2,N3,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "16/enem2",
+        "intervals": [
+          4900,
+          4018,
+          3381
+        ],
+        "identity": "Колючий обмах василька",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Белозубка",
+        "movement": "straight",
+        "structure": "N1,N1,N2,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3800,
+          3116,
+          2622
+        ],
+        "identity": "Лепестки и зубы",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Горчак",
+        "movement": "accelerate",
+        "structure": "N1,N1,N2,N2,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "17/enem3",
+        "intervals": [
+          6021,
+          4937,
+          4154
+        ],
+        "identity": "Горький сок",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Клохтун",
+        "movement": "lateRush",
+        "structure": "N1,N1,N2,N2,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "17/enem3",
+        "intervals": [
+          3597,
+          2949,
+          2482
+        ],
+        "identity": "Вспугнутый перепел",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Полевик",
+        "movement": "pause",
+        "structure": "N1,N1,N2,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "20/enem2",
+        "intervals": [
+          3110,
+          2550,
+          2146
+        ],
+        "identity": "Полевой круг с разрывом",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      }
+    ]
+  },
+  {
+    "number": 21,
+    "title": "Уровень 21 (Душистый сенокос)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Космаль",
+        "movement": "straight",
+        "structure": "N1,N1,N2,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "16/enem1",
+        "intervals": [
+          4743,
+          3842,
+          3226
+        ],
+        "identity": "Первый покос",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Ворошень",
+        "movement": "weave",
+        "structure": "N1,N1,N2,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "20/enem2",
+        "intervals": [
+          4200,
+          3402,
+          2856
+        ],
+        "identity": "Обратный взмах ворошилки",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Копнуша",
+        "movement": "lateRush",
+        "structure": "N1,N1,N2,N2,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "17/enem3",
+        "intervals": [
+          6002,
+          4862,
+          4082
+        ],
+        "identity": "Сено и скрытый ком",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Возило",
+        "movement": "pause",
+        "structure": "N2,N2,N3,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3867,
+          3132,
+          2630
+        ],
+        "identity": "Тележный толчок",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Двукос",
+        "movement": "drift",
+        "structure": "N1,N1,N2,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "20/enem2",
+        "intervals": [
+          3104,
+          2515,
+          2111
+        ],
+        "identity": "Вторая коса после первой",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      }
+    ]
+  },
+  {
+    "number": 22,
+    "title": "Уровень 22 (Богатырская пахота)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Лемешок",
+        "movement": "weave",
+        "structure": "N1,N1,N2,N3,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "16/enem2",
+        "intervals": [
+          4400,
+          3520,
+          2948
+        ],
+        "identity": "Подрез борозды",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Плугарь",
+        "movement": "accelerate",
+        "structure": "N1,N1,N2,N3,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "16/enem2",
+        "intervals": [
+          5912,
+          4730,
+          3961
+        ],
+        "identity": "Сошник и отвал",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Бодень",
+        "movement": "pause",
+        "structure": "N1,N1,N2,N2,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "17/enem3",
+        "intervals": [
+          5098,
+          4078,
+          3416
+        ],
+        "identity": "Два рога и копыто",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Бороздень",
+        "movement": "drift",
+        "structure": "N2,N2,N3,N3,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3768,
+          3015,
+          2525
+        ],
+        "identity": "Пласт земли перекрывает проход",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Микула",
+        "movement": "straight",
+        "structure": "N1,N1,N2,N2,N2,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "19/enem3",
+        "intervals": [
+          2921,
+          2337,
+          2020
+        ],
+        "identity": "Микулина обратная борозда",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      }
+    ]
+  },
+  {
+    "number": 23,
+    "title": "Уровень 23 (Тайна овина)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Хлыстень",
+        "movement": "accelerate",
+        "structure": "N1,N1,N2,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "16/enem1",
+        "intervals": [
+          5100,
+          4029,
+          3366
+        ],
+        "identity": "Обратный ход цепа",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Решетень",
+        "movement": "lateRush",
+        "structure": "N1,N1,N2,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "20/enem2",
+        "intervals": [
+          4050,
+          3199,
+          2673
+        ],
+        "identity": "Просев через решето",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Пылюга",
+        "movement": "drift",
+        "structure": "N1,N1,N2,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "20/enem2",
+        "intervals": [
+          3612,
+          2853,
+          2384
+        ],
+        "identity": "Пыль скрывает бросок",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Колосень",
+        "movement": "straight",
+        "structure": "N1,N1,N2,N2,N2,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "19/enem3",
+        "intervals": [
+          3650,
+          2884,
+          2409
+        ],
+        "identity": "Серпы из снопа",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Овинник",
+        "movement": "weave",
+        "structure": "N1,N1,N2,N2,N2,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "19/enem3",
+        "intervals": [
+          2813,
+          2222,
+          2000
+        ],
+        "identity": "Огонь между снопами",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      }
+    ]
+  },
+  {
+    "number": 24,
+    "title": "Уровень 24 (Старая ветряная мельница)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Мешкач",
+        "movement": "lateRush",
+        "structure": "N1,N1,N2,N2,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "17/enem3",
+        "intervals": [
+          5832,
+          4549,
+          3791
+        ],
+        "identity": "Мешок и россыпь",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Жерновень",
+        "movement": "pause",
+        "structure": "N1,N1,N2,N3,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "16/enem2",
+        "intervals": [
+          4822,
+          3761,
+          3134
+        ],
+        "identity": "Жернов делает второй оборот",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Мучень",
+        "movement": "straight",
+        "structure": "N1,N1,N2,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "16/enem1",
+        "intervals": [
+          4050,
+          3159,
+          2633
+        ],
+        "identity": "Мука расходится веером",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Крылорез",
+        "movement": "weave",
+        "structure": "N1,N1,N2,N2,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "17/enem1",
+        "intervals": [
+          3156,
+          2462,
+          2051
+        ],
+        "identity": "Лопасть возвращается",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Белоручка",
+        "movement": "accelerate",
+        "structure": "N1,N1,N2,N2,N2,N3,N3,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          2673,
+          2085,
+          1980
+        ],
+        "identity": "Мельничный подхват",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 5
+      }
+    ]
+  },
+  {
+    "number": 25,
+    "title": "Уровень 25 (Полуденный зной)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Полудница",
+        "movement": "drift",
+        "structure": "N1,N1,N2,N2,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "17/enem1",
+        "intervals": [
+          4900,
+          3822,
+          3136
+        ],
+        "identity": "Серп в полуденном мареве",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Маревая Полудница",
+        "movement": "weave",
+        "structure": "N1,N1,N2,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "20/enem2",
+        "intervals": [
+          3643,
+          2842,
+          2332
+        ],
+        "identity": "Отражённый замах",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Жаровая Полудница",
+        "movement": "accelerate",
+        "structure": "N1,N1,N2,N3,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "16/enem2",
+        "intervals": [
+          5077,
+          3960,
+          3249
+        ],
+        "identity": "Жар между борозд",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Венценосная Полудница",
+        "movement": "lateRush",
+        "structure": "N1,N1,N2,N2,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          2757,
+          2151,
+          1950
+        ],
+        "identity": "Венец раскрывается",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Истинная Полудница",
+        "movement": "pause",
+        "structure": "N1,N1,N2,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "20/enem2",
+        "intervals": [
+          2308,
+          1950,
+          1950
+        ],
+        "identity": "Последний солнечный обман",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      }
+    ]
+  },
+  {
+    "number": 26,
+    "title": "Уровень 26. Корнеплодное царство",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Чернавка",
+        "movement": "pause",
+        "structure": "N2,N2,N3,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "21/enem4",
+        "intervals": [
+          6237,
+          5426,
+          4615
+        ],
+        "identity": "Корень тянет обратно",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Ботвинья",
+        "movement": "lateRush",
+        "structure": "N2,N2,N3,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "21/enem4",
+        "intervals": [
+          4446,
+          3868,
+          3290
+        ],
+        "identity": "Ботва распускается",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Белобока",
+        "movement": "accelerate",
+        "structure": "N2,N2,N3,N3,N3,N3,N4,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5940,
+          5168,
+          4396
+        ],
+        "identity": "Стержень и боковой корешок",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem4",
+        "name": "Кругляш",
+        "movement": "weave",
+        "structure": "N2,N2,N3,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "21/enem4",
+        "intervals": [
+          3026,
+          2632,
+          2239
+        ],
+        "identity": "Редиска возвращается",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Спасовка",
+        "movement": "straight",
+        "structure": "N2,N2,N3,N3,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "22/enem4",
+        "intervals": [
+          3596,
+          3128,
+          2661
+        ],
+        "identity": "Сбор корнеплодов",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      }
+    ]
+  },
+  {
+    "number": 27,
+    "title": "Уровень 27. Огородная гряда",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Пупырчик",
+        "movement": "accelerate",
+        "structure": "N2,N2,N3,N3,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5377,
+          4625,
+          3925
+        ],
+        "identity": "Усики огурца",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Сочень",
+        "movement": "drift",
+        "structure": "N2,N2,N3,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "21/enem4",
+        "intervals": [
+          4357,
+          3747,
+          3181
+        ],
+        "identity": "Брызги спелой мякоти",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Кочерыжка",
+        "movement": "pause",
+        "structure": "N1,N2,N3,N3,N4,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          7020,
+          6037,
+          5125
+        ],
+        "identity": "Кочан раскрывает следующий лист",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Дёргач",
+        "movement": "straight",
+        "structure": "N2,N2,N3,N3,N3,N3,N4,N5",
+        "firstGeometry": null,
+        "firstStructure": "26/enem3",
+        "intervals": [
+          2777,
+          2388,
+          2120
+        ],
+        "identity": "Морковный рывок",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem5",
+        "name": "Пустоглав",
+        "movement": "weave",
+        "structure": "N2,N2,N3,N3,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "22/enem4",
+        "intervals": [
+          3521,
+          3028,
+          2570
+        ],
+        "identity": "Пустая тыква даёт отзвук",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      }
+    ]
+  },
+  {
+    "number": 28,
+    "title": "Уровень 28. Ягодная поляна",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Алевка",
+        "movement": "lateRush",
+        "structure": "N2,N2,N2,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5076,
+          4365,
+          3655
+        ],
+        "identity": "Ягода срывается с ветки",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Колючница",
+        "movement": "straight",
+        "structure": "N2,N2,N2,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "28/enem1",
+        "intervals": [
+          3640,
+          3130,
+          2621
+        ],
+        "identity": "Шип после ягодки",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Гроздяна",
+        "movement": "drift",
+        "structure": "N2,N2,N3,N3,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "27/enem1",
+        "intervals": [
+          6692,
+          5755,
+          4819
+        ],
+        "identity": "Гроздь рассыпается",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Сеточка",
+        "movement": "pause",
+        "structure": "N1,N2,N3,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5623,
+          4836,
+          4049
+        ],
+        "identity": "Сетка кожуры рвётся",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Полосатень",
+        "movement": "accelerate",
+        "structure": "N2,N2,N3,N3,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "22/enem4",
+        "intervals": [
+          3445,
+          2963,
+          2481
+        ],
+        "identity": "Полосатый раскат",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      }
+    ]
+  },
+  {
+    "number": 29,
+    "title": "Уровень 29. Господский сад",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Грушак",
+        "movement": "drift",
+        "structure": "N2,N2,N3,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5736,
+          4818,
+          4015
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Синячок",
+        "movement": "weave",
+        "structure": "N2,N2,N3,N4,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4042,
+          3395,
+          2829
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Троячок",
+        "movement": "straight",
+        "structure": "N2,N3,N3,N4,N4,N5,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3251,
+          2731,
+          2276
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem4",
+        "name": "Кисляк",
+        "movement": "lateRush",
+        "structure": "N2,N2,N4,N4,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4649,
+          3905,
+          3254
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Червоточец",
+        "movement": "pause",
+        "structure": "N1,N12,N2,N3,N3,N4,N5,N8",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5547,
+          4659,
+          3883
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 12
+      }
+    ]
+  },
+  {
+    "number": 30,
+    "title": "Уровень 30 (Гороховый престол)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Царь Горох",
+        "movement": "straight",
+        "structure": "N2,N2,N3,N3,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "27/enem1",
+        "intervals": [
+          4484,
+          3408,
+          2690
+        ],
+        "identity": "Горошины с подлокотника",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Треснувший Царь Горох",
+        "movement": "accelerate",
+        "structure": "N2,N2,N3,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "21/enem4",
+        "intervals": [
+          3854,
+          2929,
+          2313
+        ],
+        "identity": "Трещина меняет выход",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Израненный Царь Горох",
+        "movement": "weave",
+        "structure": "N2,N2,N3,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "21/enem4",
+        "intervals": [
+          4150,
+          3154,
+          2490
+        ],
+        "identity": "Стража и отставший",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Пылающий Царь Горох",
+        "movement": "drift",
+        "structure": "N2,N2,N2,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "28/enem1",
+        "intervals": [
+          3900,
+          2964,
+          2340
+        ],
+        "identity": "Угольный след трона",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Гневный Царь Горох",
+        "movement": "pause",
+        "structure": "N1,N2,N2,N3,N3,N4,N5,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3500,
+          2660,
+          2100
+        ],
+        "identity": "Царский салют с ответом",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      }
+    ]
+  },
+  {
+    "number": 31,
+    "title": "Уровень 31 (Камышовые берега)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Резак",
+        "movement": "wave",
+        "structure": "N2,N2,N3,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "29/enem1",
+        "intervals": [
+          5428,
+          4614,
+          3800
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Клыкокрыл",
+        "movement": "wave",
+        "structure": "N2,N2,N3,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "29/enem1",
+        "intervals": [
+          3758,
+          3194,
+          2631
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Древогрыз",
+        "movement": "lateRush",
+        "structure": "N2,N2,N3,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "29/enem1",
+        "intervals": [
+          6665,
+          5666,
+          4666
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Корнеход",
+        "movement": "accelerate",
+        "structure": "N2,N2,N4,N4,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "29/enem4",
+        "intervals": [
+          4140,
+          3519,
+          2898
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Шестовик",
+        "movement": "straight",
+        "structure": "N2,N2,N3,N4,N4,N4,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3597,
+          3058,
+          2518
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 5
+      }
+    ]
+  },
+  {
+    "number": 32,
+    "title": "Уровень 32 (Переправа через реку)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Мохогляд",
+        "movement": "wave",
+        "structure": "N2,N2,N2,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "28/enem1",
+        "intervals": [
+          5204,
+          4371,
+          3591
+        ],
+        "identity": "Взгляд из мха",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Вёслыч",
+        "movement": "wave",
+        "structure": "N2,N2,N3,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "21/enem4",
+        "intervals": [
+          3892,
+          3269,
+          2685
+        ],
+        "identity": "Гребок назад",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Зубоплот",
+        "movement": "drift",
+        "structure": "N2,N2,N3,N3,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "27/enem1",
+        "intervals": [
+          6138,
+          5156,
+          4235
+        ],
+        "identity": "Доски плота смыкаются",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Крючень",
+        "movement": "wave",
+        "structure": "N2,N2,N3,N3,N4,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4064,
+          3413,
+          2804
+        ],
+        "identity": "Крюк за борт",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Пагодник",
+        "movement": "wave",
+        "structure": "N2,N2,N3,N3,N4,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "32/enem4",
+        "intervals": [
+          3560,
+          2991,
+          2457
+        ],
+        "identity": "Переправа вторым потоком",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      }
+    ]
+  },
+  {
+    "number": 33,
+    "title": "Уровень 33 (Новгородские сети)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Юркач",
+        "movement": "wave",
+        "structure": "N2,N2,N3,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "21/enem4",
+        "intervals": [
+          4300,
+          3569,
+          2924
+        ],
+        "identity": "Юркая петля рыбы",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Ершак",
+        "movement": "weave",
+        "structure": "N2,N2,N2,N3,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4700,
+          3901,
+          3196
+        ],
+        "identity": "Колючий плавник",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Сетевик",
+        "movement": "wave",
+        "structure": "N2,N2,N2,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "28/enem1",
+        "intervals": [
+          5350,
+          4441,
+          3638
+        ],
+        "identity": "Поплавки и грузило",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Струнобой",
+        "movement": "lateRush",
+        "structure": "N2,N2,N3,N4,N4,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4384,
+          3639,
+          2981
+        ],
+        "identity": "Оборванный перебор",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Ладейник",
+        "movement": "wave",
+        "structure": "N2,N2,N3,N3,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "27/enem1",
+        "intervals": [
+          3650,
+          3030,
+          2482
+        ],
+        "identity": "Борт и встречное весло",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      }
+    ]
+  },
+  {
+    "number": 34,
+    "title": "Уровень 34 (Лебединая заводь)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Свистун",
+        "movement": "wave",
+        "structure": "N2,N2,N3,N3,N3,N3,N4,N5",
+        "firstGeometry": null,
+        "firstStructure": "26/enem3",
+        "intervals": [
+          4357,
+          3572,
+          2919
+        ],
+        "identity": "Свист и повторное пике",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem2",
+        "name": "Клюворез",
+        "movement": "wave",
+        "structure": "N2,N2,N2,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "28/enem1",
+        "intervals": [
+          5250,
+          4305,
+          3518
+        ],
+        "identity": "Два клевка с разворотом",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Крякун",
+        "movement": "wave",
+        "structure": "N2,N2,N3,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "21/enem4",
+        "intervals": [
+          4600,
+          3772,
+          3082
+        ],
+        "identity": "Разбежка по воде",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Белокрыл",
+        "movement": "wave",
+        "structure": "N2,N2,N3,N3,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "27/enem1",
+        "intervals": [
+          4100,
+          3362,
+          2747
+        ],
+        "identity": "Крылья сводятся",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Горлотруб",
+        "movement": "accelerate",
+        "structure": "N2,N2,N3,N3,N4,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "32/enem4",
+        "intervals": [
+          3500,
+          2870,
+          2345
+        ],
+        "identity": "Крик прерывает стаю",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      }
+    ]
+  },
+  {
+    "number": 35,
+    "title": "Уровень 35 (Лунный омут)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Улитень",
+        "movement": "drift",
+        "structure": "N2,N2,N2,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "28/enem1",
+        "intervals": [
+          5613,
+          4603,
+          3761
+        ],
+        "identity": "Слизистый след",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Гребешок",
+        "movement": "wave",
+        "structure": "N2,N2,N3,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "21/enem4",
+        "intervals": [
+          3850,
+          3157,
+          2580
+        ],
+        "identity": "Зубцы гребня",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Белоцвет",
+        "movement": "wave",
+        "structure": "N2,N2,N3,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "21/enem4",
+        "intervals": [
+          4550,
+          3731,
+          3049
+        ],
+        "identity": "Лепестки на воде",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Плакальщица",
+        "movement": "wave",
+        "structure": "N2,N2,N3,N3,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "27/enem1",
+        "intervals": [
+          4900,
+          4018,
+          3283
+        ],
+        "identity": "Плач с запоздалым ответом",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Огнепёр",
+        "movement": "wave",
+        "structure": "N2,N2,N3,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "21/enem4",
+        "intervals": [
+          3322,
+          2724,
+          2226
+        ],
+        "identity": "Огненный хвост рыбы",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      }
+    ]
+  },
+  {
+    "number": 36,
+    "title": "Уровень 36 (Хищница глубин)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Серебрянка",
+        "movement": "wave",
+        "structure": "N2,N2,N2,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "28/enem1",
+        "intervals": [
+          4154,
+          3365,
+          2742
+        ],
+        "identity": "Серебряный отблеск",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Красноплав",
+        "movement": "accelerate",
+        "structure": "N2,N2,N3,N3,N4,N4,N4,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3800,
+          3078,
+          2508
+        ],
+        "identity": "Разгон плавников",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem3",
+        "name": "Полосатик",
+        "movement": "wave",
+        "structure": "N2,N2,N3,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "21/enem4",
+        "intervals": [
+          4741,
+          3840,
+          3129
+        ],
+        "identity": "Полосы возвращаются",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Усач",
+        "movement": "wave",
+        "structure": "N2,N2,N3,N3,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "27/enem1",
+        "intervals": [
+          5500,
+          4455,
+          3630
+        ],
+        "identity": "Усы охватывают дно",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Зубарь",
+        "movement": "lateRush",
+        "structure": "N2,N2,N2,N3,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "33/enem2",
+        "intervals": [
+          4094,
+          3316,
+          2702
+        ],
+        "identity": "Щучья засада",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      }
+    ]
+  },
+  {
+    "number": 37,
+    "title": "Уровень 37 (Гроза над рекой)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Клешнач",
+        "movement": "wave",
+        "structure": "N2,N2,N3,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "21/enem4",
+        "intervals": [
+          4650,
+          3720,
+          3022
+        ],
+        "identity": "Клешня и возврат",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Долгонос",
+        "movement": "wave",
+        "structure": "N2,N2,N3,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "21/enem4",
+        "intervals": [
+          3950,
+          3160,
+          2568
+        ],
+        "identity": "Комариный повтор",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Громонос",
+        "movement": "wave",
+        "structure": "N2,N2,N3,N3,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "27/enem1",
+        "intervals": [
+          5400,
+          4320,
+          3510
+        ],
+        "identity": "Раскат и удар грома",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Треснодуб",
+        "movement": "pause",
+        "structure": "N2,N2,N3,N3,N4,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "32/enem4",
+        "intervals": [
+          4800,
+          3840,
+          3120
+        ],
+        "identity": "Треснувший ствол",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Фонарник",
+        "movement": "wave",
+        "structure": "N2,N2,N2,N3,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "33/enem2",
+        "intervals": [
+          3450,
+          2760,
+          2243
+        ],
+        "identity": "Свет перед разрядом",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      }
+    ]
+  },
+  {
+    "number": 38,
+    "title": "Уровень 38 (Сокровища речного дна)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Жемчужник",
+        "movement": "wave",
+        "structure": "N2,N2,N3,N3,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "27/enem1",
+        "intervals": [
+          5100,
+          4029,
+          3264
+        ],
+        "identity": "Створки жемчужницы",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Чекан",
+        "movement": "wave",
+        "structure": "N2,N2,N3,N3,N3,N3,N4,N5",
+        "firstGeometry": null,
+        "firstStructure": "26/enem3",
+        "intervals": [
+          3850,
+          3042,
+          2464
+        ],
+        "identity": "Монета на ребре",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem3",
+        "name": "Глубинник",
+        "movement": "wave",
+        "structure": "N2,N2,N3,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "21/enem4",
+        "intervals": [
+          4250,
+          3358,
+          2720
+        ],
+        "identity": "Гребок с разворотом",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Скрыня",
+        "movement": "lateRush",
+        "structure": "N2,N2,N2,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "28/enem1",
+        "intervals": [
+          5500,
+          4345,
+          3520
+        ],
+        "identity": "Крышка и зубы сундука",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Осетрыч",
+        "movement": "wave",
+        "structure": "N2,N2,N3,N3,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "27/enem1",
+        "intervals": [
+          3323,
+          2625,
+          2127
+        ],
+        "identity": "Осетровая борозда",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      }
+    ]
+  },
+  {
+    "number": 39,
+    "title": "Уровень 39 (Исполнение желаний)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Русалка",
+        "movement": "wave",
+        "structure": "N2,N2,N2,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "28/enem1",
+        "intervals": [
+          4900,
+          3822,
+          3038
+        ],
+        "identity": "Манящий первый круг",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Скалящаяся Русалка",
+        "movement": "wave",
+        "structure": "N2,N2,N3,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "21/enem4",
+        "intervals": [
+          4223,
+          3294,
+          2618
+        ],
+        "identity": "Обещание возвращается укусом",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Бешеная Русалка",
+        "movement": "weave",
+        "structure": "N2,N2,N3,N3,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "27/enem1",
+        "intervals": [
+          4048,
+          3157,
+          2510
+        ],
+        "identity": "Разорванное отражение",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Проклятая Русалка",
+        "movement": "pause",
+        "structure": "N2,N2,N3,N4,N4,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "33/enem4",
+        "intervals": [
+          3856,
+          3007,
+          2390
+        ],
+        "identity": "Замерший хвост",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Щучья Ведьма",
+        "movement": "wave",
+        "structure": "N1,N2,N2,N3,N3,N4,N5,N6",
+        "firstGeometry": null,
+        "firstStructure": "30/enem5",
+        "intervals": [
+          3590,
+          2801,
+          2226
+        ],
+        "identity": "Щучий круг замыкается",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      }
+    ]
+  },
+  {
+    "number": 40,
+    "title": "Уровень 40 (Владыка омута)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Водяной",
+        "movement": "wave",
+        "structure": "N2,N2,N3,N3,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "27/enem1",
+        "intervals": [
+          5100,
+          3927,
+          3111
+        ],
+        "identity": "Первый противоток",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Разбухший Водяной",
+        "movement": "accelerate",
+        "structure": "N2,N2,N3,N3,N4,N4,N4,N5",
+        "firstGeometry": null,
+        "firstStructure": "36/enem2",
+        "intervals": [
+          4700,
+          3619,
+          2867
+        ],
+        "identity": "Пузырь прорывается",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem3",
+        "name": "Напорный Водяной",
+        "movement": "wave",
+        "structure": "N2,N2,N3,N3,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "27/enem1",
+        "intervals": [
+          3588,
+          2763,
+          2189
+        ],
+        "identity": "Схождение вод",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Ревущий Водяной",
+        "movement": "pause",
+        "structure": "N2,N2,N3,N3,N4,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "32/enem4",
+        "intervals": [
+          3938,
+          3032,
+          2402
+        ],
+        "identity": "Рёв и обратная волна",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Разъярённый Водяной",
+        "movement": "wave",
+        "structure": "N1,N2,N2,N3,N3,N4,N5,N6",
+        "firstGeometry": null,
+        "firstStructure": "30/enem5",
+        "intervals": [
+          3550,
+          2734,
+          2166
+        ],
+        "identity": "Потоп меняет русло",
+        "signatures": 3,
+        "chains": 0,
+        "barricades": 0,
+        "maxCombo": 6
+      }
+    ]
+  },
+  {
+    "number": 41,
+    "title": "Уровень 41 (Двор и ворота)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Бобик",
+        "movement": "lateRush",
+        "structure": "C3,C6,N2,N2,N2,N2,N2,N2,N2,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5356,
+          4713,
+          4071
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem2",
+        "name": "Клевач",
+        "movement": "weave",
+        "structure": "C4,C5,N2,N2,N2,N3,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5600,
+          4928,
+          4256
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem3",
+        "name": "Растрёпа",
+        "movement": "accelerate",
+        "structure": "C4,C5,N2,N2,N2,N2,N2,N2,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          7552,
+          6646,
+          5740
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem4",
+        "name": "Фонарница",
+        "movement": "pause",
+        "structure": "C4,C6,N2,N2,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4500,
+          3960,
+          3420
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem5",
+        "name": "Коряга",
+        "movement": "drift",
+        "structure": "C3,C5,N2,N2,N2,N2,N2,N2,N2,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3936,
+          3464,
+          2991
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      }
+    ]
+  },
+  {
+    "number": 42,
+    "title": "Уровень 42 (Сени)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Щёлкан",
+        "movement": "straight",
+        "structure": "C3,C4,N2,N3,N3,N4,N4,N4,N8",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5508,
+          4847,
+          4186
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 8
+      },
+      {
+        "role": "enem2",
+        "name": "Шлёпик",
+        "movement": "wave",
+        "structure": "C4,C5,N2,N2,N4,N4,N4,N7",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4416,
+          3886,
+          3356
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem3",
+        "name": "Тулупыч",
+        "movement": "drift",
+        "structure": "C3,C5,N2,N2,N3,N4,N5,N7",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          7888,
+          6941,
+          5995
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem4",
+        "name": "Бренчиха",
+        "movement": "weave",
+        "structure": "C4,C5,N2,N3,N3,N4,N5,N8",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3612,
+          3179,
+          2745
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 8
+      },
+      {
+        "role": "enem5",
+        "name": "Притворник",
+        "movement": "accelerate",
+        "structure": "C3,C5,N2,N2,N4,N4,N4,N8",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4000,
+          3520,
+          3040
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 8
+      }
+    ]
+  },
+  {
+    "number": 43,
+    "title": "Уровень 43 (Кухня)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Чугунец",
+        "movement": "weave",
+        "structure": "C3,C4,N2,N2,N2,N2,N3,N4,N4,N7",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5712,
+          5027,
+          4341
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem2",
+        "name": "Рогатень",
+        "movement": "pause",
+        "structure": "C3,C5,N2,N2,N2,N2,N2,N4,N4,N8",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4370,
+          3846,
+          3321
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 8
+      },
+      {
+        "role": "enem3",
+        "name": "Липун",
+        "movement": "straight",
+        "structure": "C3,C5,N2,N3,N3,N3,N3,N6,N8",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          7788,
+          6853,
+          5919
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 8
+      },
+      {
+        "role": "enem4",
+        "name": "Скалкина",
+        "movement": "wave",
+        "structure": "C4,C6,N2,N2,N2,N3,N3,N3,N3,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3400,
+          2992,
+          2600
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem5",
+        "name": "Черпак",
+        "movement": "lateRush",
+        "structure": "C4,C7,N2,N2,N2,N2,N2,N2,N2,N2,N3,N8",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4000,
+          3520,
+          3040
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 8
+      }
+    ]
+  },
+  {
+    "number": 44,
+    "title": "Уровень 44 (Птичник)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Шипучка",
+        "movement": "pause",
+        "structure": "C3,C5,N2,N2,N3,N4,N4,N4,N7",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5768,
+          5076,
+          4384
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem2",
+        "name": "Квочка",
+        "movement": "straight",
+        "structure": "C4,C5,N2,N2,N2,N3,N3,N3,N3,N8",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4268,
+          3756,
+          3244
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 8
+      },
+      {
+        "role": "enem3",
+        "name": "Треснушка",
+        "movement": "wave",
+        "structure": "C3,C6,N2,N2,N3,N3,N3,N4,N7",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          7956,
+          7001,
+          6047
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem4",
+        "name": "Пыхтун",
+        "movement": "accelerate",
+        "structure": "C5,C5,N2,N2,N2,N2,N3,N3,N4,N8",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3268,
+          2876,
+          2600
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 8
+      },
+      {
+        "role": "enem5",
+        "name": "Кукарекало",
+        "movement": "lateRush",
+        "structure": "C5,C7,N1,N2,N2,N2,N2,N2,N3,N4,N8",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4160,
+          3661,
+          3162
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 8
+      }
+    ]
+  },
+  {
+    "number": 45,
+    "title": "Уровень 45 (Баня)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Банник",
+        "movement": "drift",
+        "structure": "C3,C3,N2,N2,N3,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5600,
+          4928,
+          4256
+        ],
+        "identity": "Пар от стены",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Ошпаренный Банник",
+        "movement": "pause",
+        "structure": "C3,C4,N1,N1,N1,N2,N2,N2,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5150,
+          4532,
+          3914
+        ],
+        "identity": "Ожог за паром",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Задубевший Банник",
+        "movement": "lateRush",
+        "structure": "C4,C5,N2,N2,N2,N3,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          6564,
+          5776,
+          4988
+        ],
+        "identity": "Тяжёлая вторая лапа",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem4",
+        "name": "Обугленный Банник",
+        "movement": "straight",
+        "structure": "C4,C6,N2,N2,N2,N2,N2,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3758,
+          3307,
+          2856
+        ],
+        "identity": "Бросок через полок",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem5",
+        "name": "Испарившийся Банник",
+        "movement": "wave",
+        "structure": "C5,C7,N2,N2,N2,N2,N2,N2,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3950,
+          3476,
+          3002
+        ],
+        "identity": "Паровой захлоп",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 7
+      }
+    ]
+  },
+  {
+    "number": 46,
+    "title": "Уровень 46 (Погреб)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Крохобор",
+        "movement": "pause",
+        "structure": "C3,C4,N2,N2,N2,N2,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5916,
+          5324,
+          4733
+        ],
+        "identity": "Хлеб занят — лапа свободна",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Косохлёст",
+        "movement": "accelerate",
+        "structure": "C3,C5,N2,N2,N2,N2,N2,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4232,
+          3809,
+          3386
+        ],
+        "identity": "Двойной хлёст",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem3",
+        "name": "Рассольник",
+        "movement": "pause",
+        "structure": "C4,C5,N2,N2,N2,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          7820,
+          7038,
+          6256
+        ],
+        "identity": "Бурление с довеском",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem4",
+        "name": "Клубнеглаз",
+        "movement": "drift",
+        "structure": "C4,C5,N2,N2,N2,N2,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3060,
+          2754,
+          2600
+        ],
+        "identity": "Клубни с обратным отскоком",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem5",
+        "name": "Пенодуй",
+        "movement": "straight",
+        "structure": "C4,C6,N2,N2,N2,N2,N3,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4000,
+          3600,
+          3200
+        ],
+        "identity": "Пена ломает колонну",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 6
+      }
+    ]
+  },
+  {
+    "number": 47,
+    "title": "Уровень 47 (Амбар)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Хоботень",
+        "movement": "straight",
+        "structure": "C4,C5,N2,N2,N2,N2,N3,N3,N3,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          6300,
+          5670,
+          5040
+        ],
+        "identity": "Укол хобота",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem2",
+        "name": "Прорёха",
+        "movement": "accelerate",
+        "structure": "C3,C5,N2,N2,N2,N2,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3960,
+          3564,
+          3168
+        ],
+        "identity": "Разрыв мешка",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem3",
+        "name": "Зерномёт",
+        "movement": "pause",
+        "structure": "C3,C4,N2,N2,N2,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          8004,
+          7204,
+          6403
+        ],
+        "identity": "Совок и оставшееся зерно",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Бирюк",
+        "movement": "drift",
+        "structure": "C3,C5,N2,N2,N2,N2,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "47/enem2",
+        "intervals": [
+          3010,
+          2709,
+          2600
+        ],
+        "identity": "Счёт с повторной отметкой",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem5",
+        "name": "Урожаище",
+        "movement": "lateRush",
+        "structure": "C4,C5,N2,N2,N2,N2,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "46/enem4",
+        "intervals": [
+          4131,
+          3718,
+          3305
+        ],
+        "identity": "Снопы сходятся",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      }
+    ]
+  },
+  {
+    "number": 48,
+    "title": "Уровень 48 (Колодец)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Жабоскок",
+        "movement": "pause",
+        "structure": "C4,C5,N2,N2,N2,N2,N2,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          6018,
+          5416,
+          4814
+        ],
+        "identity": "Хват и прыжок жабы",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem2",
+        "name": "Кандальник",
+        "movement": "weave",
+        "structure": "C4,C5,N2,N2,N2,N2,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "46/enem4",
+        "intervals": [
+          4095,
+          3686,
+          3276
+        ],
+        "identity": "Кандальный оборот",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem3",
+        "name": "Плескун",
+        "movement": "lateRush",
+        "structure": "C4,C4,N2,N2,N2,N2,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          7946,
+          7151,
+          6357
+        ],
+        "identity": "Хлыст за воротом",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Усоструй",
+        "movement": "accelerate",
+        "structure": "C4,C5,N2,N2,N2,N2,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "46/enem4",
+        "intervals": [
+          2890,
+          2601,
+          2600
+        ],
+        "identity": "Ведро задерживает второе",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem5",
+        "name": "Багорыч",
+        "movement": "straight",
+        "structure": "C3,C3,N2,N2,N2,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4040,
+          3636,
+          3232
+        ],
+        "identity": "Багор после каната",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      }
+    ]
+  },
+  {
+    "number": 49,
+    "title": "Уровень 49 (Пасека у дома)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Гудень",
+        "movement": "drift",
+        "structure": "C3,C4,N1,N2,N2,N2,N3,N3,N4,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          6283,
+          5529,
+          4649
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem2",
+        "name": "Жалохват",
+        "movement": "lateRush",
+        "structure": "C3,C4,N2,N2,N2,N2,N2,N3,N4,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3738,
+          3289,
+          2766
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem3",
+        "name": "Дымогон",
+        "movement": "pause",
+        "structure": "C3,C4,N2,N2,N2,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "47/enem3",
+        "intervals": [
+          8131,
+          7156,
+          6017
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Сеточник",
+        "movement": "wave",
+        "structure": "C5,C5,N2,N2,N2,N2,N2,N3,N3,N7",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          2772,
+          2600,
+          2600
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem5",
+        "name": "Ульевластница",
+        "movement": "pause",
+        "structure": "C4,C7,N1,N1,N1,N1,N2,N3,N3,N8",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4069,
+          3580,
+          3011
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 8
+      }
+    ]
+  },
+  {
+    "number": 50,
+    "title": "Уровень 50 (Беспорядок пряхи)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Кикимора",
+        "movement": "pause",
+        "structure": "C4,C5,N2,N2,N2,N3,N3,N4,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5400,
+          4752,
+          4104
+        ],
+        "identity": "Первый виток веретена",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem2",
+        "name": "Спутанная Кикимора",
+        "movement": "weave",
+        "structure": "C3,C4,N1,N1,N1,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5050,
+          4444,
+          3838
+        ],
+        "identity": "Затянувшийся узел",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Клохчущая Кикимора",
+        "movement": "pause",
+        "structure": "C3,C5,N2,N2,N2,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          6564,
+          5776,
+          4988
+        ],
+        "identity": "Тишина перед клокотом",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem4",
+        "name": "Свалявшаяся Кикимора",
+        "movement": "drift",
+        "structure": "C4,C6,N2,N2,N2,N2,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3758,
+          3307,
+          2856
+        ],
+        "identity": "Клок волос с зацепом",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem5",
+        "name": "Кудельная Кикимора",
+        "movement": "lateRush",
+        "structure": "C5,C7,N2,N2,N2,N2,N2,N2,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "45/enem5",
+        "intervals": [
+          3850,
+          3388,
+          2926
+        ],
+        "identity": "Нить рвётся на последнем витке",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 7
+      }
+    ]
+  },
+  {
+    "number": 51,
+    "title": "Уровень 51 (Огород)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Кочанище",
+        "movement": "straight",
+        "structure": "C3,C4,N2,N2,N2,N3,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5814,
+          5233,
+          4651
+        ],
+        "identity": "Кочан раскрывает слои",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Реписько",
+        "movement": "drift",
+        "structure": "C3,C5,N2,N2,N2,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "50/enem3",
+        "intervals": [
+          3870,
+          3483,
+          3096
+        ],
+        "identity": "Отскок репы",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem3",
+        "name": "Плетень",
+        "movement": "weave",
+        "structure": "C4,C5,N2,N2,N2,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "46/enem3",
+        "intervals": [
+          8004,
+          7204,
+          6403
+        ],
+        "identity": "Усик выстреливает",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem4",
+        "name": "Драняк",
+        "movement": "wave",
+        "structure": "C3,C4,N2,N2,N2,N2,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3010,
+          2709,
+          2600
+        ],
+        "identity": "Порыв возвращается",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Грядочник",
+        "movement": "straight",
+        "structure": "C3,C4,N2,N2,N2,N2,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "46/enem1",
+        "intervals": [
+          4131,
+          3718,
+          3305
+        ],
+        "identity": "Тяпка после полива",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      }
+    ]
+  },
+  {
+    "number": 52,
+    "title": "Уровень 52 (Водяная мельница)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Пылюк",
+        "movement": "accelerate",
+        "structure": "C4,C5,N2,N2,N2,N2,N2,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "48/enem1",
+        "intervals": [
+          5916,
+          5324,
+          4733
+        ],
+        "identity": "Мучная пыль и ком",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem2",
+        "name": "Ковшан",
+        "movement": "lateRush",
+        "structure": "C3,C4,N2,N2,N2,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "47/enem3",
+        "intervals": [
+          3960,
+          3564,
+          3168
+        ],
+        "identity": "Обратный взмах ковша",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Жерновик",
+        "movement": "straight",
+        "structure": "C3,C4,N2,N2,N2,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "47/enem3",
+        "intervals": [
+          8062,
+          7256,
+          6450
+        ],
+        "identity": "Второй оборот жернова",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Замуч",
+        "movement": "weave",
+        "structure": "C4,C4,N2,N2,N2,N2,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          2924,
+          2632,
+          2600
+        ],
+        "identity": "Лопата гонит вдоль края",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Вертень",
+        "movement": "wave",
+        "structure": "C3,C6,N2,N2,N2,N2,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4131,
+          3718,
+          3305
+        ],
+        "identity": "Колесо пропускает лопасть",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 6
+      }
+    ]
+  },
+  {
+    "number": 53,
+    "title": "Уровень 53 (Деревенская ярмарка)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Молотило",
+        "movement": "straight",
+        "structure": "C5,C5,N1,N1,N1,N2,N2,N3,N3,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          6018,
+          5416,
+          4814
+        ],
+        "identity": "Замах силача",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem2",
+        "name": "Батожок",
+        "movement": "lateRush",
+        "structure": "C5,C5,N2,N2,N2,N2,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3690,
+          3321,
+          2952
+        ],
+        "identity": "Сломанный шаг куклы",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem3",
+        "name": "Гиревик",
+        "movement": "drift",
+        "structure": "C5,C5,N2,N2,N2,N2,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "53/enem2",
+        "intervals": [
+          8120,
+          7308,
+          6496
+        ],
+        "identity": "Весы меняют перевес",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem4",
+        "name": "Горлопан",
+        "movement": "accelerate",
+        "structure": "C3,C4,N2,N2,N2,N2,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          2752,
+          2600,
+          2600
+        ],
+        "identity": "Выкрик с ответом",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Печатник",
+        "movement": "pause",
+        "structure": "C4,C4,N2,N2,N2,N2,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "48/enem3",
+        "intervals": [
+          4172,
+          3754,
+          3337
+        ],
+        "identity": "Печать прерывает оглашение",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      }
+    ]
+  },
+  {
+    "number": 54,
+    "title": "Уровень 54 (Крыльцо)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Скрипень",
+        "movement": "accelerate",
+        "structure": "C3,C4,N2,N2,N2,N2,N2,N2,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5916,
+          5324,
+          4733
+        ],
+        "identity": "Скрип перед хлопком",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Бряцало",
+        "movement": "lateRush",
+        "structure": "C4,C5,N2,N2,N2,N2,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "46/enem4",
+        "intervals": [
+          3510,
+          3159,
+          2808
+        ],
+        "identity": "Стук с лишним ударом",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem3",
+        "name": "Скамейник",
+        "movement": "straight",
+        "structure": "C6,C7,N2,N2,N2,N2,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          8120,
+          7308,
+          6496
+        ],
+        "identity": "Передние и задние ножки",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem4",
+        "name": "Глазок",
+        "movement": "drift",
+        "structure": "C6,C7,N2,N2,N2,N2,N2,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3096,
+          2786,
+          2600
+        ],
+        "identity": "Взгляд и укол",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem5",
+        "name": "Стрешень",
+        "movement": "lateRush",
+        "structure": "C3,C4,N2,N2,N2,N2,N3,N3,N4,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4131,
+          3718,
+          3305
+        ],
+        "identity": "Конёк возвращается",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      }
+    ]
+  },
+  {
+    "number": 55,
+    "title": "Уровень 55 (Домашнее хозяйство)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Домовой",
+        "movement": "pause",
+        "structure": "C6,C6,N2,N2,N2,N3,N3,N4,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5700,
+          5016,
+          4332
+        ],
+        "identity": "Веник сметает к порогу",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem2",
+        "name": "Оскорблённый Домовой",
+        "movement": "accelerate",
+        "structure": "C5,C6,N1,N1,N1,N2,N2,N2,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5200,
+          4576,
+          3952
+        ],
+        "identity": "Щипок после обиды",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem3",
+        "name": "Всеоружный Домовой",
+        "movement": "pause",
+        "structure": "C4,C4,N2,N2,N2,N2,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "48/enem3",
+        "intervals": [
+          6564,
+          5776,
+          4988
+        ],
+        "identity": "Шест перекрывает проход",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Взъерошенный Домовой",
+        "movement": "weave",
+        "structure": "C4,C5,N2,N2,N2,N2,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "46/enem4",
+        "intervals": [
+          3758,
+          3307,
+          2856
+        ],
+        "identity": "Беспорядок возвращает вещи",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem5",
+        "name": "Одичавший Домовой",
+        "movement": "straight",
+        "structure": "C4,C7,N2,N2,N2,N2,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3950,
+          3476,
+          3002
+        ],
+        "identity": "Последний взмах дома",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 7
+      }
+    ]
+  },
+  {
+    "number": 56,
+    "title": "Уровень 56 (Прачечный двор)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Скользель",
+        "movement": "drift",
+        "structure": "C3,C4,N2,N2,N2,N3,N3,N4,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4950,
+          4455,
+          3960
+        ],
+        "identity": "Мыльный скользящий след",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem2",
+        "name": "Полотнище",
+        "movement": "lateRush",
+        "structure": "C3,C5,N2,N2,N2,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4300,
+          3870,
+          3440
+        ],
+        "identity": "Полотно накрывает",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem3",
+        "name": "Рубчак",
+        "movement": "straight",
+        "structure": "C4,C4,N2,N2,N2,N2,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "52/enem4",
+        "intervals": [
+          6803,
+          6123,
+          5443
+        ],
+        "identity": "Рубель трёт дважды",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Лоханыч",
+        "movement": "wave",
+        "structure": "C3,C4,N2,N2,N2,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "47/enem3",
+        "intervals": [
+          3462,
+          3115,
+          2769
+        ],
+        "identity": "Пузырь перед всплеском",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Скрутиха",
+        "movement": "accelerate",
+        "structure": "C4,C6,N2,N2,N2,N2,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4450,
+          4005,
+          3560
+        ],
+        "identity": "Полотенце хлещет обратно",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 6
+      }
+    ]
+  },
+  {
+    "number": 57,
+    "title": "Уровень 57 (Кузница во дворе)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Поддувень",
+        "movement": "accelerate",
+        "structure": "C3,C4,N2,N2,N2,N3,N4,N4,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4942,
+          4448,
+          3954
+        ],
+        "identity": "Мехи выдыхают дважды",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem2",
+        "name": "Цапыч",
+        "movement": "straight",
+        "structure": "C3,C4,N1,N1,N1,N2,N2,N2,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "45/enem2",
+        "intervals": [
+          3850,
+          3465,
+          3080
+        ],
+        "identity": "Клещи и перекус",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Гудило",
+        "movement": "accelerate",
+        "structure": "C4,C4,N2,N2,N2,N2,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "48/enem3",
+        "intervals": [
+          6803,
+          6123,
+          5443
+        ],
+        "identity": "Колокол даёт отзвук",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Молотыш",
+        "movement": "straight",
+        "structure": "C4,C4,N2,N2,N2,N2,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "48/enem3",
+        "intervals": [
+          3462,
+          3115,
+          2769
+        ],
+        "identity": "Молот выбивает искры",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Жарило",
+        "movement": "accelerate",
+        "structure": "C5,C6,N2,N2,N2,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3750,
+          3375,
+          3000
+        ],
+        "identity": "Клещи перед ударом молота",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 6
+      }
+    ]
+  },
+  {
+    "number": 58,
+    "title": "Уровень 58 (Скотный двор)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Топотун",
+        "movement": "weave",
+        "structure": "C4,C5,N2,N2,N2,N3,N3,N4,N5",
+        "firstGeometry": null,
+        "firstStructure": "50/enem1",
+        "intervals": [
+          4942,
+          4448,
+          3954
+        ],
+        "identity": "Копытца сбиваются с шага",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem2",
+        "name": "Бодалень",
+        "movement": "straight",
+        "structure": "C3,C4,N1,N1,N1,N2,N2,N3,N3,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4347,
+          3912,
+          3478
+        ],
+        "identity": "Рога и разгон",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem3",
+        "name": "Бородань",
+        "movement": "weave",
+        "structure": "C4,C5,N2,N2,N2,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "46/enem3",
+        "intervals": [
+          6803,
+          6123,
+          5443
+        ],
+        "identity": "Борода скрывает бодок",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem4",
+        "name": "Клычень",
+        "movement": "lateRush",
+        "structure": "C4,C5,N2,N2,N2,N2,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3462,
+          3115,
+          2769
+        ],
+        "identity": "Клыки разворачивают погоню",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem5",
+        "name": "Кольценос",
+        "movement": "accelerate",
+        "structure": "C4,C6,N2,N2,N2,N2,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "50/enem4",
+        "intervals": [
+          4100,
+          3690,
+          3280
+        ],
+        "identity": "Бык выходит из кольца",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 6
+      }
+    ]
+  },
+  {
+    "number": 59,
+    "title": "Уровень 59 (Застолье)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Хрустяш",
+        "movement": "lateRush",
+        "structure": "C3,C5,N2,N2,N2,N2,N3,N4,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4942,
+          4448,
+          3954
+        ],
+        "identity": "Хруст после второго укуса",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem2",
+        "name": "Плевунец",
+        "movement": "pause",
+        "structure": "C4,C5,N1,N1,N1,N2,N2,N2,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4347,
+          3912,
+          3478
+        ],
+        "identity": "Начинка остаётся приманкой",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem3",
+        "name": "Пенослив",
+        "movement": "drift",
+        "structure": "C3,C4,N2,N2,N2,N2,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "46/enem1",
+        "intervals": [
+          6803,
+          6123,
+          5443
+        ],
+        "identity": "Пена переливается через край",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Кипяш",
+        "movement": "straight",
+        "structure": "C4,C4,N2,N2,N2,N2,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": "52/enem4",
+        "intervals": [
+          3462,
+          3115,
+          2769
+        ],
+        "identity": "Котёл булькает с паузой",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Громозвон",
+        "movement": "lateRush",
+        "structure": "C5,C6,N2,N2,N2,N2,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3650,
+          3285,
+          2920
+        ],
+        "identity": "Половник прерывает гвалт",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 6
+      }
+    ]
+  },
+  {
+    "number": 60,
+    "title": "Уровень 60 (Ночные страхи детской)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Бабай",
+        "movement": "lateRush",
+        "structure": "C3,C3,N2,N2,N2,N2,N3,N4,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5500,
+          4840,
+          4180
+        ],
+        "identity": "Первая тень у порога",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem2",
+        "name": "Загребущий Бабай",
+        "movement": "drift",
+        "structure": "C4,C4,N2,N2,N2,N2,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "48/enem3",
+        "intervals": [
+          4698,
+          4134,
+          3570
+        ],
+        "identity": "Край мешка возвращается",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Ловчий Бабай",
+        "movement": "weave",
+        "structure": "C4,C5,N2,N2,N2,N2,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "58/enem4",
+        "intervals": [
+          6962,
+          6126,
+          5291
+        ],
+        "identity": "Слежка обрывает чередование",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem4",
+        "name": "Звероватый Бабай",
+        "movement": "accelerate",
+        "structure": "C4,C5,N2,N2,N2,N2,N3,N3,N3,N5",
+        "firstGeometry": null,
+        "firstStructure": "47/enem1",
+        "intervals": [
+          3363,
+          2959,
+          2600
+        ],
+        "identity": "Хищник повторяет прыжок",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem5",
+        "name": "Раскрытый Бабай",
+        "movement": "wave",
+        "structure": "C4,C6,N2,N2,N2,N2,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": "56/enem5",
+        "intervals": [
+          3850,
+          3388,
+          2926
+        ],
+        "identity": "Тень захлопывает выход",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 6
+      }
+    ]
+  },
+  {
+    "number": 61,
+    "title": "Уровень 61 (Вышивальная светлица)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Прошивень",
+        "movement": "straight",
+        "structure": "C3,C3,N1,N1,N1,N2,N2,N3,N3,N3,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4897,
+          4333,
+          3639
+        ],
+        "identity": "Игла прошивает дальше",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem2",
+        "name": "Опутыш",
+        "movement": "pause",
+        "structure": "C4,C4,N1,N1,N1,N2,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4431,
+          3921,
+          3293
+        ],
+        "identity": "Петля смыкает края",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Узорник",
+        "movement": "weave",
+        "structure": "C4,C5,N1,N1,N1,N2,N2,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          6680,
+          5910,
+          4964
+        ],
+        "identity": "Узор возвращает стежок",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem4",
+        "name": "Вышивень",
+        "movement": "wave",
+        "structure": "C3,C4,N1,N2,N3,N4,N4,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3635,
+          3216,
+          2875
+        ],
+        "identity": "Вышивка рвёт ритм",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem5",
+        "name": "Тканыш",
+        "movement": "accelerate",
+        "structure": "C5,C6,N1,N1,N1,N2,N2,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4165,
+          3686,
+          3095
+        ],
+        "identity": "Зверь с полотна",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 6
+      }
+    ]
+  },
+  {
+    "number": 62,
+    "title": "Уровень 62 (Тележный сарай)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Катыш",
+        "movement": "drift",
+        "structure": "C3,C4,N1,N1,N2,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5110,
+          4586,
+          3495
+        ],
+        "identity": "Колесо катится обратно",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Хомутень",
+        "movement": "pause",
+        "structure": "C4,C4,N1,N1,N2,N2,N3,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4902,
+          4400,
+          3353
+        ],
+        "identity": "Хомут щёлкает зубьями",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Тягуня",
+        "movement": "accelerate",
+        "structure": "C3,C4,N1,N1,N2,N2,N2,N2,N2,N2,N3,N3,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          7279,
+          6534,
+          4979
+        ],
+        "identity": "Тяжеловоз тянет и срывает",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem4",
+        "name": "Коловёрт",
+        "movement": "weave",
+        "structure": "C3,C4,N1,N1,N2,N2,N2,N2,N2,N3,N3,N4,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3844,
+          3450,
+          2629
+        ],
+        "identity": "Смена инструмента",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem5",
+        "name": "Телегарь",
+        "movement": "lateRush",
+        "structure": "C4,C6,N1,N1,N2,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3955,
+          3550,
+          2706
+        ],
+        "identity": "Телега обрывает поворот",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 6
+      }
+    ]
+  },
+  {
+    "number": 63,
+    "title": "Уровень 63 (Дворовый пруд)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Прыгач",
+        "movement": "lateRush",
+        "structure": "C3,C5,N1,N1,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4489,
+          4091,
+          3359
+        ],
+        "identity": "Прыжок возвращается к берегу",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem2",
+        "name": "Крякуша",
+        "movement": "weave",
+        "structure": "C3,C4,N1,N1,N1,N2,N3,N3,N3,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3923,
+          3575,
+          2935
+        ],
+        "identity": "Всплеск утки",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Чешуяк",
+        "movement": "pause",
+        "structure": "C3,C4,N1,N1,N2,N2,N2,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          6643,
+          6054,
+          4970
+        ],
+        "identity": "Ленивый бросок с обманом",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Тиноброд",
+        "movement": "straight",
+        "structure": "C3,C4,N1,N2,N2,N2,N3,N3,N3,N3,N3,N4,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3599,
+          3280,
+          2820
+        ],
+        "identity": "Сеть тянут обратно",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem5",
+        "name": "Глубинник",
+        "movement": "accelerate",
+        "structure": "C3,C6,N1,N1,N1,N2,N2,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3823,
+          3484,
+          2861
+        ],
+        "identity": "Засада за первым гребком",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 6
+      }
+    ]
+  },
+  {
+    "number": 64,
+    "title": "Уровень 64 (Свадебный двор)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Пересчётница",
+        "movement": "pause",
+        "structure": "C3,C4,N1,N1,N1,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5761,
+          5175,
+          4296
+        ],
+        "identity": "Лишняя отметка в списке",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Кружило",
+        "movement": "weave",
+        "structure": "C3,C4,N1,N1,N2,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4793,
+          4306,
+          3574
+        ],
+        "identity": "Поворот пляски",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Мехач",
+        "movement": "accelerate",
+        "structure": "C3,C3,N1,N1,N1,N2,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          7742,
+          6955,
+          5773
+        ],
+        "identity": "Мехи вдыхают и выдыхают",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Посошник",
+        "movement": "straight",
+        "structure": "C4,C4,N1,N1,N2,N2,N2,N3,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3971,
+          3567,
+          2961
+        ],
+        "identity": "Посох указывает другую полосу",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Жезловник",
+        "movement": "lateRush",
+        "structure": "C4,C6,N1,N1,N2,N2,N2,N2,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4231,
+          3801,
+          3155
+        ],
+        "identity": "Жезл обрывает процессию",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 6
+      }
+    ]
+  },
+  {
+    "number": 65,
+    "title": "Уровень 65 (Испорченная ярмарка)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Чёрт",
+        "movement": "pause",
+        "structure": "C4,C4,N1,N1,N1,N2,N2,N3,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5355,
+          4713,
+          3948
+        ],
+        "identity": "Мнимая уступка",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Лукавый Чёрт",
+        "movement": "drift",
+        "structure": "C4,C5,N1,N1,N1,N2,N2,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4135,
+          3639,
+          3049
+        ],
+        "identity": "Лукавый повтор",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem3",
+        "name": "Раскалённый Чёрт",
+        "movement": "lateRush",
+        "structure": "C4,C5,N1,N1,N2,N2,N3,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5895,
+          5189,
+          4346
+        ],
+        "identity": "Искры раскрывают вилку",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem4",
+        "name": "Полыхающий Чёрт",
+        "movement": "accelerate",
+        "structure": "C5,C6,N1,N1,N2,N2,N3,N3,N3,N4,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3081,
+          2712,
+          2395
+        ],
+        "identity": "Пламя гонит вдоль края",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem5",
+        "name": "Адский Чёрт",
+        "movement": "wave",
+        "structure": "C5,C6,N1,N1,N1,N2,N2,N2,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3703,
+          3260,
+          2730
+        ],
+        "identity": "Последний обман с возвратом",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 0,
+        "maxCombo": 6
+      }
+    ]
+  },
+  {
+    "number": 66,
+    "title": "Уровень 66 (Дымная опушка)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Хлестуница",
+        "movement": "weave",
+        "structure": "B1,C3,C4,N1,N1,N2,N2,N3,N3,N3,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5165,
+          4911,
+          4543
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Смоляк",
+        "movement": "pause",
+        "structure": "B1,C3,C4,N1,N2,N2,N2,N2,N2,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3298,
+          3136,
+          2901
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem3",
+        "name": "Токовик",
+        "movement": "lateRush",
+        "structure": "B1,C3,C4,N1,N1,N1,N2,N2,N2,N2,N2,N3,N3,N3",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          7420,
+          7055,
+          6526
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem4",
+        "name": "Засечень",
+        "movement": "straight",
+        "structure": "B1,B1,C4,C4,N1,N1,N2,N2,N2,N2,N4,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          2697,
+          2564,
+          2560
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 2,
+        "maxCombo": 5
+      },
+      {
+        "role": "enem5",
+        "name": "Дымокор",
+        "movement": "drift",
+        "structure": "B1,C4,C6,N1,N1,N1,N2,N2,N2,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3670,
+          3489,
+          3227
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 6
+      }
+    ]
+  },
+  {
+    "number": 67,
+    "title": "Уровень 67 (След крылатого налётчика)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Грозовик",
+        "movement": "accelerate",
+        "structure": "B1,C6,C7,N1,N1,N2,N2,N2,N2,N3,N3,N3",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5972,
+          5149,
+          4372
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem2",
+        "name": "Клепоклюв",
+        "movement": "lateRush",
+        "structure": "B1,C6,C7,N1,N1,N2,N2,N2,N2,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4676,
+          4031,
+          3423
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem3",
+        "name": "Сушняк",
+        "movement": "wave",
+        "structure": "B1,C6,C6,N1,N1,N2,N2,N2,N2,N2,N2,N2,N2,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          7245,
+          6247,
+          5304
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem4",
+        "name": "Плетеник",
+        "movement": "pause",
+        "structure": "B1,C6,C7,N1,N2,N2,N2,N3,N3,N3,N3",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3517,
+          3033,
+          2575
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem5",
+        "name": "Ветрокрыл",
+        "movement": "weave",
+        "structure": "B1,C7,C7,N1,N1,N1,N2,N2,N2,N2,N2",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4662,
+          4019,
+          3412
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      }
+    ]
+  },
+  {
+    "number": 68,
+    "title": "Уровень 68 (Разорённая засека)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Лохмень",
+        "movement": "wave",
+        "structure": "B1,C6,C7,N1,N1,N2,N2,N2,N2,N2,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5475,
+          4773,
+          4247
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem2",
+        "name": "Щитень",
+        "movement": "straight",
+        "structure": "B1,C6,C7,N1,N2,N2,N2,N2,N2,N2,N6",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3984,
+          3473,
+          3091
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem3",
+        "name": "Шипень",
+        "movement": "accelerate",
+        "structure": "B1,C7,C7,N1,N1,N1,N2,N2,N2,N2,N2,N2,N2,N2,N3",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3949,
+          3443,
+          3063
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem4",
+        "name": "Тетивень",
+        "movement": "lateRush",
+        "structure": "B1,C6,C7,N1,N1,N2,N2,N2,N3,N3",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          7780,
+          6784,
+          6036
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem5",
+        "name": "Чадень",
+        "movement": "drift",
+        "structure": "B1,C6,C7,N1,N1,N1,N2,N2,N2,N3,N3",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4972,
+          4335,
+          3858
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      }
+    ]
+  },
+  {
+    "number": 69,
+    "title": "Уровень 69 (Дым над заставой)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Дёгтень",
+        "movement": "pause",
+        "structure": "B1,C6,C6,N1,N1,N2,N2,N2,N2,N3,N3,N3",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5831,
+          5037,
+          4310
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 6
+      },
+      {
+        "role": "enem2",
+        "name": "Вязень",
+        "movement": "drift",
+        "structure": "B1,C6,C7,N1,N1,N2,N2,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4019,
+          3472,
+          2970
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem3",
+        "name": "Кушачник",
+        "movement": "straight",
+        "structure": "B1,C6,C7,N1,N1,N2,N2,N2,N3,N3",
+        "firstGeometry": null,
+        "firstStructure": "68/enem4",
+        "intervals": [
+          3428,
+          2961,
+          2695
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem4",
+        "name": "Столбень",
+        "movement": "accelerate",
+        "structure": "B1,C7,C7,N1,N1,N2,N2,N2,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5156,
+          4454,
+          3810
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem5",
+        "name": "Трубень",
+        "movement": "wave",
+        "structure": "B1,C7,C7,N1,N1,N1,N2,N2,N2,N2,N2,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3933,
+          3397,
+          2907
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      }
+    ]
+  },
+  {
+    "number": 70,
+    "title": "Уровень 70 (Налёт с огненного неба)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Тугарин Змей",
+        "movement": "straight",
+        "structure": "B1,N1,N2,N2,N2,N2,N3,N3,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5491,
+          4933,
+          4558
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 1,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem2",
+        "name": "Хищный Тугарин Змей",
+        "movement": "lateRush",
+        "structure": "B1,N1,N1,N2,N2,N3,N3,N3,N3",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5410,
+          4861,
+          4491
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 1,
+        "maxCombo": 3
+      },
+      {
+        "role": "enem3",
+        "name": "Чадящий Тугарин Змей",
+        "movement": "pause",
+        "structure": "B1,N1,N1,N2,N2,N3,N3,N3,N3",
+        "firstGeometry": null,
+        "firstStructure": "70/enem2",
+        "intervals": [
+          5541,
+          4979,
+          4600
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 1,
+        "maxCombo": 3
+      },
+      {
+        "role": "enem4",
+        "name": "Огнедышащий Тугарин Змей",
+        "movement": "wave",
+        "structure": "B1,N1,N1,N2,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3624,
+          3256,
+          3008
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 1,
+        "maxCombo": 4
+      },
+      {
+        "role": "enem5",
+        "name": "Испепеляющий Тугарин Змей",
+        "movement": "accelerate",
+        "structure": "B1,N1,N2,N2,N2,N2,N2,N2,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          2958,
+          2658,
+          2460
+        ],
+        "identity": null,
+        "signatures": 0,
+        "chains": 0,
+        "barricades": 1,
+        "maxCombo": 4
+      }
+    ]
+  },
+  {
+    "number": 71,
+    "title": "Уровень 71 (Разбитая застава)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Частокольник",
+        "movement": "lateRush",
+        "structure": "B1,C6,C7,N1,N2,N2,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5076,
+          4273,
+          3450
+        ],
+        "identity": "Частокол пропускает удар",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem2",
+        "name": "Колодень",
+        "movement": "accelerate",
+        "structure": "B1,C6,C7,N1,N1,N2,N2,N2,N2,N3,N3,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4403,
+          3706,
+          2992
+        ],
+        "identity": "Бревно догоняет первый толчок",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem3",
+        "name": "Развилень",
+        "movement": "drift",
+        "structure": "B1,C6,C7,N1,N1,N2,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4765,
+          4011,
+          3238
+        ],
+        "identity": "Развилка закрывает середину",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem4",
+        "name": "Стёгач",
+        "movement": "weave",
+        "structure": "B1,C6,C7,N1,N1,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3989,
+          3357,
+          2715
+        ],
+        "identity": "Стёжка с обратным ходом",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem5",
+        "name": "Воротень",
+        "movement": "straight",
+        "structure": "B1,C7,C7,N1,N2,N2,N2,N2,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4248,
+          3575,
+          2887
+        ],
+        "identity": "Ворота захлопываются вторым ходом",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      }
+    ]
+  },
+  {
+    "number": 72,
+    "title": "Уровень 72 (Разбойничьи следы)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Силовень",
+        "movement": "wave",
+        "structure": "B1,C7,C7,N1,N1,N2,N2,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4597,
+          4183,
+          3887
+        ],
+        "identity": "Силок с отложенным рывком",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem2",
+        "name": "Вервень",
+        "movement": "weave",
+        "structure": "B1,C6,C7,N1,N1,N2,N2,N2,N3,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4010,
+          3649,
+          3391
+        ],
+        "identity": "Верёвка возвращает виток",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem3",
+        "name": "Ларень",
+        "movement": "lateRush",
+        "structure": "B1,C6,C7,N1,N2,N2,N2,N2,N2,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5037,
+          4583,
+          4259
+        ],
+        "identity": "Ларь раскрывает пасть",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem4",
+        "name": "Дозорник",
+        "movement": "pause",
+        "structure": "B1,C6,C7,N1,N1,N2,N2,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4488,
+          4084,
+          3795
+        ],
+        "identity": "Дозор даёт второй ответ",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem5",
+        "name": "Кряжевик",
+        "movement": "drift",
+        "structure": "B1,C7,C7,N1,N1,N2,N2,N2,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3716,
+          3382,
+          3142
+        ],
+        "identity": "Кряж перегораживает проход",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      }
+    ]
+  },
+  {
+    "number": 73,
+    "title": "Уровень 73 (Свистовые западни)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Берестень",
+        "movement": "pause",
+        "structure": "B1,C6,C7,N1,N2,N2,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4881,
+          4187,
+          3677
+        ],
+        "identity": "Дыхание за берестой",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem2",
+        "name": "Жердень",
+        "movement": "wave",
+        "structure": "B1,C6,C7,N1,N1,N2,N2,N2,N2,N3,N3,N3,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4258,
+          3653,
+          3208
+        ],
+        "identity": "Жердь возвращается",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem3",
+        "name": "Стрелень",
+        "movement": "straight",
+        "structure": "B1,C6,C7,N1,N2,N2,N3,N3,N3,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3732,
+          3202,
+          2812
+        ],
+        "identity": "Стрела нарушает чередование",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem4",
+        "name": "Подманень",
+        "movement": "lateRush",
+        "structure": "B1,C6,C7,N1,N2,N2,N2,N2,N2,N2,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4498,
+          3859,
+          3389
+        ],
+        "identity": "Приманка перед рывком",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem5",
+        "name": "Рожковень",
+        "movement": "weave",
+        "structure": "B1,C7,C7,N1,N2,N2,N3,N3,N3,N3,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3588,
+          3079,
+          2704
+        ],
+        "identity": "Рог меняет направление облавы",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      }
+    ]
+  },
+  {
+    "number": 74,
+    "title": "Уровень 74 (Разбойничья дубрава)",
+    "bosses": [
+      {
+        "role": "enem1",
+        "name": "Черноклюв",
+        "movement": "weave",
+        "structure": "B1,C6,C7,N1,N2,N2,N2,N2,N3,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4668,
+          4277,
+          3399
+        ],
+        "identity": "Короткий взлёт черноклюва",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem2",
+        "name": "Шелестень",
+        "movement": "pause",
+        "structure": "B1,C6,C7,N1,N2,N2,N2,N2,N2,N2,N2,N2,N3,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          5078,
+          4653,
+          3697
+        ],
+        "identity": "Шелест перед двойным выходом",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem3",
+        "name": "Корчень",
+        "movement": "accelerate",
+        "structure": "B1,C7,C7,N1,N1,N2,N2,N2,N3,N3,N3,N5",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4361,
+          3995,
+          3175
+        ],
+        "identity": "Корч тянется и перехватывает",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem4",
+        "name": "Рожище",
+        "movement": "wave",
+        "structure": "B1,C6,C7,N1,N1,N2,N3,N3,N3,N3,N4,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          4104,
+          3760,
+          2988
+        ],
+        "identity": "Рожок зовёт ответ с другого края",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      },
+      {
+        "role": "enem5",
+        "name": "Дуплень",
+        "movement": "lateRush",
+        "structure": "B1,C7,C7,N1,N2,N2,N2,N2,N3,N3,N3,N4,N4",
+        "firstGeometry": null,
+        "firstStructure": null,
+        "intervals": [
+          3745,
+          3431,
+          2870
+        ],
+        "identity": "Дупло возвращает удар",
+        "signatures": 3,
+        "chains": 2,
+        "barricades": 1,
+        "maxCombo": 7
+      }
+    ]
+  }
+]

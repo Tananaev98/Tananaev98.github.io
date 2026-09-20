@@ -53,7 +53,7 @@ assert.deepEqual(shownMessages, [
 const expectedMultiplier = 1 + 0.10 + (0.03 * 2) + (0.01 * 7);
 assert.ok(Math.abs(expectedMultiplier - 1.23) < 1e-12);
 assert.match(gameSource, /rollBossHitDamage\(multipliedDamage\)/);
-assert.match(gameSource, /checkForWound\(enemy, woundBaseDamage\)/);
+assert.match(gameSource, /checkForWound\(enemy, damageResult\.woundBaseDamage\)/);
 assert.match(gameSource, /showDunyaWhirlImpact/);
 
 console.log('Dunya casino smoke test passed: shared x2/x3/x8 roll and whirl wiring are correct.');

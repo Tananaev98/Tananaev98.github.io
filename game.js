@@ -52,6 +52,11 @@ const ANIMATION_PARAMS = {
 let bossComboHistory = [];
 let bossWaveCounter = 0;
 let bossCombatPhase = 1;
+let battleLogAttackSeq = 0; // сквозной номер атаки для журнала боя (battleLog.js)
+let bossComboPlayCounts = new Map();
+let bossWavesSinceSignature = 0;
+let bossPendingAttacks = 0;
+let bossWaveRecoveryDelay = 0;
 
 // Кривая синхронизирована со свободной прокачкой одного выбранного героя:
 // без дополнительного фарма он подходит к финалу примерно на 159-м уровне.
@@ -238,11 +243,6 @@ let bossHealthDelayedFill = null;
 let bossHealthContainer = null;
 let bossNameElement = null;
 let currentBoss = null;
-// «Баррикада» (раздел 13.8 lvlData/Правила создания уровня.txt) — момент
-// последнего успешного спавна баррикады, сбрасывается на каждой смене
-// босса/облика (см. showBossHealthBar). Используется вместе с
-// BARRICADE_MIN_SPAWN_GAP_MS ниже — страховка движка, не авторская настройка.
-let lastBarricadeSpawnTime = 0;
 let bossDeathSequenceActive = false;
 let countDefeatBoss = 0;
 let bossDisplayedHpPercent = 100;
@@ -449,6 +449,47 @@ let isGamePaused = false;
 // умирают с одного удара (условная "броня" у снаряда), это предположение перестанет
 // быть верным везде, где сейчас на нём молча полагаются (например, анализ баланса
 // ДПС по чёрному ящику admin-balance-panel.html).
+// Множитель скорости атаки босса по стилю движения. ЧИСТАЯ функция состояния (state — поля hasPausedMidFlight/pauseUntil/hasTriggeredRush).
+// travelProgress считается от GAME_CONFIG.START_Y (а не от точки появления!): атака, появившаяся низко, сразу попадает в «позднюю» часть пути.
+// scripts/combo-model.js извлекает ЭТУ функцию из game.js и интегрирует по ней время полёта — не переписывать её копию в моделях.
+function resolveAttackStyleMultiplier(state, style, travelProgress, styleParams, nowMs) {
+    const r = { multiplier: 1, rushStarted: false, pauseStarted: false, pauseEnded: false };
+    if (style === 'accelerate') {
+        r.multiplier = styleParams.accelerate.start + travelProgress * styleParams.accelerate.gain;
+    } else if (style === 'lateRush') {
+        r.multiplier = travelProgress < styleParams.lateRush.switchAt ? styleParams.lateRush.early : styleParams.lateRush.late;
+        if (travelProgress >= styleParams.lateRush.switchAt && !state.hasTriggeredRush) {
+            state.hasTriggeredRush = true;
+            r.rushStarted = true;
+        }
+    } else if (style === 'pause') {
+        if (!state.hasPausedMidFlight && travelProgress >= styleParams.pause.at) {
+            state.hasPausedMidFlight = true;
+            state.pauseUntil = nowMs + styleParams.pause.durationMs;
+            r.pauseStarted = true;
+        }
+        if (nowMs < state.pauseUntil) {
+            r.multiplier = 0;
+        } else {
+            r.pauseEnded = true;
+            r.multiplier = state.hasPausedMidFlight ? styleParams.pause.after : 1;
+        }
+    }
+    return r;
+}
+
+// Оценка времени полёта атаки босса (мс) с учётом стиля движения — интегрирует ТУ ЖЕ resolveAttackStyleMultiplier, что и Enemy.update.
+// Нужна журналу боя: расхождение оценки и реального полёта в журнале = физика игры разошлась с моделью (scripts/analyze-battle-log.js).
+function estimateAttackFlightMs(yStart, pctPerSec, style, styleParams) {
+    const st = { hasPausedMidFlight: false, pauseUntil: 0, hasTriggeredRush: false };
+    let y = yStart, t = 0;
+    while (y < GAME_CONFIG.TARGET_Y && t < 30000) {
+        const progress = Math.max(0, Math.min(1, (y - GAME_CONFIG.START_Y) / (GAME_CONFIG.TARGET_Y - GAME_CONFIG.START_Y)));
+        y += pctPerSec * resolveAttackStyleMultiplier(st, style, progress, styleParams, t).multiplier * 2 / 1000; t += 2;
+    }
+    return t;
+}
+
 class Enemy {
     constructor(type, xPos) {
         // Сохраняем тип врага
@@ -522,9 +563,9 @@ class Enemy {
         // Параметры движения 'wave' — задаются per-атаку из bossAbilities (см. ниже, спавн),
         // а не хардкодятся в движке. Значения по умолчанию используются, только если
         // атака не передала свои (например, спавн без указания amplitude/frequency/phase).
-        this.waveAmplitude = 6;
-        this.waveFrequency = 1.2;
-        this.wavePhase = 0;
+        this.waveAmplitude = null;
+        this.waveFrequency = null;
+        this.wavePhase = null;
         this.currentTiltAngle = 0; // текущий угол покачивания (градусы) — нужен для попадания строго по силуэту
         // Создаем DOM элемент для отображения врага
         this.element = this.createEnemyElement();
@@ -607,7 +648,8 @@ class Enemy {
             return 'dead_from_wound';
         }
         
-        const travelRange = Math.max(1, GAME_CONFIG.TARGET_Y - GAME_CONFIG.START_Y);
+        const travelRange = GAME_CONFIG.TARGET_Y - GAME_CONFIG.START_Y;
+        const styleParams = this.isCustom ? requireCombatData(getLevelCombatConfig().movementStyles, 'bossCombatConfig.movementStyles') : null;
         const travelProgress = Math.max(0, Math.min(1, (this.y - GAME_CONFIG.START_Y) / travelRange));
         let movementMultiplier = 1;
 
@@ -630,26 +672,14 @@ class Enemy {
                 if (this.hasRushed) {
                     movementMultiplier = this.barricadeRushSpeedMultiplier;
                 }
-            } else if (this.movementStyle === 'accelerate') {
-                movementMultiplier = 0.72 + travelProgress * 0.90;
-            } else if (this.movementStyle === 'lateRush') {
-                movementMultiplier = travelProgress < 0.55 ? 0.72 : 1.48;
-                if (travelProgress >= 0.55 && !this.hasTriggeredRush) {
-                    this.hasTriggeredRush = true;
-                    this.element.classList.add('boss-attack-rush');
-                }
-            } else if (this.movementStyle === 'pause') {
-                if (!this.hasPausedMidFlight && travelProgress >= 0.42) {
-                    this.hasPausedMidFlight = true;
-                    this.pauseUntil = performance.now() + 420;
-                    this.element.classList.add('boss-attack-paused');
-                }
-                if (performance.now() < this.pauseUntil) {
-                    movementMultiplier = 0;
-                } else {
-                    this.element.classList.remove('boss-attack-paused');
-                    movementMultiplier = this.hasPausedMidFlight ? 1.22 : 1;
-                }
+            } else {
+                // Единственный источник истины по стилям движения — resolveAttackStyleMultiplier (ниже): его же загружает
+                // scripts/combo-model.js для расчёта времени прилёта, поэтому модель и игра не могут разойтись.
+                const styled = resolveAttackStyleMultiplier(this, this.movementStyle, travelProgress, styleParams, performance.now());
+                movementMultiplier = styled.multiplier;
+                if (styled.rushStarted) this.element.classList.add('boss-attack-rush');
+                if (styled.pauseStarted) this.element.classList.add('boss-attack-paused');
+                if (styled.pauseEnded) this.element.classList.remove('boss-attack-paused');
             }
         }
 
@@ -662,7 +692,7 @@ class Enemy {
         
         // Босс всегда по центру; остальные — змейкой, но без выхода за края экрана
         if (this.isBoss) {
-            this.x = 50;
+            this.x = 50; // guard:allow — геометрия: центр поля
         } else {
             this.swayTime += this.swaySpeed * deltaSeconds;
             if (this.isCustom && this.isBarricade) {
@@ -680,7 +710,8 @@ class Enemy {
                 // всё время жизни баррикады (и стойку, и рывок) — рывок сообщается только
                 // скоростью (barricadeRushSpeedMultiplier), не боковым манёвром.
             } else if (this.isCustom && this.movementStyle === 'weave') {
-                this.x = this.clampHorizontal(this.movementOriginX + Math.sin(this.swayTime * 1.35) * 5.5);
+                this.x = this.clampHorizontal(this.movementOriginX
+                    + Math.sin(this.swayTime * styleParams.weave.frequency) * styleParams.weave.amplitude);
             } else if (this.isCustom && this.movementStyle === 'wave') {
                 // В отличие от 'weave' (фиксированная амплитуда/частота), у 'wave' траектория
                 // задаётся per-атаку из данных уровня — см. spawnEnemyWithParams/executeBossEvent.
@@ -689,8 +720,8 @@ class Enemy {
                     + Math.sin(this.swayTime * this.waveFrequency + this.wavePhase) * this.waveAmplitude
                 );
             } else if (this.isCustom && this.movementStyle === 'drift') {
-                const driftDirection = this.movementOriginX < 50 ? 1 : -1;
-                this.x = this.clampHorizontal(this.movementOriginX + driftDirection * travelProgress * 10);
+                const driftDirection = this.movementOriginX < 50 ? 1 : -1; // guard:allow — геометрия: центр поля
+                this.x = this.clampHorizontal(this.movementOriginX + driftDirection * travelProgress * styleParams.drift.shift);
             } else {
                 const swayPixels = Math.sin(this.swayTime) * ANIMATION_PARAMS.SWAY_PIXELS;
                 const swayPercent = (swayPixels / this.fieldWidth) * 100;
@@ -1175,6 +1206,19 @@ function initGame() {
     // инициализирует отметку, чтобы не смешивать её с Date.now().
     lastFrameTime = null;
     
+    // Журнал боя (battleLog.js): текстовое описание всего сражения; только читает события, на игру не влияет
+    window.BattleLog?.begin({
+        level: lvlNumber,
+        field: `${gameField.clientWidth}x${gameField.clientHeight}`,
+        header: {
+            'Уровень': lvlNumber,
+            'Сборка': typeof GAME_BUILD_VERSION !== 'undefined' ? GAME_BUILD_VERSION : '—',
+            'Герой': `${activeHeroObject?.dispName || activeHeroObject?.name} (ур. ${activeHeroObject?.level})`,
+            'Босс(ы) уровня': bossM.join(', '),
+            'Статы героя': `урон ${globalDamage}, крит ${(globalCritChance * 100).toFixed(1)}% ×${globalCritMultiplier}, интервал атаки ${SHOT_INTERVAL} мс, HP ${heroHP.max}, снижение урона ${(heroDamageReduction * 100).toFixed(1)}%`
+        }
+    }, () => activeGameTimeMs);
+
     // Запускаем игровой цикл
     requestAnimationFrame(gameLoop);
 
@@ -1440,6 +1484,9 @@ function gameLoop(currentTime) {
     // скрытой вкладке и не должны мгновенно перематывать бой вперёд.
     const deltaTime = Math.min(Math.max(rawDeltaTime, 0), 100);
     activeGameTimeMs += deltaTime;
+    if (window.BattleLog?.isActive() && !isGamePaused) {
+        BattleLog.frame(rawDeltaTime, { x: aimPosition.x / gameField.clientWidth * 100, y: aimPosition.y / gameField.clientHeight * 100 });
+    }
     timeSec2 = Math.floor(activeGameTimeMs / 1000);
     applyMilaHeroRegen(deltaTime);
     updateTikhonShakeGauge(currentTime);
@@ -1507,6 +1554,9 @@ function gameLoop(currentTime) {
         if (updateResult) {
             // Атака достигла героя - наносим урон
             const damage = enemy.getDamageToHero();
+            if (window.BattleLog?.isActive() && !bossM.includes(enemy.type)) {
+                BattleLog.log('УДАР', `#${enemy.logId ?? '?'} ${enemy.type} ДОШЛА до героя (жила ${Math.round(activeGameTimeMs - (enemy.logSpawnedAt ?? activeGameTimeMs))} мс), урон ${damage}, прицел был x=${(aimPosition.x / gameField.clientWidth * 100).toFixed(0)}%`);
+            }
             damageHero(damage);
 
             console.log(`${enemy.type} достиг героя и нанёс ${damage} урона!`);
@@ -1598,9 +1648,9 @@ function startBossEvents() {
     bossComboHistory = [];
     bossWaveCounter = 0;
     bossCombatPhase = 1;
+    resetBossSequence();
 
-    // Первая атака приходит быстрее прежних 5–7 секунд, но с полноценным телеграфом.
-    scheduleNextBossWave(Math.min(2400, bossDelayAbDop * 0.48));
+    scheduleNextBossWave(requireCombatData(bossObject.firstWaveDelayMs, `mBossDelayAb.${bossAliveName}.firstWaveDelayMs`));
 }
 
 function stopBossEvents() {
@@ -1616,7 +1666,15 @@ function stopBossEvents() {
     bossAttackTimers.clear();
     document.querySelectorAll('.boss-attack-telegraph').forEach(element => element.remove());
     bossComboHistory = [];
+    resetBossSequence();
     console.log('События босса остановлены');
+}
+
+function resetBossSequence() {
+    bossComboPlayCounts.clear();
+    bossWavesSinceSignature = 0;
+    bossPendingAttacks = 0;
+    bossWaveRecoveryDelay = 0;
 }
 
 function armBossTask(task) {
@@ -1638,6 +1696,15 @@ function scheduleBossTask(callback, delay) {
     bossAttackTimers.add(task);
     armBossTask(task);
     return task;
+}
+
+// Все параметры боя берутся ТОЛЬКО из данных уровня (gameData). Значений по умолчанию и потолков в движке нет:
+// если поле не задано — это ошибка данных, и она должна быть видна сразу, а не подменяться числом из кода.
+function requireCombatData(value, description) {
+    if (value === undefined || value === null || (typeof value === 'number' && !Number.isFinite(value))) {
+        throw new Error(`В gameData${lvlNumber}.js не задано: ${description}`);
+    }
+    return value;
 }
 
 function getLevelCombatConfig() {
@@ -1713,9 +1780,11 @@ function getLevelCadenceMultiplier() {
 function getBossWaveDelay() {
     const profile = getBossProfile();
     const phase = getBossPhase();
-    const jitter = 0.88 + Math.random() * 0.24;
     const config = getLevelCombatConfig();
-    return Math.max(config.minWaveDelay, bossDelayAbDop * profile.cadence * phase.cadence * getLevelCadenceMultiplier() * jitter);
+    const jitterRange = requireCombatData(config.waveJitter, 'bossCombatConfig.waveJitter');
+    const jitter = jitterRange.min + Math.random() * (jitterRange.max - jitterRange.min);
+    return Math.max(config.minWaveDelay, bossWaveRecoveryDelay,
+        bossDelayAbDop * profile.cadence * phase.cadence * getLevelCadenceMultiplier() * jitter);
 }
 
 function scheduleNextBossWave(delay = getBossWaveDelay()) {
@@ -1728,30 +1797,30 @@ function scheduleNextBossWave(delay = getBossWaveDelay()) {
         bossTimerStartedAt = 0;
         bossTimerDelay = 0;
         if (bossAlive && !isGamePaused && !isGameOver) {
-            executeBossEvent();
-            scheduleNextBossWave();
+            const launched = executeBossEvent();
+            // Поле занято: повторяем попытку, не теряя вступительную/фирменную
+            // серию и не накапливая невидимую очередь атак. Пауза игры сохраняет таймер.
+            scheduleNextBossWave(launched === false
+                ? requireCombatData(getLevelCombatConfig().busyRetryMs, 'bossCombatConfig.busyRetryMs')
+                : getBossWaveDelay());
         }
     }, bossTimerDelay);
 }
 
 function getComboDanger(combo, abilities) {
+    const selection = requireCombatData(getLevelCombatConfig().selection, 'bossCombatConfig.selection');
     const attacks = combo.indexAbilities.map(index => abilities[index]).filter(Boolean);
     if (attacks.length === 0) return 0;
     const averageSpeed = attacks.reduce((sum, attack) => sum + attack.customSpeed, 0) / attacks.length;
-    return averageSpeed + attacks.length * 0.8;
+    return averageSpeed + attacks.length * selection.dangerLengthWeight;
 }
 
-function selectBossCombo(combos, abilities, phase) {
+function selectBossCombo(combos, abilities, phase, canSchedule = () => true) {
     const rankedCombos = combos
         .map((combo, index) => ({ combo, index, danger: getComboDanger(combo, abilities) }))
         .sort((left, right) => left.danger - right.danger);
-    const excludedDangerousCombos = Math.max(
-        0,
-        Math.min(
-            rankedCombos.length - 1,
-            Math.floor(Number(phase.excludedDangerousCombos) || 0)
-        )
-    );
+    const selection = requireCombatData(getLevelCombatConfig().selection, 'bossCombatConfig.selection');
+    const excludedDangerousCombos = phase.excludedDangerousCombos || 0;
     const eligibleIndexes = new Set(
         rankedCombos
             .slice(0, rankedCombos.length - excludedDangerousCombos)
@@ -1759,27 +1828,48 @@ function selectBossCombo(combos, abilities, phase) {
     );
     const eligibleCombos = combos
         .map((combo, index) => ({ combo, index, danger: getComboDanger(combo, abilities) }))
-        .filter(candidate => eligibleIndexes.has(candidate.index));
-    let candidates = eligibleCombos
+        .filter(candidate => eligibleIndexes.has(candidate.index))
+        .filter(({ combo }) => phase.phase >= (combo.minPhase || 1)
+            && phase.phase <= (combo.maxPhase ?? getLevelCombatConfig().phases.length));
+    const schedulable = eligibleCombos.filter(({ combo }) => canSchedule(combo));
+    if (schedulable.length === 0) return null;
+    let candidates = schedulable
         .filter(candidate => !bossComboHistory.includes(candidate.index));
 
     if (candidates.length === 0) {
-        candidates = eligibleCombos;
+        // Не ломаем память двух серий ради занятого поля. Для старого набора
+        // из 1–2 допустимых серий остаётся прежний запасной выбор.
+        if (eligibleCombos.length > selection.minCombosForRepeatBlock) return null;
+        candidates = schedulable;
     }
+
+    // Явно написанное автором знакомство, затем случайный бой. Порядок в массиве
+    // сам по себе ничего не означает. Поздняя HP-фаза не застревает на закрытом вступлении.
+    const opening = eligibleCombos
+        .filter(({ combo, index }) => Number.isFinite(combo.openingOrder)
+            && !bossComboPlayCounts.has(index))
+        .sort((a, b) => a.combo.openingOrder - b.combo.openingOrder)[0];
+    const introduction = opening && candidates.find(c => c.index === opening.index);
+    const signatures = candidates.filter(c => c.combo.signature);
+    const signatureEvery = requireCombatData(getBossProfile().signatureEvery, `bossCombatConfig.bosses.${bossAliveName}.signatureEvery`);
 
     const sortedDanger = [...candidates].sort((a, b) => a.danger - b.danger);
     const surpriseChance = phase.surpriseChance;
     let selected;
 
-    if (Math.random() < surpriseChance) {
+    if (introduction) {
+        selected = introduction;
+    } else if (bossWavesSinceSignature >= signatureEvery - 1 && signatures.length) {
+        selected = signatures[Math.floor(Math.random() * signatures.length)];
+    } else if (Math.random() < surpriseChance) {
         // Редкая опасная серия — неожиданная, но каждая её атака всё равно предупреждается.
-        const dangerousPool = sortedDanger.slice(Math.max(0, sortedDanger.length - 2));
+        const dangerousPool = sortedDanger.slice(sortedDanger.length - selection.dangerousPoolSize);
         selected = dangerousPool[Math.floor(Math.random() * dangerousPool.length)];
     } else {
         const weights = candidates.map(candidate => {
-            const normalizedDanger = candidate.danger / Math.max(1, sortedDanger[sortedDanger.length - 1].danger);
-            if (phase.phase === 1) return Math.max(0.25, 1.35 - normalizedDanger);
-            if (phase.phase === 3) return 0.45 + normalizedDanger * 1.35;
+            const normalizedDanger = candidate.danger / sortedDanger[sortedDanger.length - 1].danger;
+            if (phase.phase === 1) return Math.max(selection.phase1WeightFloor, selection.phase1WeightBase - normalizedDanger);
+            if (phase.phase === getLevelCombatConfig().phases.length) return selection.phase3WeightBase + normalizedDanger * selection.phase3WeightSlope;
             return 1;
         });
         const weightTotal = weights.reduce((sum, weight) => sum + weight, 0);
@@ -1795,18 +1885,26 @@ function selectBossCombo(combos, abilities, phase) {
     }
 
     bossComboHistory.push(selected.index);
-    if (bossComboHistory.length > 2) bossComboHistory.shift();
+    if (bossComboHistory.length > selection.historyLength) bossComboHistory.shift();
+    bossComboPlayCounts.set(selected.index, (bossComboPlayCounts.get(selected.index) || 0) + 1);
+    bossWavesSinceSignature = selected.combo.signature ? 0 : bossWavesSinceSignature + 1;
     return selected.combo;
+}
+
+// Резервируем всю серию ДО выбора. Раньше лимит проверялся только при появлении
+// каждого снаряда и мог молча отрезать конец фирменного приёма или голову цепи.
+function canScheduleBossCombo(combo, abilities, phase) {
+    const attacks = combo.indexAbilities.map(i => abilities[i]);
+    if (!attacks.length || attacks.some(a => !a)) return false;
+    const live = activeEnemies.filter(e => e.isCustom && !e.isBoss && !e.isInert && e.hp > 0);
+    return live.length + bossPendingAttacks + attacks.length <= phase.maxActiveAttacks;
 }
 
 function getBossMovementStyle() {
     return getBossProfile().movementStyle;
 }
 
-const FAST_BOSS_ATTACK_SPEED = 18;
-const BOSS_LEFT_FLANK_MAX_X = 28;
-const BOSS_RIGHT_FLANK_MIN_X = 72;
-const MIN_FAST_CROSSFIRE_GAP_MS = 720;
+// Только для цвета опасности атаки (визуал, на бой не влияет).
 const BOSS_ATTACK_VISUAL_MIN_SPEED = 2;
 const BOSS_ATTACK_VISUAL_MAX_SPEED = 31;
 
@@ -1857,71 +1955,21 @@ function applyBossAttackSpeedVisual(element, speed) {
     element.dataset.attackSpeed = Number(speed).toFixed(1);
 }
 
-function capBossAttackSpeed(attack, speed) {
-    let cappedSpeed = speed;
-
-    // Не превращаем низкий спавн в телепорт: быстрые атаки разрешены только высоко.
-    if (attack.yPos > 12) cappedSpeed = Math.min(cappedSpeed, 15);
-    else if (attack.yPos > 10) cappedSpeed = Math.min(cappedSpeed, 18);
-    else cappedSpeed = Math.min(cappedSpeed, 31);
-
-    // Медленные «тяжёлые» угрозы сохраняют отдельный темп даже в третьей фазе.
-    if (attack.customSpeed <= 10) cappedSpeed = Math.min(cappedSpeed, 11.5);
-    return cappedSpeed;
-}
-
-function getBalancedAttackSpeed(attack, phase, profile, shotIndex) {
+// Скорость атаки = данные уровня × профиль босса × фаза × разброс. Никаких потолков, полов и округлений.
+function getBossAttackSpeed(attack, phase, profile, shotIndex) {
     const variations = profile.speedVariance;
     const variation = variations[(bossWaveCounter + shotIndex) % variations.length];
-    const rawSpeed = attack.customSpeed * profile.speedMultiplier * phase.speed * variation;
-    const speed = capBossAttackSpeed(attack, rawSpeed);
-    return Math.max(2, Math.round(speed * 10) / 10);
+    return attack.customSpeed * profile.speedMultiplier * phase.speed * variation;
 }
 
-function getBossAttackSide(attack) {
-    if (attack.xPos <= BOSS_LEFT_FLANK_MAX_X) return 'left';
-    if (attack.xPos >= BOSS_RIGHT_FLANK_MIN_X) return 'right';
-    return 'center';
-}
-
-function getProjectedBossAttackSpeed(attack, phase, profile) {
-    const maximumVariance = Math.max(...profile.speedVariance);
-    const rawSpeed = attack.customSpeed * profile.speedMultiplier * phase.speed * maximumVariance;
-    return capBossAttackSpeed(attack, rawSpeed);
-}
-
-function getBossAttackScheduleOffsets(abilityIndexes, abilities, shotDelay, phase, profile) {
+// Моменты появления атак комбо: накопление max(интервал выстрела, явная пауза комбо). Ничего не растягивается.
+function getBossAttackScheduleOffsets(abilityIndexes, shotDelay, shotGapsMs = []) {
     const offsets = [];
-    const lastFastAttackAt = { left: -Infinity, right: -Infinity };
-    const minimumSideSwitchGap = Math.max(
-        MIN_FAST_CROSSFIRE_GAP_MS,
-        Number(profile.minFastSideSwitchMs) || 0
-    );
     let currentOffset = 0;
-
     abilityIndexes.forEach((abilityIndex, shotIndex) => {
-        if (shotIndex > 0) currentOffset += shotDelay;
-
-        const attack = abilities[abilityIndex];
-        if (!attack) {
-            offsets.push(Math.round(currentOffset));
-            return;
-        }
-
-        const side = getBossAttackSide(attack);
-        const isFastAttack = side !== 'center'
-            && getProjectedBossAttackSpeed(attack, phase, profile) >= FAST_BOSS_ATTACK_SPEED;
-
-        if (isFastAttack) {
-            const oppositeSide = side === 'left' ? 'right' : 'left';
-            const earliestFairOffset = lastFastAttackAt[oppositeSide] + minimumSideSwitchGap;
-            currentOffset = Math.max(currentOffset, earliestFairOffset);
-            lastFastAttackAt[side] = currentOffset;
-        }
-
+        if (shotIndex > 0) currentOffset += Math.max(shotDelay, shotGapsMs[shotIndex - 1] || 0);
         offsets.push(Math.round(currentOffset));
     });
-
     return offsets;
 }
 
@@ -1948,19 +1996,22 @@ function showAttackTelegraph(attack, duration, movementStyle, speed) {
 function executeBossEvent() {
     const bossAbD = bossAbilitiesDop.filter(ba => ba.boss === bossAliveName);
     const bossAb = bossAbilities.filter(ba => ba.boss === bossAliveName);
-    if (bossAbD.length === 0 || bossAb.length === 0 || !currentBoss) return;
+    if (bossAbD.length === 0 || bossAb.length === 0 || !currentBoss) return false;
 
     const config = getLevelCombatConfig();
     const profile = getBossProfile();
     const phase = getBossPhase();
     if (phase.phase !== bossCombatPhase) {
         bossCombatPhase = phase.phase;
+        window.BattleLog?.log('ФАЗА', `${bossAliveName}: фаза ${phase.phase}, HP босса ${Math.round(currentBoss.hp)}/${Math.round(currentBoss.maxHP)}`);
         const phaseMessage = profile.phaseMessages?.[phase.phase]
             || `ФАЗА ${phase.phase === 2 ? 'II' : 'III'}`;
-        showCenterText(phaseMessage, 3000, 'boss'); // не короче 3с — игрок должен успеть прочитать (прямой запрос пользователя, 2026-09-16)
+        showCenterText(phaseMessage, 3000, 'boss'); // guard:allow — длительность текста на экране, на бой не влияет; // не короче 3с — игрок должен успеть прочитать (прямой запрос пользователя, 2026-09-16)
     }
 
-    const selectedCombo = selectBossCombo(bossAbD, bossAb, phase);
+    const selectedCombo = selectBossCombo(bossAbD, bossAb, phase,
+        combo => canScheduleBossCombo(combo, bossAb, phase));
+    if (!selectedCombo) return false;
     const selectedAbilityIndexes = selectedCombo.indexAbilities;
     const comboDamageMultiplier = getBossComboDamageMultiplier(
         selectedCombo,
@@ -1969,67 +2020,34 @@ function executeBossEvent() {
         config.scaleShortComboDamage
     );
     const movementStyle = getBossMovementStyle();
-    const shotDelay = Math.max(config.minShotDelay, bossDelayAb * profile.cadence * phase.cadence);
+    const shotDelay = Math.max(config.minShotDelay, bossDelayAb * profile.cadence * phase.cadence,
+        Number(selectedCombo.shotDelayMs) || 0);
     const telegraphMs = Math.max(config.minTelegraphMs, profile.telegraphMs * phase.telegraphMultiplier);
 
-    // «Атакующая цепь» (область V «Беспокойная деревня») — уровень явно включает
-    // это через bossCombatConfig.attackChains; конкретное комбо становится цепью
-    // ТОЛЬКО если автор явно пометил его isChain:true в bossAbilitiesDop (см.
-    // linkAttackChain ниже) — не по одной длине: обычные, не-цепные комбо на этом
-    // уровне тоже сплошь и рядом длиной 3-7 (норма для этого движка, раздел 6
-    // lvlData/Правила создания уровня.txt), и без явного флага в цепь превратился
-    // бы вообще весь бой. Длина всё же проверяется отдельно — предохранитель
-    // формата данных, а не сам триггер.
-    const chainSlot = (
-        config.attackChains
-        && selectedCombo.isChain
-        && selectedAbilityIndexes.length >= ATTACK_CHAIN_MIN_LENGTH
-        && selectedAbilityIndexes.length <= ATTACK_CHAIN_MAX_LENGTH
-    ) ? { prevMember: null, prevSpeed: undefined } : null;
-
-    // ПОДТВЕРЖДЁННЫЙ БАГ (пользователь поймал живьём на уровнях 41/42, раздел 13.7
-    // lvlData/Правила создания уровня.txt): звенья цепи брались из обычного пула
-    // способностей (задуманного для рассеянных по полю обычных комбо) и просто
-    // помечались isChain — из-за этого звенья одной цепи летели с разных концов
-    // поля, на разной высоте появления и с НЕмонотонной скоростью (более позднее
-    // звено — быстрее раннего). Итог: звенья визуально не читались как очередь
-    // («кучей»), могли обгонять и перекрывать друг друга, и в худшем случае
-    // (быстрое позднее звено, появившееся близко к герою) физически не оставляли
-    // игроку времени разобраться с предыдущими звеньями первыми — цепь становилась
-    // нечестной независимо от навыка. Ниже — предохранитель ДВИЖКА, работающий
-    // ВСЕГДА, независимо от того, что задано в gameData (та же философия, что и
-    // правило 18 CLAUDE.md: игра не должна полагаться на то, что данные уровня
-    // всегда написаны идеально):
-    //   1) ни одно звено не может появиться ближе цели, чем CHAIN_MAX_SPAWN_Y —
-    //      гарантирует минимальную дистанцию/время на реакцию даже последнему
-    //      звену самой длинной (7) цепи;
-    //   2) скорость первого звена не может превышать CHAIN_MAX_HEAD_SPEED, а
-    //      каждое следующее звено не может лететь быстрее предыдущего живого —
-    //      это одновременно (а) не даёт звеньям обгонять и перекрывать друг
-    //      друга и (б) держит все НЕголовные (неуязвимые) звенья медленными;
-    //   3) минимальный шаг между появлением звеньев одной цепи поднят настолько,
-    //      чтобы при максимально разрешённой скорости они не появлялись друг у
-    //      друга «на голове» (см. CHAIN_MIN_SPAWN_GAP_PERCENT ниже) — не «кучей».
-    // Расчёт честности (сколько времени есть на убийство всей цепи по очереди до
-    // прилёта последнего звена) — раздел 13.7 того же файла; здесь только сами
-    // ограничения, откалиброванные так, чтобы этот расчёт сходился для цепи
-    // длиной вплоть до ATTACK_CHAIN_MAX_LENGTH (7) с запасом.
-    let effectiveShotDelay = shotDelay;
-    if (chainSlot) {
-        const firstChainType = bossAb[selectedAbilityIndexes[0]]?.type;
-        const chainBaseSpeed = (firstChainType && ENEMY_TYPES[firstChainType]?.baseSpeed) || 0.020;
-        const maxHeadSpeedPercentPerSec = chainBaseSpeed * CHAIN_MAX_HEAD_SPEED * ANIMATION_PARAMS.BASE_SPEED;
-        const minChainGapMs = (CHAIN_MIN_SPAWN_GAP_PERCENT / maxHeadSpeedPercentPerSec) * 1000;
-        effectiveShotDelay = Math.max(shotDelay, minChainGapMs);
-    }
+    // «Атакующая цепь»: включается флагом bossCombatConfig.attackChains; комбо становится цепью только с пометкой isChain.
+    const chainSlot = (config.attackChains && selectedCombo.isChain) ? { prevMember: null } : null;
 
     const attackScheduleOffsets = getBossAttackScheduleOffsets(
         selectedAbilityIndexes,
-        bossAb,
-        effectiveShotDelay,
-        phase,
-        profile
+        shotDelay,
+        selectedCombo.shotGapsMs
     );
+
+    // Пауза считается от последнего появления, а не начала длинного залпа.
+    // Даже две разные серии сохраняют интервал читаемости между телеграфами.
+    const recoveryMs = selectedCombo.recoveryMs
+        ?? requireCombatData(config.defaultRecoveryMs, 'bossCombatConfig.defaultRecoveryMs');
+    if (window.BattleLog?.isActive()) {
+        const comboNo = bossAbD.indexOf(selectedCombo);
+        BattleLog.log('КОМБО', `${bossAliveName} фаза ${phase.phase}: комбо №${comboNo} из ${bossAbD.length}, атак ${selectedAbilityIndexes.length}, шаг ${Math.round(shotDelay)} мс, телеграф ${Math.round(telegraphMs)} мс, стиль ${movementStyle}, пауза после ${Math.round(recoveryMs)} мс`);
+        selectedAbilityIndexes.forEach((ai, k) => {
+            const a = bossAb[ai]; if (!a) return;
+            BattleLog.raw(`            ${k + 1}) ${a.type} x=${a.xPos}% y=${a.yPos}% базовая скорость ${a.customSpeed}; телеграф с +${Math.round(attackScheduleOffsets[k])} мс (реальная скорость и полёт — в строке «появилась»: скорость зависит от вращения speedVariance)`);
+        });
+    }
+    bossWaveRecoveryDelay = attackScheduleOffsets[attackScheduleOffsets.length - 1]
+        + telegraphMs + recoveryMs;
+    bossPendingAttacks += selectedAbilityIndexes.length;
 
     selectedAbilityIndexes.forEach((abilityIndex, shotIndex) => {
         const attack = bossAb[abilityIndex];
@@ -2037,26 +2055,16 @@ function executeBossEvent() {
 
         scheduleBossTask(() => {
             if (!bossAlive || isGameOver) return;
-            let speed = getBalancedAttackSpeed(attack, phase, profile, shotIndex);
-            let spawnYPos = attack.yPos;
+            const speed = getBossAttackSpeed(attack, phase, profile, shotIndex);
+            const spawnYPos = attack.yPos;
 
-            // Раздел 13.7 lvlData/Правила создания уровня.txt — см. развёрнутый
-            // комментарий у объявления chainSlot выше. Клампы применяются и к
-            // телеграфу (ниже), и к самому спавну — иначе телеграф показал бы
-            // одну точку появления, а атака появилась бы в другой.
-            if (chainSlot) {
-                spawnYPos = Math.min(spawnYPos, CHAIN_MAX_SPAWN_Y);
-                const speedCeiling = chainSlot.prevSpeed !== undefined ? chainSlot.prevSpeed : CHAIN_MAX_HEAD_SPEED;
-                speed = Math.min(speed, speedCeiling);
-                chainSlot.prevSpeed = speed;
-            }
-
-            const telegraphAttack = chainSlot ? { ...attack, yPos: spawnYPos } : attack;
-            showAttackTelegraph(telegraphAttack, telegraphMs, movementStyle, speed);
+            showAttackTelegraph(attack, telegraphMs, movementStyle, speed);
 
             scheduleBossTask(() => {
+                bossPendingAttacks = Math.max(0, bossPendingAttacks - 1);
                 if (!bossAlive || isGamePaused || isGameOver) return;
-                const activeBossAttacks = activeEnemies.filter(enemy => enemy.isCustom && !enemy.isBoss).length;
+                const activeBossAttacks = activeEnemies.filter(enemy => enemy.isCustom && !enemy.isBoss
+                    && !enemy.isInert && enemy.hp > 0).length;
                 if (activeBossAttacks >= phase.maxActiveAttacks) return;
 
                 const damage = calculateBossAttackDamage(
@@ -2067,32 +2075,15 @@ function executeBossEvent() {
                     lvlNumber
                 );
 
-                // «Баррикада» (раздел 13.8 lvlData/Правила создания уровня.txt) —
-                // ПРАВКА 2026-09-16: раньше HP баррикады считался как процент от
-                // maxHP босса и снимался НАСТОЯЩИМ уроном удара — из-за этого число
-                // реальных попаданий плавало от героя к герою и от крита к криту
-                // (иногда 1 крит убивал баррикаду, иногда без крита требовался
-                // избыток попаданий сверх расчёта). Теперь честность считается не
-                // от урона, а от КОЛИЧЕСТВА УДАРОВ: attack.barricadeHits — целое
-                // число (3-7), не зависящее ни от героя, ни от урона, ни от maxHP
-                // босса. Реальное снятие HP на 1 за удар — см. applyHeroImpactDamage
-                // (ветка enemy.isBarricade). Страховка BARRICADE_MAX_CONCURRENT/
-                // BARRICADE_MIN_SPAWN_GAP_MS применяется независимо от gameData: если
-                // условия не выполнены, атака тихо спавнится ОБЫЧНОЙ (customHP как
-                // обычно), бой не пропускает и не блокирует её.
+                // Баррикада: число ударов, пауза и рывок — данные атаки (barricadeHits/barricadePauseMs/barricadeRushSpeedMultiplier).
                 let barricadeOptions = null;
                 let resolvedHp = attack.customHP;
                 if (attack.barricadeHits && !chainSlot) {
-                    const activeBarricades = activeEnemies.filter(e => e.isBarricade).length;
-                    const cooledDown = (performance.now() - lastBarricadeSpawnTime) >= BARRICADE_MIN_SPAWN_GAP_MS;
-                    if (activeBarricades < BARRICADE_MAX_CONCURRENT && cooledDown) {
-                        resolvedHp = Math.max(1, Math.round(attack.barricadeHits));
-                        barricadeOptions = {
-                            pauseMs: attack.barricadePauseMs,
-                            rushSpeedMultiplier: attack.barricadeRushSpeedMultiplier
-                        };
-                        lastBarricadeSpawnTime = performance.now();
-                    }
+                    resolvedHp = attack.barricadeHits;
+                    barricadeOptions = {
+                        pauseMs: attack.barricadePauseMs,
+                        rushSpeedMultiplier: attack.barricadeRushSpeedMultiplier
+                    };
                 }
 
                 const spawnedAttack = spawnEnemyWithParams(
@@ -2105,11 +2096,25 @@ function executeBossEvent() {
                     true,
                     movementStyle,
                     movementStyle === 'wave'
-                        ? { waveAmplitude: attack.waveAmplitude, waveFrequency: attack.waveFrequency, wavePhase: attack.wavePhase }
+                        ? {
+                            waveAmplitude: requireCombatData(attack.waveAmplitude, `${bossAliveName}: waveAmplitude атаки`),
+                            waveFrequency: requireCombatData(attack.waveFrequency, `${bossAliveName}: waveFrequency атаки`),
+                            wavePhase: requireCombatData(attack.wavePhase, `${bossAliveName}: wavePhase атаки`)
+                        }
                         : null,
                     barricadeOptions
                 );
 
+                if (spawnedAttack && window.BattleLog?.isActive()) {
+                    spawnedAttack.logId = ++battleLogAttackSeq;
+                    spawnedAttack.logSpawnedAt = activeGameTimeMs;
+                    BattleLog.spawn({
+                        id: spawnedAttack.logId, type: attack.type, x: attack.xPos, y: spawnYPos,
+                        speed: spawnedAttack.speedPercentPerSecond, damage: Math.round(damage), hp: resolvedHp,
+                        flightMs: estimateAttackFlightMs(spawnYPos, spawnedAttack.speedPercentPerSecond, movementStyle, config.movementStyles), style: movementStyle,
+                        combo: bossAbD.indexOf(selectedCombo), shot: shotIndex + 1
+                    });
+                }
                 if (chainSlot && spawnedAttack) {
                     linkNextChainMember(chainSlot, spawnedAttack);
                 }
@@ -2118,6 +2123,7 @@ function executeBossEvent() {
     });
 
     bossWaveCounter++;
+    return true;
 }
 
 // ==================== Область V («Беспокойная деревня»): «Атакующая цепь» ====================
@@ -2139,55 +2145,9 @@ function executeBossEvent() {
 // цепью, чья первая атака сразу становится головой. Ни то, ни другое не меняет HP
 // атаки — она по-прежнему умирает ровно с одного удара, когда бьётся именно голова
 // (тот же инвариант, что и everywhere else, см. комментарий у класса Enemy).
-const ATTACK_CHAIN_MIN_LENGTH = 3;
-const ATTACK_CHAIN_MAX_LENGTH = 7;
-
-// Раздел 13.7 lvlData/Правила создания уровня.txt — жёсткие геометрические
-// гарантии честности цепи, применяются ДВИЖКОМ независимо от того, что задано
-// в gameData (см. развёрнутый комментарий у chainSlot в executeBossEvent):
-// CHAIN_MAX_HEAD_SPEED — потолок скорости первого (самого быстрого) звена, все
-// следующие звенья дополнительно не могут превышать скорость предыдущего живого
-// звена (см. clamp в executeBossEvent) — вместе это не даёт звеньям обгонять и
-// перекрывать друг друга и держит неголовные звенья медленными;
-// CHAIN_MAX_SPAWN_Y — ни одно звено не может появиться ближе цели (% высоты
-// поля, GAME_CONFIG.TARGET_Y), чем это — минимальная дистанция на реакцию даже
-// последнему звену самой длинной (ATTACK_CHAIN_MAX_LENGTH) цепи;
-// CHAIN_MIN_SPAWN_GAP_PERCENT — минимальный визуальный разрыв (% высоты поля)
-// между соседними звеньями в момент появления нового — не даёт им лететь «кучей»
-// (используется в executeBossEvent для расчёта минимального шага появления).
-// ПОДТВЕРЖДЁННЫЙ СЛУЧАЙ (см. «Баланс сложности и проходимости» в начале
-// lvlData/Правила создания уровня.txt): первый проход этих чисел (потолок
-// скорости 10, минимальная дистанция до 14%) давал запас ~2.5с на звено — цепь
-// стала формально честной, но перестала быть угрозой вообще. Текущие значения
-// (потолок скорости 18, минимальная дистанция до 26%) дают запас ~0.8-0.9с на
-// звено при данных, реально использующих этот потолок (см. gameData41/42.js).
-// Эти константы — ВЕРХНЯЯ ГРАНИЦА страховки движка (максимум, что он разрешит),
-// а не рекомендация для самих данных уровня: раздел 13.7 требует держать
-// фактический запас в районе ~0.5-1с на звено, используя доступный диапазон,
-// а не оставляя gameData искусственно медленной. Числа ниже подобраны так,
-// чтобы движок физически не мог пропустить нечестную (отрицательный запас)
-// цепь максимальной длины (7), но и не навязывал избыточный запас сам по себе.
-const CHAIN_MAX_HEAD_SPEED = 18;
-const CHAIN_MAX_SPAWN_Y = 26;
-const CHAIN_MIN_SPAWN_GAP_PERCENT = 12;
-
-// Раздел 13.8 lvlData/Правила создания уровня.txt — «Баррикада» (область VI
-// «Глухой край»): атака, требующая нескольких попаданий вместо одного. Прямое
-// требование пользователя (2026-09-15): нельзя допустить уровень, где игрок
-// вынужден бесконечно бить баррикады вместо самого босса, и нельзя допустить
-// две баррикады одновременно (игрок физически не разорвётся между двумя
-// многоударными целями И остальными летящими атаками сразу). Как и у
-// CHAIN_MAX_HEAD_SPEED/CHAIN_MAX_SPAWN_Y/CHAIN_MIN_SPAWN_GAP_PERCENT выше —
-// это ВЕРХНЯЯ ГРАНИЦА страховки движка, применяется ВСЕГДА независимо от
-// того, что задано в gameData (см. executeBossEvent): если автор уровня
-// случайно поставил barricadeHits на атаку, которая пришлась бы раньше
-// BARRICADE_MIN_SPAWN_GAP_MS после предыдущей, или пока предыдущая баррикада
-// ещё жива — движок просто спавнит эту атаку ОБЫЧНОЙ (по attack.customHP),
-// не бросает и не блокирует бой. Числа не меняются per-уровень — конкретную
-// частоту/силу баррикад авторы уровня выбирают ЧЕРЕЗ ритм bossDelayAb и
-// собственные barricadeHits/barricadePauseMs, а не через эти константы.
-const BARRICADE_MAX_CONCURRENT = 1;
-const BARRICADE_MIN_SPAWN_GAP_MS = 7000;
+// Цепь и баррикада — механики ДАННЫХ уровня: длину цепи, скорость и высоту звеньев, шаг появления, число и частоту
+// баррикад задаёт gameData. Движок никаких ограничений (потолков скорости, границ высоты, минимальных пауз,
+// лимитов одновременных баррикад) не накладывает; честность этих механик проверяет scripts/combat-data-inventory.js.
 
 // ПОДТВЕРЖДЁННЫЙ БАГ (по прямому отчёту пользователя): первая версия собирала
 // ВСЕХ участников цепи в массив и связывала их одним махом только когда спавнилось
@@ -2438,7 +2398,6 @@ function showBossHealthBar(boss) {
 
     currentBoss = boss;
     // Новый облик/босс — счётчик кулдауна баррикад стартует заново (раздел 13.8).
-    lastBarricadeSpawnTime = 0;
     
     // Убедимся, что у босса есть maxHP
     if (!boss.maxHP) {
@@ -2594,6 +2553,7 @@ function damageHero(damage) {
     
     // Логируем урон
     console.log(`Герой получил ${damage} урона. Осталось здоровья: ${heroHP.current}`);
+    window.BattleLog?.log('ГЕРОЙ', `получил ${damage} урона (после защиты), здоровье ${heroHP.current}/${heroHP.max}`);
 
     // Особенность героя: реакция на полученный урон
     notifyHeroTookDamage(damage);
@@ -2905,6 +2865,7 @@ function animateEndgameHeroTrackFill(modal) {
 }
 
 function showEndGameModal(victory, timeSeconds) {
+    window.BattleLog?.end(`${victory ? 'ПОБЕДА' : 'ПОРАЖЕНИЕ'}, длительность боя ${timeSeconds} с, здоровье героя ${heroHP.current}/${heroHP.max}`);
     // Доигрываем текущую композицию, но после неё оставляем экран результата в тишине.
     window.battleMusic?.setCombatActive(false);
 
@@ -3722,6 +3683,20 @@ function applyHeroImpactDamage(enemy, damageResult, isBoss) {
 
 	//Применение особенностей героев
 	subsDamageEnemy(isBoss, enemy.hp <= 0);
+	if (window.BattleLog?.isActive()) {
+        const aimX = aimPosition.x / gameField.clientWidth * 100;
+        if (isBoss) {
+            BattleLog.log('УДАР', `герой бьёт босса ${enemy.type}: ${Math.round(damageResult.damage)}${damageResult.isCritical ? ' (КРИТ)' : ''}, HP босса ${Math.max(0, Math.round(enemy.hp))}/${Math.round(enemy.maxHP)}`);
+        } else if (enemy.hp <= 0) {
+            BattleLog.deflect({
+                id: enemy.logId ?? '?', type: enemy.type, enemyX: enemy.x, aimX,
+                ageMs: activeGameTimeMs - (enemy.logSpawnedAt ?? activeGameTimeMs),
+                remainMs: (GAME_CONFIG.TARGET_Y - enemy.y) / enemy.speedPercentPerSecond * 1000
+            });
+        } else {
+            BattleLog.log('ОТБИТА', `#${enemy.logId ?? '?'} ${enemy.type} задета, осталось ударов ${enemy.hp}`);
+        }
+    }
     
     // Запускаем анимацию удара по врагу
 	

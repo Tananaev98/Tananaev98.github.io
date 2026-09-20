@@ -6,6 +6,11 @@ let factorChar = (lvlNumber * 5) / 100;
 // как хранитель порога. Архетипы Баюнища/Каркуна/Ступолёта унаследованы с прежнего
 // уровня 15 (тот же персонаж — тот же почерк), Цепняк и Избач спроектированы заново.
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	scaleLongComboDamage: true,
 	scaleShortComboDamage: true,
 	levelCadence: 0.72, damageMultiplier: 1.760, minWaveDelay: 2000, minShotDelay: 135, minTelegraphMs: 470,
@@ -15,11 +20,11 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.63, speed: 1.25, damage: 1.30, telegraphMultiplier: 0.83, surpriseChance: 0.38, maxActiveAttacks: 22 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'pause',    cadence: 1.02, telegraphMs: 820, speedMultiplier: 1.02, damageMultiplier: 0.96, speedVariance: [0.84, 0.94, 1.02, 1.10, 1.18] }, // БАЮНИЩЕ: CENTER_OUT_BELLS — круги расходятся из центра
-		enem2: { movementStyle: 'drift',    cadence: 0.92, telegraphMs: 720, speedMultiplier: 1.08, damageMultiplier: 0.84, speedVariance: [0.86, 0.96, 1.06, 1.16, 1.24] }, // КАРКУН-ВЕЩУН: PERIMETER_FLIGHT — одна дуга поля за серию
-		enem3: { movementStyle: 'straight', cadence: 1.05, telegraphMs: 780, speedMultiplier: 0.98, damageMultiplier: 1.10, speedVariance: [0.82, 0.92, 1.02, 1.12, 1.22] }, // ЦЕПНЯК: CHAIN_CHARGE — низкий забег с одного бока, редкий центр
-		enem4: { movementStyle: 'accelerate', cadence: 0.84, telegraphMs: 650, speedMultiplier: 1.12, damageMultiplier: 0.68, speedVariance: [0.88, 0.98, 1.08, 1.18, 1.26] }, // СТУПОЛЁТ: BROOM_SWEEP — направленный пролёт метлы
-		enem5: { movementStyle: 'lateRush',    cadence: 0.75, telegraphMs: 640, speedMultiplier: 1.14, damageMultiplier: 1.08, speedVariance: [0.80, 0.94, 1.08, 1.22, 1.36] }  // ИЗБАЧ: HOUSE_CONVERGE — хранитель порога, смешивает почерк всех четверых и впервые перекрывает низ поля разом
+		enem1: { signatureEvery: 4, movementStyle: 'pause',    cadence: 1.02, telegraphMs: 820, speedMultiplier: 1.02, damageMultiplier: 0.96, speedVariance: [0.84, 0.94, 1.02, 1.10, 1.18] }, // БАЮНИЩЕ: CENTER_OUT_BELLS — круги расходятся из центра
+		enem2: { signatureEvery: 4, movementStyle: 'drift',    cadence: 0.92, telegraphMs: 720, speedMultiplier: 1.08, damageMultiplier: 0.84, speedVariance: [0.86, 0.96, 1.06, 1.16, 1.24] }, // КАРКУН-ВЕЩУН: PERIMETER_FLIGHT — одна дуга поля за серию
+		enem3: { signatureEvery: 4, movementStyle: 'straight', cadence: 1.05, telegraphMs: 780, speedMultiplier: 0.98, damageMultiplier: 1.10, speedVariance: [0.82, 0.92, 1.02, 1.12, 1.22] }, // ЦЕПНЯК: CHAIN_CHARGE — низкий забег с одного бока, редкий центр
+		enem4: { signatureEvery: 4, movementStyle: 'accelerate', cadence: 0.84, telegraphMs: 650, speedMultiplier: 1.12, damageMultiplier: 0.68, speedVariance: [0.88, 0.98, 1.08, 1.18, 1.26] }, // СТУПОЛЁТ: BROOM_SWEEP — направленный пролёт метлы
+		enem5: { signatureEvery: 4, movementStyle: 'lateRush',    cadence: 0.75, telegraphMs: 640, speedMultiplier: 1.14, damageMultiplier: 1.08, speedVariance: [0.80, 0.94, 1.08, 1.22, 1.36] }  // ИЗБАЧ: HOUSE_CONVERGE — хранитель порога, смешивает почерк всех четверых и впервые перекрывает низ поля разом
 	}
 };
 
@@ -276,11 +281,11 @@ const bossAbilities = [
 ];
 
 const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 340, bossDelayAbDop: 6000 }, // спокойные круги с передышкой
-	{ boss: 'enem2', bossDelayAb: 300, bossDelayAbDop: 5500 }, // отдельные дуги, не весь периметр
-	{ boss: 'enem3', bossDelayAb: 310, bossDelayAbDop: 5400 }, // забег и долгая пауза перед новым рывком
-	{ boss: 'enem4', bossDelayAb: 290, bossDelayAbDop: 5200 }, // быстрый, но малый урон и одно направление
-	{ boss: 'enem5', bossDelayAb: 250, bossDelayAbDop: 4200 }, // финал: плотнее всех, но телеграф честный
+	{ boss: 'enem1', bossDelayAb: 340, bossDelayAbDop: 6000, firstWaveDelayMs: 2400 }, // спокойные круги с передышкой
+	{ boss: 'enem2', bossDelayAb: 300, bossDelayAbDop: 5500, firstWaveDelayMs: 2400 }, // отдельные дуги, не весь периметр
+	{ boss: 'enem3', bossDelayAb: 310, bossDelayAbDop: 5400, firstWaveDelayMs: 2400 }, // забег и долгая пауза перед новым рывком
+	{ boss: 'enem4', bossDelayAb: 290, bossDelayAbDop: 5200, firstWaveDelayMs: 2400 }, // быстрый, но малый урон и одно направление
+	{ boss: 'enem5', bossDelayAb: 250, bossDelayAbDop: 4200, firstWaveDelayMs: 2016 }, // финал: плотнее всех, но телеграф честный
 ];
 
 const bossAbilitiesDop = [

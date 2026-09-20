@@ -4,22 +4,23 @@ let lvlNumber = 1;
 const bossCombatConfig = {
 	scaleLongComboDamage: true,
 	scaleShortComboDamage: true,
-	levelCadence: 1.00,
-	damageMultiplier: 1.00,
-	minWaveDelay: 2600,
-	minShotDelay: 175,
-	minTelegraphMs: 600,
+	waveJitter: {min: 0.88, max: 1.12},
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: {historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35},
+	movementStyles: {accelerate: {start: 0.72, gain: 0.9}, lateRush: {switchAt: 0.55, early: 0.72, late: 1.48}, pause: {at: 0.42, durationMs: 420, after: 1.22}, weave: {frequency: 1.35, amplitude: 5.5}, drift: {shift: 10}},
+	levelCadence: 1.043, damageMultiplier: 1, minWaveDelay: 2685, minShotDelay: 181, minTelegraphMs: 521,
 	phases: [
-		{ phase: 1, minHp: 0.66, cadence: 1.00, speed: 0.94, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.06, maxActiveAttacks: 11, excludedDangerousCombos: 2 },
-		{ phase: 2, minHp: 0.31, cadence: 0.88, speed: 1.03, damage: 1.07, telegraphMultiplier: 0.96, surpriseChance: 0.12, maxActiveAttacks: 13 },
-		{ phase: 3, minHp: 0.00, cadence: 0.76, speed: 1.10, damage: 1.14, telegraphMultiplier: 0.90, surpriseChance: 0.20, maxActiveAttacks: 15 }
+		{ phase: 1, minHp: 0.681, cadence: 1.02, speed: 0.93, damage: 1, telegraphMultiplier: 1.03, surpriseChance: 0.055, maxActiveAttacks: 10, excludedDangerousCombos: 2 },
+		{ phase: 2, minHp: 0.331, cadence: 0.902, speed: 1.02, damage: 1.07, telegraphMultiplier: 0.971, surpriseChance: 0.11, maxActiveAttacks: 13 },
+		{ phase: 3, minHp: 0, cadence: 0.78, speed: 1.09, damage: 1.14, telegraphMultiplier: 0.91, surpriseChance: 0.191, maxActiveAttacks: 15 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'weave', cadence: 1.03, telegraphMs: 920, speedMultiplier: 0.94, damageMultiplier: 0.92, speedVariance: [0.78, 0.88, 0.98, 1.08, 1.18] }, // TOP_HOPS: спокойный прыжок → рывок
-		enem2: { movementStyle: 'accelerate', cadence: 1.00, telegraphMs: 860, speedMultiplier: 0.98, damageMultiplier: 0.97, speedVariance: [0.90, 0.96, 1.02, 1.08, 1.14] }, // PACK_PAIRS: пары сходятся к центру
-		enem3: { movementStyle: 'lateRush', cadence: 1.18, telegraphMs: 1080, speedMultiplier: 0.78, damageMultiplier: 1.18, speedVariance: [0.80, 0.86, 0.93, 1.00, 1.08] }, // HEAVY_PRESS: тяжёлые остановки
-		enem4: { movementStyle: 'pause', cadence: 0.90, telegraphMs: 720, speedMultiplier: 1.08, damageMultiplier: 1.02, speedVariance: [0.88, 0.98, 1.08, 1.16, 1.22] }, // ASYM_FOX: резкая смена давления
-		enem5: { movementStyle: 'drift', cadence: 0.82, telegraphMs: 780, speedMultiplier: 1.05, damageMultiplier: 1.10, speedVariance: [0.86, 0.94, 1.03, 1.12, 1.20] } // EDGE_ROLL: катится вдоль краёв
+		enem1: { combatIdentity: "Заяц-беглец: быстрые скачки с фланга на фланг, а слева висит медленное ухо", combatTrick: "пока игрок отбивает быстрые лапы справа, ухо слева, появившееся первым, прилетает последним", signatureEvery: 4, movementStyle: 'lateRush', cadence: 1.031, telegraphMs: 931, speedMultiplier: 0.89, damageMultiplier: 0.92, speedVariance: [0.78, 0.88, 0.98, 1.08, 1.18] },
+		enem2: { combatIdentity: "Волк из стаи: ровный, размеренный напор средними клыками, центр закрыт заранее", combatTrick: "тихий удар в нижний центр появляется первым, но прилетает последним, пока игрок занят флангами", signatureEvery: 5, movementStyle: 'straight', cadence: 1.001, telegraphMs: 870, speedMultiplier: 0.92, damageMultiplier: 0.97, speedVariance: [0.9, 0.96, 1.02, 1.08, 1.14] },
+		enem3: { combatIdentity: "Медведь: стена тяжёлых лап, которые падают с обоих флангов почти разом", combatTrick: "тяжёлые лапы летят долго, но падают пачкой с обоих боков — успеть погасить все на подлёте не даёт ширина поля", signatureEvery: 4, movementStyle: 'pause', cadence: 1.161, telegraphMs: 1075, speedMultiplier: 0.841, damageMultiplier: 1.18, speedVariance: [0.8, 0.86, 0.93, 1, 1.08] },
+		enem4: { combatIdentity: "Лиса: быстрые укусы серией, тянет игрока за хвостом в одну сторону, а кусает с другой", combatTrick: "серия быстрых укусов идёт слева, последний тяжёлый — справа", signatureEvery: 4, movementStyle: 'drift', cadence: 0.92, telegraphMs: 560, speedMultiplier: 0.79, damageMultiplier: 1.02, speedVariance: [0.88, 0.98, 1.08, 1.16, 1.22] },
+		enem5: { combatIdentity: "Колобок: катится по краям поля не спеша, но каждый оборот чаще", combatTrick: "слева, слева, справа, справа — интервалы сокращаются, и игрок не успевает перестроиться", signatureEvery: 3, movementStyle: 'weave', cadence: 0.851, telegraphMs: 790, speedMultiplier: 0.79, damageMultiplier: 1.1, speedVariance: [0.86, 0.94, 1.03, 1.12, 1.2] }
 	}
 };
 
@@ -147,8 +148,8 @@ const ENEMY_TYPES = {
 };
 
  let bossM = ['enem1', 'enem2', 'enem3', 'enem4', 'enem5'];
- let timeNextBoss = 5;
- const bossInterval = 5;
+ let timeNextBoss = 6;
+ const bossInterval = 7;
  
   //spawnEnemyWithParams(type, xPos, yPos, customHP, customDamage, customSpeed)
  //spawnEnemyWithParams('enem4', 40, 20, 1, 200, 40 )
@@ -160,166 +161,226 @@ const ENEMY_TYPES = {
  // У каждого босса свой архетип под образ.
 
  const bossAbilities = [
-	// ===== Побегайчик: TOP_HOPS — заячьи скачки сверху с краёв =====
-	{ boss: 'enem1', type: 'enem11', xPos: 10, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 5 },  //0
-	{ boss: 'enem1', type: 'enem11', xPos: 14, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 4 },  //1
-	{ boss: 'enem1', type: 'enem11', xPos: 90, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 5 },  //2
-	{ boss: 'enem1', type: 'enem11', xPos: 86, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 4 },  //3
-	{ boss: 'enem1', type: 'enem11', xPos: 8,  yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 3 },  //4
-	{ boss: 'enem1', type: 'enem11', xPos: 92, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 3 },  //5
-	// быстрые скачки — 5 сверху
-	{ boss: 'enem1', type: 'enem11', xPos: 8,  yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 22 }, //6
-	{ boss: 'enem1', type: 'enem11', xPos: 14, yPos: 7,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 26 }, //7
-	{ boss: 'enem1', type: 'enem11', xPos: 18, yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 20 }, //8
-	{ boss: 'enem1', type: 'enem11', xPos: 86, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 24 }, //9
-	{ boss: 'enem1', type: 'enem11', xPos: 92, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 28 }, //10
-	// микс: лапка + рывок
-	{ boss: 'enem1', type: 'enem11', xPos: 10, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, //11
-	{ boss: 'enem1', type: 'enem11', xPos: 90, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 14 }, //12
-	{ boss: 'enem1', type: 'enem11', xPos: 12, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 24 }, //13
-	{ boss: 'enem1', type: 'enem11', xPos: 88, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 22 }, //14
-	{ boss: 'enem1', type: 'enem11', xPos: 10, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 4 },  //15
+	// ===== Побегайчик: УШИ =====
+	{ boss: 'enem1', type: 'enem11', xPos: 11, yPos: 20, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 13 }, // 0 a
+	{ boss: 'enem1', type: 'enem11', xPos: 88, yPos: 27, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, // 1 a
+	{ boss: 'enem1', type: 'enem11', xPos: 12, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 13 }, // 2 b
+	{ boss: 'enem1', type: 'enem11', xPos: 86, yPos: 25, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, // 3 b
+	{ boss: 'enem1', type: 'enem11', xPos: 24, yPos: 27, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, // 4 b
+	{ boss: 'enem1', type: 'enem11', xPos: 12, yPos: 39, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 6 }, // 5 c
+	{ boss: 'enem1', type: 'enem11', xPos: 84, yPos: 37, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 13 }, // 6 c
+	{ boss: 'enem1', type: 'enem11', xPos: 74, yPos: 41, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, // 7 c
+	{ boss: 'enem1', type: 'enem11', xPos: 88, yPos: 41, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 13 }, // 8 c
+	{ boss: 'enem1', type: 'enem11', xPos: 88, yPos: 17, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 13 }, // 9 d
+	{ boss: 'enem1', type: 'enem11', xPos: 14, yPos: 23, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, // 10 d
+	{ boss: 'enem1', type: 'enem11', xPos: 22, yPos: 21, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 13 }, // 11 d
+	{ boss: 'enem1', type: 'enem11', xPos: 82, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, // 12 d
+	{ boss: 'enem1', type: 'enem11', xPos: 31, yPos: 36, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, // 13 e
+	{ boss: 'enem1', type: 'enem11', xPos: 17, yPos: 20, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 13 }, // 14 f
+	{ boss: 'enem1', type: 'enem11', xPos: 24, yPos: 24, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, // 15 f
+	{ boss: 'enem1', type: 'enem11', xPos: 8, yPos: 21, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 13 }, // 16 f
+	{ boss: 'enem1', type: 'enem11', xPos: 86, yPos: 41, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 6 }, // 17 f
+	{ boss: 'enem1', type: 'enem11', xPos: 26, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, // 18 f
+	{ boss: 'enem1', type: 'enem11', xPos: 14, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, // 19 f
+	{ boss: 'enem1', type: 'enem11', xPos: 86, yPos: 21, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, // 20 g
+	{ boss: 'enem1', type: 'enem11', xPos: 15, yPos: 23, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, // 21 g
+	{ boss: 'enem1', type: 'enem11', xPos: 80, yPos: 22, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 13 }, // 22 g
+	{ boss: 'enem1', type: 'enem11', xPos: 10, yPos: 40, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, // 23 h
+	{ boss: 'enem1', type: 'enem11', xPos: 22, yPos: 39, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 13 }, // 24 h
+	{ boss: 'enem1', type: 'enem11', xPos: 12, yPos: 42, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, // 25 h
+	{ boss: 'enem1', type: 'enem11', xPos: 84, yPos: 42, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 13 }, // 26 h
+	{ boss: 'enem1', type: 'enem11', xPos: 76, yPos: 44, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, // 27 h
 
-	// ===== Любитель бочков: PACK_PAIRS — волчья стая, пары L+R на одной Y =====
-	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 12, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 4 },  //0
-	{ boss: 'enem2', type: 'enem22', xPos: 90, yPos: 12, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 5 },  //1
-	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 24, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 3 },  //2
-	{ boss: 'enem2', type: 'enem22', xPos: 90, yPos: 24, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 4 },  //3
-	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 36, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 5 },  //4
-	{ boss: 'enem2', type: 'enem22', xPos: 90, yPos: 36, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 3 },  //5
-	{ boss: 'enem2', type: 'enem22', xPos: 8,  yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 4 },  //6
-	{ boss: 'enem2', type: 'enem22', xPos: 92, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 5 },  //7
-	// рывок стаи — 3 быстрых сверху с обоих краёв
-	{ boss: 'enem2', type: 'enem22', xPos: 12, yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 22 }, //8
-	{ boss: 'enem2', type: 'enem22', xPos: 88, yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 26 }, //9
-	{ boss: 'enem2', type: 'enem22', xPos: 16, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 20 }, //10
-	// микс: пара + рывок
-	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 12 }, //11
-	{ boss: 'enem2', type: 'enem22', xPos: 90, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 14 }, //12
-	{ boss: 'enem2', type: 'enem22', xPos: 14, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 24 }, //13
-	{ boss: 'enem2', type: 'enem22', xPos: 86, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 24 }, //14
-	{ boss: 'enem2', type: 'enem22', xPos: 90, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 4 },  //15
+	// ===== Любитель бочков: ЗАГОН =====
+	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 42, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 13 }, // 0 a
+	{ boss: 'enem2', type: 'enem22', xPos: 88, yPos: 52, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 11 }, // 1 a
+	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 39, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 13 }, // 2 b
+	{ boss: 'enem2', type: 'enem22', xPos: 20, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 11 }, // 3 b
+	{ boss: 'enem2', type: 'enem22', xPos: 88, yPos: 52, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 12 }, // 4 b
+	{ boss: 'enem2', type: 'enem22', xPos: 48, yPos: 54, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 3 }, // 5 c
+	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 13 }, // 6 c
+	{ boss: 'enem2', type: 'enem22', xPos: 20, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 11 }, // 7 c
+	{ boss: 'enem2', type: 'enem22', xPos: 88, yPos: 15, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 13 }, // 8 c
+	{ boss: 'enem2', type: 'enem22', xPos: 78, yPos: 19, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 12 }, // 9 c
+	{ boss: 'enem2', type: 'enem22', xPos: 16, yPos: 35, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 13 }, // 10 d
+	{ boss: 'enem2', type: 'enem22', xPos: 84, yPos: 46, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 10 }, // 11 d
+	{ boss: 'enem2', type: 'enem22', xPos: 26, yPos: 36, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 13 }, // 12 d
+	{ boss: 'enem2', type: 'enem22', xPos: 74, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 8 }, // 13 d
+	{ boss: 'enem2', type: 'enem22', xPos: 30, yPos: 25, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 13 }, // 14 e
+	{ boss: 'enem2', type: 'enem22', xPos: 49, yPos: 54, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 3 }, // 15 f
+	{ boss: 'enem2', type: 'enem22', xPos: 90, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 13 }, // 16 f
+	{ boss: 'enem2', type: 'enem22', xPos: 80, yPos: 25, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 11 }, // 17 f
+	{ boss: 'enem2', type: 'enem22', xPos: 12, yPos: 19, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 12 }, // 18 f
+	{ boss: 'enem2', type: 'enem22', xPos: 23, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 10 }, // 19 f
+	{ boss: 'enem2', type: 'enem22', xPos: 86, yPos: 37, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 13 }, // 20 g
+	{ boss: 'enem2', type: 'enem22', xPos: 76, yPos: 42, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 13 }, // 21 g
+	{ boss: 'enem2', type: 'enem22', xPos: 14, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 12 }, // 22 g
+	{ boss: 'enem2', type: 'enem22', xPos: 12, yPos: 35, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 13 }, // 23 h
+	{ boss: 'enem2', type: 'enem22', xPos: 22, yPos: 45, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 11 }, // 24 h
+	{ boss: 'enem2', type: 'enem22', xPos: 84, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 10 }, // 25 h
+	{ boss: 'enem2', type: 'enem22', xPos: 31, yPos: 47, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 12 }, // 26 h
+	{ boss: 'enem2', type: 'enem22', xPos: 80, yPos: 41, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 13 }, // 27 i
+	{ boss: 'enem2', type: 'enem22', xPos: 88, yPos: 54, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 10 }, // 28 i
+	{ boss: 'enem2', type: 'enem22', xPos: 24, yPos: 54, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 12 }, // 29 i
+	{ boss: 'enem2', type: 'enem22', xPos: 30, yPos: 54, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 12 }, // 30 i
 
-	// ===== Косолапый: HEAVY_PRESS — тяжёлые лапы снизу + редкий рык сверху =====
-	{ boss: 'enem3', type: 'enem33', xPos: 12, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 2 },  //0
-	{ boss: 'enem3', type: 'enem33', xPos: 28, yPos: 52, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3 },  //1
-	{ boss: 'enem3', type: 'enem33', xPos: 44, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 2 },  //2
-	{ boss: 'enem3', type: 'enem33', xPos: 60, yPos: 52, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3 },  //3
-	{ boss: 'enem3', type: 'enem33', xPos: 76, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 2 },  //4
-	{ boss: 'enem3', type: 'enem33', xPos: 8,  yPos: 22, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 4 },  //5
-	{ boss: 'enem3', type: 'enem33', xPos: 92, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 5 },  //6
-	{ boss: 'enem3', type: 'enem33', xPos: 10, yPos: 36, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3 },  //7
-	// рык — 2 быстрых сверху
-	{ boss: 'enem3', type: 'enem33', xPos: 10, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 20 }, //8
-	{ boss: 'enem3', type: 'enem33', xPos: 90, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 24 }, //9
-	// микс: лапа + рык
-	{ boss: 'enem3', type: 'enem33', xPos: 36, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3 },  //10
-	{ boss: 'enem3', type: 'enem33', xPos: 12, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 22 }, //11
-	{ boss: 'enem3', type: 'enem33', xPos: 72, yPos: 52, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 2 },  //12
-	{ boss: 'enem3', type: 'enem33', xPos: 88, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 22 }, //13
-	{ boss: 'enem3', type: 'enem33', xPos: 8,  yPos: 40, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 4 },  //14
-	{ boss: 'enem3', type: 'enem33', xPos: 92, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 5 },  //15
+	// ===== Косолапый: ДВОЙНАЯ ЛАПА =====
+	{ boss: 'enem3', type: 'enem33', xPos: 12, yPos: 22, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 14 }, // 0 a
+	{ boss: 'enem3', type: 'enem33', xPos: 88, yPos: 23, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 15 }, // 1 a
+	{ boss: 'enem3', type: 'enem33', xPos: 10, yPos: 43, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 6 }, // 2 b
+	{ boss: 'enem3', type: 'enem33', xPos: 88, yPos: 47, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 6 }, // 3 b
+	{ boss: 'enem3', type: 'enem33', xPos: 30, yPos: 31, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 14 }, // 4 b
+	{ boss: 'enem3', type: 'enem33', xPos: 84, yPos: 35, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 14 }, // 5 b
+	{ boss: 'enem3', type: 'enem33', xPos: 84, yPos: 54, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 5 }, // 6 c
+	{ boss: 'enem3', type: 'enem33', xPos: 20, yPos: 49, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 15 }, // 7 c
+	{ boss: 'enem3', type: 'enem33', xPos: 24, yPos: 46, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 15 }, // 8 c
+	{ boss: 'enem3', type: 'enem33', xPos: 16, yPos: 43, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 15 }, // 9 c
+	{ boss: 'enem3', type: 'enem33', xPos: 88, yPos: 43, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 14 }, // 10 d
+	{ boss: 'enem3', type: 'enem33', xPos: 12, yPos: 43, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 15 }, // 11 d
+	{ boss: 'enem3', type: 'enem33', xPos: 30, yPos: 47, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 14 }, // 12 d
+	{ boss: 'enem3', type: 'enem33', xPos: 86, yPos: 46, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 15 }, // 13 d
+	{ boss: 'enem3', type: 'enem33', xPos: 26, yPos: 49, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 12 }, // 14 e
+	{ boss: 'enem3', type: 'enem33', xPos: 11, yPos: 44, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 5 }, // 15 f
+	{ boss: 'enem3', type: 'enem33', xPos: 88, yPos: 42, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 6 }, // 16 f
+	{ boss: 'enem3', type: 'enem33', xPos: 16, yPos: 31, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 14 }, // 17 f
+	{ boss: 'enem3', type: 'enem33', xPos: 82, yPos: 32, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 14 }, // 18 f
+	{ boss: 'enem3', type: 'enem33', xPos: 24, yPos: 54, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 6 }, // 19 f
+	{ boss: 'enem3', type: 'enem33', xPos: 76, yPos: 44, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 14 }, // 20 f
+	{ boss: 'enem3', type: 'enem33', xPos: 30, yPos: 42, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 14 }, // 21 g
+	{ boss: 'enem3', type: 'enem33', xPos: 88, yPos: 44, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 15 }, // 22 g
+	{ boss: 'enem3', type: 'enem33', xPos: 12, yPos: 52, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 14 }, // 23 g
+	{ boss: 'enem3', type: 'enem33', xPos: 14, yPos: 42, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 14 }, // 24 h
+	{ boss: 'enem3', type: 'enem33', xPos: 84, yPos: 45, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 15 }, // 25 h
+	{ boss: 'enem3', type: 'enem33', xPos: 70, yPos: 53, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 14 }, // 26 h
+	{ boss: 'enem3', type: 'enem33', xPos: 26, yPos: 54, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 15 }, // 27 h
 
-	// ===== Сестричка: ASYM_FOX — хитрая: густо слева, сюрприз справа =====
-	{ boss: 'enem4', type: 'enem44', xPos: 8,  yPos: 10, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 4 },  //0
-	{ boss: 'enem4', type: 'enem44', xPos: 10, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 5 },  //1
-	{ boss: 'enem4', type: 'enem44', xPos: 12, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 3 },  //2
-	{ boss: 'enem4', type: 'enem44', xPos: 8,  yPos: 34, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 4 },  //3
-	{ boss: 'enem4', type: 'enem44', xPos: 14, yPos: 42, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 5 },  //4
-	{ boss: 'enem4', type: 'enem44', xPos: 10, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 3 },  //5
-	// редкие «обманки» справа
-	{ boss: 'enem4', type: 'enem44', xPos: 90, yPos: 22, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 4 },  //6
-	{ boss: 'enem4', type: 'enem44', xPos: 92, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 5 },  //7
-	// сюрприз-рывки — 4 справа сверху
-	{ boss: 'enem4', type: 'enem44', xPos: 88, yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 24 }, //8
-	{ boss: 'enem4', type: 'enem44', xPos: 92, yPos: 7,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 28 }, //9
-	{ boss: 'enem4', type: 'enem44', xPos: 86, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 22 }, //10
-	{ boss: 'enem4', type: 'enem44', xPos: 90, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 26 }, //11
-	// микс: левый хвост + правый рывок
-	{ boss: 'enem4', type: 'enem44', xPos: 10, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 12 }, //12
-	{ boss: 'enem4', type: 'enem44', xPos: 90, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 24 }, //13
-	{ boss: 'enem4', type: 'enem44', xPos: 8,  yPos: 40, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 4 },  //14
-	{ boss: 'enem4', type: 'enem44', xPos: 92, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 20 }, //15
+	// ===== Сестричка: ЛОЖНЫЙ СЛЕД =====
+	{ boss: 'enem4', type: 'enem44', xPos: 88, yPos: 39, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 14 }, // 0 a
+	{ boss: 'enem4', type: 'enem44', xPos: 10, yPos: 39, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 14 }, // 1 a
+	{ boss: 'enem4', type: 'enem44', xPos: 29, yPos: 29, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 14 }, // 2 a
+	{ boss: 'enem4', type: 'enem44', xPos: 86, yPos: 43, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 14 }, // 3 b
+	{ boss: 'enem4', type: 'enem44', xPos: 78, yPos: 47, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 13 }, // 4 b
+	{ boss: 'enem4', type: 'enem44', xPos: 24, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 13 }, // 5 b
+	{ boss: 'enem4', type: 'enem44', xPos: 12, yPos: 37, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 14 }, // 6 b
+	{ boss: 'enem4', type: 'enem44', xPos: 10, yPos: 34, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 14 }, // 7 c
+	{ boss: 'enem4', type: 'enem44', xPos: 18, yPos: 38, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 13 }, // 8 c
+	{ boss: 'enem4', type: 'enem44', xPos: 88, yPos: 43, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 8 }, // 9 c
+	{ boss: 'enem4', type: 'enem44', xPos: 26, yPos: 42, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 14 }, // 10 c
+	{ boss: 'enem4', type: 'enem44', xPos: 12, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 12 }, // 11 c
+	{ boss: 'enem4', type: 'enem44', xPos: 14, yPos: 47, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 11 }, // 12 d
+	{ boss: 'enem4', type: 'enem44', xPos: 25, yPos: 47, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 11 }, // 13 d
+	{ boss: 'enem4', type: 'enem44', xPos: 86, yPos: 47, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 11 }, // 14 d
+	{ boss: 'enem4', type: 'enem44', xPos: 76, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 10 }, // 15 d
+	{ boss: 'enem4', type: 'enem44', xPos: 30, yPos: 41, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 12 }, // 16 e
+	{ boss: 'enem4', type: 'enem44', xPos: 10, yPos: 36, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 11 }, // 17 f
+	{ boss: 'enem4', type: 'enem44', xPos: 18, yPos: 42, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 10 }, // 18 f
+	{ boss: 'enem4', type: 'enem44', xPos: 26, yPos: 40, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 11 }, // 19 f
+	{ boss: 'enem4', type: 'enem44', xPos: 12, yPos: 41, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 11 }, // 20 f
+	{ boss: 'enem4', type: 'enem44', xPos: 22, yPos: 46, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 10 }, // 21 f
+	{ boss: 'enem4', type: 'enem44', xPos: 88, yPos: 45, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 10 }, // 22 f
+	{ boss: 'enem4', type: 'enem44', xPos: 30, yPos: 47, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 11 }, // 23 g
+	{ boss: 'enem4', type: 'enem44', xPos: 12, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 10 }, // 24 g
+	{ boss: 'enem4', type: 'enem44', xPos: 86, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 11 }, // 25 g
+	{ boss: 'enem4', type: 'enem44', xPos: 86, yPos: 41, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 14 }, // 26 h
+	{ boss: 'enem4', type: 'enem44', xPos: 76, yPos: 43, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 14 }, // 27 h
+	{ boss: 'enem4', type: 'enem44', xPos: 82, yPos: 47, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 13 }, // 28 h
+	{ boss: 'enem4', type: 'enem44', xPos: 24, yPos: 44, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 13 }, // 29 h
 
-	// ===== Колобок: EDGE_ROLL — катится по периметру флангов =====
-	{ boss: 'enem5', type: 'enem55', xPos: 8,  yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 5 },  //0
-	{ boss: 'enem5', type: 'enem55', xPos: 8,  yPos: 20, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //1
-	{ boss: 'enem5', type: 'enem55', xPos: 8,  yPos: 32, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 5 },  //2
-	{ boss: 'enem5', type: 'enem55', xPos: 8,  yPos: 44, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 3 },  //3
-	{ boss: 'enem5', type: 'enem55', xPos: 92, yPos: 12, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //4
-	{ boss: 'enem5', type: 'enem55', xPos: 92, yPos: 24, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 5 },  //5
-	{ boss: 'enem5', type: 'enem55', xPos: 92, yPos: 36, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 3 },  //6
-	{ boss: 'enem5', type: 'enem55', xPos: 92, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //7
-	// ускорение качения — 3 быстрых сверху
-	{ boss: 'enem5', type: 'enem55', xPos: 10, yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 22 }, //8
-	{ boss: 'enem5', type: 'enem55', xPos: 90, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 26 }, //9
-	{ boss: 'enem5', type: 'enem55', xPos: 14, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 24 }, //10
-	// микс: оборот + рывок
-	{ boss: 'enem5', type: 'enem55', xPos: 8,  yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 12 }, //11
-	{ boss: 'enem5', type: 'enem55', xPos: 92, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14 }, //12
-	{ boss: 'enem5', type: 'enem55', xPos: 12, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 20 }, //13
-	{ boss: 'enem5', type: 'enem55', xPos: 88, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 24 }, //14
-	{ boss: 'enem5', type: 'enem55', xPos: 10, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //15
+	// ===== Колобок: КРУГ =====
+	{ boss: 'enem5', type: 'enem55', xPos: 10, yPos: 43, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14 }, // 0 a
+	{ boss: 'enem5', type: 'enem55', xPos: 88, yPos: 44, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14 }, // 1 a
+	{ boss: 'enem5', type: 'enem55', xPos: 10, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 13 }, // 2 b
+	{ boss: 'enem5', type: 'enem55', xPos: 88, yPos: 29, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 13 }, // 3 b
+	{ boss: 'enem5', type: 'enem55', xPos: 78, yPos: 29, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 13 }, // 4 b
+	{ boss: 'enem5', type: 'enem55', xPos: 14, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 13 }, // 5 b
+	{ boss: 'enem5', type: 'enem55', xPos: 24, yPos: 27, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 13 }, // 6 b
+	{ boss: 'enem5', type: 'enem55', xPos: 10, yPos: 34, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14 }, // 7 c
+	{ boss: 'enem5', type: 'enem55', xPos: 88, yPos: 38, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 12 }, // 8 c
+	{ boss: 'enem5', type: 'enem55', xPos: 20, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 8 }, // 9 c
+	{ boss: 'enem5', type: 'enem55', xPos: 70, yPos: 51, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 8 }, // 10 c
+	{ boss: 'enem5', type: 'enem55', xPos: 88, yPos: 39, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14 }, // 11 d
+	{ boss: 'enem5', type: 'enem55', xPos: 78, yPos: 33, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14 }, // 12 d
+	{ boss: 'enem5', type: 'enem55', xPos: 30, yPos: 27, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14 }, // 13 d
+	{ boss: 'enem5', type: 'enem55', xPos: 10, yPos: 54, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 7 }, // 14 d
+	{ boss: 'enem5', type: 'enem55', xPos: 30, yPos: 31, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 12 }, // 15 e
+	{ boss: 'enem5', type: 'enem55', xPos: 10, yPos: 16, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14 }, // 16 f
+	{ boss: 'enem5', type: 'enem55', xPos: 20, yPos: 34, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 8 }, // 17 f
+	{ boss: 'enem5', type: 'enem55', xPos: 30, yPos: 22, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14 }, // 18 f
+	{ boss: 'enem5', type: 'enem55', xPos: 88, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 12 }, // 19 f
+	{ boss: 'enem5', type: 'enem55', xPos: 78, yPos: 43, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 8 }, // 20 f
+	{ boss: 'enem5', type: 'enem55', xPos: 24, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 7 }, // 21 f
+	{ boss: 'enem5', type: 'enem55', xPos: 85, yPos: 44, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 12 }, // 22 g
+	{ boss: 'enem5', type: 'enem55', xPos: 74, yPos: 44, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 12 }, // 23 g
+	{ boss: 'enem5', type: 'enem55', xPos: 14, yPos: 43, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 12 }, // 24 g
+	{ boss: 'enem5', type: 'enem55', xPos: 89, yPos: 37, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 12 }, // 25 g
+	{ boss: 'enem5', type: 'enem55', xPos: 12, yPos: 14, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14 }, // 26 h
+	{ boss: 'enem5', type: 'enem55', xPos: 22, yPos: 37, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 8 }, // 27 h
+	{ boss: 'enem5', type: 'enem55', xPos: 87, yPos: 20, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14 }, // 28 h
+	{ boss: 'enem5', type: 'enem55', xPos: 16, yPos: 43, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 8 }, // 29 h
+	{ boss: 'enem5', type: 'enem55', xPos: 76, yPos: 27, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14 }, // 30 h
+
 ];
 
  const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 280, bossDelayAbDop: 5200 }, // скачет часто
-	{ boss: 'enem2', bossDelayAb: 320, bossDelayAbDop: 5600 }, // стая давит ритмом
-	{ boss: 'enem3', bossDelayAb: 380, bossDelayAbDop: 6400 }, // тяжёлый, длинная пауза
-	{ boss: 'enem4', bossDelayAb: 260, bossDelayAbDop: 5000 }, // хитрая вспышка
-	{ boss: 'enem5', bossDelayAb: 240, bossDelayAbDop: 4800 }, // катится без остановки
+	{ boss: 'enem1', bossDelayAb: 291, bossDelayAbDop: 4700, firstWaveDelayMs: 2256 }, // скачет часто, короткими заходами
+	{ boss: 'enem2', bossDelayAb: 330, bossDelayAbDop: 5101, firstWaveDelayMs: 2400 }, // стая давит ритмом
+	{ boss: 'enem3', bossDelayAb: 281, bossDelayAbDop: 5799, firstWaveDelayMs: 2400 }, // тяжёлые заходы, но без долгой тишины
+	{ boss: 'enem4', bossDelayAb: 261, bossDelayAbDop: 4501, firstWaveDelayMs: 2160 }, // хитрая вспышка коротких заходов
+	{ boss: 'enem5', bossDelayAb: 244, bossDelayAbDop: 4301, firstWaveDelayMs: 2064 }, // катится без остановки
 ];
 
  const bossAbilitiesDop = [
-	// Побегайчик
-	{ boss: 'enem1', indexAbilities: [0, 1, 2, 3] },
-	{ boss: 'enem1', indexAbilities: [6, 7, 8, 9, 10] },
-	{ boss: 'enem1', indexAbilities: [6, 8, 10, 7, 9] },
-	{ boss: 'enem1', indexAbilities: [0, 6, 2, 9] },
-	{ boss: 'enem1', indexAbilities: [4, 5, 13, 14] },
-	{ boss: 'enem1', indexAbilities: [11, 13, 12, 14, 15] },
-	{ boss: 'enem1', indexAbilities: [0, 1] },
-	{ boss: 'enem1', indexAbilities: [2, 3] },
+	// Побегайчик: УШИ
+	{ boss: 'enem1', indexAbilities: [0, 1], label: "Слева и справа" },
+	{ boss: 'enem1', indexAbilities: [2, 3, 4], label: "Слева, справа и слева" },
+	{ boss: 'enem1', indexAbilities: [5, 6, 7, 8], signature: true, minPhase: 1, label: "Уши — знакомство: трижды справа и медленный слева" },
+	{ boss: 'enem1', indexAbilities: [9, 10, 11, 12], label: "Справа, дважды слева и справа" },
+	{ boss: 'enem1', indexAbilities: [5, 6, 7, 8, 13], signature: true, minPhase: 2, label: "Уши — иной конец: трижды справа, медленный слева и в центр" },
+	{ boss: 'enem1', indexAbilities: [14, 15, 16, 17, 18, 19], minPhase: 3, label: "4 раза слева, медленный справа и слева" },
+	{ boss: 'enem1', indexAbilities: [20, 21, 22], label: "Справа, слева и справа" },
+	{ boss: 'enem1', indexAbilities: [23, 24, 25, 26, 27], minPhase: 2, label: "Трижды слева и дважды справа" },
 
-	// Любитель бочков
-	{ boss: 'enem2', indexAbilities: [0, 1, 2, 3, 4, 5] },
-	{ boss: 'enem2', indexAbilities: [0, 1, 6, 7] },
-	{ boss: 'enem2', indexAbilities: [8, 9, 10] },
-	{ boss: 'enem2', indexAbilities: [8, 10, 9] },
-	{ boss: 'enem2', indexAbilities: [2, 8, 3, 9] },
-	{ boss: 'enem2', indexAbilities: [11, 13, 12, 14, 15] },
-	{ boss: 'enem2', indexAbilities: [0, 2, 4] },
-	{ boss: 'enem2', indexAbilities: [1, 3, 5] },
+	// Любитель бочков: ЗАГОН
+	{ boss: 'enem2', indexAbilities: [0, 1], label: "Слева и справа" },
+	{ boss: 'enem2', indexAbilities: [2, 3, 4], label: "Дважды слева и справа" },
+	{ boss: 'enem2', indexAbilities: [5, 6, 7, 8, 9], signature: true, minPhase: 1, label: "Загон — знакомство: дважды слева, справа, медленный в центр и справа" },
+	{ boss: 'enem2', indexAbilities: [10, 11, 12, 13], minPhase: 2, label: "Слева, справа, слева и медленный справа" },
+	{ boss: 'enem2', indexAbilities: [5, 6, 7, 8, 9, 14], signature: true, minPhase: 2, label: "Загон — иной конец: дважды слева, справа, в центр, медленный в центр и справа" },
+	{ boss: 'enem2', indexAbilities: [15, 16, 17, 18, 19], minPhase: 3, label: "Дважды справа, слева, медленный в центр и слева" },
+	{ boss: 'enem2', indexAbilities: [20, 21, 22], label: "Дважды справа и слева" },
+	{ boss: 'enem2', indexAbilities: [23, 24, 25, 26], label: "Дважды слева, справа и в центр" },
+	{ boss: 'enem2', indexAbilities: [27, 28, 29, 30], label: "Дважды справа, слева и в центр" },
 
-	// Косолапый
-	{ boss: 'enem3', indexAbilities: [0, 1, 2, 3, 4] },
-	{ boss: 'enem3', indexAbilities: [0, 2, 4, 5, 6] },
-	{ boss: 'enem3', indexAbilities: [8, 9] },
-	{ boss: 'enem3', indexAbilities: [5, 8, 6, 9] },
-	{ boss: 'enem3', indexAbilities: [10, 11, 12, 13] },
-	{ boss: 'enem3', indexAbilities: [1, 7, 11, 14, 15] },
-	{ boss: 'enem3', indexAbilities: [0, 2, 4] },
-	{ boss: 'enem3', indexAbilities: [5, 7] },
+	// Косолапый: ДВОЙНАЯ ЛАПА
+	{ boss: 'enem3', indexAbilities: [0, 1], label: "Слева и справа" },
+	{ boss: 'enem3', indexAbilities: [2, 3, 4, 5], label: "В центр, справа, медленный слева и медленный справа" },
+	{ boss: 'enem3', indexAbilities: [6, 7, 8, 9], signature: true, minPhase: 1, label: "Двойная лапа — знакомство: дважды слева, медленный справа и слева" },
+	{ boss: 'enem3', indexAbilities: [10, 11, 12, 13], label: "Справа, слева, в центр и справа" },
+	{ boss: 'enem3', indexAbilities: [6, 7, 8, 9, 14], signature: true, minPhase: 2, label: "Двойная лапа — иной конец: дважды слева, медленный справа и дважды слева" },
+	{ boss: 'enem3', indexAbilities: [15, 16, 17, 18, 19, 20], minPhase: 3, label: "Слева, дважды справа, медленный слева, медленный справа и медленный слева" },
+	{ boss: 'enem3', indexAbilities: [21, 22, 23], label: "В центр, справа и слева" },
+	{ boss: 'enem3', indexAbilities: [24, 25, 26, 27], minPhase: 2, label: "Слева, справа, в центр и слева" },
 
-	// Сестричка
-	{ boss: 'enem4', indexAbilities: [0, 1, 2, 3, 4, 5] },
-	{ boss: 'enem4', indexAbilities: [0, 2, 4, 6] },
-	{ boss: 'enem4', indexAbilities: [8, 9, 10, 11] },
-	{ boss: 'enem4', indexAbilities: [8, 10, 9, 11] },
-	{ boss: 'enem4', indexAbilities: [1, 8, 5, 11] },
-	{ boss: 'enem4', indexAbilities: [12, 13, 14, 15] },
-	{ boss: 'enem4', indexAbilities: [0, 1, 2] },
-	{ boss: 'enem4', indexAbilities: [6, 7] },
+	// Сестричка: ЛОЖНЫЙ СЛЕД
+	{ boss: 'enem4', indexAbilities: [0, 1, 2], label: "Справа, слева и в центр" },
+	{ boss: 'enem4', indexAbilities: [3, 4, 5, 6], label: "Дважды справа и дважды слева" },
+	{ boss: 'enem4', indexAbilities: [7, 8, 9, 10, 11], signature: true, minPhase: 1, label: "Ложный след — знакомство: 4 раза слева и медленный справа" },
+	{ boss: 'enem4', indexAbilities: [12, 13, 14, 15], label: "Дважды слева и дважды справа" },
+	{ boss: 'enem4', indexAbilities: [7, 8, 9, 10, 16], signature: true, minPhase: 2, label: "Ложный след — иной конец: трижды слева, в центр и медленный справа" },
+	{ boss: 'enem4', indexAbilities: [17, 18, 19, 20, 21, 22], minPhase: 3, label: "5 раза слева и справа" },
+	{ boss: 'enem4', indexAbilities: [23, 24, 25], label: "В центр, слева и справа" },
+	{ boss: 'enem4', indexAbilities: [26, 27, 28, 29], minPhase: 2, label: "Трижды справа и слева" },
 
-	// Колобок
-	{ boss: 'enem5', indexAbilities: [0, 1, 2, 3] },
-	{ boss: 'enem5', indexAbilities: [4, 5, 6, 7] },
-	{ boss: 'enem5', indexAbilities: [0, 1, 2, 3, 4, 5, 6, 7] },
-	{ boss: 'enem5', indexAbilities: [8, 9, 10] },
-	{ boss: 'enem5', indexAbilities: [0, 8, 4, 9] },
-	{ boss: 'enem5', indexAbilities: [11, 13, 12, 14, 15] },
-	{ boss: 'enem5', indexAbilities: [0, 1, 2] },
-	{ boss: 'enem5', indexAbilities: [4, 5, 6] },
+	// Колобок: КРУГ
+	{ boss: 'enem5', indexAbilities: [0, 1], label: "Слева и справа" },
+	{ boss: 'enem5', indexAbilities: [2, 3, 4, 5, 6], label: "Слева, дважды справа и дважды слева" },
+	{ boss: 'enem5', indexAbilities: [7, 8, 9, 10], signature: true, minPhase: 1, label: "Круг — знакомство: слева, справа, медленный слева и медленный в центр" },
+	{ boss: 'enem5', indexAbilities: [11, 12, 13, 14], label: "Дважды справа, в центр и медленный слева" },
+	{ boss: 'enem5', indexAbilities: [7, 8, 9, 15], signature: true, minPhase: 2, label: "Круг — иной конец: слева, справа, медленный слева и в центр" },
+	{ boss: 'enem5', indexAbilities: [16, 17, 18, 19, 20, 21], minPhase: 3, label: "Слева, в центр, справа, медленный слева, медленный справа и медленный слева" },
+	{ boss: 'enem5', indexAbilities: [22, 23, 24, 25], label: "Дважды справа, слева и справа" },
+	{ boss: 'enem5', indexAbilities: [26, 27, 28, 29, 30], minPhase: 2, label: "Слева, дважды справа и медленный слева" },
+
 ];
 
 // Лорные названия связок временных улучшений (см. UPGRADE_VARIANTS/

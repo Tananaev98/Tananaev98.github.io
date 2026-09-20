@@ -6,6 +6,11 @@ let factorChar = (lvlNumber * 5) / 100;
 // тройные уколы вил / асимметричные грабли, давящие с одного бока / частый дождь
 // сноповязки сверху / финал скрещивает высоты флангов и впервые перекрывает низ разом.
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	levelCadence: 0.90, damageMultiplier: 1.908, minWaveDelay: 2100, minShotDelay: 150, minTelegraphMs: 545,
 	phases: [
 		{ phase: 1, minHp: 0.64, cadence: 1.00, speed: 1.00, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.14, maxActiveAttacks: 13 },
@@ -13,11 +18,11 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.71, speed: 1.19, damage: 1.26, telegraphMultiplier: 0.84, surpriseChance: 0.34, maxActiveAttacks: 19 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'accelerate',      cadence: 1.02, telegraphMs: 860, speedMultiplier: 0.93, damageMultiplier: 0.94, speedVariance: [0.87, 0.94, 1.01, 1.08, 1.15] }, // КРИВОЗУБ: серп качается зигзагом от края к краю, без стены снизу
-		enem2: { movementStyle: 'lateRush', cadence: 0.86, telegraphMs: 730, speedMultiplier: 1.07, damageMultiplier: 0.87, speedVariance: [0.85, 0.95, 1.05, 1.15, 1.25] }, // ТРОЙЧАТКА: вилы бьют тройными уколами, каждый следующий сет — выше и резче
-		enem3: { movementStyle: 'pause',   cadence: 1.22, telegraphMs: 960, speedMultiplier: 0.84, damageMultiplier: 1.13, speedVariance: [0.79, 0.89, 0.99, 1.09, 1.19] }, // ЧЕСАЛКА: грабли давят почти всегда с правого бока, левый — редкий укол
-		enem4: { movementStyle: 'straight',      cadence: 0.76, telegraphMs: 610, speedMultiplier: 1.20, damageMultiplier: 0.63, speedVariance: [0.91, 1.03, 1.15, 1.27, 1.39] }, // СКРИПУХА: сноповязка сыплет обрывками сверху, частый нервный дождь
-		enem5: { movementStyle: 'weave',      cadence: 0.73, telegraphMs: 630, speedMultiplier: 1.11, damageMultiplier: 1.06, speedVariance: [0.87, 0.98, 1.10, 1.22, 1.34] }  // ШЕСТЕРИЛО: машина скрещивает высоты флангов и впервые перекрывает низ поля разом
+		enem1: { combatIdentity: "Крюк серпа", combatTrick: "показывает боковой замах, но заканчивает серединой; позднее конец возвращается на край", signatureEvery: 4, movementStyle: 'accelerate',      cadence: 1.02, telegraphMs: 860, speedMultiplier: 0.93, damageMultiplier: 0.94, speedVariance: [0.87, 0.94, 1.01, 1.08, 1.15] }, // КРИВОЗУБ: серп качается зигзагом от края к краю, без стены снизу
+		enem2: { combatIdentity: "Три зубца вил", combatTrick: "разводит две цели, затем закрывает оставленную между ними полосу", signatureEvery: 4, movementStyle: 'lateRush', cadence: 0.86, telegraphMs: 730, speedMultiplier: 1.07, damageMultiplier: 0.87, speedVariance: [0.85, 0.95, 1.05, 1.15, 1.25] }, // ТРОЙЧАТКА: вилы бьют тройными уколами, каждый следующий сет — выше и резче
+		enem3: { combatIdentity: "Загребание зубьев", combatTrick: "ведёт прицел вдоль прохода, затем возвращает угрозу за спину прохода", signatureEvery: 4, movementStyle: 'pause',   cadence: 1.22, telegraphMs: 960, speedMultiplier: 0.84, damageMultiplier: 1.13, speedVariance: [0.79, 0.89, 0.99, 1.09, 1.19] }, // ЧЕСАЛКА: грабли давят почти всегда с правого бока, левый — редкий укол
+		enem4: { combatIdentity: "Ремень сноповязки", combatTrick: "две короткие группы разделены паузой; вторая группа меняет сторону", signatureEvery: 4, movementStyle: 'straight',      cadence: 0.76, telegraphMs: 610, speedMultiplier: 1.20, damageMultiplier: 0.63, speedVariance: [0.91, 1.03, 1.15, 1.27, 1.39] }, // СКРИПУХА: сноповязка сыплет обрывками сверху, частый нервный дождь
+		enem5: { combatIdentity: "Обратный зуб шестерни", combatTrick: "повторяет удар в прежнем секторе вместо ожидаемого чередования", signatureEvery: 4, movementStyle: 'weave',      cadence: 0.73, telegraphMs: 630, speedMultiplier: 1.11, damageMultiplier: 1.06, speedVariance: [0.87, 0.98, 1.10, 1.22, 1.34] }  // ШЕСТЕРИЛО: машина скрещивает высоты флангов и впервые перекрывает низ поля разом
 	}
 };
 
@@ -272,66 +277,89 @@ const bossAbilities = [
 	{ boss: 'enem5', type: 'enem55', xPos: 69, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //14
 	{ boss: 'enem5', type: 'enem55', xPos: 89, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //15 конец ряда — вся ширина поля закрыта шестернями
 	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 28, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 11 } //16 неожиданный удар из центра после прохода
+,
+    // Приёмы из scripts/combat-designs.js; индексы считаются отдельно для каждого босса.
+    {boss: "enem1",type: "enem11",xPos: 86,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 16},
+    {boss: "enem1",type: "enem11",xPos: 72,yPos: 20,customHP: 1,customDamage: 13,customSpeed: 14},
+    {boss: "enem1",type: "enem11",xPos: 20,yPos: 6,customHP: 1,customDamage: 13,customSpeed: 21},
+    {boss: "enem1",type: "enem11",xPos: 86,yPos: 40,customHP: 1,customDamage: 13,customSpeed: 7},
+    {boss: "enem1",type: "enem11",xPos: 86,yPos: 8,customHP: 1,customDamage: 13,customSpeed: 20},
+    {boss: "enem1",type: "enem11",xPos: 58,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 18},
+    {boss: "enem2",type: "enem22",xPos: 14,yPos: 12,customHP: 1,customDamage: 12,customSpeed: 16},
+    {boss: "enem2",type: "enem22",xPos: 50,yPos: 20,customHP: 1,customDamage: 12,customSpeed: 14},
+    {boss: "enem2",type: "enem22",xPos: 84,yPos: 6,customHP: 1,customDamage: 12,customSpeed: 21},
+    {boss: "enem2",type: "enem22",xPos: 14,yPos: 40,customHP: 1,customDamage: 12,customSpeed: 7},
+    {boss: "enem2",type: "enem22",xPos: 14,yPos: 8,customHP: 1,customDamage: 12,customSpeed: 20},
+    {boss: "enem2",type: "enem22",xPos: 50,yPos: 12,customHP: 1,customDamage: 12,customSpeed: 18},
+    {boss: "enem3",type: "enem33",xPos: 18,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 16},
+    {boss: "enem3",type: "enem33",xPos: 36,yPos: 20,customHP: 1,customDamage: 14,customSpeed: 14},
+    {boss: "enem3",type: "enem33",xPos: 65,yPos: 6,customHP: 1,customDamage: 14,customSpeed: 21},
+    {boss: "enem3",type: "enem33",xPos: 18,yPos: 40,customHP: 1,customDamage: 14,customSpeed: 7},
+    {boss: "enem3",type: "enem33",xPos: 18,yPos: 8,customHP: 1,customDamage: 14,customSpeed: 20},
+    {boss: "enem3",type: "enem33",xPos: 82,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 18},
+    {boss: "enem4",type: "enem44",xPos: 26,yPos: 12,customHP: 1,customDamage: 12,customSpeed: 16},
+    {boss: "enem4",type: "enem44",xPos: 36,yPos: 20,customHP: 1,customDamage: 12,customSpeed: 14},
+    {boss: "enem4",type: "enem44",xPos: 70,yPos: 6,customHP: 1,customDamage: 12,customSpeed: 21},
+    {boss: "enem4",type: "enem44",xPos: 26,yPos: 40,customHP: 1,customDamage: 12,customSpeed: 7},
+    {boss: "enem4",type: "enem44",xPos: 26,yPos: 8,customHP: 1,customDamage: 12,customSpeed: 20},
+    {boss: "enem4",type: "enem44",xPos: 84,yPos: 12,customHP: 1,customDamage: 12,customSpeed: 18},
+    {boss: "enem5",type: "enem55",xPos: 74,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 16},
+    {boss: "enem5",type: "enem55",xPos: 86,yPos: 20,customHP: 1,customDamage: 14,customSpeed: 14},
+    {boss: "enem5",type: "enem55",xPos: 16,yPos: 6,customHP: 1,customDamage: 14,customSpeed: 21},
+    {boss: "enem5",type: "enem55",xPos: 74,yPos: 40,customHP: 1,customDamage: 14,customSpeed: 7},
+    {boss: "enem5",type: "enem55",xPos: 74,yPos: 8,customHP: 1,customDamage: 14,customSpeed: 20},
+    {boss: "enem5",type: "enem55",xPos: 32,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 18}
 ];
 
 const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 420, bossDelayAbDop: 6300 }, // редкий зигзаг, щедрая передышка
-	{ boss: 'enem2', bossDelayAb: 290, bossDelayAbDop: 4650 }, // тройные уколы, смена ритма
-	{ boss: 'enem3', bossDelayAb: 450, bossDelayAbDop: 6900 }, // редкие тяжёлые удары, самая долгая пауза
-	{ boss: 'enem4', bossDelayAb: 230, bossDelayAbDop: 4500 }, // частый нервный дождь
-	{ boss: 'enem5', bossDelayAb: 255, bossDelayAbDop: 4250 }, // финал: плотнее всех, но телеграф честный
+	{ boss: 'enem1', bossDelayAb: 420, bossDelayAbDop: 6300, firstWaveDelayMs: 2400 }, // редкий зигзаг, щедрая передышка
+	{ boss: 'enem2', bossDelayAb: 290, bossDelayAbDop: 4650, firstWaveDelayMs: 2232 }, // тройные уколы, смена ритма
+	{ boss: 'enem3', bossDelayAb: 450, bossDelayAbDop: 6900, firstWaveDelayMs: 2400 }, // редкие тяжёлые удары, самая долгая пауза
+	{ boss: 'enem4', bossDelayAb: 230, bossDelayAbDop: 4500, firstWaveDelayMs: 2160 }, // частый нервный дождь
+	{ boss: 'enem5', bossDelayAb: 255, bossDelayAbDop: 4250, firstWaveDelayMs: 2040 }, // финал: плотнее всех, но телеграф честный
 ];
 
 const bossAbilitiesDop = [
-	// Кривозуб
-	{ boss: 'enem1', indexAbilities: [0] },
-	{ boss: 'enem1', indexAbilities: [1] },
-	{ boss: 'enem1', indexAbilities: [0, 1] },
-	{ boss: 'enem1', indexAbilities: [2, 3, 4] },
-	{ boss: 'enem1', indexAbilities: [6, 7, 8, 9] },
-	{ boss: 'enem1', indexAbilities: [11, 9, 12] }, // ритмическая: медленно → быстро → медленно
-	{ boss: 'enem1', indexAbilities: [0, 2, 4, 6, 8, 10] }, // опасная сигнатурная: нарастающий зигзаг к резкому финалу
-	{ boss: 'enem1', indexAbilities: [13, 10, 14, 15] }, // смешанная поздняя: тяжёлый центр → быстрый верх
-
-	// Тройчатка
-	{ boss: 'enem2', indexAbilities: [0] },
-	{ boss: 'enem2', indexAbilities: [9] },
-	{ boss: 'enem2', indexAbilities: [0, 1, 2] }, // тройной укол: сет A
-	{ boss: 'enem2', indexAbilities: [3, 4, 5] }, // тройной укол: сет B
-	{ boss: 'enem2', indexAbilities: [6, 7, 8] }, // тройной укол: сет C
-	{ boss: 'enem2', indexAbilities: [9, 10, 11] }, // ритмическая: тяжело → тяжело → резкий рывок
-	{ boss: 'enem2', indexAbilities: [0, 1, 2, 3, 4, 5, 6] }, // опасная сигнатурная: все сеты подряд, нарастающая волна
-	{ boss: 'enem2', indexAbilities: [12, 13, 14, 15] }, // смешанная поздняя: фланги + глубокий укол + резкий верх
-
-	// Чесалка
-	{ boss: 'enem3', indexAbilities: [0] },
-	{ boss: 'enem3', indexAbilities: [11] },
-	{ boss: 'enem3', indexAbilities: [0, 1] },
-	{ boss: 'enem3', indexAbilities: [2, 3, 4] },
-	{ boss: 'enem3', indexAbilities: [6, 7, 8] },
-	{ boss: 'enem3', indexAbilities: [5, 12, 14] }, // ритмическая: слабый слева → тяжёлый справа → нежданчик к центру
-	{ boss: 'enem3', indexAbilities: [0, 1, 2, 3, 4, 6, 8] }, // опасная сигнатурная: долгая волна по правому флангу
-	{ boss: 'enem3', indexAbilities: [9, 10, 15] }, // смешанная поздняя: резкие броски из центра и справа
-
-	// Скрипуха
-	{ boss: 'enem4', indexAbilities: [2] },
-	{ boss: 'enem4', indexAbilities: [3] },
-	{ boss: 'enem4', indexAbilities: [2, 3] },
-	{ boss: 'enem4', indexAbilities: [0, 1, 5] },
-	{ boss: 'enem4', indexAbilities: [6, 7] },
-	{ boss: 'enem4', indexAbilities: [8, 9, 10] }, // ритмическая: нарастание к самому резкому центру
-	{ boss: 'enem4', indexAbilities: [0, 1, 2, 3, 4, 5, 10] }, // опасная сигнатурная: почти весь дождь + резкий центр
-	{ boss: 'enem4', indexAbilities: [11, 12, 13] }, // смешанная поздняя: боковые + тяжёлый контраст снизу
-
-	// Шестерило — смешивает почерк всех четырёх предыдущих боссов уровня
-	{ boss: 'enem5', indexAbilities: [4] },
-	{ boss: 'enem5', indexAbilities: [7] },
-	{ boss: 'enem5', indexAbilities: [4, 7] },
-	{ boss: 'enem5', indexAbilities: [0, 1, 2, 3] }, // средняя: скрещенные высоты флангов
-	{ boss: 'enem5', indexAbilities: [5, 6] }, // средняя: симметричные тяжёлые низкие
-	{ boss: 'enem5', indexAbilities: [8, 9, 10] }, // ритмическая: нарастающая быстрая тройка
-	{ boss: 'enem5', indexAbilities: [11, 12, 13, 14, 15, 16] }, // сигнатура: полный проход стены → удар из центра
-	{ boss: 'enem5', indexAbilities: [0, 3, 5, 8, 16] }, // смешанная поздняя: мотивы всех четырёх боссов уровня
+    {boss: "enem1",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem1",indexAbilities: [1]},
+    {boss: "enem1",indexAbilities: [0,1]},
+    {boss: "enem1",indexAbilities: [2,3,4]},
+    {boss: "enem1",indexAbilities: [6,7,8,9]},
+    {boss: "enem1",indexAbilities: [16,17,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Крюк серпа — знакомство",openingOrder: 1},
+    {boss: "enem1",indexAbilities: [16,17,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Крюк серпа — иной конец"},
+    {boss: "enem1",indexAbilities: [18,21,17,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Крюк серпа — завершение"},
+    {boss: "enem2",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem2",indexAbilities: [9]},
+    {boss: "enem2",indexAbilities: [0,1,2]},
+    {boss: "enem2",indexAbilities: [3,4,5]},
+    {boss: "enem2",indexAbilities: [6,7,8]},
+    {boss: "enem2",indexAbilities: [16,18,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Три зубца вил — знакомство",openingOrder: 1},
+    {boss: "enem2",indexAbilities: [16,18,17],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Три зубца вил — иной конец"},
+    {boss: "enem2",indexAbilities: [20,18,21,17],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Три зубца вил — завершение"},
+    {boss: "enem3",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem3",indexAbilities: [11]},
+    {boss: "enem3",indexAbilities: [0,1]},
+    {boss: "enem3",indexAbilities: [2,3,4]},
+    {boss: "enem3",indexAbilities: [6,7,8]},
+    {boss: "enem3",indexAbilities: [16,17,18],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Загребание зубьев — знакомство",openingOrder: 1},
+    {boss: "enem3",indexAbilities: [16,17,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Загребание зубьев — иной конец"},
+    {boss: "enem3",indexAbilities: [21,18,17,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Загребание зубьев — завершение"},
+    {boss: "enem4",indexAbilities: [2],openingOrder: 0},
+    {boss: "enem4",indexAbilities: [3]},
+    {boss: "enem4",indexAbilities: [2,3]},
+    {boss: "enem4",indexAbilities: [0,1,5]},
+    {boss: "enem4",indexAbilities: [6,7]},
+    {boss: "enem4",indexAbilities: [16,20,18,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Ремень сноповязки — знакомство",openingOrder: 1,shotGapsMs: [360,900,360]},
+    {boss: "enem4",indexAbilities: [16,20,21],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Ремень сноповязки — иной конец",shotGapsMs: [360,900,360]},
+    {boss: "enem4",indexAbilities: [18,21,16,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Ремень сноповязки — завершение",shotGapsMs: [360,900,360]},
+    {boss: "enem5",indexAbilities: [4],openingOrder: 0},
+    {boss: "enem5",indexAbilities: [7]},
+    {boss: "enem5",indexAbilities: [4,7]},
+    {boss: "enem5",indexAbilities: [0,1,2,3]},
+    {boss: "enem5",indexAbilities: [5,6]},
+    {boss: "enem5",indexAbilities: [17,21,18],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Обратный зуб шестерни — знакомство",openingOrder: 1},
+    {boss: "enem5",indexAbilities: [17,21,19],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Обратный зуб шестерни — иной конец"},
+    {boss: "enem5",indexAbilities: [22,19,22,18],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Обратный зуб шестерни — завершение"}
 ];
 
 // Лорные названия связок. Уровень 18 — ожившие орудия жатвы: Кривозуб (серп), Тройчатка

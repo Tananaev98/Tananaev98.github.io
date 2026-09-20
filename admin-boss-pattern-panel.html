@@ -265,14 +265,17 @@ async function loadLevelRow(level) {
         const profile = bossCombatConfig?.bosses?.[boss] || {};
         const s = speeds[boss] || {};
         const bossNotes = notes[boss] || [];
-        const sig = bossNotes.find((c) => /сигнатур|опасн/i.test(c)) || '';
-        const twist = bossNotes.find((c) => /нежданчик|chunk-break|same-start/i.test(c)) || '';
+        const authored = evaluated.bossAbilitiesDop.filter(c => c.boss === boss && c.signature);
+        const sig = authored.length
+            ? authored.map(c => `${c.label} (фаза ${c.minPhase || 1}+)`).join('; ')
+            : bossNotes.find((c) => /сигнатур|опасн/i.test(c)) || '';
+        const twist = profile.combatTrick || bossNotes.find((c) => /нежданчик|chunk-break|same-start/i.test(c)) || '';
         const bossChains = chains[boss] || [];
         return {
             level, boss, role: ROLE_LABEL[boss],
             name: ENEMY_TYPES?.[boss]?.dispName || '',
             movementStyle: profile.movementStyle || '',
-            archetype: archetypes[boss] || '',
+            archetype: profile.combatIdentity || archetypes[boss] || '',
             cadence: profile.cadence ?? '',
             telegraphMs: profile.telegraphMs ?? '',
             speedMultiplier: profile.speedMultiplier ?? '',

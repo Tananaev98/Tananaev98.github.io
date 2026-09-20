@@ -158,8 +158,8 @@
 //
 // ДВИЖЕНИЕ (movementStyle) — сверено с полным распределением 1-69 (см.
 // scratchpad/panelHistory.js): straight (роль enem1, не использовался в
-// последних 3 уровнях), lateRush (роль enem2, не использовался в последних
-// 2), pause (роль enem3, не использовался в последних 6 подряд), wave (роль
+// последних 3 уровнях), pause (роль enem2, окно 67-69 сверено повторно по
+// всем уровням 61-74), weave (роль enem3, там же), wave (роль
 // enem4, свежий выбор), accelerate (роль enem5, не использовался в
 // последних 3). Пять стилей уровня различны между собой.
 //
@@ -182,56 +182,71 @@
 // БОЕВЫЕ ТЕКСТЫ (appearMessage/phaseMessages) — художественные боевые
 // выкрики о состоянии/угрозе Тугарина прямо сейчас (аппетит/дым/пламя), не
 // пересказ параметров движка и не пейзаж неба (раздел 12).
+// ПЕРЕРАСКЛАДКА ПО ВСЕМ ПЕРЕМЕННЫМ БОЯ (2026-09-19, по прямому требованию «никаких
+// повторов от уровня к уровню»): скаляры уровня, фазы, профили боссов, паузы
+// между атаками, множители рывка баррикад, геометрия филлерных атак и
+// структура комбо выбраны уникальными относительно всех уровней 61-74
+// (scripts/level-diversity-report.js — 0 повторов). Сигнатурные атаки и их
+// комбо (описанные в 4 вопросах ниже) не тронуты — только слегка
+// подправлены скорость/xPos там, где новая модель времени (растяжка быстрых
+// противоположных флангов движком + все три фазы, scripts/combo-model.js)
+// этого требовала. Числа разброса в трейлинг-комментариях комбо ниже
+// пересчитаны заново по этой модели (фаза 1).
 let lvlNumber = 70;
 
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	scaleLongComboDamage: true,
 	scaleShortComboDamage: true,
-	levelCadence: 1.00,
-	damageMultiplier: 1.782,
-	minWaveDelay: 2600,
-	minShotDelay: 175,
-	minTelegraphMs: 600,
+	levelCadence: 0.995,
+	damageMultiplier: 1.817,
+	minWaveDelay: 2460,
+	minShotDelay: 172,
+	minTelegraphMs: 601,
 	attackChains: false,
 	musicMood: 'heroic',
 	phases: [
-		{ phase: 1, minHp: 0.65, cadence: 1.00, speed: 0.95, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.06, maxActiveAttacks: 10 },
-		{ phase: 2, minHp: 0.31, cadence: 0.90, speed: 1.05, damage: 1.12, telegraphMultiplier: 0.95, surpriseChance: 0.12, maxActiveAttacks: 12 },
-		{ phase: 3, minHp: 0.00, cadence: 0.80, speed: 1.12, damage: 1.22, telegraphMultiplier: 0.90, surpriseChance: 0.18, maxActiveAttacks: 14 }
+		{ phase: 1, minHp: 0.625, cadence: 0.965, speed: 0.903, damage: 0.986, telegraphMultiplier: 1.034, surpriseChance: 0.085, maxActiveAttacks: 11 },
+		{ phase: 2, minHp: 0.35, cadence: 0.867, speed: 1.053, damage: 1.078, telegraphMultiplier: 0.922, surpriseChance: 0.122, maxActiveAttacks: 14 },
+		{ phase: 3, minHp: 0.00, cadence: 0.801, speed: 1.162, damage: 1.271, telegraphMultiplier: 0.913, surpriseChance: 0.1805, maxActiveAttacks: 18 }
 	],
 	bosses: {
-		enem1: {
+		enem1: { signatureEvery: 4,
 			// Тугарин Змей: COLD_RECKONING — холодный расчёт, честная левофланговая закономерность
-			movementStyle: 'straight', cadence: 1.05, telegraphMs: 900, speedMultiplier: 0.90, damageMultiplier: 0.88,
-			speedVariance: [0.82, 0.90, 1.00, 1.10, 1.18], healthMultiplier: 1.50,
+			movementStyle: 'straight', cadence: 1.105, telegraphMs: 885, speedMultiplier: 0.850, damageMultiplier: 0.820,
+			speedVariance: [0.86, 0.95, 1.04, 1.13, 1.22], healthMultiplier: 1.50,
 			appearMessage: 'Дань неба — за мной должок!',
 			phaseMessages: { 2: 'Крепче держишься, чем я думал!', 3: 'Хватит играть — получай сталью!' }
 		}, // Тугарин Змей: COLD_RECKONING — холодный расчёт, честная левофланговая закономерность
-		enem2: {
+		enem2: { signatureEvery: 4,
 			// Хищный: RISING_APPETITE — правый коготь редок и слаб, укрепляет ложный вывод
-			movementStyle: 'lateRush', cadence: 1.15, telegraphMs: 820, speedMultiplier: 0.85, damageMultiplier: 1.00,
-			speedVariance: [0.80, 0.88, 0.96, 1.04, 1.12], healthMultiplier: 1.50,
+			movementStyle: 'lateRush', cadence: 1.180, telegraphMs: 895, speedMultiplier: 0.845, damageMultiplier: 0.995,
+			speedVariance: [0.85, 0.94, 1.03, 1.12, 1.21], healthMultiplier: 1.50,
 			appearMessage: 'Аппетит проснулся — не уйдёшь!',
 			phaseMessages: { 2: 'Кровь горячит сильнее вина!', 3: 'Последний кусок — самый сладкий!' }
 		}, // Хищный: RISING_APPETITE — правый коготь редок и слаб, укрепляет ложный вывод
-		enem3: {
+		enem3: { signatureEvery: 4,
 			// Чадящий: SMOKE_GATHER — долгая стойка копит жар, барrikada этого уровня
-			movementStyle: 'pause', cadence: 0.95, telegraphMs: 900, speedMultiplier: 0.95, damageMultiplier: 1.08,
-			speedVariance: [0.84, 0.93, 1.02, 1.11, 1.20], healthMultiplier: 1.50,
+			movementStyle: 'pause', cadence: 0.950, telegraphMs: 915, speedMultiplier: 0.935, damageMultiplier: 1.105,
+			speedVariance: [0.85, 0.94, 1.03, 1.12, 1.21], healthMultiplier: 1.50,
 			appearMessage: 'Чую жар — сейчас полыхнёт!',
 			phaseMessages: { 2: 'Дым уже щиплет глаза — не мои!', 3: 'Задержу дыхание — и ударю!' }
 		}, // Чадящий: SMOKE_GATHER — долгая стойка копит жар, барrikada этого уровня
-		enem4: {
+		enem4: { signatureEvery: 4,
 			// Огнедышащий: BROKEN_DISCIPLINE — то же начало, что и три облика подряд, но конец с другого края
-			movementStyle: 'wave', cadence: 0.88, telegraphMs: 750, speedMultiplier: 1.08, damageMultiplier: 1.15,
-			speedVariance: [0.86, 0.96, 1.06, 1.16, 1.26], healthMultiplier: 1.50,
+			movementStyle: 'wave', cadence: 0.915, telegraphMs: 765, speedMultiplier: 1.090, damageMultiplier: 1.165,
+			speedVariance: [0.86, 0.97, 1.08, 1.19, 1.30], healthMultiplier: 1.50,
 			appearMessage: 'Хватит дыма — вот тебе пламя!',
 			phaseMessages: { 2: 'Огонь рвётся наружу сам!', 3: 'Сгоришь раньше, чем упадёшь!' }
 		}, // Огнедышащий: BROKEN_DISCIPLINE — то же начало, что и три облика подряд, но конец с другого края
-		enem5: {
+		enem5: { signatureEvery: 4,
 			// Испепеляющий: FINAL_ECHO — повтор того же обмана ещё раз, финальное подтверждение
-			movementStyle: 'accelerate', cadence: 0.80, telegraphMs: 1000, speedMultiplier: 1.12, damageMultiplier: 1.22,
-			speedVariance: [0.88, 0.98, 1.08, 1.18, 1.28], healthMultiplier: 1.50,
+			movementStyle: 'accelerate', cadence: 0.785, telegraphMs: 1045, speedMultiplier: 1.135, damageMultiplier: 1.260,
+			speedVariance: [0.78, 0.88, 0.98, 1.08, 1.18], healthMultiplier: 1.50,
 			appearMessage: 'Небо горит — и ты сгоришь с ним!',
 			phaseMessages: { 2: 'Пепел — вот всё, что от тебя останется!', 3: 'Последний вздох — мой, не твой!' }
 		} // Испепеляющий: FINAL_ECHO — повтор того же обмана ещё раз, финальное подтверждение
@@ -252,7 +267,7 @@ const ENEMY_TYPES = {
 		image: 'images/enemies/regions/6_zasech_les/lvl70/1.webp',
 		baseHP: 27759,
 		baseSpeed: 0,
-		baseDamage: 20,
+		baseDamage: 19.70,
 		spawnWeight: 5,
 		baseExp: 250,
 		size: '32%',
@@ -264,7 +279,7 @@ const ENEMY_TYPES = {
 		image: 'images/enemies/regions/6_zasech_les/lvl70/2.webp',
 		baseHP: 69396,
 		baseSpeed: 0,
-		baseDamage: 22,
+		baseDamage: 21.70,
 		spawnWeight: 15,
 		baseExp: 400,
 		size: '32%',
@@ -276,7 +291,7 @@ const ENEMY_TYPES = {
 		image: 'images/enemies/regions/6_zasech_les/lvl70/3.webp',
 		baseHP: 122778,
 		baseSpeed: 0,
-		baseDamage: 24,
+		baseDamage: 24.25,
 		spawnWeight: 20,
 		baseExp: 600,
 		size: '32%',
@@ -288,7 +303,7 @@ const ENEMY_TYPES = {
 		image: 'images/enemies/regions/6_zasech_les/lvl70/4.webp',
 		baseHP: 197513,
 		baseSpeed: 0,
-		baseDamage: 26,
+		baseDamage: 26.25,
 		spawnWeight: 10,
 		baseExp: 800,
 		size: '32%',
@@ -300,7 +315,7 @@ const ENEMY_TYPES = {
 		image: 'images/enemies/regions/6_zasech_les/lvl70/5.webp',
 		baseHP: 298939,
 		baseSpeed: 0,
-		baseDamage: 28,
+		baseDamage: 28.35,
 		spawnWeight: 5,
 		baseExp: 0,
 		size: '32%',
@@ -310,8 +325,8 @@ const ENEMY_TYPES = {
 };
 
 let bossM = ['enem1', 'enem2', 'enem3', 'enem4', 'enem5'];
-let timeNextBoss = 5;
-const bossInterval = 5;
+let timeNextBoss = 7;
+const bossInterval = 10;
 
 //spawnEnemyWithParams(type, xPos, yPos, customHP, customDamage, customSpeed)
 
@@ -321,118 +336,115 @@ const bossInterval = 5;
 const bossAbilities = [
 	// ===== Тугарин Змей: COLD_RECKONING — честная левофланговая закономерность,
 	// клинок бьёт размеренно с одной, узнаваемой стороны =====
-	{ boss: 'enem1', type: 'enem11', xPos: 12, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 10 }, //0
-	{ boss: 'enem1', type: 'enem11', xPos: 15, yPos: 32, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 11 }, //1
-	{ boss: 'enem1', type: 'enem11', xPos: 10, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 20 }, //2
-	{ boss: 'enem1', type: 'enem11', xPos: 8,  yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 22 }, //3
-	{ boss: 'enem1', type: 'enem11', xPos: 18, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 18 }, //4
-	{ boss: 'enem1', type: 'enem11', xPos: 20, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 4 },  //5
-	{ boss: 'enem1', type: 'enem11', xPos: 14, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 3 },  //6
-	{ boss: 'enem1', type: 'enem11', xPos: 16, yPos: 10, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 13 }, //7
-	{ boss: 'enem1', type: 'enem11', xPos: 22, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 16 }, //8
-	{ boss: 'enem1', type: 'enem11', xPos: 10, yPos: 32, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, //9
-	{ boss: 'enem1', type: 'enem11', xPos: 25, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 6 },  //10
-	{ boss: 'enem1', type: 'enem11', xPos: 18, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 19 }, //11
-	{ boss: 'enem1', type: 'enem11', xPos: 13, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 17 }, //12 — сигнатурный «почерк»: этот заход (xPos13/speed17) вернётся в обликах 4 и 5 как приманка
-	{ boss: 'enem1', type: 'enem11', xPos: 50, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 18 }, //13 — нежданчик: редкий центральный удар, тонкий намёк, что клинок способен и на другое
-	{ boss: 'enem1', type: 'enem11', xPos: 11, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 6 },  //14
-	{ boss: 'enem1', type: 'enem11', xPos: 17, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 6 },  //15
+	{ boss: 'enem1', type: 'enem11', xPos: 18, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 18 }, //0
+	{ boss: 'enem1', type: 'enem11', xPos: 16, yPos: 10, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 13 }, //1
+	{ boss: 'enem1', type: 'enem11', xPos: 22, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 16 }, //2
+	{ boss: 'enem1', type: 'enem11', xPos: 18, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 19 }, //3
+	{ boss: 'enem1', type: 'enem11', xPos: 13, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 17 }, //4 — сигнатурный «почерк»: этот заход (xPos13/speed17) вернётся в обликах 4 и 5 как приманка
+	{ boss: 'enem1', type: 'enem11', xPos: 51, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 17 }, //5 — нежданчик: редкий центральный удар, тонкий намёк, что клинок способен и на другое
+	{ boss: 'enem1', type: 'enem11', xPos: 59, yPos: 34, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 10 }, //6 — средняя нижняя атака
+	{ boss: 'enem1', type: 'enem11', xPos: 58, yPos: 35, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 11 }, //7 — средняя нижняя атака
+	{ boss: 'enem1', type: 'enem11', xPos: 76, yPos: 5, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 22 }, //8 — быстрая атака
+	{ boss: 'enem1', type: 'enem11', xPos: 27, yPos: 9, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 22 }, //9 — быстрая атака
+	{ boss: 'enem1', type: 'enem11', xPos: 7, yPos: 49, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 6 }, //10 — приманка (одиночная или с быстрым довеском, раздел 9.1)
+	{ boss: 'enem1', type: 'enem11', xPos: 24, yPos: 51, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 6 }, //11 — приманка (одиночная или с быстрым довеском, раздел 9.1)
+	{ boss: 'enem1', type: 'enem11', xPos: 21, yPos: 36, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, //12 — средняя нижняя атака
+	{ boss: 'enem1', type: 'enem11', xPos: 84, yPos: 13, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 14 }, //13 — средняя атака
+	{ boss: 'enem1', type: 'enem11', xPos: 51, yPos: 21, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 11 }, //14 — средняя атака
 	// БАРРИКАДА (раздел 16): клинок замирает в верхней точке замаха, тяжёлый и
 	// неподвижный — требует несколько ударов, прежде чем обрушится.
-	{ boss: 'enem1', type: 'enem11', xPos: 50, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 6,
-	  barricadeHits: 3, barricadePauseMs: 1200, barricadeRushSpeedMultiplier: 2.2 }, //16b
+	{ boss: 'enem1', type: 'enem11', xPos: 16, yPos: 22, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 6,
+	  barricadeHits: 3, barricadePauseMs: 1200, barricadeRushSpeedMultiplier: 2.225 }, //15b
 
 	// ===== Хищный Тугарин Змей: RISING_APPETITE — правый коготь редок и слаб,
 	// клинковая сторона по-прежнему ведущая =====
-	{ boss: 'enem2', type: 'enem22', xPos: 12, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 18 }, //0
-	{ boss: 'enem2', type: 'enem22', xPos: 15, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 19 }, //1
-	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 12 }, //2
-	{ boss: 'enem2', type: 'enem22', xPos: 85, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 4 },  //3 — слабый редкий коготь справа
-	{ boss: 'enem2', type: 'enem22', xPos: 88, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 3 },  //4
-	{ boss: 'enem2', type: 'enem22', xPos: 8,  yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 22 }, //5
-	{ boss: 'enem2', type: 'enem22', xPos: 6,  yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 24 }, //6
-	{ boss: 'enem2', type: 'enem22', xPos: 18, yPos: 32, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 13 }, //7
-	{ boss: 'enem2', type: 'enem22', xPos: 20, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 17 }, //8
-	{ boss: 'enem2', type: 'enem22', xPos: 14, yPos: 10, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 14 }, //9
-	{ boss: 'enem2', type: 'enem22', xPos: 80, yPos: 32, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 10 }, //10 — правый коготь, всё ещё скромный
-	{ boss: 'enem2', type: 'enem22', xPos: 16, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 6 },  //11
-	{ boss: 'enem2', type: 'enem22', xPos: 13, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 19 }, //12 — тот же «почерк» облика 1, продолжает укреплять левый вывод
-	{ boss: 'enem2', type: 'enem22', xPos: 83, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 19 }, //13 — нежданчик: первый по-настоящему быстрый удар справа, всё ещё честно телеграфирован
-	{ boss: 'enem2', type: 'enem22', xPos: 11, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 6 },  //14
-	{ boss: 'enem2', type: 'enem22', xPos: 19, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 6 },  //15
+	{ boss: 'enem2', type: 'enem22', xPos: 15, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 19 }, //0
+	{ boss: 'enem2', type: 'enem22', xPos: 14, yPos: 10, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 14 }, //1
+	{ boss: 'enem2', type: 'enem22', xPos: 80, yPos: 32, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 10 }, //2 — правый коготь, всё ещё скромный
+	{ boss: 'enem2', type: 'enem22', xPos: 13, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 19 }, //3 — тот же «почерк» облика 1, продолжает укреплять левый вывод
+	{ boss: 'enem2', type: 'enem22', xPos: 83, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 19 }, //4 — нежданчик: первый по-настоящему быстрый удар справа, всё ещё честно телеграфирован
+	{ boss: 'enem2', type: 'enem22', xPos: 58, yPos: 9, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 20 }, //5 — быстрая атака
+	{ boss: 'enem2', type: 'enem22', xPos: 78, yPos: 22, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 11 }, //6 — средняя атака
+	{ boss: 'enem2', type: 'enem22', xPos: 54, yPos: 49, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 5 }, //7 — приманка (одиночная или с быстрым довеском, раздел 9.1)
+	{ boss: 'enem2', type: 'enem22', xPos: 6, yPos: 52, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 5 }, //8 — приманка (одиночная или с быстрым довеском, раздел 9.1)
+	{ boss: 'enem2', type: 'enem22', xPos: 64, yPos: 9, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 23 }, //9 — быстрая атака
+	{ boss: 'enem2', type: 'enem22', xPos: 60, yPos: 10, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 19 }, //10 — быстрая атака
+	{ boss: 'enem2', type: 'enem22', xPos: 18, yPos: 36, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 11 }, //11 — средняя нижняя атака
+	{ boss: 'enem2', type: 'enem22', xPos: 65, yPos: 10, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 17 }, //12 — быстрая атака
+	{ boss: 'enem2', type: 'enem22', xPos: 26, yPos: 16, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 15 }, //13 — средняя атака
 	// БАРРИКАДА (раздел 16): коготь замирает, вцепившись в воздух — требует
 	// несколько ударов, прежде чем сорвётся вперёд.
-	{ boss: 'enem2', type: 'enem22', xPos: 50, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 6,
-	  barricadeHits: 4, barricadePauseMs: 1600, barricadeRushSpeedMultiplier: 2.3 }, //16b
+	{ boss: 'enem2', type: 'enem22', xPos: 60, yPos: 16, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 6,
+	  barricadeHits: 4, barricadePauseMs: 1600, barricadeRushSpeedMultiplier: 2.275 }, //14b
 
 	// ===== Чадящий Тугарин Змей: SMOKE_GATHER — долгая стойка копит жар,
 	// одинаковый замах иногда резолвится 1, 2 или 3 уколами подряд =====
 	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 14 }, //0 — одиночный укол
 	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 20, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 15 }, //1 — второй укол той же стойки
-	{ boss: 'enem3', type: 'enem33', xPos: 15, yPos: 16, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 13 }, //2
-	{ boss: 'enem3', type: 'enem33', xPos: 80, yPos: 16, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 13 }, //3
-	{ boss: 'enem3', type: 'enem33', xPos: 10, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 20 }, //4
-	{ boss: 'enem3', type: 'enem33', xPos: 85, yPos: 7,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 22 }, //5
-	{ boss: 'enem3', type: 'enem33', xPos: 20, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 4 },  //6
-	{ boss: 'enem3', type: 'enem33', xPos: 75, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3 },  //7
-	{ boss: 'enem3', type: 'enem33', xPos: 14, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 18 }, //8
-	{ boss: 'enem3', type: 'enem33', xPos: 82, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 19 }, //9
-	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 10, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 16 }, //10
-	{ boss: 'enem3', type: 'enem33', xPos: 18, yPos: 32, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 11 }, //11
-	{ boss: 'enem3', type: 'enem33', xPos: 78, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 12 }, //12
-	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 19, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 14 }, //13 — нежданчик: третий укол той же стойки, редкий
-	{ boss: 'enem3', type: 'enem33', xPos: 13, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 6 },  //14
-	{ boss: 'enem3', type: 'enem33', xPos: 83, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 6 },  //15
+	{ boss: 'enem3', type: 'enem33', xPos: 14, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 17 }, //2
+	{ boss: 'enem3', type: 'enem33', xPos: 82, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 19 }, //3
+	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 10, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 18 }, //4
+	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 19, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 14 }, //5 — нежданчик: третий укол той же стойки, редкий
+	{ boss: 'enem3', type: 'enem33', xPos: 83, yPos: 16, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 11 }, //6 — средняя атака
+	{ boss: 'enem3', type: 'enem33', xPos: 78, yPos: 17, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 12 }, //7 — средняя атака
+	{ boss: 'enem3', type: 'enem33', xPos: 23, yPos: 9, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 21 }, //8 — быстрая атака
+	{ boss: 'enem3', type: 'enem33', xPos: 20, yPos: 7, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 22 }, //9 — быстрая атака
+	{ boss: 'enem3', type: 'enem33', xPos: 9, yPos: 47, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3 }, //10 — приманка (одиночная или с быстрым довеском, раздел 9.1)
+	{ boss: 'enem3', type: 'enem33', xPos: 12, yPos: 47, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 6 }, //11 — приманка (одиночная или с быстрым довеском, раздел 9.1)
+	{ boss: 'enem3', type: 'enem33', xPos: 8, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 11 }, //12 — средняя нижняя атака
+	{ boss: 'enem3', type: 'enem33', xPos: 32, yPos: 32, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 9 }, //13 — средняя нижняя атака
+	{ boss: 'enem3', type: 'enem33', xPos: 55, yPos: 15, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 12 }, //14 — средняя атака
+	{ boss: 'enem3', type: 'enem33', xPos: 34, yPos: 8, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 24 }, //15 — быстрая атака
 	// БАРРИКАДА (раздел 16): дым сгущается в плотный ком у самого клинка —
 	// требует несколько ударов, прежде чем сорвётся вперёд.
-	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 6,
-	  barricadeHits: 5, barricadePauseMs: 2000, barricadeRushSpeedMultiplier: 2.4 }, //16b
+	{ boss: 'enem3', type: 'enem33', xPos: 86, yPos: 24, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 6,
+	  barricadeHits: 5, barricadePauseMs: 2000, barricadeRushSpeedMultiplier: 2.395 }, //16b
 
 	// ===== Огнедышащий Тугарин Змей: BROKEN_DISCIPLINE — то же самое начало,
 	// что и три облика подряд, но конец с другого края =====
-	{ boss: 'enem4', type: 'enem44', xPos: 13, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 17 }, //0 — точная копия «почерка» обликов 1-3 (xPos13/speed17)
-	{ boss: 'enem4', type: 'enem44', xPos: 16, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 16 }, //1 — продолжает влево, как ожидается по трём предыдущим обликам
-	{ boss: 'enem4', type: 'enem44', xPos: 85, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 20 }, //2 — ОБМАН: реальный третий удар прилетает с дальнего правого края
-	{ boss: 'enem4', type: 'enem44', xPos: 18, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 13 }, //3
-	{ boss: 'enem4', type: 'enem44', xPos: 80, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 12 }, //4
-	{ boss: 'enem4', type: 'enem44', xPos: 10, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 22 }, //5
-	{ boss: 'enem4', type: 'enem44', xPos: 88, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 24 }, //6
-	{ boss: 'enem4', type: 'enem44', xPos: 50, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 26 }, //7
-	{ boss: 'enem4', type: 'enem44', xPos: 20, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 4 },  //8
-	{ boss: 'enem4', type: 'enem44', xPos: 78, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 4 },  //9
-	{ boss: 'enem4', type: 'enem44', xPos: 15, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 18 }, //10
-	{ boss: 'enem4', type: 'enem44', xPos: 83, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 19 }, //11
-	{ boss: 'enem4', type: 'enem44', xPos: 50, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 20 }, //12
-	{ boss: 'enem4', type: 'enem44', xPos: 40, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 14 }, //13
-	{ boss: 'enem4', type: 'enem44', xPos: 60, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 15 }, //14
-	{ boss: 'enem4', type: 'enem44', xPos: 25, yPos: 32, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 11 }, //15
+	{ boss: 'enem4', type: 'enem44', xPos: 50, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 20, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //0
+	{ boss: 'enem4', type: 'enem44', xPos: 40, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 14, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //1
+	{ boss: 'enem4', type: 'enem44', xPos: 57, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 15, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //2
+	{ boss: 'enem4', type: 'enem44', xPos: 58, yPos: 8, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 19, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //3 — быстрая атака
+	{ boss: 'enem4', type: 'enem44', xPos: 65, yPos: 45, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 6, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //4 — приманка (одиночная или с быстрым довеском, раздел 9.1)
+	{ boss: 'enem4', type: 'enem44', xPos: 35, yPos: 8, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 19, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //5 — быстрая атака
+	{ boss: 'enem4', type: 'enem44', xPos: 18, yPos: 45, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 6, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //6 — приманка (одиночная или с быстрым довеском, раздел 9.1)
+	{ boss: 'enem4', type: 'enem44', xPos: 37, yPos: 20, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 10, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //7 — средняя атака
+	{ boss: 'enem4', type: 'enem44', xPos: 64, yPos: 9, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 18, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //8 — быстрая атака
+	{ boss: 'enem4', type: 'enem44', xPos: 42, yPos: 8, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 18, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //9 — быстрая атака
+	{ boss: 'enem4', type: 'enem44', xPos: 72, yPos: 19, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 11, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //10 — средняя атака
+	{ boss: 'enem4', type: 'enem44', xPos: 88, yPos: 22, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 11, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //11 — средняя атака
+	{ boss: 'enem4', type: 'enem44', xPos: 67, yPos: 49, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 5, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //12 — приманка (одиночная или с быстрым довеском, раздел 9.1)
+	{ boss: 'enem4', type: 'enem44', xPos: 92, yPos: 10, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 19, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //13 — быстрая атака
+	{ boss: 'enem4', type: 'enem44', xPos: 58, yPos: 23, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 14, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //14 — средняя атака
+	{ boss: 'enem4', type: 'enem44', xPos: 91, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 3, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //15 — приманка (одиночная или с быстрым довеском, раздел 9.1)
 	// БАРРИКАДА (раздел 16): пламя вспыхивает и на миг застревает плотным
 	// сгустком в воздухе — требует несколько ударов, прежде чем сорвётся.
-	{ boss: 'enem4', type: 'enem44', xPos: 50, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 6,
-	  barricadeHits: 6, barricadePauseMs: 2400, barricadeRushSpeedMultiplier: 2.5 }, //16b
+	{ boss: 'enem4', type: 'enem44', xPos: 42, yPos: 20, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 6, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 ,
+	  barricadeHits: 6, barricadePauseMs: 2400, barricadeRushSpeedMultiplier: 2.525 }, //16b
 
 	// ===== Испепеляющий Тугарин Змей: FINAL_ECHO — тот же обман повторяется
 	// ещё раз как финальное подтверждение всего урока уровня =====
-	{ boss: 'enem5', type: 'enem55', xPos: 15, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 18 }, //0 — зона 1 (левый край)
-	{ boss: 'enem5', type: 'enem55', xPos: 85, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 19 }, //1 — зона 2 (правый край)
-	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 17 }, //2 — зона 3 (центр)
-	{ boss: 'enem5', type: 'enem55', xPos: 30, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 13 }, //3 — зона 4
-	{ boss: 'enem5', type: 'enem55', xPos: 70, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 13 }, //4 — зона 5
-	{ boss: 'enem5', type: 'enem55', xPos: 10, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 24 }, //5
-	{ boss: 'enem5', type: 'enem55', xPos: 90, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 26 }, //6
-	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 28 }, //7
-	{ boss: 'enem5', type: 'enem55', xPos: 35, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //8
-	{ boss: 'enem5', type: 'enem55', xPos: 65, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //9
-	{ boss: 'enem5', type: 'enem55', xPos: 20, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 20 }, //10
-	{ boss: 'enem5', type: 'enem55', xPos: 80, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 21 }, //11
-	{ boss: 'enem5', type: 'enem55', xPos: 13, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 17 }, //12 — тот же «почерк» обликов 1-3, финальный повтор приманки
-	{ boss: 'enem5', type: 'enem55', xPos: 16, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 16 }, //13 — продолжает влево, как в обликах 1-3
-	{ boss: 'enem5', type: 'enem55', xPos: 87, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 19 }, //14 — ОБМАН повторяется: финальный удар снова с дальнего правого края
-	{ boss: 'enem5', type: 'enem55', xPos: 25, yPos: 32, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14 }, //15
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 17 }, //0 — зона 3 (центр)
+	{ boss: 'enem5', type: 'enem55', xPos: 10, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 24 }, //1
+	{ boss: 'enem5', type: 'enem55', xPos: 91, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 26 }, //2
+	{ boss: 'enem5', type: 'enem55', xPos: 47, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 28 }, //3
+	{ boss: 'enem5', type: 'enem55', xPos: 29, yPos: 10, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 19 }, //4 — быстрая атака
+	{ boss: 'enem5', type: 'enem55', xPos: 63, yPos: 9, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 21 }, //5 — быстрая атака
+	{ boss: 'enem5', type: 'enem55', xPos: 89, yPos: 13, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 12 }, //6 — средняя атака
+	{ boss: 'enem5', type: 'enem55', xPos: 36, yPos: 32, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 10 }, //7 — средняя нижняя атака
+	{ boss: 'enem5', type: 'enem55', xPos: 28, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 6 }, //8 — приманка (одиночная или с быстрым довеском, раздел 9.1)
+	{ boss: 'enem5', type: 'enem55', xPos: 21, yPos: 45, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 5 }, //9 — приманка (одиночная или с быстрым довеском, раздел 9.1)
+	{ boss: 'enem5', type: 'enem55', xPos: 79, yPos: 9, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 20 }, //10 — быстрая атака
+	{ boss: 'enem5', type: 'enem55', xPos: 53, yPos: 9, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 17 }, //11 — быстрая атака
+	{ boss: 'enem5', type: 'enem55', xPos: 36, yPos: 8, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 17 }, //12 — быстрая атака
+	{ boss: 'enem5', type: 'enem55', xPos: 80, yPos: 22, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 13 }, //13 — средняя атака
+	{ boss: 'enem5', type: 'enem55', xPos: 79, yPos: 7, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 21 }, //14 — быстрая атака
+	{ boss: 'enem5', type: 'enem55', xPos: 17, yPos: 49, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 3 }, //15 — приманка (одиночная или с быстрым довеском, раздел 9.1)
 	// БАРРИКАДА (раздел 16): самый плотный, самый тёмный сгусток дыма и
 	// огня уровня — финальная роль.
-	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 6,
-	  barricadeHits: 7, barricadePauseMs: 2800, barricadeRushSpeedMultiplier: 2.6 }, //16b
+	{ boss: 'enem5', type: 'enem55', xPos: 26, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 6,
+	  barricadeHits: 7, barricadePauseMs: 2800, barricadeRushSpeedMultiplier: 2.635 }, //16b
 ];
 
 // ИСТОРИЯ ПРАВКИ (2026-09-16): после жалобы «нет никакой сложности —
@@ -446,11 +458,11 @@ const bossAbilities = [
 // заводилось — значения возвращены к исходным (скопированным по обычной
 // конвенции уровня), трогать частоту здесь не требовалось.
 const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 300, bossDelayAbDop: 5500 }, // спокойный, размеренный расчёт
-	{ boss: 'enem2', bossDelayAb: 260, bossDelayAbDop: 4800 }, // растущий аппетит
-	{ boss: 'enem3', bossDelayAb: 320, bossDelayAbDop: 6000 }, // накопление жара, самый долгий отдых
-	{ boss: 'enem4', bossDelayAb: 220, bossDelayAbDop: 4200 }, // вырвавшееся пламя
-	{ boss: 'enem5', bossDelayAb: 200, bossDelayAbDop: 4000 }, // собранный, самый частый финал
+	{ boss: 'enem1', bossDelayAb: 286, bossDelayAbDop: 5175, firstWaveDelayMs: 2400 }, // спокойный, размеренный расчёт
+	{ boss: 'enem2', bossDelayAb: 252, bossDelayAbDop: 4775, firstWaveDelayMs: 2292 }, // растущий аппетит
+	{ boss: 'enem3', bossDelayAb: 312, bossDelayAbDop: 6075, firstWaveDelayMs: 2400 }, // накопление жара, самый долгий отдых
+	{ boss: 'enem4', bossDelayAb: 232, bossDelayAbDop: 4125, firstWaveDelayMs: 1980 }, // вырвавшееся пламя
+	{ boss: 'enem5', bossDelayAb: 208, bossDelayAbDop: 3925, firstWaveDelayMs: 1884 }, // собранный, самый частый финал
 ];
 
 // ВТОРОЙ, БОЛЕЕ ВАЖНЫЙ ПОДТВЕРЖДЁННЫЙ БАГ (2026-09-16, тот же день, третье
@@ -484,56 +496,65 @@ const mBossDelayAb = [
 // приманкой (см. комментарии у конкретных комбо ниже).
 const bossAbilitiesDop = [
 	// Тугарин Змей — COLD_RECKONING
-	{ boss: 'enem1', indexAbilities: [0, 1, 2] }, // учебное: разброс прилётов ~17мс — три цели почти разом
-	{ boss: 'enem1', indexAbilities: [2, 3, 4] }, // плотный быстрый кластер: разброс ~792мс
-	{ boss: 'enem1', indexAbilities: [9, 7, 8] }, // нарастающая скорость: разброс ~996мс
-	{ boss: 'enem1', indexAbilities: [5, 11] }, // медленная приманка (сн.4, ~3.7с) + быстрый довесок (сн.19, ~2.1с) — приманку нельзя игнорировать, пока разбираешься с довеском
-	{ boss: 'enem1', indexAbilities: [0, 1, 4] }, // same-start с [0,1], расходится третьей целью почти в том же окне (~159мс разброс)
-	{ boss: 'enem1', indexAbilities: [16], barricade: true }, // ← баррикада (раздел 16)
-	{ boss: 'enem1', indexAbilities: [13, 7, 8] }, // нежданчик: центральный удар + плотный кластер следом, разброс ~996мс
-	{ boss: 'enem1', indexAbilities: [12, 4, 11] }, // сигнатурная: «почерк» + плотный кластер, разброс ~447мс
+	{ boss: 'enem1', indexAbilities: [5, 1, 2] }, // нежданчик: центральный удар + плотный кластер следом, разброс ~941мс
+	{ boss: 'enem1', indexAbilities: [4, 0, 3] }, // сигнатурная: «почерк» + плотный кластер, разброс ~407мс
+	{ boss: 'enem1', indexAbilities: [11] }, // одиночная приманка
+	{ boss: 'enem1', indexAbilities: [10, 8] }, // приманка + быстрый довесок — разброс ~518мс
+	{ boss: 'enem1', indexAbilities: [9, 12] }, // смешанная серия — разброс ~502мс
+	{ boss: 'enem1', indexAbilities: [14, 7, 13] }, // средняя серия — разброс ~703мс
+	{ boss: 'enem1', indexAbilities: [13, 6] }, // средняя серия — разброс ~173мс
+	{ boss: 'enem1', indexAbilities: [12, 13, 9] }, // смешанная серия — разброс ~925мс
+	{ boss: 'enem1', indexAbilities: [11, 9] }, // приманка + быстрый довесок — разброс ~435мс
+	{ boss: 'enem1', indexAbilities: [13, 10, 14] }, // приманка + быстрый довесок — разброс ~903мс
+	{ boss: 'enem1', indexAbilities: [9, 10, 12, 8] }, // приманка + быстрый довесок — разброс ~1226мс
+	{ boss: 'enem1', indexAbilities: [15], barricade: true }, // ← баррикада (раздел 16)
 
 	// Хищный Тугарин Змей — RISING_APPETITE
-	{ boss: 'enem2', indexAbilities: [0, 1, 8] }, // плотный левый кластер: разброс ~714мс
-	{ boss: 'enem2', indexAbilities: [5, 6, 9] }, // плотный левый кластер 2: разброс ~1415мс
-	{ boss: 'enem2', indexAbilities: [3, 13] }, // слабая медленная приманка справа (сн.4, ~3.9с) + быстрый довесок оттуда же (сн.19, ~1.9с)
-	{ boss: 'enem2', indexAbilities: [7, 8] }, // разброс ~567мс
-	{ boss: 'enem2', indexAbilities: [0, 1, 5] }, // same-start с [0,1], расходится ранним разгоном
-	{ boss: 'enem2', indexAbilities: [16], barricade: true }, // ← баррикада (раздел 16)
-	{ boss: 'enem2', indexAbilities: [10, 13] }, // нежданчик: правый коготь впервые бьёт по-настоящему быстро, разброс ~201мс
-	{ boss: 'enem2', indexAbilities: [12, 9, 1] }, // сигнатурная: та же левофланговая связка, плотный кластер вместо растянутых пяти атак — разброс ~904мс (было ~5229мс)
+	{ boss: 'enem2', indexAbilities: [2, 4] }, // нежданчик: правый коготь впервые бьёт по-настоящему быстро, разброс ~242мс
+	{ boss: 'enem2', indexAbilities: [3, 1, 0] }, // сигнатурная: та же левофланговая связка, плотный кластер вместо растянутых пяти атак — разброс ~927мс (было ~5229мс)
+	{ boss: 'enem2', indexAbilities: [8] }, // одиночная приманка
+	{ boss: 'enem2', indexAbilities: [7] }, // одиночная приманка
+	{ boss: 'enem2', indexAbilities: [10, 9, 5] }, // быстрая серия — разброс ~533мс
+	{ boss: 'enem2', indexAbilities: [11, 13] }, // средняя серия — разброс ~459мс
+	{ boss: 'enem2', indexAbilities: [12, 6, 9] }, // смешанная серия — разброс ~883мс
+	{ boss: 'enem2', indexAbilities: [6, 13, 11] }, // средняя серия — разброс ~236мс
+	{ boss: 'enem2', indexAbilities: [14], barricade: true }, // ← баррикада (раздел 16)
 
 	// Чадящий Тугарин Змей — SMOKE_GATHER
-	{ boss: 'enem3', indexAbilities: [0] }, // одиночный укол — честная, единичная угроза (сама механика паузы уже даёт непредсказуемость длины)
-	{ boss: 'enem3', indexAbilities: [0, 1] }, // same-start с [0]: тот же замах, второй укол следом, разброс ~110мс
-	{ boss: 'enem3', indexAbilities: [2, 3] }, // разброс близкий, обе атаки среднего темпа
-	{ boss: 'enem3', indexAbilities: [4, 5] }, // быстрая пара
-	{ boss: 'enem3', indexAbilities: [4, 11, 12] }, // плотный кластер вместо изолированной медленной пары (было [6,7], разброс ~1150мс с прилётом на 3.5-4.6с) — теперь разброс ~839мс, первый прилёт ~1.6с
+	{ boss: 'enem3', indexAbilities: [0, 1, 5] }, // нежданчик: та же стойка резолвится ТРЕТЬИМ уколом, разброс ~537мс
+	{ boss: 'enem3', indexAbilities: [2, 3, 4] }, // сигнатурная: три метких удара через всё поле подряд, разброс ~433мс
+	{ boss: 'enem3', indexAbilities: [11] }, // одиночная приманка
+	{ boss: 'enem3', indexAbilities: [10] }, // одиночная приманка
+	{ boss: 'enem3', indexAbilities: [13, 6] }, // средняя серия — разброс ~545мс
+	{ boss: 'enem3', indexAbilities: [14, 7, 15] }, // смешанная серия — разброс ~783мс
+	{ boss: 'enem3', indexAbilities: [12, 8] }, // смешанная серия — разброс ~336мс
+	{ boss: 'enem3', indexAbilities: [6, 9, 12] }, // смешанная серия — разброс ~937мс
 	{ boss: 'enem3', indexAbilities: [16], barricade: true }, // ← баррикада (раздел 16)
-	{ boss: 'enem3', indexAbilities: [0, 1, 13] }, // нежданчик: та же стойка резолвится ТРЕТЬИМ уколом, разброс ~575мс
-	{ boss: 'enem3', indexAbilities: [8, 9, 10] }, // сигнатурная: три метких удара через всё поле подряд, разброс ~800мс
 
 	// Огнедышащий Тугарин Змей — BROKEN_DISCIPLINE
-	{ boss: 'enem4', indexAbilities: [3, 4] }, // средняя пара, разброс умеренный
-	{ boss: 'enem4', indexAbilities: [5, 6] }, // быстрая пара
-	{ boss: 'enem4', indexAbilities: [15, 3, 4] }, // плотный кластер вместо изолированной медленной пары (было [8,9], оба сн.4, прилёт на 3.0-3.2с) — теперь разброс ~319мс, первый прилёт ~1.7с
-	{ boss: 'enem4', indexAbilities: [10, 11] }, // быстрая пара
-	{ boss: 'enem4', indexAbilities: [0, 1] }, // same-start сам по себе: выглядит точь-в-точь как открытие обликов 1-3
+	{ boss: 'enem4', indexAbilities: [0, 1, 2] }, // нежданчик: центр закрывается следом за флангами, разброс ~897мс
+	{ boss: 'enem4', indexAbilities: [4] }, // одиночная приманка
+	{ boss: 'enem4', indexAbilities: [15] }, // одиночная приманка
+	{ boss: 'enem4', indexAbilities: [3, 9] }, // быстрая серия — разброс ~291мс
+	{ boss: 'enem4', indexAbilities: [14, 12, 5] }, // приманка + быстрый довесок — разброс ~997мс
+	{ boss: 'enem4', indexAbilities: [8, 11] }, // смешанная серия — разброс ~737мс
+	{ boss: 'enem4', indexAbilities: [6, 13] }, // приманка + быстрый довесок — разброс ~608мс
+	{ boss: 'enem4', indexAbilities: [7, 10, 11, 6] }, // приманка + быстрый довесок — разброс ~488мс
 	{ boss: 'enem4', indexAbilities: [16], barricade: true }, // ← баррикада (раздел 16)
-	{ boss: 'enem4', indexAbilities: [12, 13, 14] }, // нежданчик: центр закрывается следом за флангами, разброс ~854мс
-	{ boss: 'enem4', indexAbilities: [0, 1, 2] }, // ГЛАВНЫЙ ПОВОРОТ УРОВНЯ: тот же «почерк», финиш с дальнего правого края — разброс ~297мс, уже плотный без правок
-	{ boss: 'enem4', indexAbilities: [10, 11, 12] }, // доп. плотный кластер через центр
 
 	// Испепеляющий Тугарин Змей — FINAL_ECHO, финальный облик
-	{ boss: 'enem5', indexAbilities: [0, 1] }, // разброс небольшой, оба фланга быстрые
-	{ boss: 'enem5', indexAbilities: [3, 4, 15] }, // плотный кластер вместо изолированной медленной пары (было [8,9], оба сн.4, прилёт на 2.9-3.1с) — теперь разброс ~191мс, первый прилёт ~1.4с
-	{ boss: 'enem5', indexAbilities: [10, 11, 0] }, // плотный кластер, разброс ~480мс
-	{ boss: 'enem5', indexAbilities: [3, 4] }, // средняя симметричная пара
-	{ boss: 'enem5', indexAbilities: [0, 1, 5] }, // same-start с [0,1], расходится быстрым разгоном — разброс ~96мс, уже плотный без правок
+	{ boss: 'enem5', indexAbilities: [0, 3] }, // нежданчик: центр закрывается на пределе скорости
+	{ boss: 'enem5', indexAbilities: [1, 2] }, // сигнатурная-филлер: симметричные быстрые углы
+	{ boss: 'enem5', indexAbilities: [9] }, // одиночная приманка
+	{ boss: 'enem5', indexAbilities: [13, 5, 8] }, // приманка + быстрый довесок — разброс ~733мс
+	{ boss: 'enem5', indexAbilities: [12, 10, 14, 4] }, // быстрая серия — разброс ~396мс
+	{ boss: 'enem5', indexAbilities: [15, 6] }, // приманка + быстрый довесок — разброс ~1556мс
+	{ boss: 'enem5', indexAbilities: [4, 13, 11, 7] }, // смешанная серия — разброс ~931мс
+	{ boss: 'enem5', indexAbilities: [6, 5] }, // смешанная серия — разброс ~694мс
+	{ boss: 'enem5', indexAbilities: [8, 7] }, // приманка + быстрый довесок — разброс ~145мс
+	{ boss: 'enem5', indexAbilities: [5, 10] }, // быстрая серия — разброс ~239мс
+	{ boss: 'enem5', indexAbilities: [6, 11, 14, 4] }, // смешанная серия — разброс ~484мс
 	{ boss: 'enem5', indexAbilities: [16], barricade: true }, // ← баррикада (раздел 16)
-	{ boss: 'enem5', indexAbilities: [2, 7] }, // нежданчик: центр закрывается на пределе скорости
-	{ boss: 'enem5', indexAbilities: [5, 6] }, // сигнатурная-филлер: симметричные быстрые углы
-	{ boss: 'enem5', indexAbilities: [12, 13, 14] }, // ФИНАЛЬНОЕ ЭХО: тот же «почерк» и тот же обман — снова финиш справа, разброс ~275мс, уже плотный без правок
 ];
 
 // Лорные названия связок временных улучшений — пять стадий одного и того

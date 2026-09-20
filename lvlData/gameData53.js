@@ -62,6 +62,11 @@
 let lvlNumber = 53;
 
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	scaleLongComboDamage: true,
 	scaleShortComboDamage: true,
 	levelCadence: 1.00,
@@ -76,27 +81,27 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.80, speed: 1.12, damage: 1.22, telegraphMultiplier: 0.90, surpriseChance: 0.18, maxActiveAttacks: 14 }
 	],
 	bosses: {
-		enem1: {
+		enem1: { combatIdentity: "Замах силача", combatTrick: "короткий первый заход продолжается более быстрым довеском с прежнего края", signatureEvery: 4,
 			// Молотило: STRONGMAN_SWING — один чётко телеграфированный тяжёлый замах сверху
 			movementStyle: 'straight', cadence: 1.02, telegraphMs: 900, speedMultiplier: 0.94, damageMultiplier: 0.90,
 			speedVariance: [0.82, 0.92, 1.00, 1.08, 1.16]
 		}, // Молотило: STRONGMAN_SWING — один чётко телеграфированный тяжёлый замах сверху
-		enem2: {
+		enem2: { combatIdentity: "Сломанный шаг куклы", combatTrick: "повторяет удар в прежнем секторе вместо ожидаемого чередования", signatureEvery: 4,
 			// Батожок: MARIONETTE_JERK — быстрые дискретные «прыжки» между позициями
 			movementStyle: 'lateRush', cadence: 0.90, telegraphMs: 760, speedMultiplier: 1.06, damageMultiplier: 1.00,
 			speedVariance: [0.86, 0.95, 1.05, 1.14, 1.22]
 		}, // Батожок: MARIONETTE_JERK — быстрые дискретные «прыжки» между позициями
-		enem3: {
+		enem3: { combatIdentity: "Весы меняют перевес", combatTrick: "сводит угрозы с краёв к внутренним полосам, затем размыкает рисунок", signatureEvery: 4,
 			// Гиревик: SCALE_TIP — весы медленно клонятся то в одну, то в другую сторону
 			movementStyle: 'drift', cadence: 1.16, telegraphMs: 1020, speedMultiplier: 0.83, damageMultiplier: 1.17,
 			speedVariance: [0.80, 0.88, 0.96, 1.04, 1.12]
 		}, // Гиревик: SCALE_TIP — весы медленно клонятся то в одну, то в другую сторону
-		enem4: {
+		enem4: { combatIdentity: "Выкрик с ответом", combatTrick: "две короткие группы разделены паузой; вторая группа меняет сторону", signatureEvery: 4,
 			// Горлопан: HAWKER_BARRAGE — непрерывный частый залп одиночных выкриков-ударов
 			movementStyle: 'accelerate', cadence: 0.86, telegraphMs: 690, speedMultiplier: 1.13, damageMultiplier: 1.04,
 			speedVariance: [0.88, 0.98, 1.08, 1.18, 1.26]
 		}, // Горлопан: HAWKER_BARRAGE — непрерывный частый залп одиночных выкриков-ударов
-		enem5: {
+		enem5: { combatIdentity: "Печать прерывает оглашение", combatTrick: "разводит две цели, затем закрывает оставленную между ними полосу", signatureEvery: 4,
 			// Печатник: SEAL_AND_DECREE — тяжёлый штемпель печатью + массовое оглашение посохом
 			movementStyle: 'pause', cadence: 0.81, telegraphMs: 970, speedMultiplier: 1.07, damageMultiplier: 1.15,
 			speedVariance: [0.86, 0.94, 1.03, 1.12, 1.20]
@@ -342,77 +347,100 @@ const ENEMY_TYPES = {
 	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14 }, //21 цепь-B звено 2
 	{ boss: 'enem5', type: 'enem55', xPos: 25, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 11 }, //22 цепь-B звено 3
 	{ boss: 'enem5', type: 'enem55', xPos: 55, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 8 },  //23 цепь-B звено 4
+
+    // Приёмы из scripts/combat-designs.js; индексы считаются отдельно для каждого босса.
+    {boss: "enem1",type: "enem11",xPos: 24,yPos: 12,customHP: 1,customDamage: 20,customSpeed: 16},
+    {boss: "enem1",type: "enem11",xPos: 32,yPos: 20,customHP: 1,customDamage: 20,customSpeed: 14},
+    {boss: "enem1",type: "enem11",xPos: 80,yPos: 6,customHP: 1,customDamage: 20,customSpeed: 21},
+    {boss: "enem1",type: "enem11",xPos: 24,yPos: 40,customHP: 1,customDamage: 20,customSpeed: 7},
+    {boss: "enem1",type: "enem11",xPos: 24,yPos: 8,customHP: 1,customDamage: 20,customSpeed: 20},
+    {boss: "enem1",type: "enem11",xPos: 68,yPos: 12,customHP: 1,customDamage: 20,customSpeed: 18},
+    {boss: "enem2",type: "enem22",xPos: 86,yPos: 12,customHP: 1,customDamage: 22,customSpeed: 16},
+    {boss: "enem2",type: "enem22",xPos: 74,yPos: 20,customHP: 1,customDamage: 22,customSpeed: 14},
+    {boss: "enem2",type: "enem22",xPos: 16,yPos: 6,customHP: 1,customDamage: 22,customSpeed: 21},
+    {boss: "enem2",type: "enem22",xPos: 86,yPos: 40,customHP: 1,customDamage: 22,customSpeed: 7},
+    {boss: "enem2",type: "enem22",xPos: 86,yPos: 8,customHP: 1,customDamage: 22,customSpeed: 20},
+    {boss: "enem2",type: "enem22",xPos: 28,yPos: 12,customHP: 1,customDamage: 22,customSpeed: 18},
+    {boss: "enem3",type: "enem33",xPos: 18,yPos: 12,customHP: 1,customDamage: 24,customSpeed: 16},
+    {boss: "enem3",type: "enem33",xPos: 34,yPos: 20,customHP: 1,customDamage: 24,customSpeed: 14},
+    {boss: "enem3",type: "enem33",xPos: 82,yPos: 6,customHP: 1,customDamage: 24,customSpeed: 21},
+    {boss: "enem3",type: "enem33",xPos: 18,yPos: 40,customHP: 1,customDamage: 24,customSpeed: 7},
+    {boss: "enem3",type: "enem33",xPos: 18,yPos: 8,customHP: 1,customDamage: 24,customSpeed: 20},
+    {boss: "enem3",type: "enem33",xPos: 64,yPos: 12,customHP: 1,customDamage: 24,customSpeed: 18},
+    {boss: "enem4",type: "enem44",xPos: 14,yPos: 12,customHP: 1,customDamage: 26,customSpeed: 16},
+    {boss: "enem4",type: "enem44",xPos: 26,yPos: 20,customHP: 1,customDamage: 26,customSpeed: 14},
+    {boss: "enem4",type: "enem44",xPos: 76,yPos: 6,customHP: 1,customDamage: 26,customSpeed: 21},
+    {boss: "enem4",type: "enem44",xPos: 14,yPos: 40,customHP: 1,customDamage: 26,customSpeed: 7},
+    {boss: "enem4",type: "enem44",xPos: 14,yPos: 8,customHP: 1,customDamage: 26,customSpeed: 20},
+    {boss: "enem4",type: "enem44",xPos: 88,yPos: 12,customHP: 1,customDamage: 26,customSpeed: 18},
+    {boss: "enem5",type: "enem55",xPos: 22,yPos: 12,customHP: 1,customDamage: 28,customSpeed: 16},
+    {boss: "enem5",type: "enem55",xPos: 50,yPos: 20,customHP: 1,customDamage: 28,customSpeed: 14},
+    {boss: "enem5",type: "enem55",xPos: 84,yPos: 6,customHP: 1,customDamage: 28,customSpeed: 21},
+    {boss: "enem5",type: "enem55",xPos: 22,yPos: 40,customHP: 1,customDamage: 28,customSpeed: 7},
+    {boss: "enem5",type: "enem55",xPos: 22,yPos: 8,customHP: 1,customDamage: 28,customSpeed: 20},
+    {boss: "enem5",type: "enem55",xPos: 50,yPos: 12,customHP: 1,customDamage: 28,customSpeed: 18}
 ];
 
  const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 320, bossDelayAbDop: 5900 }, // размеренный силовой замах
-	{ boss: 'enem2', bossDelayAb: 215, bossDelayAbDop: 4100 }, // самый частый — дёрганые прыжки
-	{ boss: 'enem3', bossDelayAb: 420, bossDelayAbDop: 7000 }, // самый долгий отдых — медленное клонение
-	{ boss: 'enem4', bossDelayAb: 175, bossDelayAbDop: 3200 }, // непрерывный крик без пауз
-	{ boss: 'enem5', bossDelayAb: 260, bossDelayAbDop: 5150 }, // собранный финал
+	{ boss: 'enem1', bossDelayAb: 320, bossDelayAbDop: 5900, firstWaveDelayMs: 2400 }, // размеренный силовой замах
+	{ boss: 'enem2', bossDelayAb: 215, bossDelayAbDop: 4100, firstWaveDelayMs: 1968 }, // самый частый — дёрганые прыжки
+	{ boss: 'enem3', bossDelayAb: 420, bossDelayAbDop: 7000, firstWaveDelayMs: 2400 }, // самый долгий отдых — медленное клонение
+	{ boss: 'enem4', bossDelayAb: 175, bossDelayAbDop: 3200, firstWaveDelayMs: 1536 }, // непрерывный крик без пауз
+	{ boss: 'enem5', bossDelayAb: 260, bossDelayAbDop: 5150, firstWaveDelayMs: 2400 }, // собранный финал
  ];
 
  const bossAbilitiesDop = [
-	// Молотило — STRONGMAN_SWING
-	{ boss: 'enem1', indexAbilities: [0] },
-	{ boss: 'enem1', indexAbilities: [1] },
-	{ boss: 'enem1', indexAbilities: [2] },
-	{ boss: 'enem1', indexAbilities: [3, 4] },
-	{ boss: 'enem1', indexAbilities: [5, 6] },
-	{ boss: 'enem1', indexAbilities: [0, 1] }, // same-start-стиль пара двух одиночных замахов подряд
-	{ boss: 'enem1', indexAbilities: [16, 17, 18, 19, 20], isChain: true }, // ← цепь-A (5, irregular)
-	{ boss: 'enem1', indexAbilities: [21, 22, 23, 24, 25], isChain: true }, // ← цепь-B (5, irregular)
-	{ boss: 'enem1', indexAbilities: [13, 9] }, // нежданчик: второй замах сразу следом без обычной паузы
-	{ boss: 'enem1', indexAbilities: [0, 3, 5, 1, 4, 6] }, // сигнатурная: серия силовых замахов по всему полю подряд
-
-	// Батожок — MARIONETTE_JERK
-	{ boss: 'enem2', indexAbilities: [0, 1] },
-	{ boss: 'enem2', indexAbilities: [2, 3] },
-	{ boss: 'enem2', indexAbilities: [4, 5] },
-	{ boss: 'enem2', indexAbilities: [6, 7] },
-	{ boss: 'enem2', indexAbilities: [8, 9, 14, 15] },
-	{ boss: 'enem2', indexAbilities: [0, 1, 4] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem2', indexAbilities: [16, 17, 18, 19, 20], isChain: true }, // ← цепь-A (5, irregular)
-	{ boss: 'enem2', indexAbilities: [21, 22, 23, 24, 25], isChain: true }, // ← цепь-B (5, irregular)
-	{ boss: 'enem2', indexAbilities: [12, 13] }, // нежданчик: прыжок сразу через всё поле по диагонали
-	{ boss: 'enem2', indexAbilities: [0, 2, 4, 6, 1, 3, 5, 7] }, // сигнатурная: серия резких прыжков по всему полю подряд
-
-	// Гиревик — SCALE_TIP
-	{ boss: 'enem3', indexAbilities: [0, 1, 2] },
-	{ boss: 'enem3', indexAbilities: [3, 4] },
-	{ boss: 'enem3', indexAbilities: [5, 6] },
-	{ boss: 'enem3', indexAbilities: [7, 8] },
-	{ boss: 'enem3', indexAbilities: [9, 10] },
-	{ boss: 'enem3', indexAbilities: [0, 1, 7] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem3', indexAbilities: [16, 17, 18, 19, 20], isChain: true }, // ← цепь-A (5, irregular)
-	{ boss: 'enem3', indexAbilities: [21, 22, 23, 24, 25], isChain: true }, // ← цепь-B (5, irregular)
-	{ boss: 'enem3', indexAbilities: [13, 14] }, // нежданчик: перевес раньше привычного долгого клонения
-	{ boss: 'enem3', indexAbilities: [0, 2, 10, 1, 3, 11] }, // сигнатурная: полный перевес с обеих чаш разом
-
-	// Горлопан — HAWKER_BARRAGE
-	{ boss: 'enem4', indexAbilities: [0, 1] },
-	{ boss: 'enem4', indexAbilities: [2, 3] },
-	{ boss: 'enem4', indexAbilities: [4, 5] },
-	{ boss: 'enem4', indexAbilities: [8, 9] },
-	{ boss: 'enem4', indexAbilities: [6, 7, 11, 12] },
-	{ boss: 'enem4', indexAbilities: [0, 1, 4] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem4', indexAbilities: [16, 17, 18], isChain: true }, // ← цепь-A (3, arc)
-	{ boss: 'enem4', indexAbilities: [19, 20, 21, 22], isChain: true }, // ← цепь-B (4, diagonal)
-	{ boss: 'enem4', indexAbilities: [13, 14] }, // нежданчик: двойной выкрик с одной стороны без чередования
-	{ boss: 'enem4', indexAbilities: [0, 2, 4, 8, 1, 3, 5, 9] }, // сигнатурная: несмолкающий шквал выкриков по всему полю
-
-	// Печатник — SEAL_AND_DECREE, финальный облик
-	{ boss: 'enem5', indexAbilities: [0, 1] },
-	{ boss: 'enem5', indexAbilities: [2, 3, 4] },
-	{ boss: 'enem5', indexAbilities: [5, 6] },
-	{ boss: 'enem5', indexAbilities: [7, 8] },
-	{ boss: 'enem5', indexAbilities: [11, 12] },
-	{ boss: 'enem5', indexAbilities: [0, 1, 5] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem5', indexAbilities: [16, 17, 18, 19], isChain: true }, // ← цепь-A (4, vertical)
-	{ boss: 'enem5', indexAbilities: [20, 21, 22, 23], isChain: true }, // ← цепь-B (4, zigzag)
-	{ boss: 'enem5', indexAbilities: [13] }, // нежданчик: штемпель бьёт без привычной властной паузы
-	{ boss: 'enem5', indexAbilities: [0, 2, 3, 4, 1, 14, 15] }, // сигнатурная кульминация: штемпель и оглашение по всему полю разом
- ];
+    {boss: "enem1",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem1",indexAbilities: [1]},
+    {boss: "enem1",indexAbilities: [2]},
+    {boss: "enem1",indexAbilities: [3,4]},
+    {boss: "enem1",indexAbilities: [5,6]},
+    {boss: "enem1",indexAbilities: [29,30,26],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Замах силача — знакомство",openingOrder: 1},
+    {boss: "enem1",indexAbilities: [29,30,28],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Замах силача — иной конец"},
+    {boss: "enem1",indexAbilities: [31,27,31,28,26],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Замах силача — завершение"},
+    {boss: "enem1",indexAbilities: [16,17,18,19,20],isChain: true},
+    {boss: "enem1",indexAbilities: [21,22,23,24,25],isChain: true},
+    {boss: "enem2",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem2",indexAbilities: [2,3]},
+    {boss: "enem2",indexAbilities: [4,5]},
+    {boss: "enem2",indexAbilities: [6,7]},
+    {boss: "enem2",indexAbilities: [8,9,14,15]},
+    {boss: "enem2",indexAbilities: [26,30,27],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Сломанный шаг куклы — знакомство",openingOrder: 1},
+    {boss: "enem2",indexAbilities: [26,30,28],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Сломанный шаг куклы — иной конец"},
+    {boss: "enem2",indexAbilities: [31,28,31,27],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Сломанный шаг куклы — завершение"},
+    {boss: "enem2",indexAbilities: [16,17,18,19,20],isChain: true},
+    {boss: "enem2",indexAbilities: [21,22,23,24,25],isChain: true},
+    {boss: "enem3",indexAbilities: [0,1,2]},
+    {boss: "enem3",indexAbilities: [3,4],openingOrder: 0},
+    {boss: "enem3",indexAbilities: [5,6]},
+    {boss: "enem3",indexAbilities: [7,8]},
+    {boss: "enem3",indexAbilities: [9,10]},
+    {boss: "enem3",indexAbilities: [26,28,27,31],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Весы меняют перевес — знакомство",openingOrder: 1},
+    {boss: "enem3",indexAbilities: [26,28,30],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Весы меняют перевес — иной конец"},
+    {boss: "enem3",indexAbilities: [27,31,26,28],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Весы меняют перевес — завершение"},
+    {boss: "enem3",indexAbilities: [16,17,18,19,20],isChain: true},
+    {boss: "enem3",indexAbilities: [21,22,23,24,25],isChain: true},
+    {boss: "enem4",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem4",indexAbilities: [2,3]},
+    {boss: "enem4",indexAbilities: [4,5]},
+    {boss: "enem4",indexAbilities: [8,9]},
+    {boss: "enem4",indexAbilities: [6,7,11,12]},
+    {boss: "enem4",indexAbilities: [23,27,25,28],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Выкрик с ответом — знакомство",openingOrder: 1,shotGapsMs: [360,900,360]},
+    {boss: "enem4",indexAbilities: [23,27,28],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Выкрик с ответом — иной конец",shotGapsMs: [360,900,360]},
+    {boss: "enem4",indexAbilities: [25,28,23,27],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Выкрик с ответом — завершение",shotGapsMs: [360,900,360]},
+    {boss: "enem4",indexAbilities: [16,17,18],isChain: true},
+    {boss: "enem4",indexAbilities: [19,20,21,22],isChain: true},
+    {boss: "enem5",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem5",indexAbilities: [2,3,4]},
+    {boss: "enem5",indexAbilities: [5,6]},
+    {boss: "enem5",indexAbilities: [7,8]},
+    {boss: "enem5",indexAbilities: [11,12]},
+    {boss: "enem5",indexAbilities: [24,26,29],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Печать прерывает оглашение — знакомство",openingOrder: 1},
+    {boss: "enem5",indexAbilities: [24,26,25],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Печать прерывает оглашение — иной конец"},
+    {boss: "enem5",indexAbilities: [28,26,29,25],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Печать прерывает оглашение — завершение"},
+    {boss: "enem5",indexAbilities: [16,17,18,19],isChain: true},
+    {boss: "enem5",indexAbilities: [20,21,22,23],isChain: true}
+];
 
 // Лорные названия связок временных улучшений — у каждого босса свой словарь
 // образов конкретно ЕГО материала/повадки (раздел 12.1), полных совпадений

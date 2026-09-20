@@ -22,6 +22,11 @@ let lvlNumber = 139;
 
 // Полный профиль боя уровня: движок только исполняет эти настройки.
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	scaleLongComboDamage: true,
 	scaleShortComboDamage: true,
 	levelCadence: 1.00,
@@ -35,11 +40,11 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.76, speed: 1.10, damage: 1.14, telegraphMultiplier: 0.90, surpriseChance: 0.20, maxActiveAttacks: 15 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'lateRush', cadence: 1.03, telegraphMs: 920, speedMultiplier: 0.94, damageMultiplier: 0.92, speedVariance: [0.78, 0.88, 0.98, 1.08, 1.18] }, // TOP_HOPS: спокойный прыжок → рывок
-		enem2: { movementStyle: 'drift', cadence: 1.00, telegraphMs: 860, speedMultiplier: 0.98, damageMultiplier: 0.97, speedVariance: [0.90, 0.96, 1.02, 1.08, 1.14] }, // PACK_PAIRS: пары сходятся к центру
-		enem3: { movementStyle: 'pause', cadence: 1.18, telegraphMs: 1080, speedMultiplier: 0.78, damageMultiplier: 1.18, speedVariance: [0.80, 0.86, 0.93, 1.00, 1.08] }, // HEAVY_PRESS: тяжёлые остановки
-		enem4: { movementStyle: 'accelerate', cadence: 0.90, telegraphMs: 720, speedMultiplier: 1.08, damageMultiplier: 1.02, speedVariance: [0.88, 0.98, 1.08, 1.16, 1.22] }, // ASYM_FOX: резкая смена давления
-		enem5: { movementStyle: 'weave', cadence: 0.82, telegraphMs: 780, speedMultiplier: 1.05, damageMultiplier: 1.10, speedVariance: [0.86, 0.94, 1.03, 1.12, 1.20] } // EDGE_ROLL: катится вдоль краёв
+		enem1: { signatureEvery: 4, movementStyle: 'lateRush', cadence: 1.03, telegraphMs: 920, speedMultiplier: 0.94, damageMultiplier: 0.92, speedVariance: [0.78, 0.88, 0.98, 1.08, 1.18] }, // TOP_HOPS: спокойный прыжок → рывок
+		enem2: { signatureEvery: 4, movementStyle: 'drift', cadence: 1.00, telegraphMs: 860, speedMultiplier: 0.98, damageMultiplier: 0.97, speedVariance: [0.90, 0.96, 1.02, 1.08, 1.14] }, // PACK_PAIRS: пары сходятся к центру
+		enem3: { signatureEvery: 4, movementStyle: 'pause', cadence: 1.18, telegraphMs: 1080, speedMultiplier: 0.78, damageMultiplier: 1.18, speedVariance: [0.80, 0.86, 0.93, 1.00, 1.08] }, // HEAVY_PRESS: тяжёлые остановки
+		enem4: { signatureEvery: 4, movementStyle: 'accelerate', cadence: 0.90, telegraphMs: 720, speedMultiplier: 1.08, damageMultiplier: 1.02, speedVariance: [0.88, 0.98, 1.08, 1.16, 1.22] }, // ASYM_FOX: резкая смена давления
+		enem5: { signatureEvery: 4, movementStyle: 'weave', cadence: 0.82, telegraphMs: 780, speedMultiplier: 1.05, damageMultiplier: 1.10, speedVariance: [0.86, 0.94, 1.03, 1.12, 1.20] } // EDGE_ROLL: катится вдоль краёв
 	}
 };
 
@@ -283,11 +288,11 @@ const ENEMY_TYPES = {
 ];
 
  const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 280, bossDelayAbDop: 5200 }, // скачет часто
-	{ boss: 'enem2', bossDelayAb: 320, bossDelayAbDop: 5600 }, // стая давит ритмом
-	{ boss: 'enem3', bossDelayAb: 380, bossDelayAbDop: 6400 }, // тяжёлый, длинная пауза
-	{ boss: 'enem4', bossDelayAb: 260, bossDelayAbDop: 5000 }, // хитрая вспышка
-	{ boss: 'enem5', bossDelayAb: 240, bossDelayAbDop: 4800 }, // катится без остановки
+	{ boss: 'enem1', bossDelayAb: 280, bossDelayAbDop: 5200, firstWaveDelayMs: 2400 }, // скачет часто
+	{ boss: 'enem2', bossDelayAb: 320, bossDelayAbDop: 5600, firstWaveDelayMs: 2400 }, // стая давит ритмом
+	{ boss: 'enem3', bossDelayAb: 380, bossDelayAbDop: 6400, firstWaveDelayMs: 2400 }, // тяжёлый, длинная пауза
+	{ boss: 'enem4', bossDelayAb: 260, bossDelayAbDop: 5000, firstWaveDelayMs: 2400 }, // хитрая вспышка
+	{ boss: 'enem5', bossDelayAb: 240, bossDelayAbDop: 4800, firstWaveDelayMs: 2304 }, // катится без остановки
 ];
 
  const bossAbilitiesDop = [

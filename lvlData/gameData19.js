@@ -6,6 +6,11 @@ let factorChar = (lvlNumber * 5) / 100;
 // одиночные вылазки из нор по углам / горизонтальные пары с одного бока /
 // финал смешивает почерк всех четверых и впервые перекрывает низ поля разом.
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	levelCadence: 0.89, damageMultiplier: 1.997, minWaveDelay: 2080, minShotDelay: 148, minTelegraphMs: 540,
 	phases: [
 		{ phase: 1, minHp: 0.65, cadence: 1.00, speed: 1.00, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.15, maxActiveAttacks: 15 },
@@ -13,11 +18,11 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.70, speed: 1.19, damage: 1.27, telegraphMultiplier: 0.83, surpriseChance: 0.35, maxActiveAttacks: 20 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'pause',      cadence: 1.00, telegraphMs: 720, speedMultiplier: 1.05, damageMultiplier: 0.86, speedVariance: [0.86, 0.96, 1.06, 1.16, 1.26] }, // ПРОЖОРЕНЬ: плотный рой сыплется сверху
-		enem2: { movementStyle: 'drift', cadence: 0.90, telegraphMs: 780, speedMultiplier: 0.98, damageMultiplier: 1.02, speedVariance: [0.84, 0.94, 1.04, 1.14, 1.24] }, // ЛАТНИК: встречные зигзаг-тараны панциря
-		enem3: { movementStyle: 'weave',   cadence: 0.78, telegraphMs: 600, speedMultiplier: 1.18, damageMultiplier: 0.64, speedVariance: [0.90, 1.02, 1.14, 1.26, 1.38] }, // ЗУБОСКАЛ: нервные вылазки из нор по углам
-		enem4: { movementStyle: 'accelerate',      cadence: 0.88, telegraphMs: 730, speedMultiplier: 1.06, damageMultiplier: 0.88, speedVariance: [0.85, 0.95, 1.05, 1.15, 1.25] }, // ХЛЕБОКРАД: горизонтальные пары с одного бока
-		enem5: { movementStyle: 'lateRush',      cadence: 0.74, telegraphMs: 630, speedMultiplier: 1.12, damageMultiplier: 1.08, speedVariance: [0.82, 0.95, 1.08, 1.21, 1.34] }  // НЕНАСЫТЬ: голоден до всего поля разом — жрёт пространство роем, тараном и вылазками из нор без разбора
+		enem1: { combatIdentity: "Два всплеска роя", combatTrick: "две короткие группы разделены паузой; вторая группа меняет сторону", signatureEvery: 4, movementStyle: 'pause',      cadence: 1.00, telegraphMs: 720, speedMultiplier: 1.05, damageMultiplier: 0.86, speedVariance: [0.86, 0.96, 1.06, 1.16, 1.26] }, // ПРОЖОРЕНЬ: плотный рой сыплется сверху
+		enem2: { combatIdentity: "Панцирь и укус", combatTrick: "двойной выпад иногда получает третий укус с другой стороны", signatureEvery: 4, movementStyle: 'drift', cadence: 0.90, telegraphMs: 780, speedMultiplier: 0.98, damageMultiplier: 1.02, speedVariance: [0.84, 0.94, 1.04, 1.14, 1.24] }, // ЛАТНИК: встречные зигзаг-тараны панциря
+		enem3: { combatIdentity: "Нора и запасной выход", combatTrick: "медленный первый снаряд остаётся фоном для более срочного второго", signatureEvery: 4, movementStyle: 'weave',   cadence: 0.78, telegraphMs: 600, speedMultiplier: 1.18, damageMultiplier: 0.64, speedVariance: [0.90, 1.02, 1.14, 1.26, 1.38] }, // ЗУБОСКАЛ: нервные вылазки из нор по углам
+		enem4: { combatIdentity: "Кража зерна с разворотом", combatTrick: "показывает боковой замах, но заканчивает серединой; позднее конец возвращается на край", signatureEvery: 4, movementStyle: 'accelerate',      cadence: 0.88, telegraphMs: 730, speedMultiplier: 1.06, damageMultiplier: 0.88, speedVariance: [0.85, 0.95, 1.05, 1.15, 1.25] }, // ХЛЕБОКРАД: горизонтальные пары с одного бока
+		enem5: { combatIdentity: "Голодное схождение", combatTrick: "сводит угрозы с краёв к внутренним полосам, затем размыкает рисунок", signatureEvery: 4, movementStyle: 'lateRush',      cadence: 0.74, telegraphMs: 630, speedMultiplier: 1.12, damageMultiplier: 1.08, speedVariance: [0.82, 0.95, 1.08, 1.21, 1.34] }  // НЕНАСЫТЬ: голоден до всего поля разом — жрёт пространство роем, тараном и вылазками из нор без разбора
 	}
 };
 
@@ -266,66 +271,89 @@ const bossAbilities = [
 	{ boss: 'enem5', type: 'enem55', xPos: 69, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //12
 	{ boss: 'enem5', type: 'enem55', xPos: 89, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //13 конец ряда — рой сожрал всю ширину поля
 	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 28, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 11 } //14 неожиданный удар из центра после прохода
+,
+    // Приёмы из scripts/combat-designs.js; индексы считаются отдельно для каждого босса.
+    {boss: "enem1",type: "enem11",xPos: 12,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 16},
+    {boss: "enem1",type: "enem11",xPos: 26,yPos: 20,customHP: 1,customDamage: 13,customSpeed: 14},
+    {boss: "enem1",type: "enem11",xPos: 76,yPos: 6,customHP: 1,customDamage: 13,customSpeed: 21},
+    {boss: "enem1",type: "enem11",xPos: 12,yPos: 40,customHP: 1,customDamage: 13,customSpeed: 7},
+    {boss: "enem1",type: "enem11",xPos: 12,yPos: 8,customHP: 1,customDamage: 13,customSpeed: 20},
+    {boss: "enem1",type: "enem11",xPos: 88,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 18},
+    {boss: "enem2",type: "enem22",xPos: 82,yPos: 12,customHP: 1,customDamage: 12,customSpeed: 16},
+    {boss: "enem2",type: "enem22",xPos: 70,yPos: 20,customHP: 1,customDamage: 12,customSpeed: 14},
+    {boss: "enem2",type: "enem22",xPos: 16,yPos: 6,customHP: 1,customDamage: 12,customSpeed: 21},
+    {boss: "enem2",type: "enem22",xPos: 82,yPos: 40,customHP: 1,customDamage: 12,customSpeed: 7},
+    {boss: "enem2",type: "enem22",xPos: 82,yPos: 8,customHP: 1,customDamage: 12,customSpeed: 20},
+    {boss: "enem2",type: "enem22",xPos: 28,yPos: 12,customHP: 1,customDamage: 12,customSpeed: 18},
+    {boss: "enem3",type: "enem33",xPos: 20,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 16},
+    {boss: "enem3",type: "enem33",xPos: 78,yPos: 20,customHP: 1,customDamage: 14,customSpeed: 14},
+    {boss: "enem3",type: "enem33",xPos: 34,yPos: 6,customHP: 1,customDamage: 14,customSpeed: 21},
+    {boss: "enem3",type: "enem33",xPos: 20,yPos: 24,customHP: 1,customDamage: 14,customSpeed: 7},
+    {boss: "enem3",type: "enem33",xPos: 20,yPos: 8,customHP: 1,customDamage: 14,customSpeed: 20},
+    {boss: "enem3",type: "enem33",xPos: 66,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 18},
+    {boss: "enem4",type: "enem44",xPos: 14,yPos: 12,customHP: 1,customDamage: 12,customSpeed: 16},
+    {boss: "enem4",type: "enem44",xPos: 32,yPos: 20,customHP: 1,customDamage: 12,customSpeed: 14},
+    {boss: "enem4",type: "enem44",xPos: 84,yPos: 6,customHP: 1,customDamage: 12,customSpeed: 21},
+    {boss: "enem4",type: "enem44",xPos: 14,yPos: 40,customHP: 1,customDamage: 12,customSpeed: 7},
+    {boss: "enem4",type: "enem44",xPos: 14,yPos: 8,customHP: 1,customDamage: 12,customSpeed: 20},
+    {boss: "enem4",type: "enem44",xPos: 46,yPos: 12,customHP: 1,customDamage: 12,customSpeed: 18},
+    {boss: "enem5",type: "enem55",xPos: 88,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 16},
+    {boss: "enem5",type: "enem55",xPos: 70,yPos: 20,customHP: 1,customDamage: 14,customSpeed: 14},
+    {boss: "enem5",type: "enem55",xPos: 12,yPos: 6,customHP: 1,customDamage: 14,customSpeed: 21},
+    {boss: "enem5",type: "enem55",xPos: 88,yPos: 40,customHP: 1,customDamage: 14,customSpeed: 7},
+    {boss: "enem5",type: "enem55",xPos: 88,yPos: 8,customHP: 1,customDamage: 14,customSpeed: 20},
+    {boss: "enem5",type: "enem55",xPos: 32,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 18}
 ];
 
 const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 260, bossDelayAbDop: 4600 }, // рой частый, но телеграф честный
-	{ boss: 'enem2', bossDelayAb: 300, bossDelayAbDop: 5100 }, // тараны, смена ритма
-	{ boss: 'enem3', bossDelayAb: 240, bossDelayAbDop: 4500 }, // нервные вылазки из нор
-	{ boss: 'enem4', bossDelayAb: 290, bossDelayAbDop: 5000 }, // кражи парами, редкий встречный бок
-	{ boss: 'enem5', bossDelayAb: 255, bossDelayAbDop: 4200 }, // финал: плотнее всех, но честный
+	{ boss: 'enem1', bossDelayAb: 260, bossDelayAbDop: 4600, firstWaveDelayMs: 2208 }, // рой частый, но телеграф честный
+	{ boss: 'enem2', bossDelayAb: 300, bossDelayAbDop: 5100, firstWaveDelayMs: 2400 }, // тараны, смена ритма
+	{ boss: 'enem3', bossDelayAb: 240, bossDelayAbDop: 4500, firstWaveDelayMs: 2160 }, // нервные вылазки из нор
+	{ boss: 'enem4', bossDelayAb: 290, bossDelayAbDop: 5000, firstWaveDelayMs: 2400 }, // кражи парами, редкий встречный бок
+	{ boss: 'enem5', bossDelayAb: 255, bossDelayAbDop: 4200, firstWaveDelayMs: 2016 }, // финал: плотнее всех, но честный
 ];
 
 const bossAbilitiesDop = [
-	// Прожорень
-	{ boss: 'enem1', indexAbilities: [0] },
-	{ boss: 'enem1', indexAbilities: [5] },
-	{ boss: 'enem1', indexAbilities: [0, 5] },
-	{ boss: 'enem1', indexAbilities: [1, 2, 3, 4] },
-	{ boss: 'enem1', indexAbilities: [6, 7, 8, 9] },
-	{ boss: 'enem1', indexAbilities: [11, 13, 12] }, // ритмическая: средне → тяжело → средне
-	{ boss: 'enem1', indexAbilities: [0, 1, 2, 3, 4, 5, 10] }, // опасная сигнатурная: полный дождь + резкий центр
-	{ boss: 'enem1', indexAbilities: [13, 10, 14, 15] }, // смешанная поздняя
-
-	// Латник
-	{ boss: 'enem2', indexAbilities: [0] },
-	{ boss: 'enem2', indexAbilities: [1] },
-	{ boss: 'enem2', indexAbilities: [0, 1] },
-	{ boss: 'enem2', indexAbilities: [2, 3] },
-	{ boss: 'enem2', indexAbilities: [4, 5] },
-	{ boss: 'enem2', indexAbilities: [11, 13, 12] }, // ритмическая
-	{ boss: 'enem2', indexAbilities: [0, 2, 4, 6, 8, 10] }, // опасная сигнатурная: нарастающий зигзаг
-	{ boss: 'enem2', indexAbilities: [13, 10, 14, 15] }, // смешанная поздняя
-
-	// Зубоскал
-	{ boss: 'enem3', indexAbilities: [0] },
-	{ boss: 'enem3', indexAbilities: [1] },
-	{ boss: 'enem3', indexAbilities: [0, 1] },
-	{ boss: 'enem3', indexAbilities: [6, 7] },
-	{ boss: 'enem3', indexAbilities: [2, 3, 10, 11] },
-	{ boss: 'enem3', indexAbilities: [4, 12, 5] }, // ритмическая
-	{ boss: 'enem3', indexAbilities: [0, 2, 4, 8, 13, 15] }, // опасная сигнатурная: смешение углов
-	{ boss: 'enem3', indexAbilities: [1, 3, 9, 14] }, // смешанная поздняя
-
-	// Хлебокрад
-	{ boss: 'enem4', indexAbilities: [0] },
-	{ boss: 'enem4', indexAbilities: [6] },
-	{ boss: 'enem4', indexAbilities: [0, 6] },
-	{ boss: 'enem4', indexAbilities: [1, 2, 3] },
-	{ boss: 'enem4', indexAbilities: [9, 10, 11] },
-	{ boss: 'enem4', indexAbilities: [4, 12, 5] }, // ритмическая
-	{ boss: 'enem4', indexAbilities: [0, 1, 2, 3, 4, 5] }, // опасная сигнатурная: полный проход слева
-	{ boss: 'enem4', indexAbilities: [8, 15, 13] }, // смешанная поздняя: редкий встречный бок
-
-	// Ненасыть — смешивает почерк всех четырёх предыдущих боссов уровня
-	{ boss: 'enem5', indexAbilities: [0] },
-	{ boss: 'enem5', indexAbilities: [3] },
-	{ boss: 'enem5', indexAbilities: [0, 3] },
-	{ boss: 'enem5', indexAbilities: [1, 2] },
-	{ boss: 'enem5', indexAbilities: [4, 5] },
-	{ boss: 'enem5', indexAbilities: [7, 8, 6] }, // ритмическая
-	{ boss: 'enem5', indexAbilities: [9, 10, 11, 12, 13, 14] }, // сигнатура: полный проход стены → удар из центра
-	{ boss: 'enem5', indexAbilities: [0, 4, 7, 9, 14] }, // смешанная поздняя: мотивы всех четырёх боссов уровня
+    {boss: "enem1",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem1",indexAbilities: [5]},
+    {boss: "enem1",indexAbilities: [0,5]},
+    {boss: "enem1",indexAbilities: [1,2,3,4]},
+    {boss: "enem1",indexAbilities: [6,7,8,9]},
+    {boss: "enem1",indexAbilities: [16,20,18,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Два всплеска роя — знакомство",openingOrder: 1,shotGapsMs: [360,900,360]},
+    {boss: "enem1",indexAbilities: [16,20,21],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Два всплеска роя — иной конец",shotGapsMs: [360,900,360]},
+    {boss: "enem1",indexAbilities: [18,21,16,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Два всплеска роя — завершение",shotGapsMs: [360,900,360]},
+    {boss: "enem2",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem2",indexAbilities: [1]},
+    {boss: "enem2",indexAbilities: [0,1]},
+    {boss: "enem2",indexAbilities: [2,3]},
+    {boss: "enem2",indexAbilities: [4,5]},
+    {boss: "enem2",indexAbilities: [16,20],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Панцирь и укус — знакомство",openingOrder: 1},
+    {boss: "enem2",indexAbilities: [16,20,18],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Панцирь и укус — иной конец"},
+    {boss: "enem2",indexAbilities: [21,17,21,18],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Панцирь и укус — завершение"},
+    {boss: "enem3",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem3",indexAbilities: [1]},
+    {boss: "enem3",indexAbilities: [0,1]},
+    {boss: "enem3",indexAbilities: [6,7]},
+    {boss: "enem3",indexAbilities: [2,3,10,11]},
+    {boss: "enem3",indexAbilities: [19,18],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Нора и запасной выход — знакомство",openingOrder: 1},
+    {boss: "enem3",indexAbilities: [19,18,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Нора и запасной выход — иной конец"},
+    {boss: "enem3",indexAbilities: [19,21,18,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Нора и запасной выход — завершение"},
+    {boss: "enem4",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem4",indexAbilities: [6]},
+    {boss: "enem4",indexAbilities: [0,6]},
+    {boss: "enem4",indexAbilities: [1,2,3]},
+    {boss: "enem4",indexAbilities: [9,10,11]},
+    {boss: "enem4",indexAbilities: [16,17,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Кража зерна с разворотом — знакомство",openingOrder: 1},
+    {boss: "enem4",indexAbilities: [16,17,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Кража зерна с разворотом — иной конец"},
+    {boss: "enem4",indexAbilities: [18,21,17,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Кража зерна с разворотом — завершение"},
+    {boss: "enem5",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem5",indexAbilities: [3]},
+    {boss: "enem5",indexAbilities: [0,3]},
+    {boss: "enem5",indexAbilities: [1,2]},
+    {boss: "enem5",indexAbilities: [4,5]},
+    {boss: "enem5",indexAbilities: [15,17,16,20],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Голодное схождение — знакомство",openingOrder: 1},
+    {boss: "enem5",indexAbilities: [15,17,19],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Голодное схождение — иной конец"},
+    {boss: "enem5",indexAbilities: [16,20,15,17],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Голодное схождение — завершение"}
 ];
 
 // Лорные названия связок. Уровень 19 — вредители урожая: Прожорень (рой саранчи),

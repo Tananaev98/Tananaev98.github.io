@@ -22,6 +22,11 @@ let factorChar = (lvlNumber * 5) / 100;
 // enem5 Червоточец — pause, несёт синхронный рывок (8-sync, кульминация региона),
 //                  финал смешивает почерк четырёх плодов на свой гротескный лад.
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	scaleLongComboDamage: true,
 	scaleShortComboDamage: true,
 	levelCadence: 0.86, damageMultiplier: 1.88, minWaveDelay: 2050, minShotDelay: 142, minTelegraphMs: 535,
@@ -31,11 +36,11 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.70, speed: 1.22, damage: 1.29, telegraphMultiplier: 0.84, surpriseChance: 0.37, maxActiveAttacks: 22 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'drift',      cadence: 1.15, telegraphMs: 980,  speedMultiplier: 0.87, damageMultiplier: 1.18, speedVariance: [0.79, 0.88, 0.98, 1.08, 1.18] }, // Грушак: мягкий тяжёлый бок
-		enem2: { movementStyle: 'weave',      cadence: 1.00, telegraphMs: 820,  speedMultiplier: 0.99, damageMultiplier: 1.00, speedVariance: [0.85, 0.93, 1.02, 1.11, 1.20] }, // Синячок: рваные зигзаги
-		enem3: { movementStyle: 'straight',   cadence: 0.90, telegraphMs: 745,  speedMultiplier: 1.05, damageMultiplier: 0.94, speedVariance: [0.88, 0.97, 1.06, 1.15, 1.24] }, // Троячок: тройные очереди
-		enem4: { movementStyle: 'lateRush',   cadence: 1.02, telegraphMs: 795,  speedMultiplier: 0.95, damageMultiplier: 0.92, speedVariance: [0.86, 0.95, 1.03, 1.11, 1.19] }, // Кисляк: терпит и срывается
-		enem5: { movementStyle: 'pause',      cadence: 0.86, telegraphMs: 690,  speedMultiplier: 1.12, damageMultiplier: 0.82, speedVariance: [0.84, 0.97, 1.10, 1.23, 1.36], minFastSideSwitchMs: 800 } // Червоточец: несёт синхронный рывок (8-sync, кульминация)
+		enem1: { signatureEvery: 4, movementStyle: 'drift',      cadence: 1.15, telegraphMs: 980,  speedMultiplier: 0.87, damageMultiplier: 1.18, speedVariance: [0.79, 0.88, 0.98, 1.08, 1.18] }, // Грушак: мягкий тяжёлый бок
+		enem2: { signatureEvery: 4, movementStyle: 'weave',      cadence: 1.00, telegraphMs: 820,  speedMultiplier: 0.99, damageMultiplier: 1.00, speedVariance: [0.85, 0.93, 1.02, 1.11, 1.20] }, // Синячок: рваные зигзаги
+		enem3: { signatureEvery: 4, movementStyle: 'straight',   cadence: 0.90, telegraphMs: 745,  speedMultiplier: 1.05, damageMultiplier: 0.94, speedVariance: [0.88, 0.97, 1.06, 1.15, 1.24] }, // Троячок: тройные очереди
+		enem4: { signatureEvery: 4, movementStyle: 'lateRush',   cadence: 1.02, telegraphMs: 795,  speedMultiplier: 0.95, damageMultiplier: 0.92, speedVariance: [0.86, 0.95, 1.03, 1.11, 1.19] }, // Кисляк: терпит и срывается
+		enem5: { signatureEvery: 4, movementStyle: 'pause',      cadence: 0.86, telegraphMs: 690,  speedMultiplier: 1.12, damageMultiplier: 0.82, speedVariance: [0.84, 0.97, 1.10, 1.23, 1.36] } // Червоточец: несёт синхронный рывок (8-sync, кульминация)
 	}
 };
 
@@ -184,11 +189,11 @@ const bossAbilities = [
 ];
 
 const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 340, bossDelayAbDop: 5800 }, // мягкий тяжёлый бок
-	{ boss: 'enem2', bossDelayAb: 260, bossDelayAbDop: 4700 }, // рваные зигзаги
-	{ boss: 'enem3', bossDelayAb: 230, bossDelayAbDop: 4200 }, // тройные очереди, самая частая на уровне
-	{ boss: 'enem4', bossDelayAb: 300, bossDelayAbDop: 5300 }, // терпит-терпит
-	{ boss: 'enem5', bossDelayAb: 480, bossDelayAbDop: 7500 }, // кульминация региона — самая долгая пауза во всей области III
+	{ boss: 'enem1', bossDelayAb: 340, bossDelayAbDop: 5800, firstWaveDelayMs: 2400 }, // мягкий тяжёлый бок
+	{ boss: 'enem2', bossDelayAb: 260, bossDelayAbDop: 4700, firstWaveDelayMs: 2256 }, // рваные зигзаги
+	{ boss: 'enem3', bossDelayAb: 230, bossDelayAbDop: 4200, firstWaveDelayMs: 2016 }, // тройные очереди, самая частая на уровне
+	{ boss: 'enem4', bossDelayAb: 300, bossDelayAbDop: 5300, firstWaveDelayMs: 2400 }, // терпит-терпит
+	{ boss: 'enem5', bossDelayAb: 480, bossDelayAbDop: 7500, firstWaveDelayMs: 2400 }, // кульминация региона — самая долгая пауза во всей области III
 ];
 
 const bossAbilitiesDop = [
@@ -199,7 +204,6 @@ const bossAbilitiesDop = [
 	{ boss: 'enem1', indexAbilities: [4, 5, 13] },
 	{ boss: 'enem1', indexAbilities: [0, 1, 2, 3] }, // ритмическая
 	{ boss: 'enem1', indexAbilities: [0, 1, 10, 11] }, // опасная сигнатурная — same-start с [0,1]
-	{ boss: 'enem1', indexAbilities: [0, 1] }, // chunk-break
 	{ boss: 'enem1', indexAbilities: [12, 13, 14, 15] }, // смешанная поздняя
 
 	// Синячок
@@ -209,7 +213,6 @@ const bossAbilitiesDop = [
 	{ boss: 'enem2', indexAbilities: [8, 9, 10, 11] },
 	{ boss: 'enem2', indexAbilities: [0, 1, 8, 9] }, // ритмическая
 	{ boss: 'enem2', indexAbilities: [0, 1, 6, 7] }, // опасная сигнатурная — same-start с [0,1]
-	{ boss: 'enem2', indexAbilities: [0, 1] }, // chunk-break
 	{ boss: 'enem2', indexAbilities: [13, 14, 15, 12] }, // смешанная поздняя
 
 	// Троячок
@@ -219,7 +222,6 @@ const bossAbilitiesDop = [
 	{ boss: 'enem3', indexAbilities: [8, 9, 12, 13] },
 	{ boss: 'enem3', indexAbilities: [0, 1, 2, 3, 4, 5] }, // ритмическая: обе тройки подряд
 	{ boss: 'enem3', indexAbilities: [0, 1, 2, 10, 11] }, // опасная сигнатурная — same-start с тройкой A
-	{ boss: 'enem3', indexAbilities: [0, 1, 2] }, // chunk-break
 	{ boss: 'enem3', indexAbilities: [14, 15, 10, 11] }, // смешанная поздняя
 
 	// Кисляк
@@ -229,7 +231,6 @@ const bossAbilitiesDop = [
 	{ boss: 'enem4', indexAbilities: [10, 11, 13, 14] },
 	{ boss: 'enem4', indexAbilities: [0, 1, 2, 3] }, // ритмическая
 	{ boss: 'enem4', indexAbilities: [0, 1, 6, 7] }, // опасная сигнатурная — same-start с [0,1]
-	{ boss: 'enem4', indexAbilities: [0, 1] }, // chunk-break
 	{ boss: 'enem4', indexAbilities: [12, 13, 14, 15] }, // смешанная поздняя, самый резкий срыв
 
 	// Червоточец — «Тянут-потянут — и выдернули!» (нарастает 2→4→8, кульминация региона)

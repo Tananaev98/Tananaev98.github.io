@@ -7,6 +7,11 @@ let factorChar = (lvlNumber * 5) / 100;
 // земли / финал смешивает почерк всех четверых и впервые перекрывает всю
 // нижнюю полосу разом.
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	levelCadence: 0.84, damageMultiplier: 1.613, minWaveDelay: 2020, minShotDelay: 142, minTelegraphMs: 525,
 	phases: [
 		{ phase: 1, minHp: 0.64, cadence: 1.00, speed: 1.00, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.16, maxActiveAttacks: 16 },
@@ -14,11 +19,11 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.67, speed: 1.22, damage: 1.30, telegraphMultiplier: 0.81, surpriseChance: 0.38, maxActiveAttacks: 21 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'weave',   cadence: 1.05, telegraphMs: 780, speedMultiplier: 0.99, damageMultiplier: 1.11, speedVariance: [0.83, 0.93, 1.03, 1.13, 1.23] }, // ЛЕМЕШОК: низкий забег с одного бока, редкий центр
-		enem2: { movementStyle: 'accelerate',      cadence: 1.20, telegraphMs: 960, speedMultiplier: 0.83, damageMultiplier: 1.16, speedVariance: [0.77, 0.87, 0.97, 1.09, 1.20] }, // ПЛУГАРЬ: давление снизу тяжёлого плуга
-		enem3: { movementStyle: 'pause',   cadence: 1.02, telegraphMs: 810, speedMultiplier: 0.95, damageMultiplier: 0.94, speedVariance: [0.87, 0.94, 1.02, 1.10, 1.18] }, // БОДЕНЬ: редкие удары рогом с долгой паузой
-		enem4: { movementStyle: 'drift', cadence: 0.83, telegraphMs: 640, speedMultiplier: 1.15, damageMultiplier: 0.65, speedVariance: [0.87, 0.98, 1.09, 1.20, 1.31] }, // БОРОЗДЕНЬ: направленный бросок пластов земли
-		enem5: { movementStyle: 'straight',      cadence: 0.72, telegraphMs: 620, speedMultiplier: 1.17, damageMultiplier: 1.10, speedVariance: [0.80, 0.93, 1.06, 1.19, 1.32] }  // МИКУЛА: богатырь-пахарь идёт прямой бороздой через всё поле — без уловок, там, где остальные хитрили
+		enem1: { combatIdentity: "Подрез борозды", combatTrick: "ведёт прицел вдоль прохода, затем возвращает угрозу за спину прохода", signatureEvery: 4, movementStyle: 'weave',   cadence: 1.05, telegraphMs: 780, speedMultiplier: 0.99, damageMultiplier: 1.11, speedVariance: [0.83, 0.93, 1.03, 1.13, 1.23] }, // ЛЕМЕШОК: низкий забег с одного бока, редкий центр
+		enem2: { combatIdentity: "Сошник и отвал", combatTrick: "показывает боковой замах, но заканчивает серединой; позднее конец возвращается на край", signatureEvery: 4, movementStyle: 'accelerate',      cadence: 1.20, telegraphMs: 960, speedMultiplier: 0.83, damageMultiplier: 1.16, speedVariance: [0.77, 0.87, 0.97, 1.09, 1.20] }, // ПЛУГАРЬ: давление снизу тяжёлого плуга
+		enem3: { combatIdentity: "Два рога и копыто", combatTrick: "двойной выпад иногда получает третий укус с другой стороны", signatureEvery: 4, movementStyle: 'pause',   cadence: 1.02, telegraphMs: 810, speedMultiplier: 0.95, damageMultiplier: 0.94, speedVariance: [0.87, 0.94, 1.02, 1.10, 1.18] }, // БОДЕНЬ: редкие удары рогом с долгой паузой
+		enem4: { combatIdentity: "Пласт земли перекрывает проход", combatTrick: "разводит две цели, затем закрывает оставленную между ними полосу", signatureEvery: 4, movementStyle: 'drift', cadence: 0.83, telegraphMs: 640, speedMultiplier: 1.15, damageMultiplier: 0.65, speedVariance: [0.87, 0.98, 1.09, 1.20, 1.31] }, // БОРОЗДЕНЬ: направленный бросок пластов земли
+		enem5: { combatIdentity: "Микулина обратная борозда", combatTrick: "две короткие группы разделены паузой; вторая группа меняет сторону", signatureEvery: 4, movementStyle: 'straight',      cadence: 0.72, telegraphMs: 620, speedMultiplier: 1.17, damageMultiplier: 1.10, speedVariance: [0.80, 0.93, 1.06, 1.19, 1.32] }  // МИКУЛА: богатырь-пахарь идёт прямой бороздой через всё поле — без уловок, там, где остальные хитрили
 	}
 };
 
@@ -266,66 +271,89 @@ const bossAbilities = [
 	{ boss: 'enem5', type: 'enem55', xPos: 69, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //12
 	{ boss: 'enem5', type: 'enem55', xPos: 89, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //13
 	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 28, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 11 } //14
+,
+    // Приёмы из scripts/combat-designs.js; индексы считаются отдельно для каждого босса.
+    {boss: "enem1",type: "enem11",xPos: 14,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 16},
+    {boss: "enem1",type: "enem11",xPos: 33,yPos: 20,customHP: 1,customDamage: 14,customSpeed: 14},
+    {boss: "enem1",type: "enem11",xPos: 58,yPos: 6,customHP: 1,customDamage: 14,customSpeed: 21},
+    {boss: "enem1",type: "enem11",xPos: 14,yPos: 40,customHP: 1,customDamage: 14,customSpeed: 7},
+    {boss: "enem1",type: "enem11",xPos: 14,yPos: 8,customHP: 1,customDamage: 14,customSpeed: 20},
+    {boss: "enem1",type: "enem11",xPos: 82,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 18},
+    {boss: "enem2",type: "enem22",xPos: 84,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 16},
+    {boss: "enem2",type: "enem22",xPos: 67,yPos: 20,customHP: 1,customDamage: 13,customSpeed: 14},
+    {boss: "enem2",type: "enem22",xPos: 16,yPos: 6,customHP: 1,customDamage: 13,customSpeed: 21},
+    {boss: "enem2",type: "enem22",xPos: 84,yPos: 40,customHP: 1,customDamage: 13,customSpeed: 7},
+    {boss: "enem2",type: "enem22",xPos: 84,yPos: 8,customHP: 1,customDamage: 13,customSpeed: 20},
+    {boss: "enem2",type: "enem22",xPos: 53,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 18},
+    {boss: "enem3",type: "enem33",xPos: 20,yPos: 12,customHP: 1,customDamage: 15,customSpeed: 16},
+    {boss: "enem3",type: "enem33",xPos: 29,yPos: 20,customHP: 1,customDamage: 15,customSpeed: 14},
+    {boss: "enem3",type: "enem33",xPos: 78,yPos: 6,customHP: 1,customDamage: 15,customSpeed: 21},
+    {boss: "enem3",type: "enem33",xPos: 20,yPos: 40,customHP: 1,customDamage: 15,customSpeed: 7},
+    {boss: "enem3",type: "enem33",xPos: 20,yPos: 8,customHP: 1,customDamage: 15,customSpeed: 20},
+    {boss: "enem3",type: "enem33",xPos: 87,yPos: 12,customHP: 1,customDamage: 15,customSpeed: 18},
+    {boss: "enem4",type: "enem44",xPos: 12,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 16},
+    {boss: "enem4",type: "enem44",xPos: 48,yPos: 20,customHP: 1,customDamage: 13,customSpeed: 14},
+    {boss: "enem4",type: "enem44",xPos: 86,yPos: 6,customHP: 1,customDamage: 13,customSpeed: 21},
+    {boss: "enem4",type: "enem44",xPos: 12,yPos: 40,customHP: 1,customDamage: 13,customSpeed: 7},
+    {boss: "enem4",type: "enem44",xPos: 12,yPos: 8,customHP: 1,customDamage: 13,customSpeed: 20},
+    {boss: "enem4",type: "enem44",xPos: 48,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 18},
+    {boss: "enem5",type: "enem55",xPos: 24,yPos: 12,customHP: 1,customDamage: 15,customSpeed: 16},
+    {boss: "enem5",type: "enem55",xPos: 34,yPos: 20,customHP: 1,customDamage: 15,customSpeed: 14},
+    {boss: "enem5",type: "enem55",xPos: 72,yPos: 6,customHP: 1,customDamage: 15,customSpeed: 21},
+    {boss: "enem5",type: "enem55",xPos: 24,yPos: 40,customHP: 1,customDamage: 15,customSpeed: 7},
+    {boss: "enem5",type: "enem55",xPos: 24,yPos: 8,customHP: 1,customDamage: 15,customSpeed: 20},
+    {boss: "enem5",type: "enem55",xPos: 88,yPos: 12,customHP: 1,customDamage: 15,customSpeed: 18}
 ];
 
 const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 310, bossDelayAbDop: 5400 }, // забег и долгая пауза перед новым рывком
-	{ boss: 'enem2', bossDelayAb: 450, bossDelayAbDop: 6900 }, // тяжёлое давление снизу, долгая пауза
-	{ boss: 'enem3', bossDelayAb: 460, bossDelayAbDop: 7000 }, // редкие рога, самая долгая пауза
-	{ boss: 'enem4', bossDelayAb: 260, bossDelayAbDop: 4700 }, // направленный бросок, малый урон
-	{ boss: 'enem5', bossDelayAb: 250, bossDelayAbDop: 4200 }, // финал: плотнее всех, но честный
+	{ boss: 'enem1', bossDelayAb: 310, bossDelayAbDop: 4989, firstWaveDelayMs: 2395 }, // забег и долгая пауза перед новым рывком
+	{ boss: 'enem2', bossDelayAb: 450, bossDelayAbDop: 5865, firstWaveDelayMs: 2400 }, // тяжёлое давление снизу, долгая пауза
+	{ boss: 'enem3', bossDelayAb: 460, bossDelayAbDop: 5950, firstWaveDelayMs: 2400 }, // редкие рога, самая долгая пауза
+	{ boss: 'enem4', bossDelayAb: 260, bossDelayAbDop: 5405, firstWaveDelayMs: 2400 }, // направленный бросок, малый урон
+	{ boss: 'enem5', bossDelayAb: 250, bossDelayAbDop: 4830, firstWaveDelayMs: 2318 }, // финал: плотнее всех, но честный
 ];
 
 const bossAbilitiesDop = [
-	// Лемешок
-	{ boss: 'enem1', indexAbilities: [0] },
-	{ boss: 'enem1', indexAbilities: [6] },
-	{ boss: 'enem1', indexAbilities: [0, 6] },
-	{ boss: 'enem1', indexAbilities: [0, 1, 2] },
-	{ boss: 'enem1', indexAbilities: [6, 7, 8] },
-	{ boss: 'enem1', indexAbilities: [12, 14, 15] }, // ритмическая
-	{ boss: 'enem1', indexAbilities: [0, 1, 2, 3, 4, 5] }, // опасная сигнатурная
-	{ boss: 'enem1', indexAbilities: [9, 10, 11, 13] }, // смешанная поздняя
-
-	// Плугарь
-	{ boss: 'enem2', indexAbilities: [0] },
-	{ boss: 'enem2', indexAbilities: [1] },
-	{ boss: 'enem2', indexAbilities: [0, 1] },
-	{ boss: 'enem2', indexAbilities: [2, 3, 4] },
-	{ boss: 'enem2', indexAbilities: [5, 6, 7] },
-	{ boss: 'enem2', indexAbilities: [8, 9, 4] }, // ритмическая
-	{ boss: 'enem2', indexAbilities: [0, 2, 4, 7, 9, 13] }, // опасная сигнатурная
-	{ boss: 'enem2', indexAbilities: [10, 11, 12, 14] }, // смешанная поздняя
-
-	// Бодень
-	{ boss: 'enem3', indexAbilities: [0] },
-	{ boss: 'enem3', indexAbilities: [1] },
-	{ boss: 'enem3', indexAbilities: [0, 1] },
-	{ boss: 'enem3', indexAbilities: [2, 3, 4] },
-	{ boss: 'enem3', indexAbilities: [5, 6, 7] },
-	{ boss: 'enem3', indexAbilities: [13, 11, 14] }, // ритмическая
-	{ boss: 'enem3', indexAbilities: [0, 2, 4, 7, 9, 15] }, // опасная сигнатурная
-	{ boss: 'enem3', indexAbilities: [8, 10, 12] }, // смешанная поздняя
-
-	// Бороздень
-	{ boss: 'enem4', indexAbilities: [0, 1, 2] },
-	{ boss: 'enem4', indexAbilities: [5, 6, 7] },
-	{ boss: 'enem4', indexAbilities: [3, 4] },
-	{ boss: 'enem4', indexAbilities: [8, 9] },
-	{ boss: 'enem4', indexAbilities: [10, 11, 12] },
-	{ boss: 'enem4', indexAbilities: [0, 1, 2, 3, 4] }, // опасная сигнатурная
-	{ boss: 'enem4', indexAbilities: [5, 6, 7, 8, 9] },
-	{ boss: 'enem4', indexAbilities: [13, 14, 15] }, // смешанная поздняя
-
-	// Микула — смешивает почерк всех четырёх предыдущих боссов уровня
-	{ boss: 'enem5', indexAbilities: [0] },
-	{ boss: 'enem5', indexAbilities: [3] },
-	{ boss: 'enem5', indexAbilities: [0, 3] },
-	{ boss: 'enem5', indexAbilities: [1, 2] },
-	{ boss: 'enem5', indexAbilities: [4, 5] },
-	{ boss: 'enem5', indexAbilities: [7, 8, 6] }, // ритмическая
-	{ boss: 'enem5', indexAbilities: [9, 10, 11, 12, 13, 14] }, // сигнатура
-	{ boss: 'enem5', indexAbilities: [0, 4, 7, 9, 14] }, // смешанная поздняя
+    {boss: "enem1",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem1",indexAbilities: [6]},
+    {boss: "enem1",indexAbilities: [0,6]},
+    {boss: "enem1",indexAbilities: [0,1,2]},
+    {boss: "enem1",indexAbilities: [6,7,8]},
+    {boss: "enem1",indexAbilities: [16,17,18],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Подрез борозды — знакомство",openingOrder: 1},
+    {boss: "enem1",indexAbilities: [16,17,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Подрез борозды — иной конец"},
+    {boss: "enem1",indexAbilities: [21,18,17,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Подрез борозды — завершение"},
+    {boss: "enem2",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem2",indexAbilities: [1]},
+    {boss: "enem2",indexAbilities: [0,1]},
+    {boss: "enem2",indexAbilities: [2,3,4]},
+    {boss: "enem2",indexAbilities: [5,6,7]},
+    {boss: "enem2",indexAbilities: [16,17,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Сошник и отвал — знакомство",openingOrder: 1},
+    {boss: "enem2",indexAbilities: [16,17,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Сошник и отвал — иной конец"},
+    {boss: "enem2",indexAbilities: [18,21,17,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Сошник и отвал — завершение"},
+    {boss: "enem3",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem3",indexAbilities: [1]},
+    {boss: "enem3",indexAbilities: [0,1]},
+    {boss: "enem3",indexAbilities: [2,3,4]},
+    {boss: "enem3",indexAbilities: [5,6,7]},
+    {boss: "enem3",indexAbilities: [16,20],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Два рога и копыто — знакомство",openingOrder: 1},
+    {boss: "enem3",indexAbilities: [16,20,18],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Два рога и копыто — иной конец"},
+    {boss: "enem3",indexAbilities: [21,17,21,18],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Два рога и копыто — завершение"},
+    {boss: "enem4",indexAbilities: [0,1,2]},
+    {boss: "enem4",indexAbilities: [5,6,7]},
+    {boss: "enem4",indexAbilities: [3,4],openingOrder: 0},
+    {boss: "enem4",indexAbilities: [8,9]},
+    {boss: "enem4",indexAbilities: [10,11,12]},
+    {boss: "enem4",indexAbilities: [16,18,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Пласт земли перекрывает проход — знакомство",openingOrder: 1},
+    {boss: "enem4",indexAbilities: [16,18,17],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Пласт земли перекрывает проход — иной конец"},
+    {boss: "enem4",indexAbilities: [20,18,21,17],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Пласт земли перекрывает проход — завершение"},
+    {boss: "enem5",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem5",indexAbilities: [3]},
+    {boss: "enem5",indexAbilities: [0,3]},
+    {boss: "enem5",indexAbilities: [1,2]},
+    {boss: "enem5",indexAbilities: [4,5]},
+    {boss: "enem5",indexAbilities: [15,19,17,20],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Микулина обратная борозда — знакомство",openingOrder: 1,shotGapsMs: [360,900,360]},
+    {boss: "enem5",indexAbilities: [15,19,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Микулина обратная борозда — иной конец",shotGapsMs: [360,900,360]},
+    {boss: "enem5",indexAbilities: [17,20,15,19],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Микулина обратная борозда — завершение",shotGapsMs: [360,900,360]}
 ];
 
 // Лорные названия связок. Уровень 22 — пахота: Лемешок (лемех), Плугарь (пахарь),

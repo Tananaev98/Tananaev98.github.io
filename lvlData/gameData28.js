@@ -22,6 +22,11 @@ let factorChar = (lvlNumber * 5) / 100;
 // enem5 Полосатень — accelerate. Арбуз медленно раскатывается, набирая ход к удару —
 //                  финал смешивает четырёх предыдущих по-своему.
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	scaleLongComboDamage: true,
 	scaleShortComboDamage: true,
 	levelCadence: 0.88, damageMultiplier: 1.83, minWaveDelay: 2100, minShotDelay: 146, minTelegraphMs: 545,
@@ -31,11 +36,11 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.72, speed: 1.20, damage: 1.27, telegraphMultiplier: 0.85, surpriseChance: 0.35, maxActiveAttacks: 21 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'lateRush',   cadence: 1.03, telegraphMs: 800, speedMultiplier: 0.94, damageMultiplier: 0.90, speedVariance: [0.86, 0.94, 1.02, 1.10, 1.18] }, // Алевка: спокойный наплыв, поздний рывок
-		enem2: { movementStyle: 'straight',   cadence: 0.94, telegraphMs: 760, speedMultiplier: 1.03, damageMultiplier: 0.98, speedVariance: [0.87, 0.96, 1.05, 1.14, 1.23] }, // Колючница: шипы без трюка, быстрые серии
-		enem3: { movementStyle: 'drift',      cadence: 1.17, telegraphMs: 1000, speedMultiplier: 0.85, damageMultiplier: 1.21, speedVariance: [0.77, 0.86, 0.96, 1.06, 1.16] }, // Гроздяна: тяжёлая гроздь сносится вбок
-		enem4: { movementStyle: 'pause',      cadence: 0.90, telegraphMs: 700, speedMultiplier: 1.10, damageMultiplier: 0.80, speedVariance: [0.85, 0.96, 1.07, 1.18, 1.29], minFastSideSwitchMs: 830 }, // Сеточка: несёт синхронный рывок (7-sync)
-		enem5: { movementStyle: 'accelerate', cadence: 0.87, telegraphMs: 715, speedMultiplier: 1.07, damageMultiplier: 1.11, speedVariance: [0.83, 0.94, 1.05, 1.16, 1.27] }  // Полосатень: медленный раскат, разгон к удару
+		enem1: { combatIdentity: "Ягода срывается с ветки", combatTrick: "двойной выпад иногда получает третий укус с другой стороны", signatureEvery: 4, movementStyle: 'lateRush',   cadence: 1.03, telegraphMs: 800, speedMultiplier: 0.94, damageMultiplier: 0.90, speedVariance: [0.86, 0.94, 1.02, 1.10, 1.18] }, // Алевка: спокойный наплыв, поздний рывок
+		enem2: { combatIdentity: "Шип после ягодки", combatTrick: "медленный первый снаряд остаётся фоном для более срочного второго", signatureEvery: 4, movementStyle: 'straight',   cadence: 0.94, telegraphMs: 760, speedMultiplier: 1.03, damageMultiplier: 0.98, speedVariance: [0.87, 0.96, 1.05, 1.14, 1.23] }, // Колючница: шипы без трюка, быстрые серии
+		enem3: { combatIdentity: "Гроздь рассыпается", combatTrick: "сводит угрозы с краёв к внутренним полосам, затем размыкает рисунок", signatureEvery: 4, movementStyle: 'drift',      cadence: 1.17, telegraphMs: 1000, speedMultiplier: 0.85, damageMultiplier: 1.21, speedVariance: [0.77, 0.86, 0.96, 1.06, 1.16] }, // Гроздяна: тяжёлая гроздь сносится вбок
+		enem4: { combatIdentity: "Сетка кожуры рвётся", combatTrick: "показывает боковой замах, но заканчивает серединой; позднее конец возвращается на край", signatureEvery: 4, movementStyle: 'pause',      cadence: 0.90, telegraphMs: 700, speedMultiplier: 1.10, damageMultiplier: 0.80, speedVariance: [0.85, 0.96, 1.07, 1.18, 1.29] }, // Сеточка: несёт синхронный рывок (7-sync)
+		enem5: { combatIdentity: "Полосатый раскат", combatTrick: "ведёт прицел вдоль прохода, затем возвращает угрозу за спину прохода", signatureEvery: 4, movementStyle: 'accelerate', cadence: 0.87, telegraphMs: 715, speedMultiplier: 1.07, damageMultiplier: 1.11, speedVariance: [0.83, 0.94, 1.05, 1.16, 1.27] }  // Полосатень: медленный раскат, разгон к удару
 	}
 };
 
@@ -181,66 +186,89 @@ const bossAbilities = [
 	{ boss: 'enem5', type: 'enem55', xPos: 6,  yPos: 6,  customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 25 }, //13 самый быстрый — отголосок Колючницы
 	{ boss: 'enem5', type: 'enem55', xPos: 40, yPos: 32, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 7 },  //14 тихая пара — отголосок рывка Сеточки
 	{ boss: 'enem5', type: 'enem55', xPos: 60, yPos: 32, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 7 }   //15 тихая пара — отголосок рывка Сеточки
+,
+    // Приёмы из scripts/combat-designs.js; индексы считаются отдельно для каждого босса.
+    {boss: "enem1",type: "enem11",xPos: 22,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 16},
+    {boss: "enem1",type: "enem11",xPos: 32,yPos: 20,customHP: 1,customDamage: 13,customSpeed: 14},
+    {boss: "enem1",type: "enem11",xPos: 80,yPos: 6,customHP: 1,customDamage: 13,customSpeed: 21},
+    {boss: "enem1",type: "enem11",xPos: 22,yPos: 40,customHP: 1,customDamage: 13,customSpeed: 7},
+    {boss: "enem1",type: "enem11",xPos: 22,yPos: 8,customHP: 1,customDamage: 13,customSpeed: 20},
+    {boss: "enem1",type: "enem11",xPos: 87,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 18},
+    {boss: "enem2",type: "enem22",xPos: 84,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 16},
+    {boss: "enem2",type: "enem22",xPos: 18,yPos: 20,customHP: 1,customDamage: 14,customSpeed: 14},
+    {boss: "enem2",type: "enem22",xPos: 70,yPos: 6,customHP: 1,customDamage: 14,customSpeed: 21},
+    {boss: "enem2",type: "enem22",xPos: 84,yPos: 24,customHP: 1,customDamage: 14,customSpeed: 7},
+    {boss: "enem2",type: "enem22",xPos: 84,yPos: 8,customHP: 1,customDamage: 14,customSpeed: 20},
+    {boss: "enem2",type: "enem22",xPos: 34,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 18},
+    {boss: "enem3",type: "enem33",xPos: 14,yPos: 12,customHP: 1,customDamage: 17,customSpeed: 16},
+    {boss: "enem3",type: "enem33",xPos: 30,yPos: 20,customHP: 1,customDamage: 17,customSpeed: 14},
+    {boss: "enem3",type: "enem33",xPos: 86,yPos: 6,customHP: 1,customDamage: 17,customSpeed: 21},
+    {boss: "enem3",type: "enem33",xPos: 14,yPos: 40,customHP: 1,customDamage: 17,customSpeed: 7},
+    {boss: "enem3",type: "enem33",xPos: 14,yPos: 8,customHP: 1,customDamage: 17,customSpeed: 20},
+    {boss: "enem3",type: "enem33",xPos: 68,yPos: 12,customHP: 1,customDamage: 17,customSpeed: 18},
+    {boss: "enem4",type: "enem44",xPos: 78,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 16},
+    {boss: "enem4",type: "enem44",xPos: 64,yPos: 20,customHP: 1,customDamage: 14,customSpeed: 14},
+    {boss: "enem4",type: "enem44",xPos: 16,yPos: 6,customHP: 1,customDamage: 14,customSpeed: 21},
+    {boss: "enem4",type: "enem44",xPos: 78,yPos: 40,customHP: 1,customDamage: 14,customSpeed: 7},
+    {boss: "enem4",type: "enem44",xPos: 78,yPos: 8,customHP: 1,customDamage: 14,customSpeed: 20},
+    {boss: "enem4",type: "enem44",xPos: 51,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 18},
+    {boss: "enem5",type: "enem55",xPos: 18,yPos: 12,customHP: 1,customDamage: 16,customSpeed: 16},
+    {boss: "enem5",type: "enem55",xPos: 40,yPos: 20,customHP: 1,customDamage: 16,customSpeed: 14},
+    {boss: "enem5",type: "enem55",xPos: 62,yPos: 6,customHP: 1,customDamage: 16,customSpeed: 21},
+    {boss: "enem5",type: "enem55",xPos: 18,yPos: 40,customHP: 1,customDamage: 16,customSpeed: 7},
+    {boss: "enem5",type: "enem55",xPos: 18,yPos: 8,customHP: 1,customDamage: 16,customSpeed: 20},
+    {boss: "enem5",type: "enem55",xPos: 84,yPos: 12,customHP: 1,customDamage: 16,customSpeed: 18}
 ];
 
 const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 320, bossDelayAbDop: 5600 }, // спокойный наплыв
-	{ boss: 'enem2', bossDelayAb: 220, bossDelayAbDop: 4400 }, // быстрые серии шипов
-	{ boss: 'enem3', bossDelayAb: 400, bossDelayAbDop: 6500 }, // тяжёлая гроздь, долгая пауза
-	{ boss: 'enem4', bossDelayAb: 460, bossDelayAbDop: 7100 }, // самая долгая на уровне — «вся деревня собралась»
-	{ boss: 'enem5', bossDelayAb: 250, bossDelayAbDop: 4500 }, // финал плотнее среднего, но честный
+	{ boss: 'enem1', bossDelayAb: 320, bossDelayAbDop: 5600, firstWaveDelayMs: 2400 }, // спокойный наплыв
+	{ boss: 'enem2', bossDelayAb: 220, bossDelayAbDop: 4400, firstWaveDelayMs: 2112 }, // быстрые серии шипов
+	{ boss: 'enem3', bossDelayAb: 400, bossDelayAbDop: 6500, firstWaveDelayMs: 2400 }, // тяжёлая гроздь, долгая пауза
+	{ boss: 'enem4', bossDelayAb: 460, bossDelayAbDop: 7100, firstWaveDelayMs: 2400 }, // самая долгая на уровне — «вся деревня собралась»
+	{ boss: 'enem5', bossDelayAb: 250, bossDelayAbDop: 4500, firstWaveDelayMs: 2160 }, // финал плотнее среднего, но честный
 ];
 
 const bossAbilitiesDop = [
-	// Алевка
-	{ boss: 'enem1', indexAbilities: [0, 1] },
-	{ boss: 'enem1', indexAbilities: [6, 7] },
-	{ boss: 'enem1', indexAbilities: [2, 3, 12] },
-	{ boss: 'enem1', indexAbilities: [10, 11, 13] },
-	{ boss: 'enem1', indexAbilities: [4, 5, 6, 7] }, // ритмическая
-	{ boss: 'enem1', indexAbilities: [0, 1, 8, 9] }, // опасная сигнатурная — same-start с [0,1]
-	{ boss: 'enem1', indexAbilities: [0, 1] }, // chunk-break
-	{ boss: 'enem1', indexAbilities: [12, 13, 14, 15] }, // смешанная поздняя
-
-	// Колючница
-	{ boss: 'enem2', indexAbilities: [0, 1] },
-	{ boss: 'enem2', indexAbilities: [6, 7] },
-	{ boss: 'enem2', indexAbilities: [2, 3, 10] },
-	{ boss: 'enem2', indexAbilities: [4, 5, 11] },
-	{ boss: 'enem2', indexAbilities: [0, 2, 1, 3] }, // ритмическая
-	{ boss: 'enem2', indexAbilities: [0, 1, 8, 9] }, // опасная сигнатурная — same-start с [0,1]
-	{ boss: 'enem2', indexAbilities: [0, 1] }, // chunk-break
-	{ boss: 'enem2', indexAbilities: [13, 14, 15, 12] }, // смешанная поздняя
-
-	// Гроздяна
-	{ boss: 'enem3', indexAbilities: [0, 2] },
-	{ boss: 'enem3', indexAbilities: [4, 5] },
-	{ boss: 'enem3', indexAbilities: [1, 3, 12] },
-	{ boss: 'enem3', indexAbilities: [6, 7, 13] },
-	{ boss: 'enem3', indexAbilities: [0, 2, 4, 5] }, // ритмическая
-	{ boss: 'enem3', indexAbilities: [0, 2, 4, 5, 10, 11] }, // опасная сигнатурная — same-start с ритмической
-	{ boss: 'enem3', indexAbilities: [0, 2, 4] }, // chunk-break
-	{ boss: 'enem3', indexAbilities: [8, 9, 14, 15] }, // смешанная поздняя
-
-	// Сеточка — «вся деревня собралась» (нарастает дольше всех: 2→7 синхронных)
-	{ boss: 'enem4', indexAbilities: [0, 1] }, // Дедка тянет (2-sync)
-	{ boss: 'enem4', indexAbilities: [9] }, // solo — контраст без синхронии
-	{ boss: 'enem4', indexAbilities: [10, 11, 12] },
-	{ boss: 'enem4', indexAbilities: [13, 14, 15] },
-	{ boss: 'enem4', indexAbilities: [0, 1, 10, 11] }, // ритмическая: sync → соло
-	{ boss: 'enem4', indexAbilities: [2, 3, 4, 5, 6, 7, 8] }, // Вся деревня собралась! (7-sync, опасная сигнатурная)
-	{ boss: 'enem4', indexAbilities: [2, 3, 4] }, // chunk-break: обрывается на трети сигнатурной
-	{ boss: 'enem4', indexAbilities: [0, 1, 2, 3, 4, 5, 6, 7, 8] }, // смешанная поздняя: полная цепочка целиком, редчайшая
-
-	// Полосатень
-	{ boss: 'enem5', indexAbilities: [0, 1] },
-	{ boss: 'enem5', indexAbilities: [8, 12] },
-	{ boss: 'enem5', indexAbilities: [2, 3, 4] },
-	{ boss: 'enem5', indexAbilities: [9, 10, 11] },
-	{ boss: 'enem5', indexAbilities: [14, 15, 6] }, // ритмическая — тихий отголосок Сеточки
-	{ boss: 'enem5', indexAbilities: [0, 1, 5, 6, 7] }, // опасная сигнатурная — same-start с [0,1]
-	{ boss: 'enem5', indexAbilities: [0, 1, 5] }, // chunk-break
-	{ boss: 'enem5', indexAbilities: [8, 9, 13, 14, 15] }, // смешанная поздняя
+    {boss: "enem1",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem1",indexAbilities: [6,7]},
+    {boss: "enem1",indexAbilities: [2,3,12]},
+    {boss: "enem1",indexAbilities: [10,11,13]},
+    {boss: "enem1",indexAbilities: [4,5,6,7]},
+    {boss: "enem1",indexAbilities: [16,20],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Ягода срывается с ветки — знакомство",openingOrder: 1},
+    {boss: "enem1",indexAbilities: [16,20,18],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Ягода срывается с ветки — иной конец"},
+    {boss: "enem1",indexAbilities: [21,17,21,18],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Ягода срывается с ветки — завершение"},
+    {boss: "enem2",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem2",indexAbilities: [6,7]},
+    {boss: "enem2",indexAbilities: [2,3,10]},
+    {boss: "enem2",indexAbilities: [4,5,11]},
+    {boss: "enem2",indexAbilities: [0,2,1,3]},
+    {boss: "enem2",indexAbilities: [19,18],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Шип после ягодки — знакомство",openingOrder: 1},
+    {boss: "enem2",indexAbilities: [19,18,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Шип после ягодки — иной конец"},
+    {boss: "enem2",indexAbilities: [19,21,18,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Шип после ягодки — завершение"},
+    {boss: "enem3",indexAbilities: [0,2],openingOrder: 0},
+    {boss: "enem3",indexAbilities: [4,5]},
+    {boss: "enem3",indexAbilities: [1,3,12]},
+    {boss: "enem3",indexAbilities: [6,7,13]},
+    {boss: "enem3",indexAbilities: [0,2,4,5]},
+    {boss: "enem3",indexAbilities: [16,18,17,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Гроздь рассыпается — знакомство",openingOrder: 1},
+    {boss: "enem3",indexAbilities: [16,18,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Гроздь рассыпается — иной конец"},
+    {boss: "enem3",indexAbilities: [17,21,16,18],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Гроздь рассыпается — завершение"},
+    {boss: "enem4",indexAbilities: [0,1]},
+    {boss: "enem4",indexAbilities: [9],openingOrder: 0},
+    {boss: "enem4",indexAbilities: [10,11,12]},
+    {boss: "enem4",indexAbilities: [13,14,15]},
+    {boss: "enem4",indexAbilities: [0,1,10,11]},
+    {boss: "enem4",indexAbilities: [16,17,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Сетка кожуры рвётся — знакомство",openingOrder: 1},
+    {boss: "enem4",indexAbilities: [16,17,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Сетка кожуры рвётся — иной конец"},
+    {boss: "enem4",indexAbilities: [18,21,17,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Сетка кожуры рвётся — завершение"},
+    {boss: "enem5",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem5",indexAbilities: [8,12]},
+    {boss: "enem5",indexAbilities: [2,3,4]},
+    {boss: "enem5",indexAbilities: [9,10,11]},
+    {boss: "enem5",indexAbilities: [14,15,6]},
+    {boss: "enem5",indexAbilities: [16,17,18],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Полосатый раскат — знакомство",openingOrder: 1},
+    {boss: "enem5",indexAbilities: [16,17,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Полосатый раскат — иной конец"},
+    {boss: "enem5",indexAbilities: [21,18,17,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Полосатый раскат — завершение"}
 ];
 
 // Лорные названия связок. Уровень 28 — ягодник и бахча: Алевка (алая ягода), Колючница

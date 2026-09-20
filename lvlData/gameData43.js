@@ -65,6 +65,11 @@
 let lvlNumber = 43;
 
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	scaleLongComboDamage: true,
 	scaleShortComboDamage: true,
 	levelCadence: 1.00,
@@ -79,11 +84,11 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.76, speed: 1.10, damage: 1.14, telegraphMultiplier: 0.90, surpriseChance: 0.20, maxActiveAttacks: 15 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'weave',    cadence: 1.02, telegraphMs: 900,  speedMultiplier: 0.95, damageMultiplier: 0.93, speedVariance: [0.80, 0.90, 1.00, 1.10, 1.18] }, // Чугунец: TWIN_DRIP — симметричные капли-пары одной высоты слева и справа разом
-		enem2: { movementStyle: 'pause',    cadence: 0.95, telegraphMs: 800,  speedMultiplier: 1.02, damageMultiplier: 0.98, speedVariance: [0.88, 0.96, 1.04, 1.12, 1.18] }, // Рогатень: STOP_START_HOOKS — пара зацепов с одного бока, потом неожиданно долгая пауза
-		enem3: { movementStyle: 'straight', cadence: 1.18, telegraphMs: 1060, speedMultiplier: 0.80, damageMultiplier: 1.19, speedVariance: [0.80, 0.88, 0.96, 1.04, 1.12] }, // Липун: CROSSED_DRIP — тесто течёт то высоко слева, то низко справа
-		enem4: { movementStyle: 'wave',     cadence: 0.85, telegraphMs: 680,  speedMultiplier: 1.12, damageMultiplier: 1.03, speedVariance: [0.88, 0.98, 1.08, 1.16, 1.24] }, // Скалкина: ZIGZAG_EDGES — скалка мечется зигзагом от левого края стола к правому, без стены
-		enem5: { movementStyle: 'lateRush', cadence: 0.80, telegraphMs: 740,  speedMultiplier: 1.06, damageMultiplier: 1.12, speedVariance: [0.86, 0.94, 1.03, 1.12, 1.20] }  // Черпак: REVERSE_ECHO — в кульминации повторяет почерк Скалкиной/Липуна/Рогатеня/Чугунца в обратном порядке встречи
+		enem1: { signatureEvery: 4, movementStyle: 'weave',    cadence: 1.02, telegraphMs: 900,  speedMultiplier: 0.95, damageMultiplier: 0.93, speedVariance: [0.80, 0.90, 1.00, 1.10, 1.18] }, // Чугунец: TWIN_DRIP — симметричные капли-пары одной высоты слева и справа разом
+		enem2: { signatureEvery: 4, movementStyle: 'pause',    cadence: 0.95, telegraphMs: 800,  speedMultiplier: 1.02, damageMultiplier: 0.98, speedVariance: [0.88, 0.96, 1.04, 1.12, 1.18] }, // Рогатень: STOP_START_HOOKS — пара зацепов с одного бока, потом неожиданно долгая пауза
+		enem3: { signatureEvery: 4, movementStyle: 'straight', cadence: 1.18, telegraphMs: 1060, speedMultiplier: 0.80, damageMultiplier: 1.19, speedVariance: [0.80, 0.88, 0.96, 1.04, 1.12] }, // Липун: CROSSED_DRIP — тесто течёт то высоко слева, то низко справа
+		enem4: { signatureEvery: 4, movementStyle: 'wave',     cadence: 0.85, telegraphMs: 680,  speedMultiplier: 1.12, damageMultiplier: 1.03, speedVariance: [0.88, 0.98, 1.08, 1.16, 1.24] }, // Скалкина: ZIGZAG_EDGES — скалка мечется зигзагом от левого края стола к правому, без стены
+		enem5: { signatureEvery: 4, movementStyle: 'lateRush', cadence: 0.80, telegraphMs: 740,  speedMultiplier: 1.06, damageMultiplier: 1.12, speedVariance: [0.86, 0.94, 1.03, 1.12, 1.20] }  // Черпак: REVERSE_ECHO — в кульминации повторяет почерк Скалкиной/Липуна/Рогатеня/Чугунца в обратном порядке встречи
 	}
 };
 
@@ -280,16 +285,16 @@ const ENEMY_TYPES = {
 	{ boss: 'enem4', type: 'enem44', xPos: 90, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 13, waveAmplitude: 7,  waveFrequency: 2.0, wavePhase: 0.2 }, //14
 	{ boss: 'enem4', type: 'enem44', xPos: 8,  yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 20, waveAmplitude: 6,  waveFrequency: 2.4, wavePhase: 1.0 }, //15
 	// звенья «атакующей цепи» — рваные нервные скачки xPos.
-	{ boss: 'enem4', type: 'enem44', xPos: 25, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 18 }, //16 цепь-A звено 1 (голова)
-	{ boss: 'enem4', type: 'enem44', xPos: 60, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 15 }, //17 цепь-A звено 2
-	{ boss: 'enem4', type: 'enem44', xPos: 40, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 12 }, //18 цепь-A звено 3
-	{ boss: 'enem4', type: 'enem44', xPos: 75, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 9 },  //19 цепь-A звено 4
-	{ boss: 'enem4', type: 'enem44', xPos: 20, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 18 }, //20 цепь-B звено 1 (голова, длина 6)
-	{ boss: 'enem4', type: 'enem44', xPos: 65, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 16 }, //21 цепь-B звено 2
-	{ boss: 'enem4', type: 'enem44', xPos: 35, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 14 }, //22 цепь-B звено 3
-	{ boss: 'enem4', type: 'enem44', xPos: 80, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 11 }, //23 цепь-B звено 4
-	{ boss: 'enem4', type: 'enem44', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 9 },  //24 цепь-B звено 5
-	{ boss: 'enem4', type: 'enem44', xPos: 70, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 7 },  //25 цепь-B звено 6
+	{ boss: 'enem4', type: 'enem44', xPos: 25, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 18, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //16 цепь-A звено 1 (голова)
+	{ boss: 'enem4', type: 'enem44', xPos: 60, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 15, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //17 цепь-A звено 2
+	{ boss: 'enem4', type: 'enem44', xPos: 40, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 12, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //18 цепь-A звено 3
+	{ boss: 'enem4', type: 'enem44', xPos: 75, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 9, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //19 цепь-A звено 4
+	{ boss: 'enem4', type: 'enem44', xPos: 20, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 18, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //20 цепь-B звено 1 (голова, длина 6)
+	{ boss: 'enem4', type: 'enem44', xPos: 65, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 16, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //21 цепь-B звено 2
+	{ boss: 'enem4', type: 'enem44', xPos: 35, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 14, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //22 цепь-B звено 3
+	{ boss: 'enem4', type: 'enem44', xPos: 80, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 11, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //23 цепь-B звено 4
+	{ boss: 'enem4', type: 'enem44', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 9, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //24 цепь-B звено 5
+	{ boss: 'enem4', type: 'enem44', xPos: 70, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 7, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //25 цепь-B звено 6
 
 	// ===== Черпак: REVERSE_ECHO — обычные серии бьют по своим зонам (края,
 	// низкие фланги), а сигнатурная кульминация проигрывает почерк остальных
@@ -328,11 +333,11 @@ const ENEMY_TYPES = {
 ];
 
  const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 300, bossDelayAbDop: 5600 }, // капает мерно, спокойный ритм знакомства
-	{ boss: 'enem2', bossDelayAb: 260, bossDelayAbDop: 4600 }, // мечется быстрыми парами
-	{ boss: 'enem3', bossDelayAb: 380, bossDelayAbDop: 6600 }, // тяжёлый, самая долгая пауза уровня
-	{ boss: 'enem4', bossDelayAb: 210, bossDelayAbDop: 4000 }, // самый частый и нервный ритм уровня
-	{ boss: 'enem5', bossDelayAb: 250, bossDelayAbDop: 5000 }, // собранный, но не самый частый — финал
+	{ boss: 'enem1', bossDelayAb: 300, bossDelayAbDop: 5600, firstWaveDelayMs: 2400 }, // капает мерно, спокойный ритм знакомства
+	{ boss: 'enem2', bossDelayAb: 260, bossDelayAbDop: 4600, firstWaveDelayMs: 2208 }, // мечется быстрыми парами
+	{ boss: 'enem3', bossDelayAb: 380, bossDelayAbDop: 6600, firstWaveDelayMs: 2400 }, // тяжёлый, самая долгая пауза уровня
+	{ boss: 'enem4', bossDelayAb: 210, bossDelayAbDop: 4000, firstWaveDelayMs: 1920 }, // самый частый и нервный ритм уровня
+	{ boss: 'enem5', bossDelayAb: 250, bossDelayAbDop: 5000, firstWaveDelayMs: 2400 }, // собранный, но не самый частый — финал
  ];
 
  const bossAbilitiesDop = [

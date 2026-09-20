@@ -7,6 +7,11 @@ let factorChar = (lvlNumber * 5) / 100;
 // только из четырёх углов / финал смешивает почерк всех четверых и впервые
 // перекрывает всю нижнюю полосу разом.
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	levelCadence: 0.81, damageMultiplier: 1.568, minWaveDelay: 1980, minShotDelay: 138, minTelegraphMs: 515,
 	phases: [
 		{ phase: 1, minHp: 0.63, cadence: 1.00, speed: 1.00, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.17, maxActiveAttacks: 17 },
@@ -14,11 +19,11 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.65, speed: 1.24, damage: 1.32, telegraphMultiplier: 0.80, surpriseChance: 0.40, maxActiveAttacks: 22 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'lateRush',      cadence: 1.21, telegraphMs: 1000, speedMultiplier: 0.82, damageMultiplier: 1.20, speedVariance: [0.74, 0.84, 0.96, 1.08, 1.20] }, // МЕШКАЧ: редкие тяжёлые удары мешка, долгая пауза
-		enem2: { movementStyle: 'pause',   cadence: 1.03, telegraphMs: 815, speedMultiplier: 0.94, damageMultiplier: 0.93, speedVariance: [0.87, 0.94, 1.02, 1.10, 1.18] }, // ЖЕРНОВЕНЬ: давление снизу катящегося жёрнова
-		enem3: { movementStyle: 'straight',      cadence: 0.91, telegraphMs: 720, speedMultiplier: 1.04, damageMultiplier: 0.92, speedVariance: [0.84, 0.94, 1.04, 1.14, 1.24] }, // МУЧЕНЬ: зигзаг ковша без нижней стены
-		enem4: { movementStyle: 'weave',   cadence: 0.77, telegraphMs: 605, speedMultiplier: 1.21, damageMultiplier: 0.62, speedVariance: [0.92, 1.05, 1.18, 1.31, 1.44] }, // КРЫЛОРЕЗ: щелчки лопастей только из четырёх углов
-		enem5: { movementStyle: 'accelerate', cadence: 0.70, telegraphMs: 600, speedMultiplier: 1.19, damageMultiplier: 1.12, speedVariance: [0.78, 0.91, 1.04, 1.17, 1.30] }  // БЕЛОРУЧКА: разгоняется, только когда деваться некуда — а к финалу собирает жерновой вес в один рывок
+		enem1: { combatIdentity: "Мешок и россыпь", combatTrick: "медленный первый снаряд остаётся фоном для более срочного второго", signatureEvery: 4, movementStyle: 'lateRush',      cadence: 1.21, telegraphMs: 1000, speedMultiplier: 0.82, damageMultiplier: 1.20, speedVariance: [0.74, 0.84, 0.96, 1.08, 1.20] }, // МЕШКАЧ: редкие тяжёлые удары мешка, долгая пауза
+		enem2: { combatIdentity: "Жернов делает второй оборот", combatTrick: "повторяет удар в прежнем секторе вместо ожидаемого чередования", signatureEvery: 4, movementStyle: 'pause',   cadence: 1.03, telegraphMs: 815, speedMultiplier: 0.94, damageMultiplier: 0.93, speedVariance: [0.87, 0.94, 1.02, 1.10, 1.18] }, // ЖЕРНОВЕНЬ: давление снизу катящегося жёрнова
+		enem3: { combatIdentity: "Мука расходится веером", combatTrick: "разводит две цели, затем закрывает оставленную между ними полосу", signatureEvery: 4, movementStyle: 'straight',      cadence: 0.91, telegraphMs: 720, speedMultiplier: 1.04, damageMultiplier: 0.92, speedVariance: [0.84, 0.94, 1.04, 1.14, 1.24] }, // МУЧЕНЬ: зигзаг ковша без нижней стены
+		enem4: { combatIdentity: "Лопасть возвращается", combatTrick: "ведёт прицел вдоль прохода, затем возвращает угрозу за спину прохода", signatureEvery: 4, movementStyle: 'weave',   cadence: 0.77, telegraphMs: 605, speedMultiplier: 1.21, damageMultiplier: 0.62, speedVariance: [0.92, 1.05, 1.18, 1.31, 1.44] }, // КРЫЛОРЕЗ: щелчки лопастей только из четырёх углов
+		enem5: { combatIdentity: "Мельничный подхват", combatTrick: "короткий первый заход продолжается более быстрым довеском с прежнего края", signatureEvery: 4, movementStyle: 'accelerate', cadence: 0.70, telegraphMs: 600, speedMultiplier: 1.19, damageMultiplier: 1.12, speedVariance: [0.78, 0.91, 1.04, 1.17, 1.30] }  // БЕЛОРУЧКА: разгоняется, только когда деваться некуда — а к финалу собирает жерновой вес в один рывок
 	}
 };
 
@@ -266,66 +271,89 @@ const bossAbilities = [
 	{ boss: 'enem5', type: 'enem55', xPos: 69, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //12
 	{ boss: 'enem5', type: 'enem55', xPos: 89, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //13
 	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 28, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 11 } //14
+,
+    // Приёмы из scripts/combat-designs.js; индексы считаются отдельно для каждого босса.
+    {boss: "enem1",type: "enem11",xPos: 22,yPos: 12,customHP: 1,customDamage: 15,customSpeed: 16},
+    {boss: "enem1",type: "enem11",xPos: 82,yPos: 20,customHP: 1,customDamage: 15,customSpeed: 14},
+    {boss: "enem1",type: "enem11",xPos: 36,yPos: 6,customHP: 1,customDamage: 15,customSpeed: 21},
+    {boss: "enem1",type: "enem11",xPos: 22,yPos: 24,customHP: 1,customDamage: 15,customSpeed: 7},
+    {boss: "enem1",type: "enem11",xPos: 22,yPos: 8,customHP: 1,customDamage: 15,customSpeed: 20},
+    {boss: "enem1",type: "enem11",xPos: 66,yPos: 12,customHP: 1,customDamage: 15,customSpeed: 18},
+    {boss: "enem2",type: "enem22",xPos: 80,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 16},
+    {boss: "enem2",type: "enem22",xPos: 87,yPos: 20,customHP: 1,customDamage: 14,customSpeed: 14},
+    {boss: "enem2",type: "enem22",xPos: 16,yPos: 6,customHP: 1,customDamage: 14,customSpeed: 21},
+    {boss: "enem2",type: "enem22",xPos: 80,yPos: 40,customHP: 1,customDamage: 14,customSpeed: 7},
+    {boss: "enem2",type: "enem22",xPos: 80,yPos: 8,customHP: 1,customDamage: 14,customSpeed: 20},
+    {boss: "enem2",type: "enem22",xPos: 30,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 18},
+    {boss: "enem3",type: "enem33",xPos: 18,yPos: 12,customHP: 1,customDamage: 16,customSpeed: 16},
+    {boss: "enem3",type: "enem33",xPos: 52,yPos: 20,customHP: 1,customDamage: 16,customSpeed: 14},
+    {boss: "enem3",type: "enem33",xPos: 84,yPos: 6,customHP: 1,customDamage: 16,customSpeed: 21},
+    {boss: "enem3",type: "enem33",xPos: 18,yPos: 40,customHP: 1,customDamage: 16,customSpeed: 7},
+    {boss: "enem3",type: "enem33",xPos: 18,yPos: 8,customHP: 1,customDamage: 16,customSpeed: 20},
+    {boss: "enem3",type: "enem33",xPos: 52,yPos: 12,customHP: 1,customDamage: 16,customSpeed: 18},
+    {boss: "enem4",type: "enem44",xPos: 88,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 16},
+    {boss: "enem4",type: "enem44",xPos: 70,yPos: 20,customHP: 1,customDamage: 14,customSpeed: 14},
+    {boss: "enem4",type: "enem44",xPos: 42,yPos: 6,customHP: 1,customDamage: 14,customSpeed: 21},
+    {boss: "enem4",type: "enem44",xPos: 88,yPos: 40,customHP: 1,customDamage: 14,customSpeed: 7},
+    {boss: "enem4",type: "enem44",xPos: 88,yPos: 8,customHP: 1,customDamage: 14,customSpeed: 20},
+    {boss: "enem4",type: "enem44",xPos: 14,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 18},
+    {boss: "enem5",type: "enem55",xPos: 24,yPos: 12,customHP: 1,customDamage: 16,customSpeed: 16},
+    {boss: "enem5",type: "enem55",xPos: 32,yPos: 20,customHP: 1,customDamage: 16,customSpeed: 14},
+    {boss: "enem5",type: "enem55",xPos: 78,yPos: 6,customHP: 1,customDamage: 16,customSpeed: 21},
+    {boss: "enem5",type: "enem55",xPos: 24,yPos: 40,customHP: 1,customDamage: 16,customSpeed: 7},
+    {boss: "enem5",type: "enem55",xPos: 24,yPos: 8,customHP: 1,customDamage: 16,customSpeed: 20},
+    {boss: "enem5",type: "enem55",xPos: 86,yPos: 12,customHP: 1,customDamage: 16,customSpeed: 18}
 ];
 
 const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 460, bossDelayAbDop: 7000 }, // редкие тяжёлые удары мешка, самая долгая пауза
-	{ boss: 'enem2', bossDelayAb: 460, bossDelayAbDop: 6800 }, // тяжёлое давление снизу
-	{ boss: 'enem3', bossDelayAb: 320, bossDelayAbDop: 5500 }, // зигзаг ковша, смена ритма
-	{ boss: 'enem4', bossDelayAb: 220, bossDelayAbDop: 4400 }, // нервные щелчки из углов
-	{ boss: 'enem5', bossDelayAb: 245, bossDelayAbDop: 4100 }, // финал: плотнее всех, но честный
+	{ boss: 'enem1', bossDelayAb: 460, bossDelayAbDop: 5950, firstWaveDelayMs: 2400 }, // редкие тяжёлые удары мешка, самая долгая пауза
+	{ boss: 'enem2', bossDelayAb: 460, bossDelayAbDop: 5780, firstWaveDelayMs: 2400 }, // тяжёлое давление снизу
+	{ boss: 'enem3', bossDelayAb: 320, bossDelayAbDop: 5495, firstWaveDelayMs: 2400 }, // зигзаг ковша, смена ритма
+	{ boss: 'enem4', bossDelayAb: 220, bossDelayAbDop: 5060, firstWaveDelayMs: 2400 }, // нервные щелчки из углов
+	{ boss: 'enem5', bossDelayAb: 245, bossDelayAbDop: 4715, firstWaveDelayMs: 2263 }, // финал: плотнее всех, но честный
 ];
 
 const bossAbilitiesDop = [
-	// Мешкач
-	{ boss: 'enem1', indexAbilities: [0] },
-	{ boss: 'enem1', indexAbilities: [1] },
-	{ boss: 'enem1', indexAbilities: [0, 1] },
-	{ boss: 'enem1', indexAbilities: [2, 3, 4] },
-	{ boss: 'enem1', indexAbilities: [5, 6, 7] },
-	{ boss: 'enem1', indexAbilities: [13, 11, 14] }, // ритмическая
-	{ boss: 'enem1', indexAbilities: [0, 2, 4, 7, 9, 15] }, // опасная сигнатурная
-	{ boss: 'enem1', indexAbilities: [8, 10, 12] }, // смешанная поздняя
-
-	// Жерновень
-	{ boss: 'enem2', indexAbilities: [0] },
-	{ boss: 'enem2', indexAbilities: [1] },
-	{ boss: 'enem2', indexAbilities: [0, 1] },
-	{ boss: 'enem2', indexAbilities: [2, 3, 4] },
-	{ boss: 'enem2', indexAbilities: [5, 6, 7] },
-	{ boss: 'enem2', indexAbilities: [8, 9, 4] }, // ритмическая
-	{ boss: 'enem2', indexAbilities: [0, 2, 4, 7, 9, 13] }, // опасная сигнатурная
-	{ boss: 'enem2', indexAbilities: [10, 11, 12, 14] }, // смешанная поздняя
-
-	// Мучень
-	{ boss: 'enem3', indexAbilities: [0] },
-	{ boss: 'enem3', indexAbilities: [1] },
-	{ boss: 'enem3', indexAbilities: [0, 1] },
-	{ boss: 'enem3', indexAbilities: [2, 3, 4] },
-	{ boss: 'enem3', indexAbilities: [6, 7, 8, 9] },
-	{ boss: 'enem3', indexAbilities: [11, 9, 12] }, // ритмическая
-	{ boss: 'enem3', indexAbilities: [0, 2, 4, 6, 8, 10] }, // опасная сигнатурная
-	{ boss: 'enem3', indexAbilities: [13, 10, 14, 15] }, // смешанная поздняя
-
-	// Крылорез
-	{ boss: 'enem4', indexAbilities: [0] },
-	{ boss: 'enem4', indexAbilities: [1] },
-	{ boss: 'enem4', indexAbilities: [0, 1] },
-	{ boss: 'enem4', indexAbilities: [6, 7] },
-	{ boss: 'enem4', indexAbilities: [2, 3, 10, 11] },
-	{ boss: 'enem4', indexAbilities: [4, 12, 5] }, // ритмическая
-	{ boss: 'enem4', indexAbilities: [0, 2, 4, 8, 13, 15] }, // опасная сигнатурная
-	{ boss: 'enem4', indexAbilities: [1, 3, 9, 14] }, // смешанная поздняя
-
-	// Белоручка — смешивает почерк всех четырёх предыдущих боссов уровня
-	{ boss: 'enem5', indexAbilities: [0] },
-	{ boss: 'enem5', indexAbilities: [3] },
-	{ boss: 'enem5', indexAbilities: [0, 3] },
-	{ boss: 'enem5', indexAbilities: [1, 2] },
-	{ boss: 'enem5', indexAbilities: [4, 5] },
-	{ boss: 'enem5', indexAbilities: [7, 8, 6] }, // ритмическая
-	{ boss: 'enem5', indexAbilities: [9, 10, 11, 12, 13, 14] }, // сигнатура
-	{ boss: 'enem5', indexAbilities: [0, 4, 7, 9, 14] }, // смешанная поздняя
+    {boss: "enem1",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem1",indexAbilities: [1]},
+    {boss: "enem1",indexAbilities: [0,1]},
+    {boss: "enem1",indexAbilities: [2,3,4]},
+    {boss: "enem1",indexAbilities: [5,6,7]},
+    {boss: "enem1",indexAbilities: [19,18],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Мешок и россыпь — знакомство",openingOrder: 1},
+    {boss: "enem1",indexAbilities: [19,18,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Мешок и россыпь — иной конец"},
+    {boss: "enem1",indexAbilities: [19,21,18,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Мешок и россыпь — завершение"},
+    {boss: "enem2",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem2",indexAbilities: [1]},
+    {boss: "enem2",indexAbilities: [0,1]},
+    {boss: "enem2",indexAbilities: [2,3,4]},
+    {boss: "enem2",indexAbilities: [5,6,7]},
+    {boss: "enem2",indexAbilities: [16,20,17],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Жернов делает второй оборот — знакомство",openingOrder: 1},
+    {boss: "enem2",indexAbilities: [16,20,18],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Жернов делает второй оборот — иной конец"},
+    {boss: "enem2",indexAbilities: [21,18,21,17],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Жернов делает второй оборот — завершение"},
+    {boss: "enem3",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem3",indexAbilities: [1]},
+    {boss: "enem3",indexAbilities: [0,1]},
+    {boss: "enem3",indexAbilities: [2,3,4]},
+    {boss: "enem3",indexAbilities: [6,7,8,9]},
+    {boss: "enem3",indexAbilities: [16,18,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Мука расходится веером — знакомство",openingOrder: 1},
+    {boss: "enem3",indexAbilities: [16,18,17],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Мука расходится веером — иной конец"},
+    {boss: "enem3",indexAbilities: [20,18,21,17],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Мука расходится веером — завершение"},
+    {boss: "enem4",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem4",indexAbilities: [1]},
+    {boss: "enem4",indexAbilities: [0,1]},
+    {boss: "enem4",indexAbilities: [6,7]},
+    {boss: "enem4",indexAbilities: [2,3,10,11]},
+    {boss: "enem4",indexAbilities: [16,17,18],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Лопасть возвращается — знакомство",openingOrder: 1},
+    {boss: "enem4",indexAbilities: [16,17,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Лопасть возвращается — иной конец"},
+    {boss: "enem4",indexAbilities: [21,18,17,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Лопасть возвращается — завершение"},
+    {boss: "enem5",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem5",indexAbilities: [3]},
+    {boss: "enem5",indexAbilities: [0,3]},
+    {boss: "enem5",indexAbilities: [1,2]},
+    {boss: "enem5",indexAbilities: [4,5]},
+    {boss: "enem5",indexAbilities: [18,19,15],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Мельничный подхват — знакомство",openingOrder: 1},
+    {boss: "enem5",indexAbilities: [18,19,17],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Мельничный подхват — иной конец"},
+    {boss: "enem5",indexAbilities: [20,16,20,17,15],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Мельничный подхват — завершение"}
 ];
 
 // Лорные названия связок. Уровень 24 — мельница: Мешкач (мешок), Жерновень (жёрнов),

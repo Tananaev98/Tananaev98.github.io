@@ -2,6 +2,11 @@ let lvlNumber = 12;
 let factorChar = (lvlNumber * 5) / 100;
 
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	scaleLongComboDamage: true,
 	scaleShortComboDamage: true,
 	levelCadence: 0.80, damageMultiplier: 0.702, minWaveDelay: 2250, minShotDelay: 145, minTelegraphMs: 480,
@@ -11,11 +16,11 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.64, speed: 1.21, damage: 1.25, telegraphMultiplier: 0.84, surpriseChance: 0.32, maxActiveAttacks: 21 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'weave', cadence: 0.96, telegraphMs: 720, speedMultiplier: 1.08, damageMultiplier: 1.06, speedVariance: [0.88, 0.98, 1.08, 1.18, 1.28] }, // PACK_LEFT_THEN_RIGHT: строевой залп
-		enem2: { movementStyle: 'accelerate', cadence: 0.98, telegraphMs: 760, speedMultiplier: 0.94, damageMultiplier: 0.62, speedVariance: [0.82, 0.90, 0.98, 1.06, 1.14] }, // TOP_RAIN: частый, но дробный дождь; не складывать скорость+плотность+урон
-		enem3: { movementStyle: 'lateRush', cadence: 1.18, telegraphMs: 920, speedMultiplier: 0.88, damageMultiplier: 1.30, speedVariance: [0.76, 0.86, 0.96, 1.08, 1.18] }, // HEAVY_MID: замах дубиной
-		enem4: { movementStyle: 'pause', cadence: 0.94, telegraphMs: 700, speedMultiplier: 1.05, damageMultiplier: 0.58, speedVariance: [0.84, 0.92, 1.00, 1.08, 1.16] }, // FAST_ZIG_HIGH: быстрая серия с одной доминирующей стороной
-		enem5: { movementStyle: 'straight', cadence: 0.68, telegraphMs: 600, speedMultiplier: 1.22, damageMultiplier: 1.24, speedVariance: [0.86, 1.00, 1.14, 1.28, 1.40] } // RHYTHM_PULSE: барабанный пульс L/R
+		enem1: { signatureEvery: 4, movementStyle: 'weave', cadence: 0.96, telegraphMs: 720, speedMultiplier: 1.08, damageMultiplier: 1.06, speedVariance: [0.88, 0.98, 1.08, 1.18, 1.28] }, // PACK_LEFT_THEN_RIGHT: строевой залп
+		enem2: { signatureEvery: 4, movementStyle: 'accelerate', cadence: 0.98, telegraphMs: 760, speedMultiplier: 0.94, damageMultiplier: 0.62, speedVariance: [0.82, 0.90, 0.98, 1.06, 1.14] }, // TOP_RAIN: частый, но дробный дождь; не складывать скорость+плотность+урон
+		enem3: { signatureEvery: 4, movementStyle: 'lateRush', cadence: 1.18, telegraphMs: 920, speedMultiplier: 0.88, damageMultiplier: 1.30, speedVariance: [0.76, 0.86, 0.96, 1.08, 1.18] }, // HEAVY_MID: замах дубиной
+		enem4: { signatureEvery: 4, movementStyle: 'pause', cadence: 0.94, telegraphMs: 700, speedMultiplier: 1.05, damageMultiplier: 0.58, speedVariance: [0.84, 0.92, 1.00, 1.08, 1.16] }, // FAST_ZIG_HIGH: быстрая серия с одной доминирующей стороной
+		enem5: { signatureEvery: 4, movementStyle: 'straight', cadence: 0.68, telegraphMs: 600, speedMultiplier: 1.22, damageMultiplier: 1.24, speedVariance: [0.86, 1.00, 1.14, 1.28, 1.40] } // RHYTHM_PULSE: барабанный пульс L/R
 	}
 };
 
@@ -272,11 +277,11 @@ const bossAbilities = [
 
 
 const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 270, bossDelayAbDop: 5600 }, // залп L потом R
-	{ boss: 'enem2', bossDelayAb: 260, bossDelayAbDop: 5400 }, // дождь сверху: время прочитать и расчистить полосу
-	{ boss: 'enem3', bossDelayAb: 320, bossDelayAbDop: 5800 }, // тяжёлые удары, пауза после
-	{ boss: 'enem4', bossDelayAb: 280, bossDelayAbDop: 5200 }, // быстро, но игрок успевает сменить сторону
-	{ boss: 'enem5', bossDelayAb: 210, bossDelayAbDop: 4800 }, // пульс L/R непрерывный
+	{ boss: 'enem1', bossDelayAb: 270, bossDelayAbDop: 5600, firstWaveDelayMs: 2400 }, // залп L потом R
+	{ boss: 'enem2', bossDelayAb: 260, bossDelayAbDop: 5400, firstWaveDelayMs: 2400 }, // дождь сверху: время прочитать и расчистить полосу
+	{ boss: 'enem3', bossDelayAb: 320, bossDelayAbDop: 5800, firstWaveDelayMs: 2400 }, // тяжёлые удары, пауза после
+	{ boss: 'enem4', bossDelayAb: 280, bossDelayAbDop: 5200, firstWaveDelayMs: 2400 }, // быстро, но игрок успевает сменить сторону
+	{ boss: 'enem5', bossDelayAb: 210, bossDelayAbDop: 4800, firstWaveDelayMs: 2304 }, // пульс L/R непрерывный
 ];
 
 // Способности: основной архетип / дно / быстрые / микс (~7 сетов)

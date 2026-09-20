@@ -471,7 +471,7 @@ const LEVEL_READY_THROUGH = 141;
 // память feedback_combo_time_pressure). Ни одно комбо не состоит из двух и
 // более genuinely медленных атак без быстрого элемента. Проверено:
 // node --check, scripts/boss-readability-report.js (весь диапазон прошёл),
-// scratchpad/comboAudit.js (27 комбо, 0 проблем), scratchpad/verifyShapes.js
+// scripts/combo-audit.js (все комбо, все три фазы, 0 проблем), scratchpad/verifyShapes.js
 // (все 10 цепей — заявленная форма и невозрастающая скорость подтверждены
 // программно), 0 дублей UPGRADE_VARIANT_NAMES внутри уровня, 0 дублей
 // dispName со всей кампанией.
@@ -491,8 +491,7 @@ const LEVEL_READY_THROUGH = 141;
 // (пространство пар форм цепи исчерпано) применён с источниками уровней
 // 42-46, сознательно отличными от уровня 71. Раздел 9.1 (давление по
 // времени) проверен для каждого комбо ДО записи. Проверено: node --check,
-// scripts/boss-readability-report.js, scratchpad/comboAudit.js (25 комбо, 0
-// проблем), scratchpad/verifyShapes.js (10 цепей подтверждены программно),
+// scripts/boss-readability-report.js, scripts/combo-audit.js (все комбо, все три фазы, 0 проблем), scratchpad/verifyShapes.js (10 цепей подтверждены программно),
 // 0 дублей UPGRADE_VARIANT_NAMES, 0 дублей dispName, живой запуск в браузере
 // (level.html?level=72) без ошибок консоли.
 // 73 (Свистовые западни) — восьмой уровень области VI: берестяная свистулька
@@ -519,7 +518,7 @@ const LEVEL_READY_THROUGH = 141;
 // фазы, так как сравнивают видимую ширину/частоту колебания ОДНОЙ атаки, а
 // не синхронность между двумя).
 // Проверено: node --check, scripts/boss-readability-report.js,
-// scratchpad/comboAudit.js (25 комбо, 0 проблем), scratchpad/verifyShapes.js
+// scripts/combo-audit.js (все комбо, все три фазы, 0 проблем), scratchpad/verifyShapes.js
 // (10 цепей подтверждены программно), 0 дублей UPGRADE_VARIANT_NAMES, 0
 // дублей dispName, живой запуск в браузере (level.html?level=73) без ошибок
 // консоли.
@@ -535,8 +534,7 @@ const LEVEL_READY_THROUGH = 141;
 // босса; Дуплень демонстрирует, что старт ВЫШЕ порога устраняет видимую
 // «спокойную» фазу целиком. Раздел 13.8 применён с источниками уровней
 // 52-56 (свежие относительно 71-73). Проверено: node --check,
-// scripts/boss-readability-report.js, scratchpad/comboAudit.js (25 комбо, 0
-// проблем), scratchpad/verifyShapes.js (10 цепей подтверждены программно), 0
+// scripts/boss-readability-report.js, scripts/combo-audit.js (все комбо, все три фазы, 0 проблем), scratchpad/verifyShapes.js (10 цепей подтверждены программно), 0
 // дублей UPGRADE_VARIANT_NAMES (после исправления 5 найденных построчной
 // автопроверкой), 0 дублей dispName, живой запуск в браузере
 // (level.html?level=74) без ошибок консоли.

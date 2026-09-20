@@ -72,6 +72,11 @@
 let lvlNumber = 58;
 
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	scaleLongComboDamage: true,
 	scaleShortComboDamage: true,
 	levelCadence: 1.00,
@@ -86,27 +91,27 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.80, speed: 1.12, damage: 1.22, telegraphMultiplier: 0.90, surpriseChance: 0.18, maxActiveAttacks: 14 }
 	],
 	bosses: {
-		enem1: {
+		enem1: { combatIdentity: "Копытца сбиваются с шага", combatTrick: "повторяет удар в прежнем секторе вместо ожидаемого чередования", signatureEvery: 4,
 			// Топотун: CALF_HOP — неуклюжие, но резвые прыжки-топотки на ещё некрепких ногах
 			movementStyle: 'weave', cadence: 1.02, telegraphMs: 900, speedMultiplier: 0.94, damageMultiplier: 0.90,
 			speedVariance: [0.82, 0.92, 1.00, 1.08, 1.16]
 		}, // Топотун: CALF_HOP — неуклюжие, но резвые прыжки-топотки на ещё некрепких ногах
-		enem2: {
+		enem2: { combatIdentity: "Рога и разгон", combatTrick: "короткий первый заход продолжается более быстрым довеском с прежнего края", signatureEvery: 4,
 			// Бодалень: RAM_CHARGE — прямой предсказуемый лобовой таран без единого финта
 			movementStyle: 'straight', cadence: 0.90, telegraphMs: 760, speedMultiplier: 1.06, damageMultiplier: 1.00,
 			speedVariance: [0.86, 0.95, 1.05, 1.14, 1.22]
 		}, // Бодалень: RAM_CHARGE — прямой предсказуемый лобовой таран без единого финта
-		enem3: {
+		enem3: { combatIdentity: "Борода скрывает бодок", combatTrick: "медленный первый снаряд остаётся фоном для более срочного второго", signatureEvery: 4,
 			// Бородань: GOAT_FEINT — хитрое виляние и ложные заходы перед исподтишка-выпадом
 			movementStyle: 'weave', cadence: 1.16, telegraphMs: 1020, speedMultiplier: 0.83, damageMultiplier: 1.17,
 			speedVariance: [0.80, 0.88, 0.96, 1.04, 1.12]
 		}, // Бородань: GOAT_FEINT — хитрое виляние и ложные заходы перед исподтишка-выпадом
-		enem4: {
+		enem4: { combatIdentity: "Клыки разворачивают погоню", combatTrick: "показывает боковой замах, но заканчивает серединой; позднее конец возвращается на край", signatureEvery: 4,
 			// Клычень: BOAR_RAMPAGE — внезапный слепой рывок ярости, крушит всё напролом
 			movementStyle: 'lateRush', cadence: 0.86, telegraphMs: 690, speedMultiplier: 1.13, damageMultiplier: 1.04,
 			speedVariance: [0.88, 0.98, 1.08, 1.18, 1.26]
 		}, // Клычень: BOAR_RAMPAGE — внезапный слепой рывок ярости, крушит всё напролом
-		enem5: {
+		enem5: { combatIdentity: "Бык выходит из кольца", combatTrick: "сводит угрозы с краёв к внутренним полосам, затем размыкает рисунок", signatureEvery: 4,
 			// Кольценос: BULL_UNCHAINED — неудержимо набирает разгон, сорвавшись с кольца контроля
 			movementStyle: 'accelerate', cadence: 0.81, telegraphMs: 970, speedMultiplier: 1.07, damageMultiplier: 1.15,
 			speedVariance: [0.86, 0.94, 1.03, 1.12, 1.20]
@@ -348,76 +353,99 @@ const ENEMY_TYPES = {
 	{ boss: 'enem5', type: 'enem55', xPos: 75, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 9 },  //23 цепь-B звено 4
 	{ boss: 'enem5', type: 'enem55', xPos: 60, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 6 },  //24 цепь-B звено 5
 	{ boss: 'enem5', type: 'enem55', xPos: 40, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //25 цепь-B звено 6
+
+    // Приёмы из scripts/combat-designs.js; индексы считаются отдельно для каждого босса.
+    {boss: "enem1",type: "enem11",xPos: 18,yPos: 12,customHP: 1,customDamage: 20,customSpeed: 16},
+    {boss: "enem1",type: "enem11",xPos: 30,yPos: 20,customHP: 1,customDamage: 20,customSpeed: 14},
+    {boss: "enem1",type: "enem11",xPos: 80,yPos: 6,customHP: 1,customDamage: 20,customSpeed: 21},
+    {boss: "enem1",type: "enem11",xPos: 18,yPos: 40,customHP: 1,customDamage: 20,customSpeed: 7},
+    {boss: "enem1",type: "enem11",xPos: 18,yPos: 8,customHP: 1,customDamage: 20,customSpeed: 20},
+    {boss: "enem1",type: "enem11",xPos: 88,yPos: 12,customHP: 1,customDamage: 20,customSpeed: 18},
+    {boss: "enem2",type: "enem22",xPos: 82,yPos: 12,customHP: 1,customDamage: 22,customSpeed: 16},
+    {boss: "enem2",type: "enem22",xPos: 74,yPos: 20,customHP: 1,customDamage: 22,customSpeed: 14},
+    {boss: "enem2",type: "enem22",xPos: 16,yPos: 6,customHP: 1,customDamage: 22,customSpeed: 21},
+    {boss: "enem2",type: "enem22",xPos: 82,yPos: 40,customHP: 1,customDamage: 22,customSpeed: 7},
+    {boss: "enem2",type: "enem22",xPos: 82,yPos: 8,customHP: 1,customDamage: 22,customSpeed: 20},
+    {boss: "enem2",type: "enem22",xPos: 32,yPos: 12,customHP: 1,customDamage: 22,customSpeed: 18},
+    {boss: "enem3",type: "enem33",xPos: 24,yPos: 12,customHP: 1,customDamage: 24,customSpeed: 16},
+    {boss: "enem3",type: "enem33",xPos: 84,yPos: 20,customHP: 1,customDamage: 24,customSpeed: 14},
+    {boss: "enem3",type: "enem33",xPos: 40,yPos: 6,customHP: 1,customDamage: 24,customSpeed: 21},
+    {boss: "enem3",type: "enem33",xPos: 24,yPos: 24,customHP: 1,customDamage: 24,customSpeed: 7},
+    {boss: "enem3",type: "enem33",xPos: 24,yPos: 8,customHP: 1,customDamage: 24,customSpeed: 20},
+    {boss: "enem3",type: "enem33",xPos: 68,yPos: 12,customHP: 1,customDamage: 24,customSpeed: 18},
+    {boss: "enem4",type: "enem44",xPos: 86,yPos: 12,customHP: 1,customDamage: 26,customSpeed: 16},
+    {boss: "enem4",type: "enem44",xPos: 66,yPos: 20,customHP: 1,customDamage: 26,customSpeed: 14},
+    {boss: "enem4",type: "enem44",xPos: 14,yPos: 6,customHP: 1,customDamage: 26,customSpeed: 21},
+    {boss: "enem4",type: "enem44",xPos: 86,yPos: 40,customHP: 1,customDamage: 26,customSpeed: 7},
+    {boss: "enem4",type: "enem44",xPos: 86,yPos: 8,customHP: 1,customDamage: 26,customSpeed: 20},
+    {boss: "enem4",type: "enem44",xPos: 52,yPos: 12,customHP: 1,customDamage: 26,customSpeed: 18},
+    {boss: "enem5",type: "enem55",xPos: 12,yPos: 12,customHP: 1,customDamage: 28,customSpeed: 16},
+    {boss: "enem5",type: "enem55",xPos: 28,yPos: 20,customHP: 1,customDamage: 28,customSpeed: 14},
+    {boss: "enem5",type: "enem55",xPos: 86,yPos: 6,customHP: 1,customDamage: 28,customSpeed: 21},
+    {boss: "enem5",type: "enem55",xPos: 12,yPos: 40,customHP: 1,customDamage: 28,customSpeed: 7},
+    {boss: "enem5",type: "enem55",xPos: 12,yPos: 8,customHP: 1,customDamage: 28,customSpeed: 20},
+    {boss: "enem5",type: "enem55",xPos: 68,yPos: 12,customHP: 1,customDamage: 28,customSpeed: 18}
 ];
 
  const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 310, bossDelayAbDop: 5700 }, // резвая, но неуклюжая скачка
-	{ boss: 'enem2', bossDelayAb: 220, bossDelayAbDop: 4200 }, // самый частый — предсказуемые прямые тараны
-	{ boss: 'enem3', bossDelayAb: 415, bossDelayAbDop: 6900 }, // самый долгий отдых — хитрая коза выжидает
-	{ boss: 'enem4', bossDelayAb: 195, bossDelayAbDop: 3500 }, // частые внезапные рывки ярости
-	{ boss: 'enem5', bossDelayAb: 255, bossDelayAbDop: 5100 }, // собранный финал
+	{ boss: 'enem1', bossDelayAb: 310, bossDelayAbDop: 4845, firstWaveDelayMs: 2326 }, // резвая, но неуклюжая скачка
+	{ boss: 'enem2', bossDelayAb: 220, bossDelayAbDop: 4830, firstWaveDelayMs: 2318 }, // самый частый — предсказуемые прямые тараны
+	{ boss: 'enem3', bossDelayAb: 415, bossDelayAbDop: 5865, firstWaveDelayMs: 2400 }, // самый долгий отдых — хитрая коза выжидает
+	{ boss: 'enem4', bossDelayAb: 195, bossDelayAbDop: 4025, firstWaveDelayMs: 1932 }, // частые внезапные рывки ярости
+	{ boss: 'enem5', bossDelayAb: 255, bossDelayAbDop: 5062, firstWaveDelayMs: 2400 }, // собранный финал
  ];
 
  const bossAbilitiesDop = [
-	// Топотун — CALF_HOP
-	{ boss: 'enem1', indexAbilities: [0, 1, 2, 3, 4] },
-	{ boss: 'enem1', indexAbilities: [5, 6] },
-	{ boss: 'enem1', indexAbilities: [7, 8] },
-	{ boss: 'enem1', indexAbilities: [9, 10] },
-	{ boss: 'enem1', indexAbilities: [0, 1, 5] }, // same-start с [0,1], расходится резким прыжком
-	{ boss: 'enem1', indexAbilities: [16, 17, 18, 19], isChain: true }, // ← цепь-A (4)
-	{ boss: 'enem1', indexAbilities: [20, 21, 22, 23, 24], isChain: true }, // ← цепь-B (5)
-	{ boss: 'enem1', indexAbilities: [13, 6, 7] }, // нежданчик: прыжок сразу в полную прыть, без привычного разгона
-	{ boss: 'enem1', indexAbilities: [0, 1, 2, 3, 4, 14] }, // сигнатурная: полный проскок через всё поле разом
-
-	// Бодалень — RAM_CHARGE
-	{ boss: 'enem2', indexAbilities: [0] },
-	{ boss: 'enem2', indexAbilities: [1] },
-	{ boss: 'enem2', indexAbilities: [2] },
-	{ boss: 'enem2', indexAbilities: [3, 4] },
-	{ boss: 'enem2', indexAbilities: [8, 9] },
-	{ boss: 'enem2', indexAbilities: [0, 1] }, // same-start-стиль пара двух одиночных таранов подряд
-	{ boss: 'enem2', indexAbilities: [16, 17, 18], isChain: true }, // ← цепь-A (3)
-	{ boss: 'enem2', indexAbilities: [19, 20, 21, 22], isChain: true }, // ← цепь-B (4)
-	{ boss: 'enem2', indexAbilities: [12, 13] }, // нежданчик: двойной таран с одной стороны подряд
-	{ boss: 'enem2', indexAbilities: [0, 2, 1, 10, 6, 14] }, // сигнатурная: серия таранов по всему полю подряд
-
-	// Бородань — GOAT_FEINT
-	{ boss: 'enem3', indexAbilities: [0, 1, 2] },
-	{ boss: 'enem3', indexAbilities: [3, 4] },
-	{ boss: 'enem3', indexAbilities: [5, 6] },
-	{ boss: 'enem3', indexAbilities: [7, 8] },
-	{ boss: 'enem3', indexAbilities: [9, 10] },
-	{ boss: 'enem3', indexAbilities: [0, 1, 7] }, // same-start с [0,1], расходится дальним выпадом
-	{ boss: 'enem3', indexAbilities: [16, 17, 18, 19], isChain: true }, // ← цепь-A (4)
-	{ boss: 'enem3', indexAbilities: [20, 21, 22, 23, 24], isChain: true }, // ← цепь-B (5)
-	{ boss: 'enem3', indexAbilities: [14] }, // нежданчик: выпад раньше привычного долгого виляния
-	{ boss: 'enem3', indexAbilities: [3, 11, 4, 12] }, // сигнатурная: ложные заходы с обеих сторон разом
-
-	// Клычень — BOAR_RAMPAGE
-	{ boss: 'enem4', indexAbilities: [0, 1] },
-	{ boss: 'enem4', indexAbilities: [2, 3] },
-	{ boss: 'enem4', indexAbilities: [6, 7] },
-	{ boss: 'enem4', indexAbilities: [10, 11] },
-	{ boss: 'enem4', indexAbilities: [9, 10, 11] },
-	{ boss: 'enem4', indexAbilities: [0, 1, 6] }, // same-start с [0,1], расходится дальним рывком
-	{ boss: 'enem4', indexAbilities: [16, 17, 18, 19], isChain: true }, // ← цепь-A (4)
-	{ boss: 'enem4', indexAbilities: [20, 21, 22, 23, 24], isChain: true }, // ← цепь-B (5)
-	{ boss: 'enem4', indexAbilities: [13, 14] }, // нежданчик: рывок разом с обеих сторон без привычного разброса
-	{ boss: 'enem4', indexAbilities: [0, 2, 4, 8, 1, 3, 5, 9] }, // сигнатурная: слепой шквал напролом через всё поле
-
-	// Кольценос — BULL_UNCHAINED, финальный облик
-	{ boss: 'enem5', indexAbilities: [0, 1] },
-	{ boss: 'enem5', indexAbilities: [3, 4] },
-	{ boss: 'enem5', indexAbilities: [5, 6] },
-	{ boss: 'enem5', indexAbilities: [7, 8] },
-	{ boss: 'enem5', indexAbilities: [9, 10, 11] },
-	{ boss: 'enem5', indexAbilities: [0, 1, 3] }, // same-start с [0,1], расходится дальним разгоном
-	{ boss: 'enem5', indexAbilities: [16, 17, 18, 19], isChain: true }, // ← цепь-A (4)
-	{ boss: 'enem5', indexAbilities: [20, 21, 22, 23, 24, 25], isChain: true }, // ← цепь-B (6)
-	{ boss: 'enem5', indexAbilities: [12, 13] }, // нежданчик: разгон без единого мгновения замаха
-	{ boss: 'enem5', indexAbilities: [0, 3, 5, 7, 9, 15] }, // сигнатурная кульминация: круговой снос всего двора разом
- ];
+    {boss: "enem1",indexAbilities: [0,1,2,3,4]},
+    {boss: "enem1",indexAbilities: [5,6],openingOrder: 0},
+    {boss: "enem1",indexAbilities: [7,8]},
+    {boss: "enem1",indexAbilities: [9,10]},
+    {boss: "enem1",indexAbilities: [25,29,26],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Копытца сбиваются с шага — знакомство",openingOrder: 1},
+    {boss: "enem1",indexAbilities: [25,29,27],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Копытца сбиваются с шага — иной конец"},
+    {boss: "enem1",indexAbilities: [30,27,30,26],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Копытца сбиваются с шага — завершение"},
+    {boss: "enem1",indexAbilities: [16,17,18,19],isChain: true},
+    {boss: "enem1",indexAbilities: [20,21,22,23,24],isChain: true},
+    {boss: "enem2",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem2",indexAbilities: [1]},
+    {boss: "enem2",indexAbilities: [2]},
+    {boss: "enem2",indexAbilities: [3,4]},
+    {boss: "enem2",indexAbilities: [8,9]},
+    {boss: "enem2",indexAbilities: [26,27,23],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Рога и разгон — знакомство",openingOrder: 1},
+    {boss: "enem2",indexAbilities: [26,27,25],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Рога и разгон — иной конец"},
+    {boss: "enem2",indexAbilities: [28,24,28,25,23],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Рога и разгон — завершение"},
+    {boss: "enem2",indexAbilities: [16,17,18],isChain: true},
+    {boss: "enem2",indexAbilities: [19,20,21,22],isChain: true},
+    {boss: "enem3",indexAbilities: [0,1,2]},
+    {boss: "enem3",indexAbilities: [3,4],openingOrder: 0},
+    {boss: "enem3",indexAbilities: [5,6]},
+    {boss: "enem3",indexAbilities: [7,8]},
+    {boss: "enem3",indexAbilities: [9,10]},
+    {boss: "enem3",indexAbilities: [28,27],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Борода скрывает бодок — знакомство",openingOrder: 1},
+    {boss: "enem3",indexAbilities: [28,27,29],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Борода скрывает бодок — иной конец"},
+    {boss: "enem3",indexAbilities: [28,30,27,29],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Борода скрывает бодок — завершение"},
+    {boss: "enem3",indexAbilities: [16,17,18,19],isChain: true},
+    {boss: "enem3",indexAbilities: [20,21,22,23,24],isChain: true},
+    {boss: "enem4",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem4",indexAbilities: [2,3]},
+    {boss: "enem4",indexAbilities: [6,7]},
+    {boss: "enem4",indexAbilities: [10,11]},
+    {boss: "enem4",indexAbilities: [9,10,11]},
+    {boss: "enem4",indexAbilities: [25,26,30],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Клыки разворачивают погоню — знакомство",openingOrder: 1},
+    {boss: "enem4",indexAbilities: [25,26,29],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Клыки разворачивают погоню — иной конец"},
+    {boss: "enem4",indexAbilities: [27,30,26,29],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Клыки разворачивают погоню — завершение"},
+    {boss: "enem4",indexAbilities: [16,17,18,19],isChain: true},
+    {boss: "enem4",indexAbilities: [20,21,22,23,24],isChain: true},
+    {boss: "enem5",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem5",indexAbilities: [3,4]},
+    {boss: "enem5",indexAbilities: [5,6]},
+    {boss: "enem5",indexAbilities: [7,8]},
+    {boss: "enem5",indexAbilities: [9,10,11]},
+    {boss: "enem5",indexAbilities: [26,28,27,31],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Бык выходит из кольца — знакомство",openingOrder: 1},
+    {boss: "enem5",indexAbilities: [26,28,30],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Бык выходит из кольца — иной конец"},
+    {boss: "enem5",indexAbilities: [27,31,26,28],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Бык выходит из кольца — завершение"},
+    {boss: "enem5",indexAbilities: [16,17,18,19],isChain: true},
+    {boss: "enem5",indexAbilities: [20,21,22,23,24,25],isChain: true}
+];
 
 // Лорные названия связок временных улучшений — пять разных животных
 // одного скотного двора, словарь каждого строго завязан на его реальное

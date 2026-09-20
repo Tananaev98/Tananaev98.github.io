@@ -1,0 +1,38 @@
+== 8
+старт 7
+it 11 enem5 → 6
+it 71 enem2 → 5
+it 75 enem2 → 4
+it 130 enem4 → 3
+it 147 enem3 → 2
+итог 2
+== 9
+старт 9999
+итог 9999
+== 3
+старт 6
+it 29 enem1 → 5
+it 31 enem1 → 3
+it 43 enem4 → 2
+итог 2
+== 6
+старт 9
+it 12 enem5 → 8
+it 24 enem2 → 7
+it 27 enem1 → 6
+it 50 enem5 → 5
+итог 5
+== 7
+старт 12
+it 17 enem3 → 11
+it 60 enem5 → 10
+итог 10
+== 10
+старт 13
+it 25 enem4 → 12
+it 31 enem2 → 11
+it 103 enem2 → 10
+it 109 enem1 → 9
+it 146 enem5 → 8
+итог 8
+DONE

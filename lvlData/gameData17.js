@@ -6,6 +6,11 @@ let factorChar = (lvlNumber * 5) / 100;
 // давление снизу редкими тяжёлыми ударами / только четыре угла поля / финал смешивает
 // мотивы всех четверых и впервые на уровне закрывает всю нижнюю полосу разом.
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	levelCadence: 0.92, damageMultiplier: 1.960, minWaveDelay: 2150, minShotDelay: 152, minTelegraphMs: 550,
 	phases: [
 		{ phase: 1, minHp: 0.65, cadence: 1.00, speed: 1.00, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.13, maxActiveAttacks: 13 },
@@ -13,11 +18,11 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.72, speed: 1.18, damage: 1.25, telegraphMultiplier: 0.85, surpriseChance: 0.33, maxActiveAttacks: 19 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'weave',    cadence: 1.05, telegraphMs: 900, speedMultiplier: 0.90, damageMultiplier: 0.93, speedVariance: [0.88, 0.95, 1.02, 1.09, 1.16] }, // ПРИТАЙКА: перепёлка выжидает в бороздах, редкие одиночные вылазки
-		enem2: { movementStyle: 'accelerate',    cadence: 0.85, telegraphMs: 720, speedMultiplier: 1.08, damageMultiplier: 0.88, speedVariance: [0.84, 0.94, 1.04, 1.14, 1.24] }, // ЩЕКАН: хомяк волочит мешки колонной с одного бока
-		enem3: { movementStyle: 'lateRush', cadence: 1.25, telegraphMs: 980, speedMultiplier: 0.82, damageMultiplier: 1.15, speedVariance: [0.78, 0.88, 0.98, 1.08, 1.18] }, // СТОЛБИК: суслик держит стойку у норы и бьёт редко, но давит снизу
-		enem4: { movementStyle: 'drift', cadence: 0.75, telegraphMs: 600, speedMultiplier: 1.22, damageMultiplier: 0.62, speedVariance: [0.90, 1.02, 1.14, 1.26, 1.38] }, // ТРЕЩОТНИК: трещотка щёлкает нервно из всех четырёх углов поля
-		enem5: { movementStyle: 'straight',    cadence: 0.72, telegraphMs: 620, speedMultiplier: 1.10, damageMultiplier: 1.05, speedVariance: [0.86, 0.97, 1.09, 1.21, 1.33] }  // ШУРШАЛО: чучело смешивает почерк всех четверых и закрывает зоны одну за другой
+		enem1: { combatIdentity: "Вылазка перепёлки", combatTrick: "медленный первый снаряд остаётся фоном для более срочного второго", signatureEvery: 4, movementStyle: 'weave',    cadence: 1.05, telegraphMs: 900, speedMultiplier: 0.90, damageMultiplier: 0.93, speedVariance: [0.88, 0.95, 1.02, 1.09, 1.16] }, // ПРИТАЙКА: перепёлка выжидает в бороздах, редкие одиночные вылазки
+		enem2: { combatIdentity: "Щёки с зерном", combatTrick: "две короткие группы разделены паузой; вторая группа меняет сторону", signatureEvery: 4, movementStyle: 'accelerate',    cadence: 0.85, telegraphMs: 720, speedMultiplier: 1.08, damageMultiplier: 0.88, speedVariance: [0.84, 0.94, 1.04, 1.14, 1.24] }, // ЩЕКАН: хомяк волочит мешки колонной с одного бока
+		enem3: { combatIdentity: "Выпад из норы", combatTrick: "двойной выпад иногда получает третий укус с другой стороны", signatureEvery: 4, movementStyle: 'lateRush', cadence: 1.25, telegraphMs: 980, speedMultiplier: 0.82, damageMultiplier: 1.15, speedVariance: [0.78, 0.88, 0.98, 1.08, 1.18] }, // СТОЛБИК: суслик держит стойку у норы и бьёт редко, но давит снизу
+		enem4: { combatIdentity: "Треск и обратный щелчок", combatTrick: "повторяет удар в прежнем секторе вместо ожидаемого чередования", signatureEvery: 4, movementStyle: 'drift', cadence: 0.75, telegraphMs: 600, speedMultiplier: 1.22, damageMultiplier: 0.62, speedVariance: [0.90, 1.02, 1.14, 1.26, 1.38] }, // ТРЕЩОТНИК: трещотка щёлкает нервно из всех четырёх углов поля
+		enem5: { combatIdentity: "Соломенный размах", combatTrick: "ведёт прицел вдоль прохода, затем возвращает угрозу за спину прохода", signatureEvery: 4, movementStyle: 'straight',    cadence: 0.72, telegraphMs: 620, speedMultiplier: 1.10, damageMultiplier: 1.05, speedVariance: [0.86, 0.97, 1.09, 1.21, 1.33] }  // ШУРШАЛО: чучело смешивает почерк всех четверых и закрывает зоны одну за другой
 	}
 };
 
@@ -272,66 +277,89 @@ const bossAbilities = [
 	{ boss: 'enem5', type: 'enem55', xPos: 69, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //14
 	{ boss: 'enem5', type: 'enem55', xPos: 89, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //15 конец ряда — вся ширина поля закрыта
 	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 30, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 10 }  //16 неожиданный удар сверху после прохода
+,
+    // Приёмы из scripts/combat-designs.js; индексы считаются отдельно для каждого босса.
+    {boss: "enem1",type: "enem11",xPos: 24,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 16},
+    {boss: "enem1",type: "enem11",xPos: 82,yPos: 20,customHP: 1,customDamage: 13,customSpeed: 14},
+    {boss: "enem1",type: "enem11",xPos: 38,yPos: 6,customHP: 1,customDamage: 13,customSpeed: 21},
+    {boss: "enem1",type: "enem11",xPos: 24,yPos: 24,customHP: 1,customDamage: 13,customSpeed: 7},
+    {boss: "enem1",type: "enem11",xPos: 24,yPos: 8,customHP: 1,customDamage: 13,customSpeed: 20},
+    {boss: "enem1",type: "enem11",xPos: 70,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 18},
+    {boss: "enem2",type: "enem22",xPos: 78,yPos: 12,customHP: 1,customDamage: 11,customSpeed: 16},
+    {boss: "enem2",type: "enem22",xPos: 87,yPos: 20,customHP: 1,customDamage: 11,customSpeed: 14},
+    {boss: "enem2",type: "enem22",xPos: 20,yPos: 6,customHP: 1,customDamage: 11,customSpeed: 21},
+    {boss: "enem2",type: "enem22",xPos: 78,yPos: 40,customHP: 1,customDamage: 11,customSpeed: 7},
+    {boss: "enem2",type: "enem22",xPos: 78,yPos: 8,customHP: 1,customDamage: 11,customSpeed: 20},
+    {boss: "enem2",type: "enem22",xPos: 32,yPos: 12,customHP: 1,customDamage: 11,customSpeed: 18},
+    {boss: "enem3",type: "enem33",xPos: 14,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 16},
+    {boss: "enem3",type: "enem33",xPos: 26,yPos: 20,customHP: 1,customDamage: 13,customSpeed: 14},
+    {boss: "enem3",type: "enem33",xPos: 72,yPos: 6,customHP: 1,customDamage: 13,customSpeed: 21},
+    {boss: "enem3",type: "enem33",xPos: 14,yPos: 40,customHP: 1,customDamage: 13,customSpeed: 7},
+    {boss: "enem3",type: "enem33",xPos: 14,yPos: 8,customHP: 1,customDamage: 13,customSpeed: 20},
+    {boss: "enem3",type: "enem33",xPos: 84,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 18},
+    {boss: "enem4",type: "enem44",xPos: 84,yPos: 12,customHP: 1,customDamage: 12,customSpeed: 16},
+    {boss: "enem4",type: "enem44",xPos: 73,yPos: 20,customHP: 1,customDamage: 12,customSpeed: 14},
+    {boss: "enem4",type: "enem44",xPos: 16,yPos: 6,customHP: 1,customDamage: 12,customSpeed: 21},
+    {boss: "enem4",type: "enem44",xPos: 84,yPos: 40,customHP: 1,customDamage: 12,customSpeed: 7},
+    {boss: "enem4",type: "enem44",xPos: 84,yPos: 8,customHP: 1,customDamage: 12,customSpeed: 20},
+    {boss: "enem4",type: "enem44",xPos: 28,yPos: 12,customHP: 1,customDamage: 12,customSpeed: 18},
+    {boss: "enem5",type: "enem55",xPos: 22,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 16},
+    {boss: "enem5",type: "enem55",xPos: 40,yPos: 20,customHP: 1,customDamage: 13,customSpeed: 14},
+    {boss: "enem5",type: "enem55",xPos: 65,yPos: 6,customHP: 1,customDamage: 13,customSpeed: 21},
+    {boss: "enem5",type: "enem55",xPos: 22,yPos: 40,customHP: 1,customDamage: 13,customSpeed: 7},
+    {boss: "enem5",type: "enem55",xPos: 22,yPos: 8,customHP: 1,customDamage: 13,customSpeed: 20},
+    {boss: "enem5",type: "enem55",xPos: 86,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 18}
 ];
 
 const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 400, bossDelayAbDop: 6400 }, // редкие одиночные вылазки, самая щедрая передышка
-	{ boss: 'enem2', bossDelayAb: 300, bossDelayAbDop: 4700 }, // колонна мешков, смена ритма
-	{ boss: 'enem3', bossDelayAb: 460, bossDelayAbDop: 7000 }, // редкие тяжёлые удары, самая долгая пауза
-	{ boss: 'enem4', bossDelayAb: 240, bossDelayAbDop: 4600 }, // нервные щелчки из углов
-	{ boss: 'enem5', bossDelayAb: 260, bossDelayAbDop: 4300 }, // финал: плотнее всех, но телеграф честный
+	{ boss: 'enem1', bossDelayAb: 400, bossDelayAbDop: 6400, firstWaveDelayMs: 2400 }, // редкие одиночные вылазки, самая щедрая передышка
+	{ boss: 'enem2', bossDelayAb: 300, bossDelayAbDop: 4700, firstWaveDelayMs: 2256 }, // колонна мешков, смена ритма
+	{ boss: 'enem3', bossDelayAb: 460, bossDelayAbDop: 7000, firstWaveDelayMs: 2400 }, // редкие тяжёлые удары, самая долгая пауза
+	{ boss: 'enem4', bossDelayAb: 240, bossDelayAbDop: 4600, firstWaveDelayMs: 2208 }, // нервные щелчки из углов
+	{ boss: 'enem5', bossDelayAb: 260, bossDelayAbDop: 4300, firstWaveDelayMs: 2064 }, // финал: плотнее всех, но телеграф честный
 ];
 
 const bossAbilitiesDop = [
-	// Притайка
-	{ boss: 'enem1', indexAbilities: [0] },
-	{ boss: 'enem1', indexAbilities: [1] },
-	{ boss: 'enem1', indexAbilities: [0, 1] },
-	{ boss: 'enem1', indexAbilities: [2, 3, 4] },
-	{ boss: 'enem1', indexAbilities: [6, 7, 8, 9] },
-	{ boss: 'enem1', indexAbilities: [11, 9, 12] }, // ритмическая: медленно → быстро → медленно
-	{ boss: 'enem1', indexAbilities: [1, 3, 5, 7, 9, 10] }, // опасная сигнатурная: нарастание к резкому финалу
-	{ boss: 'enem1', indexAbilities: [13, 10, 14, 15] }, // смешанная поздняя: тяжёлый центр → быстрый верх
-
-	// Щекан
-	{ boss: 'enem2', indexAbilities: [0] },
-	{ boss: 'enem2', indexAbilities: [6] },
-	{ boss: 'enem2', indexAbilities: [0, 6] },
-	{ boss: 'enem2', indexAbilities: [1, 2, 3] },
-	{ boss: 'enem2', indexAbilities: [9, 10, 11] },
-	{ boss: 'enem2', indexAbilities: [4, 12, 5] }, // ритмическая: средне → медленно → быстро
-	{ boss: 'enem2', indexAbilities: [0, 1, 2, 3, 4, 5] }, // сигнатурная: полный проход колонны снизу вверх
-	{ boss: 'enem2', indexAbilities: [8, 15, 13] }, // смешанная поздняя: редкий встречный бок + быстрые акценты
-
-	// Столбик
-	{ boss: 'enem3', indexAbilities: [0] },
-	{ boss: 'enem3', indexAbilities: [1] },
-	{ boss: 'enem3', indexAbilities: [0, 1] },
-	{ boss: 'enem3', indexAbilities: [2, 3, 4] },
-	{ boss: 'enem3', indexAbilities: [5, 6, 7] },
-	{ boss: 'enem3', indexAbilities: [8, 9, 4] }, // ритмическая: средне → средне → тяжёлый контраст
-	{ boss: 'enem3', indexAbilities: [0, 2, 4, 7, 9, 13] }, // сигнатурная: нарастающая волна снизу к резкому верху
-	{ boss: 'enem3', indexAbilities: [10, 11, 12, 14] }, // смешанная поздняя: подъём + неожиданный быстрый верх
-
-	// Трещотник
-	{ boss: 'enem4', indexAbilities: [0] },
-	{ boss: 'enem4', indexAbilities: [1] },
-	{ boss: 'enem4', indexAbilities: [0, 1] },
-	{ boss: 'enem4', indexAbilities: [6, 7] },
-	{ boss: 'enem4', indexAbilities: [2, 3, 10, 11] },
-	{ boss: 'enem4', indexAbilities: [4, 12, 5] }, // ритмическая: резкий щелчок → пауза-тяжесть → резкий щелчок
-	{ boss: 'enem4', indexAbilities: [0, 2, 4, 8, 13, 15] }, // опасная сигнатурная: смешение всех четырёх углов
-	{ boss: 'enem4', indexAbilities: [1, 3, 9, 14] }, // смешанная поздняя: правый угол пересобран по-новому
-
-	// Шуршало — смешивает почерк всех четверых предыдущих боссов уровня
-	{ boss: 'enem5', indexAbilities: [0] },
-	{ boss: 'enem5', indexAbilities: [7] },
-	{ boss: 'enem5', indexAbilities: [0, 7] },
-	{ boss: 'enem5', indexAbilities: [1, 2, 3, 4] },
-	{ boss: 'enem5', indexAbilities: [5, 6, 7] },
-	{ boss: 'enem5', indexAbilities: [8, 9, 10] }, // ритмическая: нарастающая быстрая тройка
-	{ boss: 'enem5', indexAbilities: [11, 12, 13, 14, 15, 16] }, // сигнатура: полный проход стены → удар сверху
-	{ boss: 'enem5', indexAbilities: [0, 5, 8, 10, 16] }, // смешанная поздняя: мотивы всех четырёх боссов уровня
+    {boss: "enem1",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem1",indexAbilities: [1]},
+    {boss: "enem1",indexAbilities: [0,1]},
+    {boss: "enem1",indexAbilities: [2,3,4]},
+    {boss: "enem1",indexAbilities: [6,7,8,9]},
+    {boss: "enem1",indexAbilities: [19,18],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Вылазка перепёлки — знакомство",openingOrder: 1},
+    {boss: "enem1",indexAbilities: [19,18,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Вылазка перепёлки — иной конец"},
+    {boss: "enem1",indexAbilities: [19,21,18,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Вылазка перепёлки — завершение"},
+    {boss: "enem2",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem2",indexAbilities: [6]},
+    {boss: "enem2",indexAbilities: [0,6]},
+    {boss: "enem2",indexAbilities: [1,2,3]},
+    {boss: "enem2",indexAbilities: [9,10,11]},
+    {boss: "enem2",indexAbilities: [16,20,18,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Щёки с зерном — знакомство",openingOrder: 1,shotGapsMs: [360,900,360]},
+    {boss: "enem2",indexAbilities: [16,20,21],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Щёки с зерном — иной конец",shotGapsMs: [360,900,360]},
+    {boss: "enem2",indexAbilities: [18,21,16,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Щёки с зерном — завершение",shotGapsMs: [360,900,360]},
+    {boss: "enem3",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem3",indexAbilities: [1]},
+    {boss: "enem3",indexAbilities: [0,1]},
+    {boss: "enem3",indexAbilities: [2,3,4]},
+    {boss: "enem3",indexAbilities: [5,6,7]},
+    {boss: "enem3",indexAbilities: [16,20],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Выпад из норы — знакомство",openingOrder: 1},
+    {boss: "enem3",indexAbilities: [16,20,18],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Выпад из норы — иной конец"},
+    {boss: "enem3",indexAbilities: [21,17,21,18],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Выпад из норы — завершение"},
+    {boss: "enem4",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem4",indexAbilities: [1]},
+    {boss: "enem4",indexAbilities: [0,1]},
+    {boss: "enem4",indexAbilities: [6,7]},
+    {boss: "enem4",indexAbilities: [2,3,10,11]},
+    {boss: "enem4",indexAbilities: [16,20,17],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Треск и обратный щелчок — знакомство",openingOrder: 1},
+    {boss: "enem4",indexAbilities: [16,20,18],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Треск и обратный щелчок — иной конец"},
+    {boss: "enem4",indexAbilities: [21,18,21,17],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Треск и обратный щелчок — завершение"},
+    {boss: "enem5",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem5",indexAbilities: [7]},
+    {boss: "enem5",indexAbilities: [0,7]},
+    {boss: "enem5",indexAbilities: [1,2,3,4]},
+    {boss: "enem5",indexAbilities: [5,6,7]},
+    {boss: "enem5",indexAbilities: [17,18,19],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Соломенный размах — знакомство",openingOrder: 1},
+    {boss: "enem5",indexAbilities: [17,18,21],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Соломенный размах — иной конец"},
+    {boss: "enem5",indexAbilities: [22,19,18,21],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Соломенный размах — завершение"}
 ];
 
 // Лорные названия связок. Уровень 17 — полевая живность: Притайка (перепёлка в

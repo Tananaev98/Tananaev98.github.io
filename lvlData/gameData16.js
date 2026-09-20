@@ -4,6 +4,11 @@ let factorChar = (lvlNumber * 5) / 100;
 // Открытие Области II «Золотые поля». Свежий старт региона, поэтому темп чуть
 // мягче финала Смешанного леса, но геометрия и почерк каждого босса — новые.
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	levelCadence: 0.94, damageMultiplier: 1.941, minWaveDelay: 2200, minShotDelay: 155, minTelegraphMs: 560,
 	phases: [
 		{ phase: 1, minHp: 0.66, cadence: 1.00, speed: 1.00, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.12, maxActiveAttacks: 13 },
@@ -11,11 +16,11 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.73, speed: 1.17, damage: 1.24, telegraphMultiplier: 0.86, surpriseChance: 0.32, maxActiveAttacks: 19 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'straight',    cadence: 1.00, telegraphMs: 880, speedMultiplier: 0.95, damageMultiplier: 0.95, speedVariance: [0.86, 0.94, 1.02, 1.10, 1.18] }, // SOWER_STRIDE: сеятель ровным шагом бросает горстями
-		enem2: { movementStyle: 'weave',  cadence: 0.88, telegraphMs: 740, speedMultiplier: 1.10, damageMultiplier: 0.85, speedVariance: [0.88, 0.98, 1.08, 1.18, 1.26] }, // GRAIN_FAN: веерный разброс зерна со сменой ритма
-		enem3: { movementStyle: 'accelerate',       cadence: 1.20, telegraphMs: 980, speedMultiplier: 0.85, damageMultiplier: 1.12, speedVariance: [0.76, 0.86, 0.96, 1.06, 1.16] }, // LARK_STOOP: редкие тяжёлые пикирования жаворонка
-		enem4: { movementStyle: 'pause',    cadence: 0.78, telegraphMs: 620, speedMultiplier: 1.20, damageMultiplier: 0.65, speedVariance: [0.92, 1.02, 1.12, 1.22, 1.30] }, // OVERSEER_URGENCY: нервная скороговорка распорядителя сева
-		enem5: { movementStyle: 'drift',       cadence: 0.75, telegraphMs: 640, speedMultiplier: 1.08, damageMultiplier: 1.06, speedVariance: [0.84, 0.96, 1.08, 1.20, 1.32] }  // HARROW_RECKONING: борона проходит финальным рядом, смешивая почерк всех четверых
+		enem1: { combatIdentity: "Шаг сеятеля", combatTrick: "ведёт прицел вдоль прохода, затем возвращает угрозу за спину прохода", signatureEvery: 4, movementStyle: 'straight',    cadence: 1.00, telegraphMs: 880, speedMultiplier: 0.95, damageMultiplier: 0.95, speedVariance: [0.86, 0.94, 1.02, 1.10, 1.18] }, // SOWER_STRIDE: сеятель ровным шагом бросает горстями
+		enem2: { combatIdentity: "Зёрна из лукошка", combatTrick: "разводит две цели, затем закрывает оставленную между ними полосу", signatureEvery: 4, movementStyle: 'weave',  cadence: 0.88, telegraphMs: 740, speedMultiplier: 1.10, damageMultiplier: 0.85, speedVariance: [0.88, 0.98, 1.08, 1.18, 1.26] }, // GRAIN_FAN: веерный разброс зерна со сменой ритма
+		enem3: { combatIdentity: "Пикирование жаворонка", combatTrick: "короткий первый заход продолжается более быстрым довеском с прежнего края", signatureEvery: 4, movementStyle: 'accelerate',       cadence: 1.20, telegraphMs: 980, speedMultiplier: 0.85, damageMultiplier: 1.12, speedVariance: [0.76, 0.86, 0.96, 1.06, 1.16] }, // LARK_STOOP: редкие тяжёлые пикирования жаворонка
+		enem4: { combatIdentity: "Двойной приказ", combatTrick: "повторяет удар в прежнем секторе вместо ожидаемого чередования", signatureEvery: 4, movementStyle: 'pause',    cadence: 0.78, telegraphMs: 620, speedMultiplier: 1.20, damageMultiplier: 0.65, speedVariance: [0.92, 1.02, 1.12, 1.22, 1.30] }, // OVERSEER_URGENCY: нервная скороговорка распорядителя сева
+		enem5: { combatIdentity: "Зубья бороны", combatTrick: "показывает боковой замах, но заканчивает серединой; позднее конец возвращается на край", signatureEvery: 4, movementStyle: 'drift',       cadence: 0.75, telegraphMs: 640, speedMultiplier: 1.08, damageMultiplier: 1.06, speedVariance: [0.84, 0.96, 1.08, 1.20, 1.32] }  // HARROW_RECKONING: борона проходит финальным рядом, смешивая почерк всех четверых
 	}
 };
 
@@ -271,66 +276,89 @@ const bossAbilities = [
 	{ boss: 'enem5', type: 'enem55', xPos: 69, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //14
 	{ boss: 'enem5', type: 'enem55', xPos: 88, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //15 конец ряда — вся ширина поля вспахана
 	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 30, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 9 }   //16 неожиданный удар сверху после прохода
+,
+    // Приёмы из scripts/combat-designs.js; индексы считаются отдельно для каждого босса.
+    {boss: "enem1",type: "enem11",xPos: 14,yPos: 12,customHP: 1,customDamage: 12,customSpeed: 16},
+    {boss: "enem1",type: "enem11",xPos: 31,yPos: 20,customHP: 1,customDamage: 12,customSpeed: 14},
+    {boss: "enem1",type: "enem11",xPos: 56,yPos: 6,customHP: 1,customDamage: 12,customSpeed: 21},
+    {boss: "enem1",type: "enem11",xPos: 14,yPos: 40,customHP: 1,customDamage: 12,customSpeed: 7},
+    {boss: "enem1",type: "enem11",xPos: 14,yPos: 8,customHP: 1,customDamage: 12,customSpeed: 20},
+    {boss: "enem1",type: "enem11",xPos: 80,yPos: 12,customHP: 1,customDamage: 12,customSpeed: 18},
+    {boss: "enem2",type: "enem22",xPos: 18,yPos: 12,customHP: 1,customDamage: 11,customSpeed: 16},
+    {boss: "enem2",type: "enem22",xPos: 46,yPos: 20,customHP: 1,customDamage: 11,customSpeed: 14},
+    {boss: "enem2",type: "enem22",xPos: 80,yPos: 6,customHP: 1,customDamage: 11,customSpeed: 21},
+    {boss: "enem2",type: "enem22",xPos: 18,yPos: 40,customHP: 1,customDamage: 11,customSpeed: 7},
+    {boss: "enem2",type: "enem22",xPos: 18,yPos: 8,customHP: 1,customDamage: 11,customSpeed: 20},
+    {boss: "enem2",type: "enem22",xPos: 46,yPos: 12,customHP: 1,customDamage: 11,customSpeed: 18},
+    {boss: "enem3",type: "enem33",xPos: 76,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 16},
+    {boss: "enem3",type: "enem33",xPos: 84,yPos: 20,customHP: 1,customDamage: 13,customSpeed: 14},
+    {boss: "enem3",type: "enem33",xPos: 24,yPos: 6,customHP: 1,customDamage: 13,customSpeed: 21},
+    {boss: "enem3",type: "enem33",xPos: 76,yPos: 40,customHP: 1,customDamage: 13,customSpeed: 7},
+    {boss: "enem3",type: "enem33",xPos: 76,yPos: 8,customHP: 1,customDamage: 13,customSpeed: 20},
+    {boss: "enem3",type: "enem33",xPos: 34,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 18},
+    {boss: "enem4",type: "enem44",xPos: 20,yPos: 12,customHP: 1,customDamage: 11,customSpeed: 16},
+    {boss: "enem4",type: "enem44",xPos: 28,yPos: 20,customHP: 1,customDamage: 11,customSpeed: 14},
+    {boss: "enem4",type: "enem44",xPos: 82,yPos: 6,customHP: 1,customDamage: 11,customSpeed: 21},
+    {boss: "enem4",type: "enem44",xPos: 20,yPos: 40,customHP: 1,customDamage: 11,customSpeed: 7},
+    {boss: "enem4",type: "enem44",xPos: 20,yPos: 8,customHP: 1,customDamage: 11,customSpeed: 20},
+    {boss: "enem4",type: "enem44",xPos: 70,yPos: 12,customHP: 1,customDamage: 11,customSpeed: 18},
+    {boss: "enem5",type: "enem55",xPos: 84,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 16},
+    {boss: "enem5",type: "enem55",xPos: 65,yPos: 20,customHP: 1,customDamage: 13,customSpeed: 14},
+    {boss: "enem5",type: "enem55",xPos: 14,yPos: 6,customHP: 1,customDamage: 13,customSpeed: 21},
+    {boss: "enem5",type: "enem55",xPos: 84,yPos: 40,customHP: 1,customDamage: 13,customSpeed: 7},
+    {boss: "enem5",type: "enem55",xPos: 84,yPos: 8,customHP: 1,customDamage: 13,customSpeed: 20},
+    {boss: "enem5",type: "enem55",xPos: 51,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 18}
 ];
 
 const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 380, bossDelayAbDop: 6200 }, // ровный шаг и щедрая передышка
-	{ boss: 'enem2', bossDelayAb: 280, bossDelayAbDop: 5000 }, // быстрый веер со сменой ритма
-	{ boss: 'enem3', bossDelayAb: 440, bossDelayAbDop: 6800 }, // редкие тяжёлые пикирования, долгая пауза
-	{ boss: 'enem4', bossDelayAb: 250, bossDelayAbDop: 4800 }, // нервные быстрые броски
-	{ boss: 'enem5', bossDelayAb: 270, bossDelayAbDop: 4400 }, // финал: плотнее, но телеграф честный
+	{ boss: 'enem1', bossDelayAb: 380, bossDelayAbDop: 6200, firstWaveDelayMs: 2400 }, // ровный шаг и щедрая передышка
+	{ boss: 'enem2', bossDelayAb: 280, bossDelayAbDop: 5000, firstWaveDelayMs: 2400 }, // быстрый веер со сменой ритма
+	{ boss: 'enem3', bossDelayAb: 440, bossDelayAbDop: 6800, firstWaveDelayMs: 2400 }, // редкие тяжёлые пикирования, долгая пауза
+	{ boss: 'enem4', bossDelayAb: 250, bossDelayAbDop: 4800, firstWaveDelayMs: 2304 }, // нервные быстрые броски
+	{ boss: 'enem5', bossDelayAb: 270, bossDelayAbDop: 4400, firstWaveDelayMs: 2112 }, // финал: плотнее, но телеграф честный
 ];
 
 const bossAbilitiesDop = [
-	// Босовик — SOWER_STRIDE
-	{ boss: 'enem1', indexAbilities: [0] },
-	{ boss: 'enem1', indexAbilities: [1] },
-	{ boss: 'enem1', indexAbilities: [0, 1] },
-	{ boss: 'enem1', indexAbilities: [2, 3, 4] },
-	{ boss: 'enem1', indexAbilities: [6, 7, 8, 9] },
-	{ boss: 'enem1', indexAbilities: [11, 12] }, // бросок по краям с паузой
-	{ boss: 'enem1', indexAbilities: [10, 13, 14] }, // честный поворот: центр → редкий резкий бросок
-	{ boss: 'enem1', indexAbilities: [0, 2, 4, 6, 8, 10, 15] }, // долгий проход поля, добивает полная горсть
-
-	// Сеюшка — GRAIN_FAN
-	{ boss: 'enem2', indexAbilities: [0] },
-	{ boss: 'enem2', indexAbilities: [4] },
-	{ boss: 'enem2', indexAbilities: [0, 4] },
-	{ boss: 'enem2', indexAbilities: [1, 2, 3] },
-	{ boss: 'enem2', indexAbilities: [9, 10, 11] },
-	{ boss: 'enem2', indexAbilities: [12, 13] },
-	{ boss: 'enem2', indexAbilities: [0, 1, 2, 3, 4, 14] }, // полный веер → самый быстрый бросок
-	{ boss: 'enem2', indexAbilities: [5, 6, 7, 8, 15] }, // боковой снос → неожиданный тяжёлый в центре
-
-	// Звонец — LARK_STOOP
-	{ boss: 'enem3', indexAbilities: [0] },
-	{ boss: 'enem3', indexAbilities: [1] },
-	{ boss: 'enem3', indexAbilities: [0, 1] },
-	{ boss: 'enem3', indexAbilities: [2, 3, 4] },
-	{ boss: 'enem3', indexAbilities: [5, 6, 7] },
-	{ boss: 'enem3', indexAbilities: [13, 14] }, // два самых медленных тяжёлых пике, долгая пауза между
-	{ boss: 'enem3', indexAbilities: [8, 9, 10, 11, 12] }, // нарастающая дуга к быстрому финалу
-	{ boss: 'enem3', indexAbilities: [0, 4, 1, 15] }, // знакомые пике + удар после долгой паузы
-
-	// Дед-Всевсей — OVERSEER_URGENCY
-	{ boss: 'enem4', indexAbilities: [0] },
-	{ boss: 'enem4', indexAbilities: [1] },
-	{ boss: 'enem4', indexAbilities: [0, 1] },
-	{ boss: 'enem4', indexAbilities: [4, 5, 6] },
-	{ boss: 'enem4', indexAbilities: [7, 8, 9, 10] },
-	{ boss: 'enem4', indexAbilities: [11, 12, 13] }, // редкие медленные для контраста ритма
-	{ boss: 'enem4', indexAbilities: [0, 1, 2, 3, 14] }, // быстрый залп → самый быстрый рывок
-	{ boss: 'enem4', indexAbilities: [6, 9, 10, 15] }, // центральные броски + обманный средний
-
-	// Зубец — HARROW_RECKONING. Смешивает почерк четырёх предыдущих боссов уровня.
-	{ boss: 'enem5', indexAbilities: [0] },
-	{ boss: 'enem5', indexAbilities: [7] },
-	{ boss: 'enem5', indexAbilities: [0, 7] },
-	{ boss: 'enem5', indexAbilities: [1, 2, 3, 4] },
-	{ boss: 'enem5', indexAbilities: [5, 6, 7] },
-	{ boss: 'enem5', indexAbilities: [8, 9, 10] }, // быстрое трио
-	{ boss: 'enem5', indexAbilities: [11, 12, 13, 14, 15, 10] }, // сигнатура: полный проход бороны → внезапный удар сверху
-	{ boss: 'enem5', indexAbilities: [0, 5, 8, 10, 16] }, // смешение: вход → рост → трио → неожиданный удар
+    {boss: "enem1",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem1",indexAbilities: [1]},
+    {boss: "enem1",indexAbilities: [0,1]},
+    {boss: "enem1",indexAbilities: [2,3,4]},
+    {boss: "enem1",indexAbilities: [6,7,8,9]},
+    {boss: "enem1",indexAbilities: [16,17,18],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Шаг сеятеля — знакомство",openingOrder: 1},
+    {boss: "enem1",indexAbilities: [16,17,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Шаг сеятеля — иной конец"},
+    {boss: "enem1",indexAbilities: [21,18,17,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Шаг сеятеля — завершение"},
+    {boss: "enem2",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem2",indexAbilities: [4]},
+    {boss: "enem2",indexAbilities: [0,4]},
+    {boss: "enem2",indexAbilities: [1,2,3]},
+    {boss: "enem2",indexAbilities: [9,10,11]},
+    {boss: "enem2",indexAbilities: [16,18,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Зёрна из лукошка — знакомство",openingOrder: 1},
+    {boss: "enem2",indexAbilities: [16,18,17],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Зёрна из лукошка — иной конец"},
+    {boss: "enem2",indexAbilities: [20,18,21,17],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Зёрна из лукошка — завершение"},
+    {boss: "enem3",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem3",indexAbilities: [1]},
+    {boss: "enem3",indexAbilities: [0,1]},
+    {boss: "enem3",indexAbilities: [2,3,4]},
+    {boss: "enem3",indexAbilities: [5,6,7]},
+    {boss: "enem3",indexAbilities: [19,20,16],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Пикирование жаворонка — знакомство",openingOrder: 1},
+    {boss: "enem3",indexAbilities: [19,20,18],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Пикирование жаворонка — иной конец"},
+    {boss: "enem3",indexAbilities: [21,17,21,18,16],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Пикирование жаворонка — завершение"},
+    {boss: "enem4",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem4",indexAbilities: [1]},
+    {boss: "enem4",indexAbilities: [0,1]},
+    {boss: "enem4",indexAbilities: [4,5,6]},
+    {boss: "enem4",indexAbilities: [7,8,9,10]},
+    {boss: "enem4",indexAbilities: [16,20,17],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Двойной приказ — знакомство",openingOrder: 1},
+    {boss: "enem4",indexAbilities: [16,20,18],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Двойной приказ — иной конец"},
+    {boss: "enem4",indexAbilities: [21,18,21,17],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Двойной приказ — завершение"},
+    {boss: "enem5",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem5",indexAbilities: [7]},
+    {boss: "enem5",indexAbilities: [0,7]},
+    {boss: "enem5",indexAbilities: [1,2,3,4]},
+    {boss: "enem5",indexAbilities: [5,6,7]},
+    {boss: "enem5",indexAbilities: [17,18,22],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Зубья бороны — знакомство",openingOrder: 1},
+    {boss: "enem5",indexAbilities: [17,18,21],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Зубья бороны — иной конец"},
+    {boss: "enem5",indexAbilities: [19,22,18,21],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Зубья бороны — завершение"}
 ];
 
 // Лорные названия связок. Уровень 16 — страда: Босовик (сеятель), Сеюшка (сеятельница),

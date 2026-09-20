@@ -87,6 +87,11 @@
 let lvlNumber = 50;
 
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	scaleLongComboDamage: true,
 	scaleShortComboDamage: true,
 	levelCadence: 1.00,
@@ -102,35 +107,35 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.76, speed: 1.10, damage: 1.14, telegraphMultiplier: 0.90, surpriseChance: 0.20, maxActiveAttacks: 15 }
 	],
 	bosses: {
-		enem1: {
+		enem1: { combatIdentity: "Первый виток веретена", combatTrick: "ведёт прицел вдоль прохода, затем возвращает угрозу за спину прохода", signatureEvery: 4,
 			// Кикимора: SPINDLE_ARC — плавные атаки по дуге, наматывает нить на невидимое веретено
 			movementStyle: 'pause', cadence: 1.03, telegraphMs: 900, speedMultiplier: 0.95, damageMultiplier: 0.92,
 			speedVariance: [0.80, 0.90, 1.00, 1.10, 1.18], healthMultiplier: 1.50,
 			appearMessage: 'Кто оставил кудель без пригляда?!',
 			phaseMessages: { 2: 'Спутаю всё, что плохо лежит!', 3: 'Ни одна нить не уйдёт от меня!' }
 		}, // Кикимора: SPINDLE_ARC — плавные атаки по дуге, наматывает нить на невидимое веретено
-		enem2: {
+		enem2: { combatIdentity: "Затянувшийся узел", combatTrick: "повторяет удар в прежнем секторе вместо ожидаемого чередования", signatureEvery: 4,
 			// Спутанная: SNATCH_TANGLE — быстрые хватающие рывки, как выдёргивание запутанной нити
 			movementStyle: 'weave', cadence: 0.95, telegraphMs: 800, speedMultiplier: 1.02, damageMultiplier: 0.98,
 			speedVariance: [0.88, 0.96, 1.04, 1.12, 1.18], healthMultiplier: 1.50,
 			appearMessage: 'Ты сам себя запутал!',
 			phaseMessages: { 2: 'Нити крепче, чем кажется!', 3: 'Не развяжешь — не уйдёшь!' }
 		}, // Спутанная: SNATCH_TANGLE — быстрые хватающие рывки, как выдёргивание запутанной нити
-		enem3: {
+		enem3: { combatIdentity: "Тишина перед клокотом", combatTrick: "медленный первый снаряд остаётся фоном для более срочного второго", signatureEvery: 4,
 			// Клохчущая: OMEN_HUSH — аномально долгая тишина вместо кудахтанья, затем резкий удар
 			movementStyle: 'pause', cadence: 1.17, telegraphMs: 1050, speedMultiplier: 0.80, damageMultiplier: 1.19,
 			speedVariance: [0.80, 0.88, 0.96, 1.04, 1.12], healthMultiplier: 1.50,
 			appearMessage: 'Слышишь, как я хохочу?',
 			phaseMessages: { 2: 'Тишина — это ты меня не услышал!', 3: 'Последний смех — за мной!' }
 		}, // Клохчущая: OMEN_HUSH — аномально долгая тишина вместо кудахтанья, затем резкий удар
-		enem4: {
+		enem4: { combatIdentity: "Клок волос с зацепом", combatTrick: "показывает боковой замах, но заканчивает серединой; позднее конец возвращается на край", signatureEvery: 4,
 			// Свалявшаяся: MATTED_LASH — свалявшийся ком гривы хлещет непредсказуемо во все стороны
 			movementStyle: 'drift', cadence: 0.86, telegraphMs: 680, speedMultiplier: 1.12, damageMultiplier: 1.04,
 			speedVariance: [0.88, 0.98, 1.08, 1.16, 1.24], healthMultiplier: 1.50,
 			appearMessage: 'Уже не распутать!',
 			phaseMessages: { 2: 'Свалялась намертво!', 3: 'Последний узел — твой!' }
 		}, // Свалявшаяся: MATTED_LASH — свалявшийся ком гривы хлещет непредсказуемо во все стороны
-		enem5: {
+		enem5: { combatIdentity: "Нить рвётся на последнем витке", combatTrick: "две короткие группы разделены паузой; вторая группа меняет сторону", signatureEvery: 4,
 			// Кудельная: FULL_UNRAVEL — самая длинная нить-цепь всего боя + тяжёлый удар валька
 			movementStyle: 'lateRush', cadence: 0.80, telegraphMs: 1040, speedMultiplier: 1.05, damageMultiplier: 1.12,
 			speedVariance: [0.86, 0.94, 1.03, 1.12, 1.20], healthMultiplier: 1.50,
@@ -376,77 +381,100 @@ const ENEMY_TYPES = {
 	{ boss: 'enem5', type: 'enem55', xPos: 75, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 10 }, //25 цепь-B звено 5
 	{ boss: 'enem5', type: 'enem55', xPos: 55, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 8 },  //26 цепь-B звено 6
 	{ boss: 'enem5', type: 'enem55', xPos: 70, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 6 },  //27 цепь-B звено 7
+
+    // Приёмы из scripts/combat-designs.js; индексы считаются отдельно для каждого босса.
+    {boss: "enem1",type: "enem11",xPos: 14,yPos: 12,customHP: 1,customDamage: 20,customSpeed: 16},
+    {boss: "enem1",type: "enem11",xPos: 32,yPos: 20,customHP: 1,customDamage: 20,customSpeed: 14},
+    {boss: "enem1",type: "enem11",xPos: 58,yPos: 6,customHP: 1,customDamage: 20,customSpeed: 21},
+    {boss: "enem1",type: "enem11",xPos: 14,yPos: 40,customHP: 1,customDamage: 20,customSpeed: 7},
+    {boss: "enem1",type: "enem11",xPos: 14,yPos: 8,customHP: 1,customDamage: 20,customSpeed: 20},
+    {boss: "enem1",type: "enem11",xPos: 82,yPos: 12,customHP: 1,customDamage: 20,customSpeed: 18},
+    {boss: "enem2",type: "enem22",xPos: 84,yPos: 12,customHP: 1,customDamage: 22,customSpeed: 16},
+    {boss: "enem2",type: "enem22",xPos: 70,yPos: 20,customHP: 1,customDamage: 22,customSpeed: 14},
+    {boss: "enem2",type: "enem22",xPos: 18,yPos: 6,customHP: 1,customDamage: 22,customSpeed: 21},
+    {boss: "enem2",type: "enem22",xPos: 84,yPos: 40,customHP: 1,customDamage: 22,customSpeed: 7},
+    {boss: "enem2",type: "enem22",xPos: 84,yPos: 8,customHP: 1,customDamage: 22,customSpeed: 20},
+    {boss: "enem2",type: "enem22",xPos: 34,yPos: 12,customHP: 1,customDamage: 22,customSpeed: 18},
+    {boss: "enem3",type: "enem33",xPos: 24,yPos: 12,customHP: 1,customDamage: 24,customSpeed: 16},
+    {boss: "enem3",type: "enem33",xPos: 80,yPos: 20,customHP: 1,customDamage: 24,customSpeed: 14},
+    {boss: "enem3",type: "enem33",xPos: 40,yPos: 6,customHP: 1,customDamage: 24,customSpeed: 21},
+    {boss: "enem3",type: "enem33",xPos: 24,yPos: 24,customHP: 1,customDamage: 24,customSpeed: 7},
+    {boss: "enem3",type: "enem33",xPos: 24,yPos: 8,customHP: 1,customDamage: 24,customSpeed: 20},
+    {boss: "enem3",type: "enem33",xPos: 66,yPos: 12,customHP: 1,customDamage: 24,customSpeed: 18},
+    {boss: "enem4",type: "enem44",xPos: 86,yPos: 12,customHP: 1,customDamage: 26,customSpeed: 16},
+    {boss: "enem4",type: "enem44",xPos: 64,yPos: 20,customHP: 1,customDamage: 26,customSpeed: 14},
+    {boss: "enem4",type: "enem44",xPos: 16,yPos: 6,customHP: 1,customDamage: 26,customSpeed: 21},
+    {boss: "enem4",type: "enem44",xPos: 86,yPos: 40,customHP: 1,customDamage: 26,customSpeed: 7},
+    {boss: "enem4",type: "enem44",xPos: 86,yPos: 8,customHP: 1,customDamage: 26,customSpeed: 20},
+    {boss: "enem4",type: "enem44",xPos: 50,yPos: 12,customHP: 1,customDamage: 26,customSpeed: 18},
+    {boss: "enem5",type: "enem55",xPos: 20,yPos: 12,customHP: 1,customDamage: 28,customSpeed: 16},
+    {boss: "enem5",type: "enem55",xPos: 30,yPos: 20,customHP: 1,customDamage: 28,customSpeed: 14},
+    {boss: "enem5",type: "enem55",xPos: 74,yPos: 6,customHP: 1,customDamage: 28,customSpeed: 21},
+    {boss: "enem5",type: "enem55",xPos: 20,yPos: 40,customHP: 1,customDamage: 28,customSpeed: 7},
+    {boss: "enem5",type: "enem55",xPos: 20,yPos: 8,customHP: 1,customDamage: 28,customSpeed: 20},
+    {boss: "enem5",type: "enem55",xPos: 88,yPos: 12,customHP: 1,customDamage: 28,customSpeed: 18}
 ];
 
  const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 300, bossDelayAbDop: 5600 }, // спокойное наматывание нити
-	{ boss: 'enem2', bossDelayAb: 260, bossDelayAbDop: 6200 }, // короткая атака, долгая пауза — суть SNATCH_TANGLE
-	{ boss: 'enem3', bossDelayAb: 390, bossDelayAbDop: 6600 }, // самый долгий отдых — гробовая тишина
-	{ boss: 'enem4', bossDelayAb: 200, bossDelayAbDop: 3800 }, // самый частый — стихийное дёрганье без передышки
-	{ boss: 'enem5', bossDelayAb: 260, bossDelayAbDop: 5200 }, // собранный финал
+	{ boss: 'enem1', bossDelayAb: 300, bossDelayAbDop: 5243, firstWaveDelayMs: 2400 }, // спокойное наматывание нити
+	{ boss: 'enem2', bossDelayAb: 260, bossDelayAbDop: 5316, firstWaveDelayMs: 2400 }, // короткая атака, долгая пауза — суть SNATCH_TANGLE
+	{ boss: 'enem3', bossDelayAb: 390, bossDelayAbDop: 5610, firstWaveDelayMs: 2400 }, // самый долгий отдых — гробовая тишина
+	{ boss: 'enem4', bossDelayAb: 200, bossDelayAbDop: 4370, firstWaveDelayMs: 2098 }, // самый частый — стихийное дёрганье без передышки
+	{ boss: 'enem5', bossDelayAb: 260, bossDelayAbDop: 4813, firstWaveDelayMs: 2310 }, // собранный финал
  ];
 
  const bossAbilitiesDop = [
-	// Кикимора — SPINDLE_ARC
-	{ boss: 'enem1', indexAbilities: [0, 1, 2, 3, 4] },
-	{ boss: 'enem1', indexAbilities: [5, 6] },
-	{ boss: 'enem1', indexAbilities: [7, 8] },
-	{ boss: 'enem1', indexAbilities: [9, 10] },
-	{ boss: 'enem1', indexAbilities: [0, 1, 7] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem1', indexAbilities: [16, 17, 18, 19, 20], isChain: true }, // ← цепь-A (5, irregular)
-	{ boss: 'enem1', indexAbilities: [21, 22, 23, 24], isChain: true }, // ← цепь-B (4, arc)
-	{ boss: 'enem1', indexAbilities: [13, 6, 7] }, // нежданчик: дуга вдруг рвётся обратным рывком с середины
-	{ boss: 'enem1', indexAbilities: [0, 1, 2, 3, 4, 14] }, // сигнатурная: полная дуга слева направо разом
-
-	// Спутанная — SNATCH_TANGLE
-	{ boss: 'enem2', indexAbilities: [0] },
-	{ boss: 'enem2', indexAbilities: [1] },
-	{ boss: 'enem2', indexAbilities: [2] },
-	{ boss: 'enem2', indexAbilities: [3, 4] },
-	{ boss: 'enem2', indexAbilities: [8, 9] },
-	{ boss: 'enem2', indexAbilities: [0, 1] }, // same-start-стиль пара двух одиночных подряд
-	{ boss: 'enem2', indexAbilities: [16, 17, 18], isChain: true }, // ← цепь-A (3)
-	{ boss: 'enem2', indexAbilities: [20, 21, 22, 23], isChain: true }, // ← цепь-B (4)
-	{ boss: 'enem2', indexAbilities: [12, 13] }, // нежданчик: двойной рывок с одной стороны
-	{ boss: 'enem2', indexAbilities: [0, 2, 1, 10, 6, 14] }, // сигнатурная: серия хватающих рывков по всему полю подряд
-
-	// Клохчущая — OMEN_HUSH
-	{ boss: 'enem3', indexAbilities: [0, 1, 2] },
-	{ boss: 'enem3', indexAbilities: [3, 4] },
-	{ boss: 'enem3', indexAbilities: [5, 6] },
-	{ boss: 'enem3', indexAbilities: [7, 8] },
-	{ boss: 'enem3', indexAbilities: [9, 10] },
-	{ boss: 'enem3', indexAbilities: [0, 1, 7] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem3', indexAbilities: [16, 17, 18], isChain: true }, // ← цепь-A (3)
-	{ boss: 'enem3', indexAbilities: [19, 20, 21, 22, 23], isChain: true }, // ← цепь-B (5)
-	{ boss: 'enem3', indexAbilities: [14] }, // нежданчик: удар раньше привычной долгой тишины
-	{ boss: 'enem3', indexAbilities: [3, 11, 4, 12] }, // сигнатурная: закручивающий удар с обеих сторон разом
-
-	// Свалявшаяся — MATTED_LASH
-	{ boss: 'enem4', indexAbilities: [0, 1] },
-	{ boss: 'enem4', indexAbilities: [2, 3] },
-	{ boss: 'enem4', indexAbilities: [4, 5] },
-	{ boss: 'enem4', indexAbilities: [8, 9] },
-	{ boss: 'enem4', indexAbilities: [6, 7, 11, 12] },
-	{ boss: 'enem4', indexAbilities: [0, 1, 4] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem4', indexAbilities: [16, 17, 18, 19], isChain: true }, // ← цепь-A (4)
-	{ boss: 'enem4', indexAbilities: [20, 21, 22, 23, 24, 25], isChain: true }, // ← цепь-B (6)
-	{ boss: 'enem4', indexAbilities: [13, 10] }, // нежданчик: ком хлещет с двух сторон разом
-	{ boss: 'enem4', indexAbilities: [0, 2, 4, 8, 1, 3, 5, 9] }, // сигнатурная: хаотичный хлёст на полной скорости через всё поле
-
-	// Кудельная — FULL_UNRAVEL, финальный облик
-	{ boss: 'enem5', indexAbilities: [0, 1] },
-	{ boss: 'enem5', indexAbilities: [2, 3] },
-	{ boss: 'enem5', indexAbilities: [5, 6] },
-	{ boss: 'enem5', indexAbilities: [7, 8] },
-	{ boss: 'enem5', indexAbilities: [9, 10] },
-	{ boss: 'enem5', indexAbilities: [13, 14] },
-	{ boss: 'enem5', indexAbilities: [0, 1, 3] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem5', indexAbilities: [16, 17, 18, 19, 20], isChain: true }, // ← цепь-A (5)
-	{ boss: 'enem5', indexAbilities: [21, 22, 23, 24, 25, 26, 27], isChain: true }, // ← цепь-B (7, максимум)
-	{ boss: 'enem5', indexAbilities: [11, 12] }, // нежданчик: удар валька без единого мгновения предупреждения
-	{ boss: 'enem5', indexAbilities: [0, 2, 4, 9, 1, 3, 10, 15] }, // сигнатурная кульминация: последняя нить рвётся по всему полю разом, предваряется самым долгим телеграфом уровня (telegraphMs 1040)
- ];
+    {boss: "enem1",indexAbilities: [0,1,2,3,4]},
+    {boss: "enem1",indexAbilities: [5,6],openingOrder: 0},
+    {boss: "enem1",indexAbilities: [7,8]},
+    {boss: "enem1",indexAbilities: [9,10]},
+    {boss: "enem1",indexAbilities: [25,26,27],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Первый виток веретена — знакомство",openingOrder: 1},
+    {boss: "enem1",indexAbilities: [25,26,29],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Первый виток веретена — иной конец"},
+    {boss: "enem1",indexAbilities: [30,27,26,29],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Первый виток веретена — завершение"},
+    {boss: "enem1",indexAbilities: [16,17,18,19,20],isChain: true},
+    {boss: "enem1",indexAbilities: [21,22,23,24],isChain: true},
+    {boss: "enem2",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem2",indexAbilities: [1]},
+    {boss: "enem2",indexAbilities: [2]},
+    {boss: "enem2",indexAbilities: [3,4]},
+    {boss: "enem2",indexAbilities: [8,9]},
+    {boss: "enem2",indexAbilities: [24,28,25],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Затянувшийся узел — знакомство",openingOrder: 1},
+    {boss: "enem2",indexAbilities: [24,28,26],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Затянувшийся узел — иной конец"},
+    {boss: "enem2",indexAbilities: [29,26,29,25],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Затянувшийся узел — завершение"},
+    {boss: "enem2",indexAbilities: [16,17,18],isChain: true},
+    {boss: "enem2",indexAbilities: [20,21,22,23],isChain: true},
+    {boss: "enem3",indexAbilities: [0,1,2]},
+    {boss: "enem3",indexAbilities: [3,4],openingOrder: 0},
+    {boss: "enem3",indexAbilities: [5,6]},
+    {boss: "enem3",indexAbilities: [7,8]},
+    {boss: "enem3",indexAbilities: [9,10]},
+    {boss: "enem3",indexAbilities: [27,26],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Тишина перед клокотом — знакомство",openingOrder: 1},
+    {boss: "enem3",indexAbilities: [27,26,28],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Тишина перед клокотом — иной конец"},
+    {boss: "enem3",indexAbilities: [27,29,26,28],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Тишина перед клокотом — завершение"},
+    {boss: "enem3",indexAbilities: [16,17,18],isChain: true},
+    {boss: "enem3",indexAbilities: [19,20,21,22,23],isChain: true},
+    {boss: "enem4",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem4",indexAbilities: [2,3]},
+    {boss: "enem4",indexAbilities: [4,5]},
+    {boss: "enem4",indexAbilities: [8,9]},
+    {boss: "enem4",indexAbilities: [6,7,11,12]},
+    {boss: "enem4",indexAbilities: [26,27,31],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Клок волос с зацепом — знакомство",openingOrder: 1},
+    {boss: "enem4",indexAbilities: [26,27,30],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Клок волос с зацепом — иной конец"},
+    {boss: "enem4",indexAbilities: [28,31,27,30],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Клок волос с зацепом — завершение"},
+    {boss: "enem4",indexAbilities: [16,17,18,19],isChain: true},
+    {boss: "enem4",indexAbilities: [20,21,22,23,24,25],isChain: true},
+    {boss: "enem5",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem5",indexAbilities: [2,3]},
+    {boss: "enem5",indexAbilities: [5,6]},
+    {boss: "enem5",indexAbilities: [7,8]},
+    {boss: "enem5",indexAbilities: [9,10]},
+    {boss: "enem5",indexAbilities: [13,14]},
+    {boss: "enem5",indexAbilities: [28,32,30,33],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Нить рвётся на последнем витке — знакомство",openingOrder: 1,shotGapsMs: [360,900,360]},
+    {boss: "enem5",indexAbilities: [28,32,33],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Нить рвётся на последнем витке — иной конец",shotGapsMs: [360,900,360]},
+    {boss: "enem5",indexAbilities: [30,33,28,32],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Нить рвётся на последнем витке — завершение",shotGapsMs: [360,900,360]},
+    {boss: "enem5",indexAbilities: [16,17,18,19,20],isChain: true},
+    {boss: "enem5",indexAbilities: [21,22,23,24,25,26,27],isChain: true}
+];
 
 // Лорные названия связок временных улучшений — один и тот же персонаж, но
 // словарь ЭСКАЛИРУЕТ вместе с обликом (пряжа/нить → путы → голос-предвестие

@@ -58,6 +58,11 @@
 let lvlNumber = 44;
 
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	scaleLongComboDamage: true,
 	scaleShortComboDamage: true,
 	levelCadence: 1.00,
@@ -72,11 +77,11 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.76, speed: 1.10, damage: 1.14, telegraphMultiplier: 0.90, surpriseChance: 0.20, maxActiveAttacks: 15 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'pause',      cadence: 1.03, telegraphMs: 900,  speedMultiplier: 0.96, damageMultiplier: 0.93, speedVariance: [0.80, 0.90, 1.00, 1.10, 1.18] }, // Шипучка: GROUND_NIP — щиплет понизу, ждёт и бьёт (давление снизу)
-		enem2: { movementStyle: 'straight',   cadence: 0.97, telegraphMs: 790,  speedMultiplier: 1.02, damageMultiplier: 0.98, speedVariance: [0.88, 0.96, 1.04, 1.12, 1.18] }, // Квочка: NEST_GUARD — редкие mid-only клевки прямо перед собой
-		enem3: { movementStyle: 'wave',       cadence: 1.17, telegraphMs: 1050, speedMultiplier: 0.80, damageMultiplier: 1.19, speedVariance: [0.80, 0.88, 0.96, 1.04, 1.12] }, // Треснушка: WOBBLE_ROLL — перекат по низу с непредсказуемым покачиванием
-		enem4: { movementStyle: 'accelerate', cadence: 0.86, telegraphMs: 680,  speedMultiplier: 1.12, damageMultiplier: 1.04, speedVariance: [0.88, 0.98, 1.08, 1.16, 1.24] }, // Пыхтун: FAN_CROSS — скрещённые высоты на флангах, веер хвоста
-		enem5: { movementStyle: 'lateRush',   cadence: 0.80, telegraphMs: 1040, speedMultiplier: 1.05, damageMultiplier: 1.12, speedVariance: [0.86, 0.94, 1.03, 1.12, 1.20] }  // Кукарекало: CROW_HERALD — шпоры зигзагом понизу, самый честный телеграф уровня перед сигнатурной серией
+		enem1: { signatureEvery: 4, movementStyle: 'pause',      cadence: 1.03, telegraphMs: 900,  speedMultiplier: 0.96, damageMultiplier: 0.93, speedVariance: [0.80, 0.90, 1.00, 1.10, 1.18] }, // Шипучка: GROUND_NIP — щиплет понизу, ждёт и бьёт (давление снизу)
+		enem2: { signatureEvery: 4, movementStyle: 'straight',   cadence: 0.97, telegraphMs: 790,  speedMultiplier: 1.02, damageMultiplier: 0.98, speedVariance: [0.88, 0.96, 1.04, 1.12, 1.18] }, // Квочка: NEST_GUARD — редкие mid-only клевки прямо перед собой
+		enem3: { signatureEvery: 4, movementStyle: 'wave',       cadence: 1.17, telegraphMs: 1050, speedMultiplier: 0.80, damageMultiplier: 1.19, speedVariance: [0.80, 0.88, 0.96, 1.04, 1.12] }, // Треснушка: WOBBLE_ROLL — перекат по низу с непредсказуемым покачиванием
+		enem4: { signatureEvery: 4, movementStyle: 'accelerate', cadence: 0.86, telegraphMs: 680,  speedMultiplier: 1.12, damageMultiplier: 1.04, speedVariance: [0.88, 0.98, 1.08, 1.16, 1.24] }, // Пыхтун: FAN_CROSS — скрещённые высоты на флангах, веер хвоста
+		enem5: { signatureEvery: 4, movementStyle: 'lateRush',   cadence: 0.80, telegraphMs: 1040, speedMultiplier: 1.05, damageMultiplier: 1.12, speedVariance: [0.86, 0.94, 1.03, 1.12, 1.20] }  // Кукарекало: CROW_HERALD — шпоры зигзагом понизу, самый честный телеграф уровня перед сигнатурной серией
 	}
 };
 
@@ -226,33 +231,33 @@ const ENEMY_TYPES = {
 
 	// ===== Треснушка: WOBBLE_ROLL — перекат по нижней трети поля с
 	// непредсказуемым покачиванием, редкий отскок вверх =====
-	{ boss: 'enem3', type: 'enem33', xPos: 15, yPos: 44, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3 },  //0
-	{ boss: 'enem3', type: 'enem33', xPos: 30, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 2 },  //1
-	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 46, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 4 },  //2
-	{ boss: 'enem3', type: 'enem33', xPos: 70, yPos: 52, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 2 },  //3
-	{ boss: 'enem3', type: 'enem33', xPos: 85, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3 },  //4
-	{ boss: 'enem3', type: 'enem33', xPos: 22, yPos: 40, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 5 },  //5
-	{ boss: 'enem3', type: 'enem33', xPos: 78, yPos: 42, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 5 },  //6
-	{ boss: 'enem3', type: 'enem33', xPos: 45, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 2 },  //7
-	{ boss: 'enem3', type: 'enem33', xPos: 10, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 20 }, //8  редкий отскок вверх
-	{ boss: 'enem3', type: 'enem33', xPos: 90, yPos: 7,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 22 }, //9  редкий отскок вверх
-	{ boss: 'enem3', type: 'enem33', xPos: 60, yPos: 44, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 12 }, //10
-	{ boss: 'enem3', type: 'enem33', xPos: 38, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 13 }, //11
-	{ boss: 'enem3', type: 'enem33', xPos: 8,  yPos: 40, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 4 },  //12
-	{ boss: 'enem3', type: 'enem33', xPos: 92, yPos: 42, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 4 },  //13
-	{ boss: 'enem3', type: 'enem33', xPos: 55, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 18 }, //14
-	{ boss: 'enem3', type: 'enem33', xPos: 25, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 14 }, //15
+	{ boss: 'enem3', type: 'enem33', xPos: 15, yPos: 44, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //0
+	{ boss: 'enem3', type: 'enem33', xPos: 30, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 2, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //1
+	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 46, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 4, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //2
+	{ boss: 'enem3', type: 'enem33', xPos: 70, yPos: 52, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 2, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //3
+	{ boss: 'enem3', type: 'enem33', xPos: 85, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //4
+	{ boss: 'enem3', type: 'enem33', xPos: 22, yPos: 40, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 5, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //5
+	{ boss: 'enem3', type: 'enem33', xPos: 78, yPos: 42, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 5, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //6
+	{ boss: 'enem3', type: 'enem33', xPos: 45, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 2, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //7
+	{ boss: 'enem3', type: 'enem33', xPos: 10, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 20, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //8  редкий отскок вверх
+	{ boss: 'enem3', type: 'enem33', xPos: 90, yPos: 7,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 22, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //9  редкий отскок вверх
+	{ boss: 'enem3', type: 'enem33', xPos: 60, yPos: 44, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 12, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //10
+	{ boss: 'enem3', type: 'enem33', xPos: 38, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 13, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //11
+	{ boss: 'enem3', type: 'enem33', xPos: 8,  yPos: 40, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 4, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //12
+	{ boss: 'enem3', type: 'enem33', xPos: 92, yPos: 42, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 4, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //13
+	{ boss: 'enem3', type: 'enem33', xPos: 55, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 18, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //14
+	{ boss: 'enem3', type: 'enem33', xPos: 25, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 14, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //15
 	// звенья «атакующей цепи» — перекат туда-обратно дугой, затем рваные
 	// скачки неудачной попытки укатиться (arc+irregular), раздел 13.7.
-	{ boss: 'enem3', type: 'enem33', xPos: 80, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 18 }, //16 цепь-A звено 1 (голова)
-	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 14 }, //17 цепь-A звено 2
-	{ boss: 'enem3', type: 'enem33', xPos: 85, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 10 }, //18 цепь-A звено 3
-	{ boss: 'enem3', type: 'enem33', xPos: 15, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 18 }, //19 цепь-B звено 1 (голова, длина 6)
-	{ boss: 'enem3', type: 'enem33', xPos: 40, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 16 }, //20 цепь-B звено 2
-	{ boss: 'enem3', type: 'enem33', xPos: 60, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 14 }, //21 цепь-B звено 3
-	{ boss: 'enem3', type: 'enem33', xPos: 35, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 12 }, //22 цепь-B звено 4
-	{ boss: 'enem3', type: 'enem33', xPos: 55, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 10 }, //23 цепь-B звено 5
-	{ boss: 'enem3', type: 'enem33', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 8 },  //24 цепь-B звено 6
+	{ boss: 'enem3', type: 'enem33', xPos: 80, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 18, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //16 цепь-A звено 1 (голова)
+	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 14, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //17 цепь-A звено 2
+	{ boss: 'enem3', type: 'enem33', xPos: 85, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 10, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //18 цепь-A звено 3
+	{ boss: 'enem3', type: 'enem33', xPos: 15, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 18, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //19 цепь-B звено 1 (голова, длина 6)
+	{ boss: 'enem3', type: 'enem33', xPos: 40, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 16, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //20 цепь-B звено 2
+	{ boss: 'enem3', type: 'enem33', xPos: 60, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 14, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //21 цепь-B звено 3
+	{ boss: 'enem3', type: 'enem33', xPos: 35, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 12, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //22 цепь-B звено 4
+	{ boss: 'enem3', type: 'enem33', xPos: 55, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 10, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //23 цепь-B звено 5
+	{ boss: 'enem3', type: 'enem33', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 8, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //24 цепь-B звено 6
 
 	// ===== Пыхтун: FAN_CROSS — скрещённые высоты на флангах (перья веера то
 	// слева выше, то справа), редкий бросок пера через всё поле =====
@@ -320,11 +325,11 @@ const ENEMY_TYPES = {
 ];
 
  const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 300, bossDelayAbDop: 5600 }, // выжидает и щиплет, спокойный ритм знакомства
-	{ boss: 'enem2', bossDelayAb: 240, bossDelayAbDop: 4400 }, // короткие клевки, редкие резкие всплески
-	{ boss: 'enem3', bossDelayAb: 390, bossDelayAbDop: 6800 }, // тяжёлая, самая долгая пауза уровня — перекат медленный
-	{ boss: 'enem4', bossDelayAb: 200, bossDelayAbDop: 3800 }, // самый частый и нервный ритм уровня
-	{ boss: 'enem5', bossDelayAb: 260, bossDelayAbDop: 5200 }, // собранный, но не самый частый — финал
+	{ boss: 'enem1', bossDelayAb: 300, bossDelayAbDop: 5600, firstWaveDelayMs: 2400 }, // выжидает и щиплет, спокойный ритм знакомства
+	{ boss: 'enem2', bossDelayAb: 240, bossDelayAbDop: 4400, firstWaveDelayMs: 2112 }, // короткие клевки, редкие резкие всплески
+	{ boss: 'enem3', bossDelayAb: 390, bossDelayAbDop: 6800, firstWaveDelayMs: 2400 }, // тяжёлая, самая долгая пауза уровня — перекат медленный
+	{ boss: 'enem4', bossDelayAb: 200, bossDelayAbDop: 3800, firstWaveDelayMs: 1824 }, // самый частый и нервный ритм уровня
+	{ boss: 'enem5', bossDelayAb: 260, bossDelayAbDop: 5200, firstWaveDelayMs: 2400 }, // собранный, но не самый частый — финал
  ];
 
  const bossAbilitiesDop = [

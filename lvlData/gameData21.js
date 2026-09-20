@@ -7,6 +7,11 @@ let factorChar = (lvlNumber * 5) / 100;
 // пролёт перегруженного воза / финал смешивает почерк всех четверых и впервые
 // перекрывает всю нижнюю полосу разом.
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	levelCadence: 0.86, damageMultiplier: 1.599, minWaveDelay: 2040, minShotDelay: 144, minTelegraphMs: 530,
 	phases: [
 		{ phase: 1, minHp: 0.64, cadence: 1.00, speed: 1.00, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.16, maxActiveAttacks: 16 },
@@ -14,11 +19,11 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.68, speed: 1.21, damage: 1.29, telegraphMultiplier: 0.81, surpriseChance: 0.37, maxActiveAttacks: 21 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'straight',      cadence: 1.03, telegraphMs: 860, speedMultiplier: 0.93, damageMultiplier: 0.93, speedVariance: [0.87, 0.94, 1.01, 1.08, 1.15] }, // КОСМАЛЬ: зигзаг косы, без нижней стены
-		enem2: { movementStyle: 'weave',   cadence: 0.89, telegraphMs: 730, speedMultiplier: 1.07, damageMultiplier: 0.89, speedVariance: [0.84, 0.94, 1.04, 1.14, 1.24] }, // ВОРОШЕНЬ: симметричные взмахи грабельных рук
-		enem3: { movementStyle: 'lateRush',      cadence: 1.19, telegraphMs: 990, speedMultiplier: 0.84, damageMultiplier: 1.19, speedVariance: [0.75, 0.85, 0.97, 1.09, 1.21] }, // КОПНУША: редкие тяжёлые удары, долгая пауза
-		enem4: { movementStyle: 'pause', cadence: 0.85, telegraphMs: 645, speedMultiplier: 1.14, damageMultiplier: 0.66, speedVariance: [0.88, 0.99, 1.10, 1.21, 1.32] }, // ВОЗИЛО: направленный пролёт с чёткой стороной входа и выхода
-		enem5: { movementStyle: 'drift',   cadence: 0.73, telegraphMs: 625, speedMultiplier: 1.16, damageMultiplier: 1.09, speedVariance: [0.81, 0.94, 1.07, 1.20, 1.33] }  // ДВУКОС: две косы вместо одной — переносит направленный заход Возила сразу на оба фланга
+		enem1: { combatIdentity: "Первый покос", combatTrick: "ведёт прицел вдоль прохода, затем возвращает угрозу за спину прохода", signatureEvery: 4, movementStyle: 'straight',      cadence: 1.03, telegraphMs: 860, speedMultiplier: 0.93, damageMultiplier: 0.93, speedVariance: [0.87, 0.94, 1.01, 1.08, 1.15] }, // КОСМАЛЬ: зигзаг косы, без нижней стены
+		enem2: { combatIdentity: "Обратный взмах ворошилки", combatTrick: "показывает боковой замах, но заканчивает серединой; позднее конец возвращается на край", signatureEvery: 4, movementStyle: 'weave',   cadence: 0.89, telegraphMs: 730, speedMultiplier: 1.07, damageMultiplier: 0.89, speedVariance: [0.84, 0.94, 1.04, 1.14, 1.24] }, // ВОРОШЕНЬ: симметричные взмахи грабельных рук
+		enem3: { combatIdentity: "Сено и скрытый ком", combatTrick: "медленный первый снаряд остаётся фоном для более срочного второго", signatureEvery: 4, movementStyle: 'lateRush',      cadence: 1.19, telegraphMs: 990, speedMultiplier: 0.84, damageMultiplier: 1.19, speedVariance: [0.75, 0.85, 0.97, 1.09, 1.21] }, // КОПНУША: редкие тяжёлые удары, долгая пауза
+		enem4: { combatIdentity: "Тележный толчок", combatTrick: "две короткие группы разделены паузой; вторая группа меняет сторону", signatureEvery: 4, movementStyle: 'pause', cadence: 0.85, telegraphMs: 645, speedMultiplier: 1.14, damageMultiplier: 0.66, speedVariance: [0.88, 0.99, 1.10, 1.21, 1.32] }, // ВОЗИЛО: направленный пролёт с чёткой стороной входа и выхода
+		enem5: { combatIdentity: "Вторая коса после первой", combatTrick: "повторяет удар в прежнем секторе вместо ожидаемого чередования", signatureEvery: 4, movementStyle: 'drift',   cadence: 0.73, telegraphMs: 625, speedMultiplier: 1.16, damageMultiplier: 1.09, speedVariance: [0.81, 0.94, 1.07, 1.20, 1.33] }  // ДВУКОС: две косы вместо одной — переносит направленный заход Возила сразу на оба фланга
 	}
 };
 
@@ -266,66 +271,89 @@ const bossAbilities = [
 	{ boss: 'enem5', type: 'enem55', xPos: 69, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //12
 	{ boss: 'enem5', type: 'enem55', xPos: 89, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //13
 	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 28, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 11 } //14
+,
+    // Приёмы из scripts/combat-designs.js; индексы считаются отдельно для каждого босса.
+    {boss: "enem1",type: "enem11",xPos: 12,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 16},
+    {boss: "enem1",type: "enem11",xPos: 29,yPos: 20,customHP: 1,customDamage: 14,customSpeed: 14},
+    {boss: "enem1",type: "enem11",xPos: 57,yPos: 6,customHP: 1,customDamage: 14,customSpeed: 21},
+    {boss: "enem1",type: "enem11",xPos: 12,yPos: 40,customHP: 1,customDamage: 14,customSpeed: 7},
+    {boss: "enem1",type: "enem11",xPos: 12,yPos: 8,customHP: 1,customDamage: 14,customSpeed: 20},
+    {boss: "enem1",type: "enem11",xPos: 83,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 18},
+    {boss: "enem2",type: "enem22",xPos: 86,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 16},
+    {boss: "enem2",type: "enem22",xPos: 70,yPos: 20,customHP: 1,customDamage: 13,customSpeed: 14},
+    {boss: "enem2",type: "enem22",xPos: 20,yPos: 6,customHP: 1,customDamage: 13,customSpeed: 21},
+    {boss: "enem2",type: "enem22",xPos: 86,yPos: 40,customHP: 1,customDamage: 13,customSpeed: 7},
+    {boss: "enem2",type: "enem22",xPos: 86,yPos: 8,customHP: 1,customDamage: 13,customSpeed: 20},
+    {boss: "enem2",type: "enem22",xPos: 56,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 18},
+    {boss: "enem3",type: "enem33",xPos: 24,yPos: 12,customHP: 1,customDamage: 15,customSpeed: 16},
+    {boss: "enem3",type: "enem33",xPos: 78,yPos: 20,customHP: 1,customDamage: 15,customSpeed: 14},
+    {boss: "enem3",type: "enem33",xPos: 40,yPos: 6,customHP: 1,customDamage: 15,customSpeed: 21},
+    {boss: "enem3",type: "enem33",xPos: 24,yPos: 24,customHP: 1,customDamage: 15,customSpeed: 7},
+    {boss: "enem3",type: "enem33",xPos: 24,yPos: 8,customHP: 1,customDamage: 15,customSpeed: 20},
+    {boss: "enem3",type: "enem33",xPos: 68,yPos: 12,customHP: 1,customDamage: 15,customSpeed: 18},
+    {boss: "enem4",type: "enem44",xPos: 18,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 16},
+    {boss: "enem4",type: "enem44",xPos: 29,yPos: 20,customHP: 1,customDamage: 13,customSpeed: 14},
+    {boss: "enem4",type: "enem44",xPos: 70,yPos: 6,customHP: 1,customDamage: 13,customSpeed: 21},
+    {boss: "enem4",type: "enem44",xPos: 18,yPos: 40,customHP: 1,customDamage: 13,customSpeed: 7},
+    {boss: "enem4",type: "enem44",xPos: 18,yPos: 8,customHP: 1,customDamage: 13,customSpeed: 20},
+    {boss: "enem4",type: "enem44",xPos: 82,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 18},
+    {boss: "enem5",type: "enem55",xPos: 80,yPos: 12,customHP: 1,customDamage: 15,customSpeed: 16},
+    {boss: "enem5",type: "enem55",xPos: 88,yPos: 20,customHP: 1,customDamage: 15,customSpeed: 14},
+    {boss: "enem5",type: "enem55",xPos: 14,yPos: 6,customHP: 1,customDamage: 15,customSpeed: 21},
+    {boss: "enem5",type: "enem55",xPos: 80,yPos: 40,customHP: 1,customDamage: 15,customSpeed: 7},
+    {boss: "enem5",type: "enem55",xPos: 80,yPos: 8,customHP: 1,customDamage: 15,customSpeed: 20},
+    {boss: "enem5",type: "enem55",xPos: 27,yPos: 12,customHP: 1,customDamage: 15,customSpeed: 18}
 ];
 
 const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 420, bossDelayAbDop: 6300 }, // редкий зигзаг, щедрая передышка
-	{ boss: 'enem2', bossDelayAb: 290, bossDelayAbDop: 5000 }, // симметричные взмахи, смена ритма
-	{ boss: 'enem3', bossDelayAb: 450, bossDelayAbDop: 6900 }, // редкие тяжёлые удары, самая долгая пауза
-	{ boss: 'enem4', bossDelayAb: 240, bossDelayAbDop: 4600 }, // направленный проезд, малый урон
-	{ boss: 'enem5', bossDelayAb: 260, bossDelayAbDop: 4300 }, // финал: плотнее всех, но телеграф честный
+	{ boss: 'enem1', bossDelayAb: 420, bossDelayAbDop: 5355, firstWaveDelayMs: 2400 }, // редкий зигзаг, щедрая передышка
+	{ boss: 'enem2', bossDelayAb: 290, bossDelayAbDop: 5487, firstWaveDelayMs: 2400 }, // симметричные взмахи, смена ритма
+	{ boss: 'enem3', bossDelayAb: 450, bossDelayAbDop: 5865, firstWaveDelayMs: 2400 }, // редкие тяжёлые удары, самая долгая пауза
+	{ boss: 'enem4', bossDelayAb: 240, bossDelayAbDop: 5290, firstWaveDelayMs: 2400 }, // направленный проезд, малый урон
+	{ boss: 'enem5', bossDelayAb: 260, bossDelayAbDop: 4945, firstWaveDelayMs: 2374 }, // финал: плотнее всех, но телеграф честный
 ];
 
 const bossAbilitiesDop = [
-	// Космаль
-	{ boss: 'enem1', indexAbilities: [0] },
-	{ boss: 'enem1', indexAbilities: [1] },
-	{ boss: 'enem1', indexAbilities: [0, 1] },
-	{ boss: 'enem1', indexAbilities: [2, 3, 4] },
-	{ boss: 'enem1', indexAbilities: [6, 7, 8, 9] },
-	{ boss: 'enem1', indexAbilities: [11, 9, 12] }, // ритмическая
-	{ boss: 'enem1', indexAbilities: [0, 2, 4, 6, 8, 10] }, // опасная сигнатурная
-	{ boss: 'enem1', indexAbilities: [13, 10, 14, 15] }, // смешанная поздняя
-
-	// Ворошень
-	{ boss: 'enem2', indexAbilities: [0] },
-	{ boss: 'enem2', indexAbilities: [1] },
-	{ boss: 'enem2', indexAbilities: [0, 1] },
-	{ boss: 'enem2', indexAbilities: [2, 3] },
-	{ boss: 'enem2', indexAbilities: [4, 5] },
-	{ boss: 'enem2', indexAbilities: [6, 10, 7] }, // ритмическая
-	{ boss: 'enem2', indexAbilities: [0, 1, 2, 3, 4, 5, 8] }, // опасная сигнатурная
-	{ boss: 'enem2', indexAbilities: [9, 12, 13, 15] }, // смешанная поздняя
-
-	// Копнуша
-	{ boss: 'enem3', indexAbilities: [0] },
-	{ boss: 'enem3', indexAbilities: [1] },
-	{ boss: 'enem3', indexAbilities: [0, 1] },
-	{ boss: 'enem3', indexAbilities: [2, 3, 4] },
-	{ boss: 'enem3', indexAbilities: [5, 6, 7] },
-	{ boss: 'enem3', indexAbilities: [13, 11, 14] }, // ритмическая
-	{ boss: 'enem3', indexAbilities: [0, 2, 4, 7, 9, 15] }, // опасная сигнатурная
-	{ boss: 'enem3', indexAbilities: [8, 10, 12] }, // смешанная поздняя
-
-	// Возило
-	{ boss: 'enem4', indexAbilities: [0, 1, 2] },
-	{ boss: 'enem4', indexAbilities: [5, 6, 7] },
-	{ boss: 'enem4', indexAbilities: [3, 4] },
-	{ boss: 'enem4', indexAbilities: [8, 9] },
-	{ boss: 'enem4', indexAbilities: [10, 11, 12] },
-	{ boss: 'enem4', indexAbilities: [0, 1, 2, 3, 4] }, // опасная сигнатурная
-	{ boss: 'enem4', indexAbilities: [5, 6, 7, 8, 9] },
-	{ boss: 'enem4', indexAbilities: [13, 14, 15] }, // смешанная поздняя: два ложных старта → таран сверху
-
-	// Двукос — смешивает почерк всех четырёх предыдущих боссов уровня
-	{ boss: 'enem5', indexAbilities: [0] },
-	{ boss: 'enem5', indexAbilities: [3] },
-	{ boss: 'enem5', indexAbilities: [0, 3] },
-	{ boss: 'enem5', indexAbilities: [1, 2] },
-	{ boss: 'enem5', indexAbilities: [4, 5] },
-	{ boss: 'enem5', indexAbilities: [7, 8, 6] }, // ритмическая
-	{ boss: 'enem5', indexAbilities: [9, 10, 11, 12, 13, 14] }, // сигнатура
-	{ boss: 'enem5', indexAbilities: [0, 4, 7, 9, 14] }, // смешанная поздняя
+    {boss: "enem1",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem1",indexAbilities: [1]},
+    {boss: "enem1",indexAbilities: [0,1]},
+    {boss: "enem1",indexAbilities: [2,3,4]},
+    {boss: "enem1",indexAbilities: [6,7,8,9]},
+    {boss: "enem1",indexAbilities: [16,17,18],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Первый покос — знакомство",openingOrder: 1},
+    {boss: "enem1",indexAbilities: [16,17,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Первый покос — иной конец"},
+    {boss: "enem1",indexAbilities: [21,18,17,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Первый покос — завершение"},
+    {boss: "enem2",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem2",indexAbilities: [1]},
+    {boss: "enem2",indexAbilities: [0,1]},
+    {boss: "enem2",indexAbilities: [2,3]},
+    {boss: "enem2",indexAbilities: [4,5]},
+    {boss: "enem2",indexAbilities: [16,17,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Обратный взмах ворошилки — знакомство",openingOrder: 1},
+    {boss: "enem2",indexAbilities: [16,17,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Обратный взмах ворошилки — иной конец"},
+    {boss: "enem2",indexAbilities: [18,21,17,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Обратный взмах ворошилки — завершение"},
+    {boss: "enem3",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem3",indexAbilities: [1]},
+    {boss: "enem3",indexAbilities: [0,1]},
+    {boss: "enem3",indexAbilities: [2,3,4]},
+    {boss: "enem3",indexAbilities: [5,6,7]},
+    {boss: "enem3",indexAbilities: [19,18],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Сено и скрытый ком — знакомство",openingOrder: 1},
+    {boss: "enem3",indexAbilities: [19,18,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Сено и скрытый ком — иной конец"},
+    {boss: "enem3",indexAbilities: [19,21,18,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Сено и скрытый ком — завершение"},
+    {boss: "enem4",indexAbilities: [0,1,2]},
+    {boss: "enem4",indexAbilities: [5,6,7]},
+    {boss: "enem4",indexAbilities: [3,4],openingOrder: 0},
+    {boss: "enem4",indexAbilities: [8,9]},
+    {boss: "enem4",indexAbilities: [10,11,12]},
+    {boss: "enem4",indexAbilities: [16,20,18,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Тележный толчок — знакомство",openingOrder: 1,shotGapsMs: [360,900,360]},
+    {boss: "enem4",indexAbilities: [16,20,21],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Тележный толчок — иной конец",shotGapsMs: [360,900,360]},
+    {boss: "enem4",indexAbilities: [18,21,16,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Тележный толчок — завершение",shotGapsMs: [360,900,360]},
+    {boss: "enem5",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem5",indexAbilities: [3]},
+    {boss: "enem5",indexAbilities: [0,3]},
+    {boss: "enem5",indexAbilities: [1,2]},
+    {boss: "enem5",indexAbilities: [4,5]},
+    {boss: "enem5",indexAbilities: [15,19,16],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Вторая коса после первой — знакомство",openingOrder: 1},
+    {boss: "enem5",indexAbilities: [15,19,17],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Вторая коса после первой — иной конец"},
+    {boss: "enem5",indexAbilities: [20,17,20,16],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Вторая коса после первой — завершение"}
 ];
 
 // Лорные названия связок. Уровень 21 — сенокос: Космаль (косматая коса), Ворошень

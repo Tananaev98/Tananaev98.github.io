@@ -69,6 +69,11 @@
 let lvlNumber = 52;
 
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	scaleLongComboDamage: true,
 	scaleShortComboDamage: true,
 	levelCadence: 1.00,
@@ -83,27 +88,27 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.80, speed: 1.12, damage: 1.22, telegraphMultiplier: 0.90, surpriseChance: 0.18, maxActiveAttacks: 14 }
 	],
 	bosses: {
-		enem1: {
+		enem1: { combatIdentity: "Мучная пыль и ком", combatTrick: "медленный первый снаряд остаётся фоном для более срочного второго", signatureEvery: 4,
 			// Пылюк: DUST_PUFF — облачные всплески из одной фиксированной точки сжатия
 			movementStyle: 'accelerate', cadence: 1.02, telegraphMs: 900, speedMultiplier: 0.94, damageMultiplier: 0.90,
 			speedVariance: [0.82, 0.92, 1.00, 1.08, 1.16]
 		}, // Пылюк: DUST_PUFF — облачные всплески из одной фиксированной точки сжатия
-		enem2: {
+		enem2: { combatIdentity: "Обратный взмах ковша", combatTrick: "показывает боковой замах, но заканчивает серединой; позднее конец возвращается на край", signatureEvery: 4,
 			// Ковшан: PADDLE_SWING — быстрые маятниковые взмахи из точки поворота
 			movementStyle: 'lateRush', cadence: 0.90, telegraphMs: 760, speedMultiplier: 1.06, damageMultiplier: 1.00,
 			speedVariance: [0.86, 0.95, 1.05, 1.14, 1.22]
 		}, // Ковшан: PADDLE_SWING — быстрые маятниковые взмахи из точки поворота
-		enem3: {
+		enem3: { combatIdentity: "Второй оборот жернова", combatTrick: "повторяет удар в прежнем секторе вместо ожидаемого чередования", signatureEvery: 4,
 			// Жерновик: GRIND_PULSE — долгое накопление хода, затем два тяжёлых удара подряд с одной точки
 			movementStyle: 'straight', cadence: 1.16, telegraphMs: 1020, speedMultiplier: 0.83, damageMultiplier: 1.17,
 			speedVariance: [0.80, 0.88, 0.96, 1.04, 1.12]
 		}, // Жерновик: GRIND_PULSE — долгое накопление хода, затем два тяжёлых удара подряд с одной точки
-		enem4: {
+		enem4: { combatIdentity: "Лопата гонит вдоль края", combatTrick: "ведёт прицел вдоль прохода, затем возвращает угрозу за спину прохода", signatureEvery: 4,
 			// Замуч: SHOVEL_FLURRY — частые ровные броски лопатой подряд, рабочий темп без пауз
 			movementStyle: 'weave', cadence: 0.86, telegraphMs: 690, speedMultiplier: 1.13, damageMultiplier: 1.04,
 			speedVariance: [0.88, 0.98, 1.08, 1.18, 1.26]
 		}, // Замуч: SHOVEL_FLURRY — частые ровные броски лопатой подряд, рабочий темп без пауз
-		enem5: {
+		enem5: { combatIdentity: "Колесо пропускает лопасть", combatTrick: "две короткие группы разделены паузой; вторая группа меняет сторону", signatureEvery: 4,
 			// Вертень: WHEEL_ROTATION — точки атаки непрерывно вращаются по всей окружности поля
 			movementStyle: 'wave', cadence: 0.81, telegraphMs: 970, speedMultiplier: 1.07, damageMultiplier: 1.15,
 			speedVariance: [0.86, 0.94, 1.03, 1.12, 1.20]
@@ -313,104 +318,127 @@ const ENEMY_TYPES = {
 
 	// ===== Вертень: WHEEL_ROTATION — точки атаки непрерывно вращаются по
 	// всей окружности поля =====
-	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 5 },  //0  12 часов
-	{ boss: 'enem5', type: 'enem55', xPos: 80, yPos: 20, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 6 },  //1  3 часа
-	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 46, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //2  6 часов
-	{ boss: 'enem5', type: 'enem55', xPos: 20, yPos: 20, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 6 },  //3  9 часов
-	{ boss: 'enem5', type: 'enem55', xPos: 15, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 22 }, //4
-	{ boss: 'enem5', type: 'enem55', xPos: 85, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 22 }, //5
-	{ boss: 'enem5', type: 'enem55', xPos: 30, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 12 }, //6
-	{ boss: 'enem5', type: 'enem55', xPos: 70, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 12 }, //7
-	{ boss: 'enem5', type: 'enem55', xPos: 10, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 26 }, //8
-	{ boss: 'enem5', type: 'enem55', xPos: 90, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 26 }, //9
-	{ boss: 'enem5', type: 'enem55', xPos: 35, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //10
-	{ boss: 'enem5', type: 'enem55', xPos: 65, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //11
-	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 28 }, //12 — нежданчик: колесо вдруг делает полный оборот на пике скорости
-	{ boss: 'enem5', type: 'enem55', xPos: 25, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 6 },  //13
-	{ boss: 'enem5', type: 'enem55', xPos: 75, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 6 },  //14
-	{ boss: 'enem5', type: 'enem55', xPos: 45, yPos: 32, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 13 }, //15
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 5, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //0  12 часов
+	{ boss: 'enem5', type: 'enem55', xPos: 80, yPos: 20, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 6, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //1  3 часа
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 46, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //2  6 часов
+	{ boss: 'enem5', type: 'enem55', xPos: 20, yPos: 20, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 6, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //3  9 часов
+	{ boss: 'enem5', type: 'enem55', xPos: 15, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 22, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //4
+	{ boss: 'enem5', type: 'enem55', xPos: 85, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 22, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //5
+	{ boss: 'enem5', type: 'enem55', xPos: 30, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 12, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //6
+	{ boss: 'enem5', type: 'enem55', xPos: 70, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 12, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //7
+	{ boss: 'enem5', type: 'enem55', xPos: 10, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 26, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //8
+	{ boss: 'enem5', type: 'enem55', xPos: 90, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 26, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //9
+	{ boss: 'enem5', type: 'enem55', xPos: 35, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //10
+	{ boss: 'enem5', type: 'enem55', xPos: 65, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //11
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 28, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //12 — нежданчик: колесо вдруг делает полный оборот на пике скорости
+	{ boss: 'enem5', type: 'enem55', xPos: 25, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 6, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //13
+	{ boss: 'enem5', type: 'enem55', xPos: 75, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 6, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //14
+	{ boss: 'enem5', type: 'enem55', xPos: 45, yPos: 32, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 13, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //15
 	// звенья «атакующей цепи» — колесо описывает дугу, затем полный
 	// хаотичный оборот на кульминации (arc+irregular), раздел 13.7.
-	{ boss: 'enem5', type: 'enem55', xPos: 70, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 18 }, //16 цепь-A звено 1 (голова)
-	{ boss: 'enem5', type: 'enem55', xPos: 45, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14 }, //17 цепь-A звено 2
-	{ boss: 'enem5', type: 'enem55', xPos: 65, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 10 }, //18 цепь-A звено 3
-	{ boss: 'enem5', type: 'enem55', xPos: 20, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 18 }, //19 цепь-B звено 1 (голова)
-	{ boss: 'enem5', type: 'enem55', xPos: 35, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 15 }, //20 цепь-B звено 2
-	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 12 }, //21 цепь-B звено 3
-	{ boss: 'enem5', type: 'enem55', xPos: 40, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 10 }, //22 цепь-B звено 4
-	{ boss: 'enem5', type: 'enem55', xPos: 55, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 8 },  //23 цепь-B звено 5
-	{ boss: 'enem5', type: 'enem55', xPos: 40, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 6 },  //24 цепь-B звено 6
+	{ boss: 'enem5', type: 'enem55', xPos: 70, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 18, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //16 цепь-A звено 1 (голова)
+	{ boss: 'enem5', type: 'enem55', xPos: 45, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //17 цепь-A звено 2
+	{ boss: 'enem5', type: 'enem55', xPos: 65, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 10, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //18 цепь-A звено 3
+	{ boss: 'enem5', type: 'enem55', xPos: 20, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 18, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //19 цепь-B звено 1 (голова)
+	{ boss: 'enem5', type: 'enem55', xPos: 35, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 15, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //20 цепь-B звено 2
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 12, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //21 цепь-B звено 3
+	{ boss: 'enem5', type: 'enem55', xPos: 40, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 10, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //22 цепь-B звено 4
+	{ boss: 'enem5', type: 'enem55', xPos: 55, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 8, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //23 цепь-B звено 5
+	{ boss: 'enem5', type: 'enem55', xPos: 40, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 6, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //24 цепь-B звено 6
+
+    // Приёмы из scripts/combat-designs.js; индексы считаются отдельно для каждого босса.
+    {boss: "enem1",type: "enem11",xPos: 16,yPos: 12,customHP: 1,customDamage: 20,customSpeed: 16},
+    {boss: "enem1",type: "enem11",xPos: 78,yPos: 20,customHP: 1,customDamage: 20,customSpeed: 14},
+    {boss: "enem1",type: "enem11",xPos: 30,yPos: 6,customHP: 1,customDamage: 20,customSpeed: 21},
+    {boss: "enem1",type: "enem11",xPos: 16,yPos: 24,customHP: 1,customDamage: 20,customSpeed: 7},
+    {boss: "enem1",type: "enem11",xPos: 16,yPos: 8,customHP: 1,customDamage: 20,customSpeed: 20},
+    {boss: "enem1",type: "enem11",xPos: 64,yPos: 12,customHP: 1,customDamage: 20,customSpeed: 18},
+    {boss: "enem2",type: "enem22",xPos: 84,yPos: 12,customHP: 1,customDamage: 22,customSpeed: 16},
+    {boss: "enem2",type: "enem22",xPos: 66,yPos: 20,customHP: 1,customDamage: 22,customSpeed: 14},
+    {boss: "enem2",type: "enem22",xPos: 18,yPos: 6,customHP: 1,customDamage: 22,customSpeed: 21},
+    {boss: "enem2",type: "enem22",xPos: 84,yPos: 40,customHP: 1,customDamage: 22,customSpeed: 7},
+    {boss: "enem2",type: "enem22",xPos: 84,yPos: 8,customHP: 1,customDamage: 22,customSpeed: 20},
+    {boss: "enem2",type: "enem22",xPos: 52,yPos: 12,customHP: 1,customDamage: 22,customSpeed: 18},
+    {boss: "enem3",type: "enem33",xPos: 22,yPos: 12,customHP: 1,customDamage: 24,customSpeed: 16},
+    {boss: "enem3",type: "enem33",xPos: 34,yPos: 20,customHP: 1,customDamage: 24,customSpeed: 14},
+    {boss: "enem3",type: "enem33",xPos: 80,yPos: 6,customHP: 1,customDamage: 24,customSpeed: 21},
+    {boss: "enem3",type: "enem33",xPos: 22,yPos: 40,customHP: 1,customDamage: 24,customSpeed: 7},
+    {boss: "enem3",type: "enem33",xPos: 22,yPos: 8,customHP: 1,customDamage: 24,customSpeed: 20},
+    {boss: "enem3",type: "enem33",xPos: 88,yPos: 12,customHP: 1,customDamage: 24,customSpeed: 18},
+    {boss: "enem4",type: "enem44",xPos: 86,yPos: 12,customHP: 1,customDamage: 26,customSpeed: 16},
+    {boss: "enem4",type: "enem44",xPos: 70,yPos: 20,customHP: 1,customDamage: 26,customSpeed: 14},
+    {boss: "enem4",type: "enem44",xPos: 44,yPos: 6,customHP: 1,customDamage: 26,customSpeed: 21},
+    {boss: "enem4",type: "enem44",xPos: 86,yPos: 40,customHP: 1,customDamage: 26,customSpeed: 7},
+    {boss: "enem4",type: "enem44",xPos: 86,yPos: 8,customHP: 1,customDamage: 26,customSpeed: 20},
+    {boss: "enem4",type: "enem44",xPos: 14,yPos: 12,customHP: 1,customDamage: 26,customSpeed: 18},
+    {boss: "enem5",type: "enem55",xPos: 24,yPos: 12,customHP: 1,customDamage: 28,customSpeed: 16, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },
+    {boss: "enem5",type: "enem55",xPos: 36,yPos: 20,customHP: 1,customDamage: 28,customSpeed: 14, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },
+    {boss: "enem5",type: "enem55",xPos: 72,yPos: 6,customHP: 1,customDamage: 28,customSpeed: 21, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },
+    {boss: "enem5",type: "enem55",xPos: 24,yPos: 40,customHP: 1,customDamage: 28,customSpeed: 7, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },
+    {boss: "enem5",type: "enem55",xPos: 24,yPos: 8,customHP: 1,customDamage: 28,customSpeed: 20, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },
+    {boss: "enem5",type: "enem55",xPos: 84,yPos: 12,customHP: 1,customDamage: 28,customSpeed: 18, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }
 ];
 
  const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 315, bossDelayAbDop: 5800 }, // ровное сжатие мешка
-	{ boss: 'enem2', bossDelayAb: 225, bossDelayAbDop: 4400 }, // самый частый — быстрый маятник
-	{ boss: 'enem3', bossDelayAb: 415, bossDelayAbDop: 6950 }, // самый долгий отдых — накопление хода
-	{ boss: 'enem4', bossDelayAb: 190, bossDelayAbDop: 3400 }, // рабочая спешка без пауз
-	{ boss: 'enem5', bossDelayAb: 255, bossDelayAbDop: 5100 }, // собранный финал
+	{ boss: 'enem1', bossDelayAb: 315, bossDelayAbDop: 5800, firstWaveDelayMs: 2400 }, // ровное сжатие мешка
+	{ boss: 'enem2', bossDelayAb: 225, bossDelayAbDop: 4400, firstWaveDelayMs: 2112 }, // самый частый — быстрый маятник
+	{ boss: 'enem3', bossDelayAb: 415, bossDelayAbDop: 6950, firstWaveDelayMs: 2400 }, // самый долгий отдых — накопление хода
+	{ boss: 'enem4', bossDelayAb: 190, bossDelayAbDop: 3400, firstWaveDelayMs: 1632 }, // рабочая спешка без пауз
+	{ boss: 'enem5', bossDelayAb: 255, bossDelayAbDop: 5100, firstWaveDelayMs: 2400 }, // собранный финал
  ];
 
  const bossAbilitiesDop = [
-	// Пылюк — DUST_PUFF
-	{ boss: 'enem1', indexAbilities: [0, 1] },
-	{ boss: 'enem1', indexAbilities: [2, 3] },
-	{ boss: 'enem1', indexAbilities: [10, 13] },
-	{ boss: 'enem1', indexAbilities: [4, 5] },
-	{ boss: 'enem1', indexAbilities: [6, 8, 7, 9] },
-	{ boss: 'enem1', indexAbilities: [0, 1, 4] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem1', indexAbilities: [16, 17, 18, 19, 20], isChain: true }, // ← цепь-A (5, irregular)
-	{ boss: 'enem1', indexAbilities: [21, 22, 23, 24], isChain: true }, // ← цепь-B (4, zigzag)
-	{ boss: 'enem1', indexAbilities: [13, 10, 1] }, // нежданчик: тройной залп из одной точки подряд
-	{ boss: 'enem1', indexAbilities: [0, 2, 10, 1, 3, 13] }, // сигнатурная: полное сжатие мешка на пределе
-
-	// Ковшан — PADDLE_SWING
-	{ boss: 'enem2', indexAbilities: [0, 1] },
-	{ boss: 'enem2', indexAbilities: [2, 3] },
-	{ boss: 'enem2', indexAbilities: [4, 6] },
-	{ boss: 'enem2', indexAbilities: [5, 7] },
-	{ boss: 'enem2', indexAbilities: [8, 9] },
-	{ boss: 'enem2', indexAbilities: [0, 1, 4] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem2', indexAbilities: [16, 17, 18], isChain: true }, // ← цепь-A (3, diagonal)
-	{ boss: 'enem2', indexAbilities: [19, 20, 21, 22], isChain: true }, // ← цепь-B (4, zigzag)
-	{ boss: 'enem2', indexAbilities: [12, 13] }, // нежданчик: маятник в обе стороны почти разом
-	{ boss: 'enem2', indexAbilities: [0, 1, 2, 3, 6, 7] }, // сигнатурная: полный размах маятника с обеих сторон
-
-	// Жерновик — GRIND_PULSE
-	{ boss: 'enem3', indexAbilities: [0, 1] },
-	{ boss: 'enem3', indexAbilities: [2, 3] },
-	{ boss: 'enem3', indexAbilities: [4, 5] },
-	{ boss: 'enem3', indexAbilities: [6, 7] },
-	{ boss: 'enem3', indexAbilities: [8, 9] },
-	{ boss: 'enem3', indexAbilities: [0, 1, 8] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem3', indexAbilities: [16, 17, 18], isChain: true }, // ← цепь-A (3, vertical)
-	{ boss: 'enem3', indexAbilities: [19, 20, 21, 22], isChain: true }, // ← цепь-B (4, zigzag)
-	{ boss: 'enem3', indexAbilities: [14] }, // нежданчик: пульс раньше привычного долгого накопления
-	{ boss: 'enem3', indexAbilities: [0, 1, 10, 2, 3, 11] }, // сигнатурная: двойной удар с обеих сторон подряд
-
-	// Замуч — SHOVEL_FLURRY
-	{ boss: 'enem4', indexAbilities: [0, 1] },
-	{ boss: 'enem4', indexAbilities: [2, 3] },
-	{ boss: 'enem4', indexAbilities: [4, 5] },
-	{ boss: 'enem4', indexAbilities: [8, 9] },
-	{ boss: 'enem4', indexAbilities: [6, 7, 11, 12] },
-	{ boss: 'enem4', indexAbilities: [0, 1, 4] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem4', indexAbilities: [16, 17, 18, 19], isChain: true }, // ← цепь-A (4, vertical)
-	{ boss: 'enem4', indexAbilities: [20, 21, 22, 23], isChain: true }, // ← цепь-B (4, diagonal)
-	{ boss: 'enem4', indexAbilities: [13, 14] }, // нежданчик: двойной бросок с одной стороны без чередования
-	{ boss: 'enem4', indexAbilities: [0, 2, 4, 8, 1, 3, 5, 9] }, // сигнатурная: непрерывный шквал бросков по всему полю
-
-	// Вертень — WHEEL_ROTATION, финальный облик
-	{ boss: 'enem5', indexAbilities: [0, 1, 2, 3] },
-	{ boss: 'enem5', indexAbilities: [6, 7] },
-	{ boss: 'enem5', indexAbilities: [4, 5] },
-	{ boss: 'enem5', indexAbilities: [10, 11] },
-	{ boss: 'enem5', indexAbilities: [8, 9] },
-	{ boss: 'enem5', indexAbilities: [0, 1, 4] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem5', indexAbilities: [16, 17, 18], isChain: true }, // ← цепь-A (3, arc)
-	{ boss: 'enem5', indexAbilities: [19, 20, 21, 22, 23, 24], isChain: true }, // ← цепь-B (6, irregular)
-	{ boss: 'enem5', indexAbilities: [12] }, // нежданчик: колесо вдруг делает полный оборот на пике скорости
-	{ boss: 'enem5', indexAbilities: [0, 1, 2, 3, 6, 7, 13, 14] }, // сигнатурная кульминация: полный оборот колеса разом по всему полю
- ];
+    {boss: "enem1",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem1",indexAbilities: [2,3]},
+    {boss: "enem1",indexAbilities: [10,13]},
+    {boss: "enem1",indexAbilities: [4,5]},
+    {boss: "enem1",indexAbilities: [6,8,7,9]},
+    {boss: "enem1",indexAbilities: [28,27],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Мучная пыль и ком — знакомство",openingOrder: 1},
+    {boss: "enem1",indexAbilities: [28,27,29],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Мучная пыль и ком — иной конец"},
+    {boss: "enem1",indexAbilities: [28,30,27,29],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Мучная пыль и ком — завершение"},
+    {boss: "enem1",indexAbilities: [16,17,18,19,20],isChain: true},
+    {boss: "enem1",indexAbilities: [21,22,23,24],isChain: true},
+    {boss: "enem2",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem2",indexAbilities: [2,3]},
+    {boss: "enem2",indexAbilities: [4,6]},
+    {boss: "enem2",indexAbilities: [5,7]},
+    {boss: "enem2",indexAbilities: [8,9]},
+    {boss: "enem2",indexAbilities: [23,24,28],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Обратный взмах ковша — знакомство",openingOrder: 1},
+    {boss: "enem2",indexAbilities: [23,24,27],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Обратный взмах ковша — иной конец"},
+    {boss: "enem2",indexAbilities: [25,28,24,27],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Обратный взмах ковша — завершение"},
+    {boss: "enem2",indexAbilities: [16,17,18],isChain: true},
+    {boss: "enem2",indexAbilities: [19,20,21,22],isChain: true},
+    {boss: "enem3",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem3",indexAbilities: [2,3]},
+    {boss: "enem3",indexAbilities: [4,5]},
+    {boss: "enem3",indexAbilities: [6,7]},
+    {boss: "enem3",indexAbilities: [8,9]},
+    {boss: "enem3",indexAbilities: [23,27,24],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Второй оборот жернова — знакомство",openingOrder: 1},
+    {boss: "enem3",indexAbilities: [23,27,25],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Второй оборот жернова — иной конец"},
+    {boss: "enem3",indexAbilities: [28,25,28,24],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Второй оборот жернова — завершение"},
+    {boss: "enem3",indexAbilities: [16,17,18],isChain: true},
+    {boss: "enem3",indexAbilities: [19,20,21,22],isChain: true},
+    {boss: "enem4",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem4",indexAbilities: [2,3]},
+    {boss: "enem4",indexAbilities: [4,5]},
+    {boss: "enem4",indexAbilities: [8,9]},
+    {boss: "enem4",indexAbilities: [6,7,11,12]},
+    {boss: "enem4",indexAbilities: [24,25,26],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Лопата гонит вдоль края — знакомство",openingOrder: 1},
+    {boss: "enem4",indexAbilities: [24,25,28],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Лопата гонит вдоль края — иной конец"},
+    {boss: "enem4",indexAbilities: [29,26,25,28],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Лопата гонит вдоль края — завершение"},
+    {boss: "enem4",indexAbilities: [16,17,18,19],isChain: true},
+    {boss: "enem4",indexAbilities: [20,21,22,23],isChain: true},
+    {boss: "enem5",indexAbilities: [0,1,2,3]},
+    {boss: "enem5",indexAbilities: [6,7],openingOrder: 0},
+    {boss: "enem5",indexAbilities: [4,5]},
+    {boss: "enem5",indexAbilities: [10,11]},
+    {boss: "enem5",indexAbilities: [8,9]},
+    {boss: "enem5",indexAbilities: [25,29,27,30],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Колесо пропускает лопасть — знакомство",openingOrder: 1,shotGapsMs: [360,900,360]},
+    {boss: "enem5",indexAbilities: [25,29,30],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Колесо пропускает лопасть — иной конец",shotGapsMs: [360,900,360]},
+    {boss: "enem5",indexAbilities: [27,30,25,29],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Колесо пропускает лопасть — завершение",shotGapsMs: [360,900,360]},
+    {boss: "enem5",indexAbilities: [16,17,18],isChain: true},
+    {boss: "enem5",indexAbilities: [19,20,21,22,23,24],isChain: true}
+];
 
 // Лорные названия связок временных улучшений — у каждого босса свой словарь
 // образов конкретно ЕГО материала/повадки (раздел 12.1), полных совпадений

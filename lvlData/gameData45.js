@@ -87,6 +87,11 @@
 let lvlNumber = 45;
 
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	scaleLongComboDamage: true,
 	scaleShortComboDamage: true,
 	levelCadence: 1.00,
@@ -102,35 +107,35 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.76, speed: 1.10, damage: 1.14, telegraphMultiplier: 0.90, surpriseChance: 0.20, maxActiveAttacks: 15 }
 	],
 	bosses: {
-		enem1: {
+		enem1: { combatIdentity: "Пар от стены", combatTrick: "ведёт прицел вдоль прохода, затем возвращает угрозу за спину прохода", signatureEvery: 4,
 			// Банник: ONE_WALL_STEAM — пар идёт то с одной стены, то с другой, по одному фронту за раз
 			movementStyle: 'drift', cadence: 1.03, telegraphMs: 900, speedMultiplier: 0.95, damageMultiplier: 0.92,
 			speedVariance: [0.80, 0.90, 1.00, 1.10, 1.18], healthMultiplier: 1.50,
 			appearMessage: 'Не ходи в мой пар без спросу!',
 			phaseMessages: { 2: 'Жарче поддам!', 3: 'Из бани живым не выйдешь!' }
 		}, // Банник: ONE_WALL_STEAM — пар идёт то с одной стены, то с другой
-		enem2: {
+		enem2: { combatIdentity: "Ожог за паром", combatTrick: "медленный первый снаряд остаётся фоном для более срочного второго", signatureEvery: 4,
 			// Ошпаренный: SCALD_STING — редкий, но резкий одиночный ожог, потом долгая пауза
 			movementStyle: 'pause', cadence: 0.95, telegraphMs: 800, speedMultiplier: 1.02, damageMultiplier: 0.98,
 			speedVariance: [0.88, 0.96, 1.04, 1.12, 1.18], healthMultiplier: 1.50,
 			appearMessage: 'Ошпарю — стой смирно!',
 			phaseMessages: { 2: 'Больно — и тебе будет!', 3: 'Кожа слезает, а зло только крепнет!' }
 		}, // Ошпаренный: SCALD_STING — редкий резкий одиночный ожог, потом долгая пауза
-		enem3: {
+		enem3: { combatIdentity: "Тяжёлая вторая лапа", combatTrick: "повторяет удар в прежнем секторе вместо ожидаемого чередования", signatureEvery: 4,
 			// Задубевший: HARDENED_ASYMMETRY — одна ороговевшая лапа бьёт тяжело и часто, другая редко
 			movementStyle: 'lateRush', cadence: 1.17, telegraphMs: 1050, speedMultiplier: 0.80, damageMultiplier: 1.19,
 			speedVariance: [0.80, 0.88, 0.96, 1.04, 1.12], healthMultiplier: 1.50,
 			appearMessage: 'Эта лапа уже не чувствует боли!',
 			phaseMessages: { 2: 'Задубел — и не согнусь!', 3: 'Кулак крепче камня!' }
 		}, // Задубевший: HARDENED_ASYMMETRY — одна ороговевшая лапа тяжело и часто, другая редко
-		enem4: {
+		enem4: { combatIdentity: "Бросок через полок", combatTrick: "двойной выпад иногда получает третий укус с другой стороны", signatureEvery: 4,
 			// Обугленный: AGONY_ZIGZAG — мечется всем телом в агонии, зигзаг без стены
 			movementStyle: 'straight', cadence: 0.86, telegraphMs: 680, speedMultiplier: 1.12, damageMultiplier: 1.04,
 			speedVariance: [0.88, 0.98, 1.08, 1.16, 1.24], healthMultiplier: 1.50,
 			appearMessage: 'Горю — и жгу в ответ!',
 			phaseMessages: { 2: 'Пепел сыплется, а я всё стою!', 3: 'Обугленный, но не сломленный!' }
 		}, // Обугленный: AGONY_ZIGZAG — мечется всем телом в агонии, зигзаг без стены
-		enem5: {
+		enem5: { combatIdentity: "Паровой захлоп", combatTrick: "сводит угрозы с краёв к внутренним полосам, затем размыкает рисунок", signatureEvery: 4,
 			// Испарившийся: STEAM_FLOOD — пар заполняет поле отовсюду разом, редко бьёт из центра
 			movementStyle: 'wave', cadence: 0.80, telegraphMs: 1040, speedMultiplier: 1.05, damageMultiplier: 1.12,
 			speedVariance: [0.86, 0.94, 1.03, 1.12, 1.20], healthMultiplier: 1.50,
@@ -344,107 +349,130 @@ const ENEMY_TYPES = {
 
 	// ===== Испарившийся: STEAM_FLOOD — пар заполняет поле отовсюду разом,
 	// изредка бьёт из самого центра =====
-	{ boss: 'enem5', type: 'enem55', xPos: 10, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //0
-	{ boss: 'enem5', type: 'enem55', xPos: 90, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //1
-	{ boss: 'enem5', type: 'enem55', xPos: 30, yPos: 10, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 5 },  //2
-	{ boss: 'enem5', type: 'enem55', xPos: 70, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 5 },  //3
-	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 7,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 6 },  //4
-	{ boss: 'enem5', type: 'enem55', xPos: 14, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 22 }, //5
-	{ boss: 'enem5', type: 'enem55', xPos: 86, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 24 }, //6
-	{ boss: 'enem5', type: 'enem55', xPos: 8,  yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 26 }, //7
-	{ boss: 'enem5', type: 'enem55', xPos: 92, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 28 }, //8
-	{ boss: 'enem5', type: 'enem55', xPos: 40, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 12 }, //9
-	{ boss: 'enem5', type: 'enem55', xPos: 60, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 13 }, //10
-	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 46, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //11 редкий удар из центра — нежданчик
-	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 32, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14 }, //12 редкий удар из центра
-	{ boss: 'enem5', type: 'enem55', xPos: 20, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 5 },  //13
-	{ boss: 'enem5', type: 'enem55', xPos: 80, yPos: 46, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 5 },  //14
-	{ boss: 'enem5', type: 'enem55', xPos: 25, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 18 }, //15
+	{ boss: 'enem5', type: 'enem55', xPos: 10, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //0
+	{ boss: 'enem5', type: 'enem55', xPos: 90, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //1
+	{ boss: 'enem5', type: 'enem55', xPos: 30, yPos: 10, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 5, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //2
+	{ boss: 'enem5', type: 'enem55', xPos: 70, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 5, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //3
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 7,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 6, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //4
+	{ boss: 'enem5', type: 'enem55', xPos: 14, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 22, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //5
+	{ boss: 'enem5', type: 'enem55', xPos: 86, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 24, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //6
+	{ boss: 'enem5', type: 'enem55', xPos: 8,  yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 26, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //7
+	{ boss: 'enem5', type: 'enem55', xPos: 92, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 28, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //8
+	{ boss: 'enem5', type: 'enem55', xPos: 40, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 12, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //9
+	{ boss: 'enem5', type: 'enem55', xPos: 60, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 13, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //10
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 46, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //11 редкий удар из центра — нежданчик
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 32, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //12 редкий удар из центра
+	{ boss: 'enem5', type: 'enem55', xPos: 20, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 5, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //13
+	{ boss: 'enem5', type: 'enem55', xPos: 80, yPos: 46, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 5, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //14
+	{ boss: 'enem5', type: 'enem55', xPos: 25, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 18, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //15
 	// звенья «атакующей цепи» — сплошная стена пара сверху донизу, дважды на
 	// кульминации (vertical+vertical, самые длинные цепи уровня).
-	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 18 }, //16 цепь-A звено 1 (голова)
-	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 16 }, //17 цепь-A звено 2
-	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14 }, //18 цепь-A звено 3
-	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 11 }, //19 цепь-A звено 4
-	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 8 },  //20 цепь-A звено 5
-	{ boss: 'enem5', type: 'enem55', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 18 }, //21 цепь-B звено 1 (голова, максимум длины 7)
-	{ boss: 'enem5', type: 'enem55', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 16 }, //22 цепь-B звено 2
-	{ boss: 'enem5', type: 'enem55', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14 }, //23 цепь-B звено 3
-	{ boss: 'enem5', type: 'enem55', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 13 }, //24 цепь-B звено 4
-	{ boss: 'enem5', type: 'enem55', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 11 }, //25 цепь-B звено 5
-	{ boss: 'enem5', type: 'enem55', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 9 },  //26 цепь-B звено 6
-	{ boss: 'enem5', type: 'enem55', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 7 },  //27 цепь-B звено 7
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 18, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //16 цепь-A звено 1 (голова)
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 16, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //17 цепь-A звено 2
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //18 цепь-A звено 3
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 11, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //19 цепь-A звено 4
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 8, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //20 цепь-A звено 5
+	{ boss: 'enem5', type: 'enem55', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 18, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //21 цепь-B звено 1 (голова, максимум длины 7)
+	{ boss: 'enem5', type: 'enem55', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 16, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //22 цепь-B звено 2
+	{ boss: 'enem5', type: 'enem55', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //23 цепь-B звено 3
+	{ boss: 'enem5', type: 'enem55', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 13, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //24 цепь-B звено 4
+	{ boss: 'enem5', type: 'enem55', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 11, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }, //25 цепь-B звено 5
+	{ boss: 'enem5', type: 'enem55', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 9, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //26 цепь-B звено 6
+	{ boss: 'enem5', type: 'enem55', xPos: 30, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 7, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },  //27 цепь-B звено 7
+
+    // Приёмы из scripts/combat-designs.js; индексы считаются отдельно для каждого босса.
+    {boss: "enem1",type: "enem11",xPos: 16,yPos: 12,customHP: 1,customDamage: 20,customSpeed: 16},
+    {boss: "enem1",type: "enem11",xPos: 34,yPos: 20,customHP: 1,customDamage: 20,customSpeed: 14},
+    {boss: "enem1",type: "enem11",xPos: 62,yPos: 6,customHP: 1,customDamage: 20,customSpeed: 21},
+    {boss: "enem1",type: "enem11",xPos: 16,yPos: 40,customHP: 1,customDamage: 20,customSpeed: 7},
+    {boss: "enem1",type: "enem11",xPos: 16,yPos: 8,customHP: 1,customDamage: 20,customSpeed: 20},
+    {boss: "enem1",type: "enem11",xPos: 84,yPos: 12,customHP: 1,customDamage: 20,customSpeed: 18},
+    {boss: "enem2",type: "enem22",xPos: 82,yPos: 12,customHP: 1,customDamage: 22,customSpeed: 16},
+    {boss: "enem2",type: "enem22",xPos: 24,yPos: 20,customHP: 1,customDamage: 22,customSpeed: 14},
+    {boss: "enem2",type: "enem22",xPos: 66,yPos: 6,customHP: 1,customDamage: 22,customSpeed: 21},
+    {boss: "enem2",type: "enem22",xPos: 82,yPos: 24,customHP: 1,customDamage: 22,customSpeed: 7},
+    {boss: "enem2",type: "enem22",xPos: 82,yPos: 8,customHP: 1,customDamage: 22,customSpeed: 20},
+    {boss: "enem2",type: "enem22",xPos: 38,yPos: 12,customHP: 1,customDamage: 22,customSpeed: 18},
+    {boss: "enem3",type: "enem33",xPos: 14,yPos: 12,customHP: 1,customDamage: 24,customSpeed: 16},
+    {boss: "enem3",type: "enem33",xPos: 28,yPos: 20,customHP: 1,customDamage: 24,customSpeed: 14},
+    {boss: "enem3",type: "enem33",xPos: 76,yPos: 6,customHP: 1,customDamage: 24,customSpeed: 21},
+    {boss: "enem3",type: "enem33",xPos: 14,yPos: 40,customHP: 1,customDamage: 24,customSpeed: 7},
+    {boss: "enem3",type: "enem33",xPos: 14,yPos: 8,customHP: 1,customDamage: 24,customSpeed: 20},
+    {boss: "enem3",type: "enem33",xPos: 88,yPos: 12,customHP: 1,customDamage: 24,customSpeed: 18},
+    {boss: "enem4",type: "enem44",xPos: 84,yPos: 12,customHP: 1,customDamage: 26,customSpeed: 16},
+    {boss: "enem4",type: "enem44",xPos: 72,yPos: 20,customHP: 1,customDamage: 26,customSpeed: 14},
+    {boss: "enem4",type: "enem44",xPos: 20,yPos: 6,customHP: 1,customDamage: 26,customSpeed: 21},
+    {boss: "enem4",type: "enem44",xPos: 84,yPos: 40,customHP: 1,customDamage: 26,customSpeed: 7},
+    {boss: "enem4",type: "enem44",xPos: 84,yPos: 8,customHP: 1,customDamage: 26,customSpeed: 20},
+    {boss: "enem4",type: "enem44",xPos: 34,yPos: 12,customHP: 1,customDamage: 26,customSpeed: 18},
+    {boss: "enem5",type: "enem55",xPos: 24,yPos: 12,customHP: 1,customDamage: 28,customSpeed: 16, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },
+    {boss: "enem5",type: "enem55",xPos: 40,yPos: 20,customHP: 1,customDamage: 28,customSpeed: 14, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },
+    {boss: "enem5",type: "enem55",xPos: 86,yPos: 6,customHP: 1,customDamage: 28,customSpeed: 21, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },
+    {boss: "enem5",type: "enem55",xPos: 24,yPos: 40,customHP: 1,customDamage: 28,customSpeed: 7, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },
+    {boss: "enem5",type: "enem55",xPos: 24,yPos: 8,customHP: 1,customDamage: 28,customSpeed: 20, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },
+    {boss: "enem5",type: "enem55",xPos: 66,yPos: 12,customHP: 1,customDamage: 28,customSpeed: 18, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }
 ];
 
  const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 300, bossDelayAbDop: 5600 }, // спокойный ритм знакомства
-	{ boss: 'enem2', bossDelayAb: 260, bossDelayAbDop: 6200 }, // короткая атака, ОЧЕНЬ долгая пауза — суть SCALD_STING
-	{ boss: 'enem3', bossDelayAb: 390, bossDelayAbDop: 6600 }, // тяжёлая, долгая пауза уровня
-	{ boss: 'enem4', bossDelayAb: 200, bossDelayAbDop: 3800 }, // самый частый, агония без передышки
-	{ boss: 'enem5', bossDelayAb: 260, bossDelayAbDop: 5200 }, // собранный, но не самый частый — финал
+	{ boss: 'enem1', bossDelayAb: 300, bossDelayAbDop: 5437, firstWaveDelayMs: 2400 }, // спокойный ритм знакомства
+	{ boss: 'enem2', bossDelayAb: 260, bossDelayAbDop: 5421, firstWaveDelayMs: 2400 }, // короткая атака, ОЧЕНЬ долгая пауза — суть SCALD_STING
+	{ boss: 'enem3', bossDelayAb: 390, bossDelayAbDop: 5610, firstWaveDelayMs: 2400 }, // тяжёлая, долгая пауза уровня
+	{ boss: 'enem4', bossDelayAb: 200, bossDelayAbDop: 4370, firstWaveDelayMs: 2098 }, // самый частый, агония без передышки
+	{ boss: 'enem5', bossDelayAb: 260, bossDelayAbDop: 4938, firstWaveDelayMs: 2370 }, // собранный, но не самый частый — финал
  ];
 
  const bossAbilitiesDop = [
-	// Банник — ONE_WALL_STEAM
-	{ boss: 'enem1', indexAbilities: [0, 1, 2, 3] },
-	{ boss: 'enem1', indexAbilities: [4, 5, 6, 7] },
-	{ boss: 'enem1', indexAbilities: [10, 11] },
-	{ boss: 'enem1', indexAbilities: [8, 9] },
-	{ boss: 'enem1', indexAbilities: [0, 1, 10] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem1', indexAbilities: [16, 17, 18], isChain: true }, // ← цепь (3)
-	{ boss: 'enem1', indexAbilities: [19, 20, 21], isChain: true }, // ← цепь (3)
-	{ boss: 'enem1', indexAbilities: [12, 13, 7, 8] }, // нежданчик: обе стены разом вместо привычной одной
-	{ boss: 'enem1', indexAbilities: [0, 1, 2, 3, 14] }, // сигнатурная: вся левая стена разом
-
-	// Ошпаренный — SCALD_STING
-	{ boss: 'enem2', indexAbilities: [0] },
-	{ boss: 'enem2', indexAbilities: [1] },
-	{ boss: 'enem2', indexAbilities: [2] },
-	{ boss: 'enem2', indexAbilities: [3, 4] },
-	{ boss: 'enem2', indexAbilities: [7, 8] },
-	{ boss: 'enem2', indexAbilities: [0, 1] }, // same-start-стиль пара двух одиночных подряд
-	{ boss: 'enem2', indexAbilities: [16, 17, 18], isChain: true }, // ← цепь (3)
-	{ boss: 'enem2', indexAbilities: [19, 20, 21, 22], isChain: true }, // ← цепь (4)
-	{ boss: 'enem2', indexAbilities: [9, 10] }, // нежданчик: двойной ожог с обеих сторон почти разом вместо привычного одиночного
-	{ boss: 'enem2', indexAbilities: [0, 2, 1, 11, 12, 13] }, // сигнатурная: серия одиночных ожогов по всему полю подряд
-
-	// Задубевший — HARDENED_ASYMMETRY
-	{ boss: 'enem3', indexAbilities: [0, 1, 2] },
-	{ boss: 'enem3', indexAbilities: [3, 4] },
-	{ boss: 'enem3', indexAbilities: [9, 10, 12] },
-	{ boss: 'enem3', indexAbilities: [5, 6] },
-	{ boss: 'enem3', indexAbilities: [7, 8] }, // редкая правая, слабая
-	{ boss: 'enem3', indexAbilities: [0, 1, 5] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem3', indexAbilities: [16, 17, 18, 19], isChain: true }, // ← цепь (4)
-	{ boss: 'enem3', indexAbilities: [20, 21, 22, 23, 24], isChain: true }, // ← цепь (5)
-	{ boss: 'enem3', indexAbilities: [13] }, // нежданчик: впервые быстрый удар именно правой (слабой) лапой
-	{ boss: 'enem3', indexAbilities: [0, 2, 4, 11, 6, 14] }, // сигнатурная: вся левая тяжёлая лапа на полной скорости
-
-	// Обугленный — AGONY_ZIGZAG
-	{ boss: 'enem4', indexAbilities: [0, 1] },
-	{ boss: 'enem4', indexAbilities: [2, 3] },
-	{ boss: 'enem4', indexAbilities: [4, 5] },
-	{ boss: 'enem4', indexAbilities: [8, 9] },
-	{ boss: 'enem4', indexAbilities: [6, 7, 12, 13] },
-	{ boss: 'enem4', indexAbilities: [0, 1, 4] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem4', indexAbilities: [16, 17, 18, 19], isChain: true }, // ← цепь (4)
-	{ boss: 'enem4', indexAbilities: [20, 21, 22, 23, 24, 25], isChain: true }, // ← цепь (6)
-	{ boss: 'enem4', indexAbilities: [14, 10, 11] }, // нежданчик: бросок через всё поле вместо привычного зигзага по краям
-	{ boss: 'enem4', indexAbilities: [0, 2, 4, 8, 1, 3, 5, 9] }, // сигнатурная: зигзаг на полной скорости через всё поле
-
-	// Испарившийся — STEAM_FLOOD, финальный облик
-	{ boss: 'enem5', indexAbilities: [0, 1] },
-	{ boss: 'enem5', indexAbilities: [2, 3] },
-	{ boss: 'enem5', indexAbilities: [5, 6] },
-	{ boss: 'enem5', indexAbilities: [7, 8] },
-	{ boss: 'enem5', indexAbilities: [9, 10] },
-	{ boss: 'enem5', indexAbilities: [13, 14] },
-	{ boss: 'enem5', indexAbilities: [0, 1, 5] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem5', indexAbilities: [16, 17, 18, 19, 20], isChain: true }, // ← цепь (5)
-	{ boss: 'enem5', indexAbilities: [21, 22, 23, 24, 25, 26, 27], isChain: true }, // ← цепь (7, максимум)
-	{ boss: 'enem5', indexAbilities: [11, 12] }, // нежданчик: впервые удар из самого центра — пар теперь и там
-	{ boss: 'enem5', indexAbilities: [0, 2, 4, 9, 1, 3, 10, 15] }, // сигнатурная кульминация: пар заполняет поле полностью, предваряется самым долгим телеграфом уровня (telegraphMs 1040)
- ];
+    {boss: "enem1",indexAbilities: [0,1,2,3]},
+    {boss: "enem1",indexAbilities: [4,5,6,7]},
+    {boss: "enem1",indexAbilities: [10,11],openingOrder: 0},
+    {boss: "enem1",indexAbilities: [8,9]},
+    {boss: "enem1",indexAbilities: [22,23,24],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Пар от стены — знакомство",openingOrder: 1},
+    {boss: "enem1",indexAbilities: [22,23,26],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Пар от стены — иной конец"},
+    {boss: "enem1",indexAbilities: [27,24,23,26],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Пар от стены — завершение"},
+    {boss: "enem1",indexAbilities: [16,17,18],isChain: true},
+    {boss: "enem1",indexAbilities: [19,20,21],isChain: true},
+    {boss: "enem2",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem2",indexAbilities: [1]},
+    {boss: "enem2",indexAbilities: [2]},
+    {boss: "enem2",indexAbilities: [3,4]},
+    {boss: "enem2",indexAbilities: [7,8]},
+    {boss: "enem2",indexAbilities: [26,25],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Ожог за паром — знакомство",openingOrder: 1},
+    {boss: "enem2",indexAbilities: [26,25,27],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Ожог за паром — иной конец"},
+    {boss: "enem2",indexAbilities: [26,28,25,27],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Ожог за паром — завершение"},
+    {boss: "enem2",indexAbilities: [16,17,18],isChain: true},
+    {boss: "enem2",indexAbilities: [19,20,21,22],isChain: true},
+    {boss: "enem3",indexAbilities: [0,1,2]},
+    {boss: "enem3",indexAbilities: [3,4],openingOrder: 0},
+    {boss: "enem3",indexAbilities: [9,10,12]},
+    {boss: "enem3",indexAbilities: [5,6]},
+    {boss: "enem3",indexAbilities: [7,8]},
+    {boss: "enem3",indexAbilities: [25,29,26],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Тяжёлая вторая лапа — знакомство",openingOrder: 1},
+    {boss: "enem3",indexAbilities: [25,29,27],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Тяжёлая вторая лапа — иной конец"},
+    {boss: "enem3",indexAbilities: [30,27,30,26],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Тяжёлая вторая лапа — завершение"},
+    {boss: "enem3",indexAbilities: [16,17,18,19],isChain: true},
+    {boss: "enem3",indexAbilities: [20,21,22,23,24],isChain: true},
+    {boss: "enem4",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem4",indexAbilities: [2,3]},
+    {boss: "enem4",indexAbilities: [4,5]},
+    {boss: "enem4",indexAbilities: [8,9]},
+    {boss: "enem4",indexAbilities: [6,7,12,13]},
+    {boss: "enem4",indexAbilities: [26,30],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Бросок через полок — знакомство",openingOrder: 1},
+    {boss: "enem4",indexAbilities: [26,30,28],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Бросок через полок — иной конец"},
+    {boss: "enem4",indexAbilities: [31,27,31,28],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Бросок через полок — завершение"},
+    {boss: "enem4",indexAbilities: [16,17,18,19],isChain: true},
+    {boss: "enem4",indexAbilities: [20,21,22,23,24,25],isChain: true},
+    {boss: "enem5",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem5",indexAbilities: [2,3]},
+    {boss: "enem5",indexAbilities: [5,6]},
+    {boss: "enem5",indexAbilities: [7,8]},
+    {boss: "enem5",indexAbilities: [9,10]},
+    {boss: "enem5",indexAbilities: [13,14]},
+    {boss: "enem5",indexAbilities: [28,30,29,33],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Паровой захлоп — знакомство",openingOrder: 1},
+    {boss: "enem5",indexAbilities: [28,30,32],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Паровой захлоп — иной конец"},
+    {boss: "enem5",indexAbilities: [29,33,28,30],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Паровой захлоп — завершение"},
+    {boss: "enem5",indexAbilities: [16,17,18,19,20],isChain: true},
+    {boss: "enem5",indexAbilities: [21,22,23,24,25,26,27],isChain: true}
+];
 
 // Лорные названия связок временных улучшений — один и тот же персонаж, но
 // словарь ЭСКАЛИРУЕТ вместе с обликом (пар/борода → ожог → мозоль → уголь →

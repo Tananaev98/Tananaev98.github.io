@@ -76,6 +76,11 @@
 let lvlNumber = 57;
 
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	scaleLongComboDamage: true,
 	scaleShortComboDamage: true,
 	levelCadence: 1.00,
@@ -90,27 +95,27 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.80, speed: 1.12, damage: 1.22, telegraphMultiplier: 0.90, surpriseChance: 0.18, maxActiveAttacks: 14 }
 	],
 	bosses: {
-		enem1: {
+		enem1: { combatIdentity: "Мехи выдыхают дважды", combatTrick: "две короткие группы разделены паузой; вторая группа меняет сторону", signatureEvery: 4,
 			// Поддувень: EMBER_PUFF — ровные ритмичные выдохи тлеющих угольков из носика
 			movementStyle: 'accelerate', cadence: 1.02, telegraphMs: 900, speedMultiplier: 0.94, damageMultiplier: 0.90,
 			speedVariance: [0.82, 0.92, 1.00, 1.08, 1.16]
 		}, // Поддувень: EMBER_PUFF — ровные ритмичные выдохи тлеющих угольков из носика
-		enem2: {
+		enem2: { combatIdentity: "Клещи и перекус", combatTrick: "двойной выпад иногда получает третий укус с другой стороны", signatureEvery: 4,
 			// Цапыч: TONG_SNAP — быстрые прямые щелчки клещей без замаха
 			movementStyle: 'straight', cadence: 0.90, telegraphMs: 760, speedMultiplier: 1.06, damageMultiplier: 1.00,
 			speedVariance: [0.86, 0.95, 1.05, 1.14, 1.22]
 		}, // Цапыч: TONG_SNAP — быстрые прямые щелчки клещей без замаха
-		enem3: {
+		enem3: { combatIdentity: "Колокол даёт отзвук", combatTrick: "повторяет удар в прежнем секторе вместо ожидаемого чередования", signatureEvery: 4,
 			// Гудило: RESONANT_TOLL — редкий тяжёлый удар, за которым расходится гул
 			movementStyle: 'accelerate', cadence: 1.16, telegraphMs: 1020, speedMultiplier: 0.83, damageMultiplier: 1.17,
 			speedVariance: [0.80, 0.88, 0.96, 1.04, 1.12]
 		}, // Гудило: RESONANT_TOLL — редкий тяжёлый удар, за которым расходится гул
-		enem4: {
+		enem4: { combatIdentity: "Молот выбивает искры", combatTrick: "разводит две цели, затем закрывает оставленную между ними полосу", signatureEvery: 4,
 			// Молотыш: APPRENTICE_STRAIGHT — простой прямой удар молотом, изредка сбивается с ритма
 			movementStyle: 'straight', cadence: 0.86, telegraphMs: 690, speedMultiplier: 1.13, damageMultiplier: 1.04,
 			speedVariance: [0.88, 0.98, 1.08, 1.18, 1.26]
 		}, // Молотыш: APPRENTICE_STRAIGHT — простой прямой удар молотом, изредка сбивается с ритма
-		enem5: {
+		enem5: { combatIdentity: "Клещи перед ударом молота", combatTrick: "медленный первый снаряд остаётся фоном для более срочного второго", signatureEvery: 4,
 			// Жарило: FORGEMASTER_COMBO — сочетает хват клещей и удар молота, венчает всю ковку
 			movementStyle: 'accelerate', cadence: 0.81, telegraphMs: 970, speedMultiplier: 1.07, damageMultiplier: 1.15,
 			speedVariance: [0.86, 0.94, 1.03, 1.12, 1.20]
@@ -348,76 +353,99 @@ const ENEMY_TYPES = {
 	{ boss: 'enem5', type: 'enem55', xPos: 65, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 10 }, //24 цепь-B звено 4
 	{ boss: 'enem5', type: 'enem55', xPos: 80, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 8 },  //25 цепь-B звено 5
 	{ boss: 'enem5', type: 'enem55', xPos: 45, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 6 },  //26 цепь-B звено 6
+
+    // Приёмы из scripts/combat-designs.js; индексы считаются отдельно для каждого босса.
+    {boss: "enem1",type: "enem11",xPos: 20,yPos: 12,customHP: 1,customDamage: 20,customSpeed: 16},
+    {boss: "enem1",type: "enem11",xPos: 32,yPos: 20,customHP: 1,customDamage: 20,customSpeed: 14},
+    {boss: "enem1",type: "enem11",xPos: 74,yPos: 6,customHP: 1,customDamage: 20,customSpeed: 21},
+    {boss: "enem1",type: "enem11",xPos: 20,yPos: 40,customHP: 1,customDamage: 20,customSpeed: 7},
+    {boss: "enem1",type: "enem11",xPos: 20,yPos: 8,customHP: 1,customDamage: 20,customSpeed: 20},
+    {boss: "enem1",type: "enem11",xPos: 86,yPos: 12,customHP: 1,customDamage: 20,customSpeed: 18},
+    {boss: "enem2",type: "enem22",xPos: 84,yPos: 12,customHP: 1,customDamage: 22,customSpeed: 16},
+    {boss: "enem2",type: "enem22",xPos: 72,yPos: 20,customHP: 1,customDamage: 22,customSpeed: 14},
+    {boss: "enem2",type: "enem22",xPos: 16,yPos: 6,customHP: 1,customDamage: 22,customSpeed: 21},
+    {boss: "enem2",type: "enem22",xPos: 84,yPos: 40,customHP: 1,customDamage: 22,customSpeed: 7},
+    {boss: "enem2",type: "enem22",xPos: 84,yPos: 8,customHP: 1,customDamage: 22,customSpeed: 20},
+    {boss: "enem2",type: "enem22",xPos: 30,yPos: 12,customHP: 1,customDamage: 22,customSpeed: 18},
+    {boss: "enem3",type: "enem33",xPos: 14,yPos: 12,customHP: 1,customDamage: 24,customSpeed: 16},
+    {boss: "enem3",type: "enem33",xPos: 28,yPos: 20,customHP: 1,customDamage: 24,customSpeed: 14},
+    {boss: "enem3",type: "enem33",xPos: 78,yPos: 6,customHP: 1,customDamage: 24,customSpeed: 21},
+    {boss: "enem3",type: "enem33",xPos: 14,yPos: 40,customHP: 1,customDamage: 24,customSpeed: 7},
+    {boss: "enem3",type: "enem33",xPos: 14,yPos: 8,customHP: 1,customDamage: 24,customSpeed: 20},
+    {boss: "enem3",type: "enem33",xPos: 88,yPos: 12,customHP: 1,customDamage: 24,customSpeed: 18},
+    {boss: "enem4",type: "enem44",xPos: 24,yPos: 12,customHP: 1,customDamage: 26,customSpeed: 16},
+    {boss: "enem4",type: "enem44",xPos: 48,yPos: 20,customHP: 1,customDamage: 26,customSpeed: 14},
+    {boss: "enem4",type: "enem44",xPos: 82,yPos: 6,customHP: 1,customDamage: 26,customSpeed: 21},
+    {boss: "enem4",type: "enem44",xPos: 24,yPos: 40,customHP: 1,customDamage: 26,customSpeed: 7},
+    {boss: "enem4",type: "enem44",xPos: 24,yPos: 8,customHP: 1,customDamage: 26,customSpeed: 20},
+    {boss: "enem4",type: "enem44",xPos: 48,yPos: 12,customHP: 1,customDamage: 26,customSpeed: 18},
+    {boss: "enem5",type: "enem55",xPos: 86,yPos: 12,customHP: 1,customDamage: 28,customSpeed: 16},
+    {boss: "enem5",type: "enem55",xPos: 22,yPos: 20,customHP: 1,customDamage: 28,customSpeed: 14},
+    {boss: "enem5",type: "enem55",xPos: 70,yPos: 6,customHP: 1,customDamage: 28,customSpeed: 21},
+    {boss: "enem5",type: "enem55",xPos: 86,yPos: 24,customHP: 1,customDamage: 28,customSpeed: 7},
+    {boss: "enem5",type: "enem55",xPos: 86,yPos: 8,customHP: 1,customDamage: 28,customSpeed: 20},
+    {boss: "enem5",type: "enem55",xPos: 36,yPos: 12,customHP: 1,customDamage: 28,customSpeed: 18}
 ];
 
  const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 310, bossDelayAbDop: 5700 }, // ровное дыхание мехов
-	{ boss: 'enem2', bossDelayAb: 220, bossDelayAbDop: 4200 }, // самый частый — быстрые щелчки клещей
-	{ boss: 'enem3', bossDelayAb: 415, bossDelayAbDop: 6900 }, // самый долгий отдых — редкий тяжёлый гул
-	{ boss: 'enem4', bossDelayAb: 195, bossDelayAbDop: 3500 }, // простые частые удары молотом
-	{ boss: 'enem5', bossDelayAb: 255, bossDelayAbDop: 5100 }, // собранный финал
+	{ boss: 'enem1', bossDelayAb: 310, bossDelayAbDop: 4845, firstWaveDelayMs: 2326 }, // ровное дыхание мехов
+	{ boss: 'enem2', bossDelayAb: 220, bossDelayAbDop: 4278, firstWaveDelayMs: 2053 }, // самый частый — быстрые щелчки клещей
+	{ boss: 'enem3', bossDelayAb: 415, bossDelayAbDop: 5865, firstWaveDelayMs: 2400 }, // самый долгий отдых — редкий тяжёлый гул
+	{ boss: 'enem4', bossDelayAb: 195, bossDelayAbDop: 4025, firstWaveDelayMs: 1932 }, // простые частые удары молотом
+	{ boss: 'enem5', bossDelayAb: 255, bossDelayAbDop: 4630, firstWaveDelayMs: 2222 }, // собранный финал
  ];
 
  const bossAbilitiesDop = [
-	// Поддувень — EMBER_PUFF
-	{ boss: 'enem1', indexAbilities: [0, 1, 2, 3, 4] },
-	{ boss: 'enem1', indexAbilities: [5, 6] },
-	{ boss: 'enem1', indexAbilities: [7, 8] },
-	{ boss: 'enem1', indexAbilities: [9, 10] },
-	{ boss: 'enem1', indexAbilities: [0, 1, 5] }, // same-start с [0,1], расходится резким выдохом
-	{ boss: 'enem1', indexAbilities: [16, 17, 18], isChain: true }, // ← цепь-A (3)
-	{ boss: 'enem1', indexAbilities: [19, 20, 21, 22], isChain: true }, // ← цепь-B (4)
-	{ boss: 'enem1', indexAbilities: [13, 6, 7] }, // нежданчик: выдох сразу мощный, без привычного разгона
-	{ boss: 'enem1', indexAbilities: [0, 1, 2, 3, 4, 14] }, // сигнатурная: полный проход выдохов через всё поле разом
-
-	// Цапыч — TONG_SNAP
-	{ boss: 'enem2', indexAbilities: [0] },
-	{ boss: 'enem2', indexAbilities: [1] },
-	{ boss: 'enem2', indexAbilities: [2] },
-	{ boss: 'enem2', indexAbilities: [3, 4] },
-	{ boss: 'enem2', indexAbilities: [8, 9] },
-	{ boss: 'enem2', indexAbilities: [0, 1] }, // same-start-стиль пара двух одиночных щелчков подряд
-	{ boss: 'enem2', indexAbilities: [16, 17, 18], isChain: true }, // ← цепь-A (3)
-	{ boss: 'enem2', indexAbilities: [19, 20, 21, 22], isChain: true }, // ← цепь-B (4)
-	{ boss: 'enem2', indexAbilities: [12, 13] }, // нежданчик: двойной щелчок с одной стороны подряд
-	{ boss: 'enem2', indexAbilities: [0, 2, 1, 10, 6, 14] }, // сигнатурная: серия точечных щелчков по всему полю подряд
-
-	// Гудило — RESONANT_TOLL
-	{ boss: 'enem3', indexAbilities: [0, 1, 2] },
-	{ boss: 'enem3', indexAbilities: [3, 4] },
-	{ boss: 'enem3', indexAbilities: [5, 6] },
-	{ boss: 'enem3', indexAbilities: [7, 8] },
-	{ boss: 'enem3', indexAbilities: [9, 10] },
-	{ boss: 'enem3', indexAbilities: [0, 1, 7] }, // same-start с [0,1], расходится дальним ударом
-	{ boss: 'enem3', indexAbilities: [16, 17, 18, 19], isChain: true }, // ← цепь-A (4)
-	{ boss: 'enem3', indexAbilities: [20, 21, 22, 23], isChain: true }, // ← цепь-B (4)
-	{ boss: 'enem3', indexAbilities: [14] }, // нежданчик: гул раньше привычной долгой готовности
-	{ boss: 'enem3', indexAbilities: [3, 11, 4, 12] }, // сигнатурная: широкий удар с обеих сторон разом
-
-	// Молотыш — APPRENTICE_STRAIGHT
-	{ boss: 'enem4', indexAbilities: [0, 1] },
-	{ boss: 'enem4', indexAbilities: [2, 3] },
-	{ boss: 'enem4', indexAbilities: [6, 7] },
-	{ boss: 'enem4', indexAbilities: [10, 11] },
-	{ boss: 'enem4', indexAbilities: [9, 10, 11] },
-	{ boss: 'enem4', indexAbilities: [0, 1, 6] }, // same-start с [0,1], расходится дальним ударом
-	{ boss: 'enem4', indexAbilities: [16, 17, 18, 19], isChain: true }, // ← цепь-A (4)
-	{ boss: 'enem4', indexAbilities: [20, 21, 22, 23], isChain: true }, // ← цепь-B (4)
-	{ boss: 'enem4', indexAbilities: [13, 14] }, // нежданчик: удар разом с обеих сторон без привычного разброса
-	{ boss: 'enem4', indexAbilities: [0, 2, 4, 8, 1, 3, 5, 9] }, // сигнатурная: хаотичный шквал ударов через всё поле на полной скорости
-
-	// Жарило — FORGEMASTER_COMBO, финальный облик
-	{ boss: 'enem5', indexAbilities: [0, 1] },
-	{ boss: 'enem5', indexAbilities: [3, 4] },
-	{ boss: 'enem5', indexAbilities: [5, 6] },
-	{ boss: 'enem5', indexAbilities: [7, 8] },
-	{ boss: 'enem5', indexAbilities: [9, 10, 11] },
-	{ boss: 'enem5', indexAbilities: [0, 1, 3] }, // same-start с [0,1], расходится дальним ударом
-	{ boss: 'enem5', indexAbilities: [16, 17, 18, 19, 20], isChain: true }, // ← цепь-A (5)
-	{ boss: 'enem5', indexAbilities: [21, 22, 23, 24, 25, 26], isChain: true }, // ← цепь-B (6)
-	{ boss: 'enem5', indexAbilities: [12, 13] }, // нежданчик: удар без единого мгновения замаха
-	{ boss: 'enem5', indexAbilities: [0, 3, 5, 7, 9, 15] }, // сигнатурная кульминация: сочетание хвата и удара через весь двор разом
- ];
+    {boss: "enem1",indexAbilities: [0,1,2,3,4]},
+    {boss: "enem1",indexAbilities: [5,6],openingOrder: 0},
+    {boss: "enem1",indexAbilities: [7,8]},
+    {boss: "enem1",indexAbilities: [9,10]},
+    {boss: "enem1",indexAbilities: [23,27,25,28],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Мехи выдыхают дважды — знакомство",openingOrder: 1,shotGapsMs: [360,900,360]},
+    {boss: "enem1",indexAbilities: [23,27,28],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Мехи выдыхают дважды — иной конец",shotGapsMs: [360,900,360]},
+    {boss: "enem1",indexAbilities: [25,28,23,27],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Мехи выдыхают дважды — завершение",shotGapsMs: [360,900,360]},
+    {boss: "enem1",indexAbilities: [16,17,18],isChain: true},
+    {boss: "enem1",indexAbilities: [19,20,21,22],isChain: true},
+    {boss: "enem2",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem2",indexAbilities: [1]},
+    {boss: "enem2",indexAbilities: [2]},
+    {boss: "enem2",indexAbilities: [3,4]},
+    {boss: "enem2",indexAbilities: [8,9]},
+    {boss: "enem2",indexAbilities: [23,27],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Клещи и перекус — знакомство",openingOrder: 1},
+    {boss: "enem2",indexAbilities: [23,27,25],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Клещи и перекус — иной конец"},
+    {boss: "enem2",indexAbilities: [28,24,28,25],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Клещи и перекус — завершение"},
+    {boss: "enem2",indexAbilities: [16,17,18],isChain: true},
+    {boss: "enem2",indexAbilities: [19,20,21,22],isChain: true},
+    {boss: "enem3",indexAbilities: [0,1,2]},
+    {boss: "enem3",indexAbilities: [3,4],openingOrder: 0},
+    {boss: "enem3",indexAbilities: [5,6]},
+    {boss: "enem3",indexAbilities: [7,8]},
+    {boss: "enem3",indexAbilities: [9,10]},
+    {boss: "enem3",indexAbilities: [24,28,25],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Колокол даёт отзвук — знакомство",openingOrder: 1},
+    {boss: "enem3",indexAbilities: [24,28,26],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Колокол даёт отзвук — иной конец"},
+    {boss: "enem3",indexAbilities: [29,26,29,25],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Колокол даёт отзвук — завершение"},
+    {boss: "enem3",indexAbilities: [16,17,18,19],isChain: true},
+    {boss: "enem3",indexAbilities: [20,21,22,23],isChain: true},
+    {boss: "enem4",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem4",indexAbilities: [2,3]},
+    {boss: "enem4",indexAbilities: [6,7]},
+    {boss: "enem4",indexAbilities: [10,11]},
+    {boss: "enem4",indexAbilities: [9,10,11]},
+    {boss: "enem4",indexAbilities: [24,26,29],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Молот выбивает искры — знакомство",openingOrder: 1},
+    {boss: "enem4",indexAbilities: [24,26,25],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Молот выбивает искры — иной конец"},
+    {boss: "enem4",indexAbilities: [28,26,29,25],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Молот выбивает искры — завершение"},
+    {boss: "enem4",indexAbilities: [16,17,18,19],isChain: true},
+    {boss: "enem4",indexAbilities: [20,21,22,23],isChain: true},
+    {boss: "enem5",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem5",indexAbilities: [3,4]},
+    {boss: "enem5",indexAbilities: [5,6]},
+    {boss: "enem5",indexAbilities: [7,8]},
+    {boss: "enem5",indexAbilities: [9,10,11]},
+    {boss: "enem5",indexAbilities: [30,29],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Клещи перед ударом молота — знакомство",openingOrder: 1},
+    {boss: "enem5",indexAbilities: [30,29,31],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Клещи перед ударом молота — иной конец"},
+    {boss: "enem5",indexAbilities: [30,32,29,31],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Клещи перед ударом молота — завершение"},
+    {boss: "enem5",indexAbilities: [16,17,18,19,20],isChain: true},
+    {boss: "enem5",indexAbilities: [21,22,23,24,25,26],isChain: true}
+];
 
 // Лорные названия связок временных улучшений — пять разных монстров одной
 // кузницы, словарь каждого строго завязан на его реальный предмет и его

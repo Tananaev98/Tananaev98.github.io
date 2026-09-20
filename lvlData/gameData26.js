@@ -46,6 +46,11 @@ let factorChar = (lvlNumber * 5) / 100;
 //                  тихий парный отголосок рывка Белобоки (совпадающий yPos/speed, но
 //                  без паузы — тень приёма без самого приёма).
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	scaleLongComboDamage: true,
 	scaleShortComboDamage: true,
 	levelCadence: 0.90, damageMultiplier: 1.732, minWaveDelay: 2150, minShotDelay: 150, minTelegraphMs: 555,
@@ -55,11 +60,11 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.74, speed: 1.18, damage: 1.25, telegraphMultiplier: 0.87, surpriseChance: 0.33, maxActiveAttacks: 20 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'pause',    cadence: 1.05, telegraphMs: 900, speedMultiplier: 0.90, damageMultiplier: 0.88, speedVariance: [0.82, 0.90, 0.98, 1.06, 1.14], minFastSideSwitchMs: 850 }, // Чернавка: SYNC_PULL — синхронный рывок, «Дедка тянет»
-		enem2: { movementStyle: 'lateRush', cadence: 0.95, telegraphMs: 780, speedMultiplier: 1.00, damageMultiplier: 0.96, speedVariance: [0.86, 0.95, 1.04, 1.13, 1.22] }, // Ботвинья: LEAF_SURGE — спокойный снос листвы, поздний рывок
-		enem3: { movementStyle: 'accelerate', cadence: 1.10, telegraphMs: 980, speedMultiplier: 0.86, damageMultiplier: 1.18, speedVariance: [0.78, 0.88, 0.98, 1.08, 1.18] }, // Белобока: TAPROOT_SURGE — обманчиво медленный старт, разгон к удару
-		enem4: { movementStyle: 'weave',    cadence: 0.82, telegraphMs: 650, speedMultiplier: 1.16, damageMultiplier: 0.78, speedVariance: [0.90, 1.02, 1.14, 1.26, 1.38] }, // Кругляш: SKITTER_CORNERS — нервная змейка из четырёх углов
-		enem5: { movementStyle: 'straight', cadence: 0.85, telegraphMs: 700, speedMultiplier: 1.05, damageMultiplier: 1.08, speedVariance: [0.84, 0.95, 1.06, 1.17, 1.28] }  // Спасовка: PLAIN_RECKONING — без движкового трюка, честная геометрия
+		enem1: { combatIdentity: "Корень тянет обратно", combatTrick: "показывает боковой замах, но заканчивает серединой; позднее конец возвращается на край", signatureEvery: 4, movementStyle: 'pause',    cadence: 1.05, telegraphMs: 900, speedMultiplier: 0.90, damageMultiplier: 0.88, speedVariance: [0.82, 0.90, 0.98, 1.06, 1.14] }, // Чернавка: SYNC_PULL — синхронный рывок, «Дедка тянет»
+		enem2: { combatIdentity: "Ботва распускается", combatTrick: "ведёт прицел вдоль прохода, затем возвращает угрозу за спину прохода", signatureEvery: 4, movementStyle: 'lateRush', cadence: 0.95, telegraphMs: 780, speedMultiplier: 1.00, damageMultiplier: 0.96, speedVariance: [0.86, 0.95, 1.04, 1.13, 1.22] }, // Ботвинья: LEAF_SURGE — спокойный снос листвы, поздний рывок
+		enem3: { combatIdentity: "Стержень и боковой корешок", combatTrick: "короткий первый заход продолжается более быстрым довеском с прежнего края", signatureEvery: 4, movementStyle: 'accelerate', cadence: 1.10, telegraphMs: 980, speedMultiplier: 0.86, damageMultiplier: 1.18, speedVariance: [0.78, 0.88, 0.98, 1.08, 1.18] }, // Белобока: TAPROOT_SURGE — обманчиво медленный старт, разгон к удару
+		enem4: { combatIdentity: "Редиска возвращается", combatTrick: "повторяет удар в прежнем секторе вместо ожидаемого чередования", signatureEvery: 4, movementStyle: 'weave',    cadence: 0.82, telegraphMs: 650, speedMultiplier: 1.16, damageMultiplier: 0.78, speedVariance: [0.90, 1.02, 1.14, 1.26, 1.38] }, // Кругляш: SKITTER_CORNERS — нервная змейка из четырёх углов
+		enem5: { combatIdentity: "Сбор корнеплодов", combatTrick: "разводит две цели, затем закрывает оставленную между ними полосу", signatureEvery: 4, movementStyle: 'straight', cadence: 0.85, telegraphMs: 700, speedMultiplier: 1.05, damageMultiplier: 1.08, speedVariance: [0.84, 0.95, 1.06, 1.17, 1.28] }  // Спасовка: PLAIN_RECKONING — без движкового трюка, честная геометрия
 	}
 };
 
@@ -308,66 +313,89 @@ const bossAbilities = [
 	{ boss: 'enem5', type: 'enem55', xPos: 6,  yPos: 6,  customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 26 }, //13 самый быстрый — отголосок Кругляша
 	{ boss: 'enem5', type: 'enem55', xPos: 40, yPos: 32, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 8 },  //14 тихая пара — отголосок рывка Белобоки (без паузы)
 	{ boss: 'enem5', type: 'enem55', xPos: 60, yPos: 32, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 8 }   //15 тихая пара — отголосок рывка Белобоки (без паузы)
+,
+    // Приёмы из scripts/combat-designs.js; индексы считаются отдельно для каждого босса.
+    {boss: "enem1",type: "enem11",xPos: 18,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 16},
+    {boss: "enem1",type: "enem11",xPos: 36,yPos: 20,customHP: 1,customDamage: 13,customSpeed: 14},
+    {boss: "enem1",type: "enem11",xPos: 84,yPos: 6,customHP: 1,customDamage: 13,customSpeed: 21},
+    {boss: "enem1",type: "enem11",xPos: 18,yPos: 40,customHP: 1,customDamage: 13,customSpeed: 7},
+    {boss: "enem1",type: "enem11",xPos: 18,yPos: 8,customHP: 1,customDamage: 13,customSpeed: 20},
+    {boss: "enem1",type: "enem11",xPos: 49,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 18},
+    {boss: "enem2",type: "enem22",xPos: 86,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 16},
+    {boss: "enem2",type: "enem22",xPos: 67,yPos: 20,customHP: 1,customDamage: 13,customSpeed: 14},
+    {boss: "enem2",type: "enem22",xPos: 38,yPos: 6,customHP: 1,customDamage: 13,customSpeed: 21},
+    {boss: "enem2",type: "enem22",xPos: 86,yPos: 40,customHP: 1,customDamage: 13,customSpeed: 7},
+    {boss: "enem2",type: "enem22",xPos: 86,yPos: 8,customHP: 1,customDamage: 13,customSpeed: 20},
+    {boss: "enem2",type: "enem22",xPos: 16,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 18},
+    {boss: "enem3",type: "enem33",xPos: 22,yPos: 12,customHP: 1,customDamage: 17,customSpeed: 16},
+    {boss: "enem3",type: "enem33",xPos: 31,yPos: 20,customHP: 1,customDamage: 17,customSpeed: 14},
+    {boss: "enem3",type: "enem33",xPos: 80,yPos: 6,customHP: 1,customDamage: 17,customSpeed: 21},
+    {boss: "enem3",type: "enem33",xPos: 22,yPos: 40,customHP: 1,customDamage: 17,customSpeed: 7},
+    {boss: "enem3",type: "enem33",xPos: 22,yPos: 8,customHP: 1,customDamage: 17,customSpeed: 20},
+    {boss: "enem3",type: "enem33",xPos: 70,yPos: 12,customHP: 1,customDamage: 17,customSpeed: 18},
+    {boss: "enem4",type: "enem44",xPos: 82,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 16},
+    {boss: "enem4",type: "enem44",xPos: 73,yPos: 20,customHP: 1,customDamage: 13,customSpeed: 14},
+    {boss: "enem4",type: "enem44",xPos: 14,yPos: 6,customHP: 1,customDamage: 13,customSpeed: 21},
+    {boss: "enem4",type: "enem44",xPos: 82,yPos: 40,customHP: 1,customDamage: 13,customSpeed: 7},
+    {boss: "enem4",type: "enem44",xPos: 82,yPos: 8,customHP: 1,customDamage: 13,customSpeed: 20},
+    {boss: "enem4",type: "enem44",xPos: 30,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 18},
+    {boss: "enem5",type: "enem55",xPos: 26,yPos: 12,customHP: 1,customDamage: 15,customSpeed: 16},
+    {boss: "enem5",type: "enem55",xPos: 48,yPos: 20,customHP: 1,customDamage: 15,customSpeed: 14},
+    {boss: "enem5",type: "enem55",xPos: 78,yPos: 6,customHP: 1,customDamage: 15,customSpeed: 21},
+    {boss: "enem5",type: "enem55",xPos: 26,yPos: 40,customHP: 1,customDamage: 15,customSpeed: 7},
+    {boss: "enem5",type: "enem55",xPos: 26,yPos: 8,customHP: 1,customDamage: 15,customSpeed: 20},
+    {boss: "enem5",type: "enem55",xPos: 48,yPos: 12,customHP: 1,customDamage: 15,customSpeed: 18}
 ];
 
 const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 420, bossDelayAbDop: 6600 }, // самая долгая пауза — награда за терпение, «тянут-потянут»
-	{ boss: 'enem2', bossDelayAb: 300, bossDelayAbDop: 5200 }, // спокойный снос листвы держит ритм
-	{ boss: 'enem3', bossDelayAb: 360, bossDelayAbDop: 6000 }, // разгон требует места между сериями
-	{ boss: 'enem4', bossDelayAb: 200, bossDelayAbDop: 4100 }, // самый нервный, самый частый на уровне
-	{ boss: 'enem5', bossDelayAb: 260, bossDelayAbDop: 4700 }, // финал плотнее среднего, но честный
+	{ boss: 'enem1', bossDelayAb: 420, bossDelayAbDop: 6600, firstWaveDelayMs: 2400 }, // самая долгая пауза — награда за терпение, «тянут-потянут»
+	{ boss: 'enem2', bossDelayAb: 300, bossDelayAbDop: 5200, firstWaveDelayMs: 2400 }, // спокойный снос листвы держит ритм
+	{ boss: 'enem3', bossDelayAb: 360, bossDelayAbDop: 6000, firstWaveDelayMs: 2400 }, // разгон требует места между сериями
+	{ boss: 'enem4', bossDelayAb: 200, bossDelayAbDop: 4100, firstWaveDelayMs: 1968 }, // самый нервный, самый частый на уровне
+	{ boss: 'enem5', bossDelayAb: 260, bossDelayAbDop: 4700, firstWaveDelayMs: 2256 }, // финал плотнее среднего, но честный
 ];
 
 const bossAbilitiesDop = [
-	// Чернавка — «тянем-потянем»: каждая следующая sync-строка длиннее предыдущей
-	{ boss: 'enem1', indexAbilities: [0, 1] }, // Дедка тянет (2-sync, учебная)
-	{ boss: 'enem1', indexAbilities: [5, 6] }, // Бабка смотрит (контраст: два медленных соло, без синхронии)
-	{ boss: 'enem1', indexAbilities: [2, 3, 4] }, // Бабка подмогает (3-sync) — same-start база для сигнатурной
-	{ boss: 'enem1', indexAbilities: [7, 12, 13] },
-	{ boss: 'enem1', indexAbilities: [0, 1, 8, 9] }, // ритмическая: sync → быстрый акцент
-	{ boss: 'enem1', indexAbilities: [2, 3, 4, 10, 11] }, // опасная сигнатурная — same-start с [2,3,4], другой конец
-	{ boss: 'enem1', indexAbilities: [2, 3, 4] }, // chunk-break: тот же префикс сигнатурной, обрывается сразу
-	{ boss: 'enem1', indexAbilities: [5, 15, 6] }, // смешанная поздняя
-
-	// Ботвинья
-	{ boss: 'enem2', indexAbilities: [0, 1] },
-	{ boss: 'enem2', indexAbilities: [6, 7] },
-	{ boss: 'enem2', indexAbilities: [2, 3, 14] },
-	{ boss: 'enem2', indexAbilities: [12, 13, 4] },
-	{ boss: 'enem2', indexAbilities: [8, 10, 9, 11] }, // ритмическая
-	{ boss: 'enem2', indexAbilities: [0, 1, 8, 10] }, // опасная сигнатурная — same-start с [0,1], другой конец
-	{ boss: 'enem2', indexAbilities: [0, 1, 8] }, // chunk-break: тот же префикс, обрывается раньше
-	{ boss: 'enem2', indexAbilities: [14, 15, 2, 3] }, // смешанная поздняя
-
-	// Белобока
-	{ boss: 'enem3', indexAbilities: [0, 2] },
-	{ boss: 'enem3', indexAbilities: [4, 5] },
-	{ boss: 'enem3', indexAbilities: [1, 3, 12] },
-	{ boss: 'enem3', indexAbilities: [6, 7, 13] },
-	{ boss: 'enem3', indexAbilities: [0, 2, 4, 5] }, // ритмическая
-	{ boss: 'enem3', indexAbilities: [0, 2, 4, 5, 10, 11] }, // опасная сигнатурная — same-start с ритмической, другой конец
-	{ boss: 'enem3', indexAbilities: [0, 2, 4] }, // chunk-break: короче обеих, обрывается раньше
-	{ boss: 'enem3', indexAbilities: [8, 9, 14, 15] }, // смешанная поздняя
-
-	// Кругляш
-	{ boss: 'enem4', indexAbilities: [0, 1] },
-	{ boss: 'enem4', indexAbilities: [4, 5] },
-	{ boss: 'enem4', indexAbilities: [2, 3, 10] },
-	{ boss: 'enem4', indexAbilities: [6, 7, 11] },
-	{ boss: 'enem4', indexAbilities: [8, 10, 9, 11] }, // ритмическая
-	{ boss: 'enem4', indexAbilities: [0, 1, 8, 9] }, // опасная сигнатурная — same-start с [0,1], другой конец
-	{ boss: 'enem4', indexAbilities: [0, 1, 8] }, // chunk-break: тот же префикс, обрывается раньше
-	{ boss: 'enem4', indexAbilities: [12, 13, 14, 15] }, // смешанная поздняя
-
-	// Спасовка — смешивает почерк всех четырёх предыдущих боссов уровня
-	{ boss: 'enem5', indexAbilities: [0, 1] },
-	{ boss: 'enem5', indexAbilities: [8, 12] },
-	{ boss: 'enem5', indexAbilities: [2, 3, 4] },
-	{ boss: 'enem5', indexAbilities: [9, 10, 11] },
-	{ boss: 'enem5', indexAbilities: [14, 15, 6] }, // ритмическая — тихий отголосок Белобоки
-	{ boss: 'enem5', indexAbilities: [0, 1, 5, 6, 7] }, // опасная сигнатурная — same-start с [0,1], другой конец
-	{ boss: 'enem5', indexAbilities: [0, 1, 5] }, // chunk-break: тот же префикс, обрывается раньше
-	{ boss: 'enem5', indexAbilities: [8, 9, 13, 14, 15] }, // смешанная поздняя — закрывающий отголосок рывка
+    {boss: "enem1",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem1",indexAbilities: [5,6]},
+    {boss: "enem1",indexAbilities: [2,3,4]},
+    {boss: "enem1",indexAbilities: [7,12,13]},
+    {boss: "enem1",indexAbilities: [0,1,8,9]},
+    {boss: "enem1",indexAbilities: [16,17,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Корень тянет обратно — знакомство",openingOrder: 1},
+    {boss: "enem1",indexAbilities: [16,17,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Корень тянет обратно — иной конец"},
+    {boss: "enem1",indexAbilities: [18,21,17,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Корень тянет обратно — завершение"},
+    {boss: "enem2",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem2",indexAbilities: [6,7]},
+    {boss: "enem2",indexAbilities: [2,3,14]},
+    {boss: "enem2",indexAbilities: [12,13,4]},
+    {boss: "enem2",indexAbilities: [8,10,9,11]},
+    {boss: "enem2",indexAbilities: [16,17,18],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Ботва распускается — знакомство",openingOrder: 1},
+    {boss: "enem2",indexAbilities: [16,17,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Ботва распускается — иной конец"},
+    {boss: "enem2",indexAbilities: [21,18,17,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Ботва распускается — завершение"},
+    {boss: "enem3",indexAbilities: [0,2],openingOrder: 0},
+    {boss: "enem3",indexAbilities: [4,5]},
+    {boss: "enem3",indexAbilities: [1,3,12]},
+    {boss: "enem3",indexAbilities: [6,7,13]},
+    {boss: "enem3",indexAbilities: [0,2,4,5]},
+    {boss: "enem3",indexAbilities: [19,20,16],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Стержень и боковой корешок — знакомство",openingOrder: 1},
+    {boss: "enem3",indexAbilities: [19,20,18],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Стержень и боковой корешок — иной конец"},
+    {boss: "enem3",indexAbilities: [21,17,21,18,16],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Стержень и боковой корешок — завершение"},
+    {boss: "enem4",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem4",indexAbilities: [4,5]},
+    {boss: "enem4",indexAbilities: [2,3,10]},
+    {boss: "enem4",indexAbilities: [6,7,11]},
+    {boss: "enem4",indexAbilities: [8,10,9,11]},
+    {boss: "enem4",indexAbilities: [16,20,17],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Редиска возвращается — знакомство",openingOrder: 1},
+    {boss: "enem4",indexAbilities: [16,20,18],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Редиска возвращается — иной конец"},
+    {boss: "enem4",indexAbilities: [21,18,21,17],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Редиска возвращается — завершение"},
+    {boss: "enem5",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem5",indexAbilities: [8,12]},
+    {boss: "enem5",indexAbilities: [2,3,4]},
+    {boss: "enem5",indexAbilities: [9,10,11]},
+    {boss: "enem5",indexAbilities: [14,15,6]},
+    {boss: "enem5",indexAbilities: [16,18,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Сбор корнеплодов — знакомство",openingOrder: 1},
+    {boss: "enem5",indexAbilities: [16,18,17],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Сбор корнеплодов — иной конец"},
+    {boss: "enem5",indexAbilities: [20,18,21,17],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Сбор корнеплодов — завершение"}
 ];
 
 // Лорные названия связок. Уровень 26 — огород (репка-мотив): Чернавка (тёмный корешок,

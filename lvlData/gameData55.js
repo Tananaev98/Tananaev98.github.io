@@ -94,6 +94,11 @@
 let lvlNumber = 55;
 
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	scaleLongComboDamage: true,
 	scaleShortComboDamage: true,
 	levelCadence: 1.00,
@@ -109,35 +114,35 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.76, speed: 1.10, damage: 1.14, telegraphMultiplier: 0.90, surpriseChance: 0.20, maxActiveAttacks: 15 }
 	],
 	bosses: {
-		enem1: {
+		enem1: { combatIdentity: "Веник сметает к порогу", combatTrick: "ведёт прицел вдоль прохода, затем возвращает угрозу за спину прохода", signatureEvery: 4,
 			// Домовой: UNSEEN_TIDY — спокойные ритмичные атаки ровным «подметающим» проходом
 			movementStyle: 'pause', cadence: 1.03, telegraphMs: 900, speedMultiplier: 0.95, damageMultiplier: 0.92,
 			speedVariance: [0.80, 0.90, 1.00, 1.10, 1.18], healthMultiplier: 1.50,
 			appearMessage: 'Кто топчет мой порог без спросу?!',
 			phaseMessages: { 2: 'Непорядок в доме — берегись!', 3: 'Хозяин здесь я, а не ты!' }
 		}, // Домовой: UNSEEN_TIDY — спокойные ритмичные атаки ровным «подметающим» проходом
-		enem2: {
+		enem2: { combatIdentity: "Щипок после обиды", combatTrick: "двойной выпад иногда получает третий укус с другой стороны", signatureEvery: 4,
 			// Оскорблённый: SPITEFUL_PINCH — точные короткие одиночные мстительные «щипки»
 			movementStyle: 'accelerate', cadence: 0.95, telegraphMs: 800, speedMultiplier: 1.02, damageMultiplier: 0.98,
 			speedVariance: [0.88, 0.96, 1.04, 1.12, 1.18], healthMultiplier: 1.50,
 			appearMessage: 'Оскорбил хозяина — поплатишься!',
 			phaseMessages: { 2: 'Обида жжёт крепче углей!', 3: 'Последнее унижение — твоё!' }
 		}, // Оскорблённый: SPITEFUL_PINCH — точные короткие одиночные мстительные «щипки»
-		enem3: {
+		enem3: { combatIdentity: "Шест перекрывает проход", combatTrick: "разводит две цели, затем закрывает оставленную между ними полосу", signatureEvery: 4,
 			// Всеоружный: STAFF_SWEEP — редкий тяжёлый широкий взмах шестом-веником после стойки готовности
 			movementStyle: 'pause', cadence: 1.17, telegraphMs: 1050, speedMultiplier: 0.80, damageMultiplier: 1.19,
 			speedVariance: [0.80, 0.88, 0.96, 1.04, 1.12], healthMultiplier: 1.50,
 			appearMessage: 'Веник в моих руках — оружие хозяина!',
 			phaseMessages: { 2: 'Дом обороняю до последнего!', 3: 'Никто не пройдёт мимо метлы!' }
 		}, // Всеоружный: STAFF_SWEEP — редкий тяжёлый широкий взмах шестом-веником после стойки готовности
-		enem4: {
+		enem4: { combatIdentity: "Беспорядок возвращает вещи", combatTrick: "повторяет удар в прежнем секторе вместо ожидаемого чередования", signatureEvery: 4,
 			// Взъерошенный: POLTERGEIST_FRENZY — нервные непредсказуемые атаки сразу с нескольких направлений
 			movementStyle: 'weave', cadence: 0.86, telegraphMs: 680, speedMultiplier: 1.12, damageMultiplier: 1.04,
 			speedVariance: [0.88, 0.98, 1.08, 1.16, 1.24], healthMultiplier: 1.50,
 			appearMessage: 'Шерсть дыбом — не совладать с гневом!',
 			phaseMessages: { 2: 'Дом ходит ходуном от моей ярости!', 3: 'Последний бросок — во всех сразу!' }
 		}, // Взъерошенный: POLTERGEIST_FRENZY — нервные непредсказуемые атаки сразу с нескольких направлений
-		enem5: {
+		enem5: { combatIdentity: "Последний взмах дома", combatTrick: "показывает боковой замах, но заканчивает серединой; позднее конец возвращается на край", signatureEvery: 4,
 			// Одичавший: FULL_SWEEP — редкий максимально широкий взмах через всё поле разом
 			movementStyle: 'straight', cadence: 0.80, telegraphMs: 1040, speedMultiplier: 1.05, damageMultiplier: 1.12,
 			speedVariance: [0.86, 0.94, 1.03, 1.12, 1.20], healthMultiplier: 1.50,
@@ -390,77 +395,100 @@ const ENEMY_TYPES = {
 	{ boss: 'enem5', type: 'enem55', xPos: 75, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 10 }, //24 цепь-B звено 5
 	{ boss: 'enem5', type: 'enem55', xPos: 55, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 8 },  //25 цепь-B звено 6
 	{ boss: 'enem5', type: 'enem55', xPos: 70, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 6 },  //26 цепь-B звено 7
+
+    // Приёмы из scripts/combat-designs.js; индексы считаются отдельно для каждого босса.
+    {boss: "enem1",type: "enem11",xPos: 18,yPos: 12,customHP: 1,customDamage: 20,customSpeed: 16},
+    {boss: "enem1",type: "enem11",xPos: 36,yPos: 20,customHP: 1,customDamage: 20,customSpeed: 14},
+    {boss: "enem1",type: "enem11",xPos: 64,yPos: 6,customHP: 1,customDamage: 20,customSpeed: 21},
+    {boss: "enem1",type: "enem11",xPos: 18,yPos: 40,customHP: 1,customDamage: 20,customSpeed: 7},
+    {boss: "enem1",type: "enem11",xPos: 18,yPos: 8,customHP: 1,customDamage: 20,customSpeed: 20},
+    {boss: "enem1",type: "enem11",xPos: 86,yPos: 12,customHP: 1,customDamage: 20,customSpeed: 18},
+    {boss: "enem2",type: "enem22",xPos: 82,yPos: 12,customHP: 1,customDamage: 22,customSpeed: 16},
+    {boss: "enem2",type: "enem22",xPos: 74,yPos: 20,customHP: 1,customDamage: 22,customSpeed: 14},
+    {boss: "enem2",type: "enem22",xPos: 14,yPos: 6,customHP: 1,customDamage: 22,customSpeed: 21},
+    {boss: "enem2",type: "enem22",xPos: 82,yPos: 40,customHP: 1,customDamage: 22,customSpeed: 7},
+    {boss: "enem2",type: "enem22",xPos: 82,yPos: 8,customHP: 1,customDamage: 22,customSpeed: 20},
+    {boss: "enem2",type: "enem22",xPos: 28,yPos: 12,customHP: 1,customDamage: 22,customSpeed: 18},
+    {boss: "enem3",type: "enem33",xPos: 22,yPos: 12,customHP: 1,customDamage: 24,customSpeed: 16},
+    {boss: "enem3",type: "enem33",xPos: 50,yPos: 20,customHP: 1,customDamage: 24,customSpeed: 14},
+    {boss: "enem3",type: "enem33",xPos: 80,yPos: 6,customHP: 1,customDamage: 24,customSpeed: 21},
+    {boss: "enem3",type: "enem33",xPos: 22,yPos: 40,customHP: 1,customDamage: 24,customSpeed: 7},
+    {boss: "enem3",type: "enem33",xPos: 22,yPos: 8,customHP: 1,customDamage: 24,customSpeed: 20},
+    {boss: "enem3",type: "enem33",xPos: 50,yPos: 12,customHP: 1,customDamage: 24,customSpeed: 18},
+    {boss: "enem4",type: "enem44",xPos: 16,yPos: 12,customHP: 1,customDamage: 26,customSpeed: 16},
+    {boss: "enem4",type: "enem44",xPos: 30,yPos: 20,customHP: 1,customDamage: 26,customSpeed: 14},
+    {boss: "enem4",type: "enem44",xPos: 76,yPos: 6,customHP: 1,customDamage: 26,customSpeed: 21},
+    {boss: "enem4",type: "enem44",xPos: 16,yPos: 40,customHP: 1,customDamage: 26,customSpeed: 7},
+    {boss: "enem4",type: "enem44",xPos: 16,yPos: 8,customHP: 1,customDamage: 26,customSpeed: 20},
+    {boss: "enem4",type: "enem44",xPos: 88,yPos: 12,customHP: 1,customDamage: 26,customSpeed: 18},
+    {boss: "enem5",type: "enem55",xPos: 86,yPos: 12,customHP: 1,customDamage: 28,customSpeed: 16},
+    {boss: "enem5",type: "enem55",xPos: 66,yPos: 20,customHP: 1,customDamage: 28,customSpeed: 14},
+    {boss: "enem5",type: "enem55",xPos: 12,yPos: 6,customHP: 1,customDamage: 28,customSpeed: 21},
+    {boss: "enem5",type: "enem55",xPos: 86,yPos: 40,customHP: 1,customDamage: 28,customSpeed: 7},
+    {boss: "enem5",type: "enem55",xPos: 86,yPos: 8,customHP: 1,customDamage: 28,customSpeed: 20},
+    {boss: "enem5",type: "enem55",xPos: 52,yPos: 12,customHP: 1,customDamage: 28,customSpeed: 18}
 ];
 
  const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 300, bossDelayAbDop: 5600 }, // спокойное подметание
-	{ boss: 'enem2', bossDelayAb: 260, bossDelayAbDop: 6200 }, // короткая атака, долгая пауза — суть SPITEFUL_PINCH
-	{ boss: 'enem3', bossDelayAb: 390, bossDelayAbDop: 6600 }, // самый долгий отдых — стойка готовности
-	{ boss: 'enem4', bossDelayAb: 200, bossDelayAbDop: 3800 }, // самый частый — полтергейст без передышки
-	{ boss: 'enem5', bossDelayAb: 260, bossDelayAbDop: 5200 }, // собранный финал
+	{ boss: 'enem1', bossDelayAb: 300, bossDelayAbDop: 5534, firstWaveDelayMs: 2400 }, // спокойное подметание
+	{ boss: 'enem2', bossDelayAb: 260, bossDelayAbDop: 5474, firstWaveDelayMs: 2400 }, // короткая атака, долгая пауза — суть SPITEFUL_PINCH
+	{ boss: 'enem3', bossDelayAb: 390, bossDelayAbDop: 5610, firstWaveDelayMs: 2400 }, // самый долгий отдых — стойка готовности
+	{ boss: 'enem4', bossDelayAb: 200, bossDelayAbDop: 4370, firstWaveDelayMs: 2098 }, // самый частый — полтергейст без передышки
+	{ boss: 'enem5', bossDelayAb: 260, bossDelayAbDop: 4938, firstWaveDelayMs: 2370 }, // собранный финал
  ];
 
  const bossAbilitiesDop = [
-	// Домовой — UNSEEN_TIDY
-	{ boss: 'enem1', indexAbilities: [0, 1, 2, 3, 4] },
-	{ boss: 'enem1', indexAbilities: [5, 6] },
-	{ boss: 'enem1', indexAbilities: [7, 8] },
-	{ boss: 'enem1', indexAbilities: [9, 10] },
-	{ boss: 'enem1', indexAbilities: [0, 1, 7] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem1', indexAbilities: [16, 17, 18, 19, 20, 21], isChain: true }, // ← цепь-A (6, diagonal)
-	{ boss: 'enem1', indexAbilities: [22, 23, 24, 25, 26, 27], isChain: true }, // ← цепь-B (6, arc)
-	{ boss: 'enem1', indexAbilities: [13, 6, 7] }, // нежданчик: подметание вдруг идёт в обратную сторону
-	{ boss: 'enem1', indexAbilities: [0, 1, 2, 3, 4, 14] }, // сигнатурная: полный проход через всё поле разом
-
-	// Оскорблённый — SPITEFUL_PINCH
-	{ boss: 'enem2', indexAbilities: [0] },
-	{ boss: 'enem2', indexAbilities: [1] },
-	{ boss: 'enem2', indexAbilities: [2] },
-	{ boss: 'enem2', indexAbilities: [3, 4] },
-	{ boss: 'enem2', indexAbilities: [8, 9] },
-	{ boss: 'enem2', indexAbilities: [0, 1] }, // same-start-стиль пара двух одиночных подряд
-	{ boss: 'enem2', indexAbilities: [16, 17, 18, 19, 20, 21], isChain: true }, // ← цепь-A (6, vertical)
-	{ boss: 'enem2', indexAbilities: [22, 23, 24, 25, 26], isChain: true }, // ← цепь-B (5, arc)
-	{ boss: 'enem2', indexAbilities: [12, 13] }, // нежданчик: двойной щипок с одной стороны подряд
-	{ boss: 'enem2', indexAbilities: [0, 2, 1, 10, 6, 14] }, // сигнатурная: серия точечных щипков по всему полю подряд
-
-	// Всеоружный — STAFF_SWEEP
-	{ boss: 'enem3', indexAbilities: [0, 1, 2] },
-	{ boss: 'enem3', indexAbilities: [3, 4] },
-	{ boss: 'enem3', indexAbilities: [5, 6] },
-	{ boss: 'enem3', indexAbilities: [7, 8] },
-	{ boss: 'enem3', indexAbilities: [9, 10] },
-	{ boss: 'enem3', indexAbilities: [0, 1, 7] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem3', indexAbilities: [16, 17, 18, 19], isChain: true }, // ← цепь-A (4)
-	{ boss: 'enem3', indexAbilities: [20, 21, 22, 23], isChain: true }, // ← цепь-B (4)
-	{ boss: 'enem3', indexAbilities: [14] }, // нежданчик: взмах раньше привычной долгой стойки готовности
-	{ boss: 'enem3', indexAbilities: [3, 11, 4, 12] }, // сигнатурная: широкий взмах с обеих сторон разом
-
-	// Взъерошенный — POLTERGEIST_FRENZY
-	{ boss: 'enem4', indexAbilities: [0, 1] },
-	{ boss: 'enem4', indexAbilities: [2, 3] },
-	{ boss: 'enem4', indexAbilities: [4, 5] },
-	{ boss: 'enem4', indexAbilities: [8, 9] },
-	{ boss: 'enem4', indexAbilities: [6, 7, 11, 12] },
-	{ boss: 'enem4', indexAbilities: [0, 1, 4] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem4', indexAbilities: [16, 17, 18, 19], isChain: true }, // ← цепь-A (4)
-	{ boss: 'enem4', indexAbilities: [20, 21, 22, 23, 24], isChain: true }, // ← цепь-B (5)
-	{ boss: 'enem4', indexAbilities: [13, 10] }, // нежданчик: атаки разом с обеих сторон без привычного разброса
-	{ boss: 'enem4', indexAbilities: [0, 2, 4, 8, 1, 3, 5, 9] }, // сигнатурная: хаотичный полтергейст на полной скорости через всё поле
-
-	// Одичавший — FULL_SWEEP, финальный облик
-	{ boss: 'enem5', indexAbilities: [0, 1] },
-	{ boss: 'enem5', indexAbilities: [2, 3] },
-	{ boss: 'enem5', indexAbilities: [5, 6] },
-	{ boss: 'enem5', indexAbilities: [7, 8] },
-	{ boss: 'enem5', indexAbilities: [9, 10] },
-	{ boss: 'enem5', indexAbilities: [13, 14] },
-	{ boss: 'enem5', indexAbilities: [0, 1, 3] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem5', indexAbilities: [16, 17, 18, 19], isChain: true }, // ← цепь-A (4)
-	{ boss: 'enem5', indexAbilities: [20, 21, 22, 23, 24, 25, 26], isChain: true }, // ← цепь-B (7, максимум)
-	{ boss: 'enem5', indexAbilities: [11, 12] }, // нежданчик: взмах без единого мгновения стойки готовности
-	{ boss: 'enem5', indexAbilities: [0, 2, 4, 9, 1, 3, 10, 15] }, // сигнатурная кульминация: полный взмах через весь дом разом, предваряется самым долгим телеграфом уровня (telegraphMs 1040)
- ];
+    {boss: "enem1",indexAbilities: [0,1,2,3,4]},
+    {boss: "enem1",indexAbilities: [5,6],openingOrder: 0},
+    {boss: "enem1",indexAbilities: [7,8]},
+    {boss: "enem1",indexAbilities: [9,10]},
+    {boss: "enem1",indexAbilities: [28,29,30],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Веник сметает к порогу — знакомство",openingOrder: 1},
+    {boss: "enem1",indexAbilities: [28,29,32],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Веник сметает к порогу — иной конец"},
+    {boss: "enem1",indexAbilities: [33,30,29,32],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Веник сметает к порогу — завершение"},
+    {boss: "enem1",indexAbilities: [16,17,18,19,20,21],isChain: true},
+    {boss: "enem1",indexAbilities: [22,23,24,25,26,27],isChain: true},
+    {boss: "enem2",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem2",indexAbilities: [1]},
+    {boss: "enem2",indexAbilities: [2]},
+    {boss: "enem2",indexAbilities: [3,4]},
+    {boss: "enem2",indexAbilities: [8,9]},
+    {boss: "enem2",indexAbilities: [27,31],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Щипок после обиды — знакомство",openingOrder: 1},
+    {boss: "enem2",indexAbilities: [27,31,29],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Щипок после обиды — иной конец"},
+    {boss: "enem2",indexAbilities: [32,28,32,29],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Щипок после обиды — завершение"},
+    {boss: "enem2",indexAbilities: [16,17,18,19,20,21],isChain: true},
+    {boss: "enem2",indexAbilities: [22,23,24,25,26],isChain: true},
+    {boss: "enem3",indexAbilities: [0,1,2]},
+    {boss: "enem3",indexAbilities: [3,4],openingOrder: 0},
+    {boss: "enem3",indexAbilities: [5,6]},
+    {boss: "enem3",indexAbilities: [7,8]},
+    {boss: "enem3",indexAbilities: [9,10]},
+    {boss: "enem3",indexAbilities: [24,26,29],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Шест перекрывает проход — знакомство",openingOrder: 1},
+    {boss: "enem3",indexAbilities: [24,26,25],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Шест перекрывает проход — иной конец"},
+    {boss: "enem3",indexAbilities: [28,26,29,25],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Шест перекрывает проход — завершение"},
+    {boss: "enem3",indexAbilities: [16,17,18,19],isChain: true},
+    {boss: "enem3",indexAbilities: [20,21,22,23],isChain: true},
+    {boss: "enem4",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem4",indexAbilities: [2,3]},
+    {boss: "enem4",indexAbilities: [4,5]},
+    {boss: "enem4",indexAbilities: [8,9]},
+    {boss: "enem4",indexAbilities: [6,7,11,12]},
+    {boss: "enem4",indexAbilities: [25,29,26],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Беспорядок возвращает вещи — знакомство",openingOrder: 1},
+    {boss: "enem4",indexAbilities: [25,29,27],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Беспорядок возвращает вещи — иной конец"},
+    {boss: "enem4",indexAbilities: [30,27,30,26],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Беспорядок возвращает вещи — завершение"},
+    {boss: "enem4",indexAbilities: [16,17,18,19],isChain: true},
+    {boss: "enem4",indexAbilities: [20,21,22,23,24],isChain: true},
+    {boss: "enem5",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem5",indexAbilities: [2,3]},
+    {boss: "enem5",indexAbilities: [5,6]},
+    {boss: "enem5",indexAbilities: [7,8]},
+    {boss: "enem5",indexAbilities: [9,10]},
+    {boss: "enem5",indexAbilities: [13,14]},
+    {boss: "enem5",indexAbilities: [27,28,32],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Последний взмах дома — знакомство",openingOrder: 1},
+    {boss: "enem5",indexAbilities: [27,28,31],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Последний взмах дома — иной конец"},
+    {boss: "enem5",indexAbilities: [29,32,28,31],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Последний взмах дома — завершение"},
+    {boss: "enem5",indexAbilities: [16,17,18,19],isChain: true},
+    {boss: "enem5",indexAbilities: [20,21,22,23,24,25,26],isChain: true}
+];
 
 // Лорные названия связок временных улучшений — один и тот же персонаж, но
 // словарь ЭСКАЛИРУЕТ вместе с обликом (порядок/веник → обида → оружие →

@@ -8,6 +8,7 @@
     <script src="music/audio-settings.js?v=audio-settings-2026-08-11"></script>
     <script src="enemyAlphaMasks.js?v=lvl66-dymnaya-opushka-masks-2026-09-15"></script>
     <script src="difficulty.js?v=level-difficulty-1"></script>
+    <script src="battleLog.js?v=battle-log-1"></script>
 
     <script>
 const params = new URLSearchParams(window.location.search);
@@ -15,7 +16,7 @@ const requestedLevel = params.get('level') ?? '1';
 const parsedLevel = Number(requestedLevel);
 const MIN_LEVEL = 1;
 const MAX_LEVEL = 141;
-const GAME_BUILD_VERSION = 'level-difficulty-1';
+const GAME_BUILD_VERSION = 'combat-patterns-2026-09-19';
 const level = Number.isInteger(parsedLevel) && parsedLevel >= MIN_LEVEL && parsedLevel <= MAX_LEVEL
     ? parsedLevel
     : null;

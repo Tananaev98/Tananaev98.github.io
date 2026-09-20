@@ -10,6 +10,11 @@ let factorChar = (lvlNumber * 5) / 100;
 // но геометрически иная волна, чтобы не сливаться с соседями. Струнобой — lateRush:
 // гусляр после долгого перебора струн внезапно срывается в рывок.
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	scaleLongComboDamage: true,
 	scaleShortComboDamage: true,
 	levelCadence: 0.89, damageMultiplier: 2.08, minWaveDelay: 2080, minShotDelay: 146, minTelegraphMs: 535,
@@ -19,11 +24,11 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.68, speed: 1.26, damage: 1.30, telegraphMultiplier: 0.81, surpriseChance: 0.38, maxActiveAttacks: 23 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'wave',     cadence: 1.02, telegraphMs: 850, speedMultiplier: 0.97, damageMultiplier: 0.88, speedVariance: [0.85, 0.94, 1.03, 1.12, 1.21] }, // Юркач: мелкая дёрганая волна
-		enem2: { movementStyle: 'weave',    cadence: 0.95, telegraphMs: 780, speedMultiplier: 1.03, damageMultiplier: 0.96, speedVariance: [0.85, 0.95, 1.05, 1.15, 1.25] }, // Ершак: классический тугой weave, единственный не-wave
-		enem3: { movementStyle: 'wave',     cadence: 1.08, telegraphMs: 920, speedMultiplier: 0.88, damageMultiplier: 1.12, speedVariance: [0.79, 0.89, 1.00, 1.11, 1.22] }, // Сетевик: поплавковая волна на течении
-		enem4: { movementStyle: 'lateRush', cadence: 0.95, telegraphMs: 820, speedMultiplier: 0.90, damageMultiplier: 1.05, speedVariance: [0.82, 0.92, 1.03, 1.14, 1.25] }, // Струнобой: перебор струн → внезапный рывок
-		enem5: { movementStyle: 'wave',     cadence: 0.85, telegraphMs: 700, speedMultiplier: 1.08, damageMultiplier: 1.10, speedVariance: [0.84, 0.94, 1.05, 1.16, 1.27] }  // Ладейник: плавная величавая волна, финал
+		enem1: { combatIdentity: "Юркая петля рыбы", combatTrick: "повторяет удар в прежнем секторе вместо ожидаемого чередования", signatureEvery: 4, movementStyle: 'wave',     cadence: 1.02, telegraphMs: 850, speedMultiplier: 0.97, damageMultiplier: 0.88, speedVariance: [0.85, 0.94, 1.03, 1.12, 1.21] }, // Юркач: мелкая дёрганая волна
+		enem2: { combatIdentity: "Колючий плавник", combatTrick: "двойной выпад иногда получает третий укус с другой стороны", signatureEvery: 4, movementStyle: 'weave',    cadence: 0.95, telegraphMs: 780, speedMultiplier: 1.03, damageMultiplier: 0.96, speedVariance: [0.85, 0.95, 1.05, 1.15, 1.25] }, // Ершак: классический тугой weave, единственный не-wave
+		enem3: { combatIdentity: "Поплавки и грузило", combatTrick: "медленный первый снаряд остаётся фоном для более срочного второго", signatureEvery: 4, movementStyle: 'wave',     cadence: 1.08, telegraphMs: 920, speedMultiplier: 0.88, damageMultiplier: 1.12, speedVariance: [0.79, 0.89, 1.00, 1.11, 1.22] }, // Сетевик: поплавковая волна на течении
+		enem4: { combatIdentity: "Оборванный перебор", combatTrick: "две короткие группы разделены паузой; вторая группа меняет сторону", signatureEvery: 4, movementStyle: 'lateRush', cadence: 0.95, telegraphMs: 820, speedMultiplier: 0.90, damageMultiplier: 1.05, speedVariance: [0.82, 0.92, 1.03, 1.14, 1.25] }, // Струнобой: перебор струн → внезапный рывок
+		enem5: { combatIdentity: "Борт и встречное весло", combatTrick: "показывает боковой замах, но заканчивает серединой; позднее конец возвращается на край", signatureEvery: 4, movementStyle: 'wave',     cadence: 0.85, telegraphMs: 700, speedMultiplier: 1.08, damageMultiplier: 1.10, speedVariance: [0.84, 0.94, 1.05, 1.16, 1.27] }  // Ладейник: плавная величавая волна, финал
 	}
 };
 
@@ -81,22 +86,22 @@ const bossInterval = 5;
 
 const bossAbilities = [
 	// ===== Юркач: 'wave', мелкая дёрганая волна =====
-	{ boss: 'enem1', type: 'enem11', xPos: 16, yPos: 34, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 8,  waveAmplitude: 6,  waveFrequency: 1.8 },  //0
-	{ boss: 'enem1', type: 'enem11', xPos: 84, yPos: 33, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 9,  waveAmplitude: 7,  waveFrequency: 1.6 },  //1
-	{ boss: 'enem1', type: 'enem11', xPos: 24, yPos: 24, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 11, waveAmplitude: 5,  waveFrequency: 2.1 },  //2
-	{ boss: 'enem1', type: 'enem11', xPos: 76, yPos: 23, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 12, waveAmplitude: 6,  waveFrequency: 1.9 },  //3
-	{ boss: 'enem1', type: 'enem11', xPos: 30, yPos: 14, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 15, waveAmplitude: 8,  waveFrequency: 1.4 },  //4
-	{ boss: 'enem1', type: 'enem11', xPos: 70, yPos: 13, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 16, waveAmplitude: 7,  waveFrequency: 1.5 },  //5
-	{ boss: 'enem1', type: 'enem11', xPos: 18, yPos: 8,  customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 18, waveAmplitude: 5,  waveFrequency: 2.3 },  //6
-	{ boss: 'enem1', type: 'enem11', xPos: 82, yPos: 7,  customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 19, waveAmplitude: 6,  waveFrequency: 2.2 },  //7
-	{ boss: 'enem1', type: 'enem11', xPos: 45, yPos: 6,  customHP: 1, customDamage: attackDamage.enem1.heavy,  customSpeed: 21, waveAmplitude: 4,  waveFrequency: 2.6 },  //8
-	{ boss: 'enem1', type: 'enem11', xPos: 55, yPos: 5,  customHP: 1, customDamage: attackDamage.enem1.heavy,  customSpeed: 22, waveAmplitude: 5,  waveFrequency: 2.5 },  //9
-	{ boss: 'enem1', type: 'enem11', xPos: 12, yPos: 44, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 6,  waveAmplitude: 4,  waveFrequency: 1.1 },  //10
-	{ boss: 'enem1', type: 'enem11', xPos: 88, yPos: 45, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 6,  waveAmplitude: 4,  waveFrequency: 1.2 },  //11
-	{ boss: 'enem1', type: 'enem11', xPos: 50, yPos: 42, customHP: 1, customDamage: attackDamage.enem1.heavy,  customSpeed: 5,  waveAmplitude: 8,  waveFrequency: 1.0 },  //12
-	{ boss: 'enem1', type: 'enem11', xPos: 38, yPos: 17, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 14, waveAmplitude: 6,  waveFrequency: 1.7 },  //13
-	{ boss: 'enem1', type: 'enem11', xPos: 62, yPos: 16, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 14, waveAmplitude: 7,  waveFrequency: 1.6 },  //14
-	{ boss: 'enem1', type: 'enem11', xPos: 28, yPos: 6,  customHP: 1, customDamage: attackDamage.enem1.heavy,  customSpeed: 23, waveAmplitude: 5,  waveFrequency: 2.4 }   //15 нежданчик
+	{ boss: 'enem1', type: 'enem11', xPos: 16, yPos: 34, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 8,  waveAmplitude: 6,  waveFrequency: 1.8, wavePhase: 0 },  //0
+	{ boss: 'enem1', type: 'enem11', xPos: 84, yPos: 33, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 9,  waveAmplitude: 7,  waveFrequency: 1.6, wavePhase: 0 },  //1
+	{ boss: 'enem1', type: 'enem11', xPos: 24, yPos: 24, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 11, waveAmplitude: 5,  waveFrequency: 2.1, wavePhase: 0 },  //2
+	{ boss: 'enem1', type: 'enem11', xPos: 76, yPos: 23, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 12, waveAmplitude: 6,  waveFrequency: 1.9, wavePhase: 0 },  //3
+	{ boss: 'enem1', type: 'enem11', xPos: 30, yPos: 14, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 15, waveAmplitude: 8,  waveFrequency: 1.4, wavePhase: 0 },  //4
+	{ boss: 'enem1', type: 'enem11', xPos: 70, yPos: 13, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 16, waveAmplitude: 7,  waveFrequency: 1.5, wavePhase: 0 },  //5
+	{ boss: 'enem1', type: 'enem11', xPos: 18, yPos: 8,  customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 18, waveAmplitude: 5,  waveFrequency: 2.3, wavePhase: 0 },  //6
+	{ boss: 'enem1', type: 'enem11', xPos: 82, yPos: 7,  customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 19, waveAmplitude: 6,  waveFrequency: 2.2, wavePhase: 0 },  //7
+	{ boss: 'enem1', type: 'enem11', xPos: 45, yPos: 6,  customHP: 1, customDamage: attackDamage.enem1.heavy,  customSpeed: 21, waveAmplitude: 4,  waveFrequency: 2.6, wavePhase: 0 },  //8
+	{ boss: 'enem1', type: 'enem11', xPos: 55, yPos: 5,  customHP: 1, customDamage: attackDamage.enem1.heavy,  customSpeed: 22, waveAmplitude: 5,  waveFrequency: 2.5, wavePhase: 0 },  //9
+	{ boss: 'enem1', type: 'enem11', xPos: 12, yPos: 44, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 6,  waveAmplitude: 4,  waveFrequency: 1.1, wavePhase: 0 },  //10
+	{ boss: 'enem1', type: 'enem11', xPos: 88, yPos: 45, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 6,  waveAmplitude: 4,  waveFrequency: 1.2, wavePhase: 0 },  //11
+	{ boss: 'enem1', type: 'enem11', xPos: 50, yPos: 42, customHP: 1, customDamage: attackDamage.enem1.heavy,  customSpeed: 5,  waveAmplitude: 8,  waveFrequency: 1.0, wavePhase: 0 },  //12
+	{ boss: 'enem1', type: 'enem11', xPos: 38, yPos: 17, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 14, waveAmplitude: 6,  waveFrequency: 1.7, wavePhase: 0 },  //13
+	{ boss: 'enem1', type: 'enem11', xPos: 62, yPos: 16, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 14, waveAmplitude: 7,  waveFrequency: 1.6, wavePhase: 0 },  //14
+	{ boss: 'enem1', type: 'enem11', xPos: 28, yPos: 6,  customHP: 1, customDamage: attackDamage.enem1.heavy,  customSpeed: 23, waveAmplitude: 5,  waveFrequency: 2.4, wavePhase: 0 }   //15 нежданчик
 
 	,
 	// ===== Ершак: тугой классический weave — колючий, резкий =====
@@ -119,22 +124,22 @@ const bossAbilities = [
 
 	,
 	// ===== Сетевик: 'wave', поплавковая волна на течении =====
-	{ boss: 'enem3', type: 'enem33', xPos: 16, yPos: 42, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 6,  waveAmplitude: 8,  waveFrequency: 0.8 },  //0
-	{ boss: 'enem3', type: 'enem33', xPos: 84, yPos: 41, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 6,  waveAmplitude: 9,  waveFrequency: 0.7 },  //1
-	{ boss: 'enem3', type: 'enem33', xPos: 24, yPos: 30, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 8,  waveAmplitude: 7,  waveFrequency: 1.0 },  //2
-	{ boss: 'enem3', type: 'enem33', xPos: 76, yPos: 29, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 8,  waveAmplitude: 8,  waveFrequency: 0.9 },  //3
-	{ boss: 'enem3', type: 'enem33', xPos: 12, yPos: 16, customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 13, waveAmplitude: 6,  waveFrequency: 1.2 },  //4
-	{ boss: 'enem3', type: 'enem33', xPos: 88, yPos: 15, customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 13, waveAmplitude: 7,  waveFrequency: 1.1 },  //5
-	{ boss: 'enem3', type: 'enem33', xPos: 40, yPos: 7,  customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 18, waveAmplitude: 5,  waveFrequency: 1.5 },  //6
-	{ boss: 'enem3', type: 'enem33', xPos: 60, yPos: 6,  customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 19, waveAmplitude: 6,  waveFrequency: 1.4 },  //7
-	{ boss: 'enem3', type: 'enem33', xPos: 20, yPos: 46, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 5,  waveAmplitude: 5,  waveFrequency: 0.6 },  //8
-	{ boss: 'enem3', type: 'enem33', xPos: 80, yPos: 46, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 5,  waveAmplitude: 5,  waveFrequency: 0.6 },  //9
-	{ boss: 'enem3', type: 'enem33', xPos: 45, yPos: 20, customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 11, waveAmplitude: 7,  waveFrequency: 0.9 },  //10
-	{ boss: 'enem3', type: 'enem33', xPos: 55, yPos: 19, customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 11, waveAmplitude: 8,  waveFrequency: 0.8 },  //11
-	{ boss: 'enem3', type: 'enem33', xPos: 10, yPos: 47, customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 4,  waveAmplitude: 10, waveFrequency: 0.5 }, //12 самая широкая волна
-	{ boss: 'enem3', type: 'enem33', xPos: 90, yPos: 47, customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 4,  waveAmplitude: 9,  waveFrequency: 0.6 },  //13
-	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 34, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 7,  waveAmplitude: 6,  waveFrequency: 1.0 },  //14
-	{ boss: 'enem3', type: 'enem33', xPos: 30, yPos: 6,  customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 21, waveAmplitude: 6,  waveFrequency: 1.6 }   //15 нежданчик
+	{ boss: 'enem3', type: 'enem33', xPos: 16, yPos: 42, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 6,  waveAmplitude: 8,  waveFrequency: 0.8, wavePhase: 0 },  //0
+	{ boss: 'enem3', type: 'enem33', xPos: 84, yPos: 41, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 6,  waveAmplitude: 9,  waveFrequency: 0.7, wavePhase: 0 },  //1
+	{ boss: 'enem3', type: 'enem33', xPos: 24, yPos: 30, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 8,  waveAmplitude: 7,  waveFrequency: 1.0, wavePhase: 0 },  //2
+	{ boss: 'enem3', type: 'enem33', xPos: 76, yPos: 29, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 8,  waveAmplitude: 8,  waveFrequency: 0.9, wavePhase: 0 },  //3
+	{ boss: 'enem3', type: 'enem33', xPos: 12, yPos: 16, customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 13, waveAmplitude: 6,  waveFrequency: 1.2, wavePhase: 0 },  //4
+	{ boss: 'enem3', type: 'enem33', xPos: 88, yPos: 15, customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 13, waveAmplitude: 7,  waveFrequency: 1.1, wavePhase: 0 },  //5
+	{ boss: 'enem3', type: 'enem33', xPos: 40, yPos: 7,  customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 18, waveAmplitude: 5,  waveFrequency: 1.5, wavePhase: 0 },  //6
+	{ boss: 'enem3', type: 'enem33', xPos: 60, yPos: 6,  customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 19, waveAmplitude: 6,  waveFrequency: 1.4, wavePhase: 0 },  //7
+	{ boss: 'enem3', type: 'enem33', xPos: 20, yPos: 46, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 5,  waveAmplitude: 5,  waveFrequency: 0.6, wavePhase: 0 },  //8
+	{ boss: 'enem3', type: 'enem33', xPos: 80, yPos: 46, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 5,  waveAmplitude: 5,  waveFrequency: 0.6, wavePhase: 0 },  //9
+	{ boss: 'enem3', type: 'enem33', xPos: 45, yPos: 20, customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 11, waveAmplitude: 7,  waveFrequency: 0.9, wavePhase: 0 },  //10
+	{ boss: 'enem3', type: 'enem33', xPos: 55, yPos: 19, customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 11, waveAmplitude: 8,  waveFrequency: 0.8, wavePhase: 0 },  //11
+	{ boss: 'enem3', type: 'enem33', xPos: 10, yPos: 47, customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 4,  waveAmplitude: 10, waveFrequency: 0.5, wavePhase: 0 }, //12 самая широкая волна
+	{ boss: 'enem3', type: 'enem33', xPos: 90, yPos: 47, customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 4,  waveAmplitude: 9,  waveFrequency: 0.6, wavePhase: 0 },  //13
+	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 34, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 7,  waveAmplitude: 6,  waveFrequency: 1.0, wavePhase: 0 },  //14
+	{ boss: 'enem3', type: 'enem33', xPos: 30, yPos: 6,  customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 21, waveAmplitude: 6,  waveFrequency: 1.6, wavePhase: 0 }   //15 нежданчик
 
 	,
 	// ===== Струнобой: перебор струн → внезапный рывок (lateRush) =====
@@ -157,82 +162,105 @@ const bossAbilities = [
 
 	,
 	// ===== Ладейник: 'wave', плавная величавая волна, финал =====
-	{ boss: 'enem5', type: 'enem55', xPos: 12, yPos: 28, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 6,  waveAmplitude: 9,  waveFrequency: 0.9 },  //0
-	{ boss: 'enem5', type: 'enem55', xPos: 88, yPos: 27, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 7,  waveAmplitude: 10, waveFrequency: 0.8 },  //1
-	{ boss: 'enem5', type: 'enem55', xPos: 24, yPos: 18, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 10, waveAmplitude: 7,  waveFrequency: 1.2 },  //2
-	{ boss: 'enem5', type: 'enem55', xPos: 76, yPos: 17, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 11, waveAmplitude: 8,  waveFrequency: 1.1 },  //3
-	{ boss: 'enem5', type: 'enem55', xPos: 14, yPos: 8,  customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 17, waveAmplitude: 11, waveFrequency: 0.7 },  //4
-	{ boss: 'enem5', type: 'enem55', xPos: 86, yPos: 7,  customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 18, waveAmplitude: 12, waveFrequency: 0.6 },  //5
-	{ boss: 'enem5', type: 'enem55', xPos: 45, yPos: 6,  customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 22, waveAmplitude: 6,  waveFrequency: 1.5 },  //6
-	{ boss: 'enem5', type: 'enem55', xPos: 55, yPos: 5,  customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 23, waveAmplitude: 7,  waveFrequency: 1.4 },  //7
-	{ boss: 'enem5', type: 'enem55', xPos: 18, yPos: 44, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 5,  waveAmplitude: 6,  waveFrequency: 0.5 },  //8
-	{ boss: 'enem5', type: 'enem55', xPos: 82, yPos: 44, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 5,  waveAmplitude: 6,  waveFrequency: 0.5 },  //9
-	{ boss: 'enem5', type: 'enem55', xPos: 34, yPos: 32, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 8,  waveAmplitude: 8,  waveFrequency: 1.0 },  //10
-	{ boss: 'enem5', type: 'enem55', xPos: 66, yPos: 31, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 8,  waveAmplitude: 9,  waveFrequency: 0.9 },  //11
-	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 46, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4,  waveAmplitude: 13, waveFrequency: 0.4 }, //12 самая широкая величавая волна уровня
-	{ boss: 'enem5', type: 'enem55', xPos: 38, yPos: 13, customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 15, waveAmplitude: 9,  waveFrequency: 1.3 },  //13
-	{ boss: 'enem5', type: 'enem55', xPos: 62, yPos: 12, customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 15, waveAmplitude: 10, waveFrequency: 1.2 },  //14
-	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 6,  customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 25, waveAmplitude: 7,  waveFrequency: 1.8 }   //15 нежданчик
+	{ boss: 'enem5', type: 'enem55', xPos: 12, yPos: 28, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 6,  waveAmplitude: 9,  waveFrequency: 0.9, wavePhase: 0 },  //0
+	{ boss: 'enem5', type: 'enem55', xPos: 88, yPos: 27, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 7,  waveAmplitude: 10, waveFrequency: 0.8, wavePhase: 0 },  //1
+	{ boss: 'enem5', type: 'enem55', xPos: 24, yPos: 18, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 10, waveAmplitude: 7,  waveFrequency: 1.2, wavePhase: 0 },  //2
+	{ boss: 'enem5', type: 'enem55', xPos: 76, yPos: 17, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 11, waveAmplitude: 8,  waveFrequency: 1.1, wavePhase: 0 },  //3
+	{ boss: 'enem5', type: 'enem55', xPos: 14, yPos: 8,  customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 17, waveAmplitude: 11, waveFrequency: 0.7, wavePhase: 0 },  //4
+	{ boss: 'enem5', type: 'enem55', xPos: 86, yPos: 7,  customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 18, waveAmplitude: 12, waveFrequency: 0.6, wavePhase: 0 },  //5
+	{ boss: 'enem5', type: 'enem55', xPos: 45, yPos: 6,  customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 22, waveAmplitude: 6,  waveFrequency: 1.5, wavePhase: 0 },  //6
+	{ boss: 'enem5', type: 'enem55', xPos: 55, yPos: 5,  customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 23, waveAmplitude: 7,  waveFrequency: 1.4, wavePhase: 0 },  //7
+	{ boss: 'enem5', type: 'enem55', xPos: 18, yPos: 44, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 5,  waveAmplitude: 6,  waveFrequency: 0.5, wavePhase: 0 },  //8
+	{ boss: 'enem5', type: 'enem55', xPos: 82, yPos: 44, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 5,  waveAmplitude: 6,  waveFrequency: 0.5, wavePhase: 0 },  //9
+	{ boss: 'enem5', type: 'enem55', xPos: 34, yPos: 32, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 8,  waveAmplitude: 8,  waveFrequency: 1.0, wavePhase: 0 },  //10
+	{ boss: 'enem5', type: 'enem55', xPos: 66, yPos: 31, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 8,  waveAmplitude: 9,  waveFrequency: 0.9, wavePhase: 0 },  //11
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 46, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4,  waveAmplitude: 13, waveFrequency: 0.4, wavePhase: 0 }, //12 самая широкая величавая волна уровня
+	{ boss: 'enem5', type: 'enem55', xPos: 38, yPos: 13, customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 15, waveAmplitude: 9,  waveFrequency: 1.3, wavePhase: 0 },  //13
+	{ boss: 'enem5', type: 'enem55', xPos: 62, yPos: 12, customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 15, waveAmplitude: 10, waveFrequency: 1.2, wavePhase: 0 },  //14
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 6,  customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 25, waveAmplitude: 7,  waveFrequency: 1.8, wavePhase: 0 }   //15 нежданчик
+,
+    // Приёмы из scripts/combat-designs.js; индексы считаются отдельно для каждого босса.
+    {boss: "enem1",type: "enem11",xPos: 14,yPos: 12,customHP: 1,customDamage: 15,customSpeed: 16, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },
+    {boss: "enem1",type: "enem11",xPos: 24,yPos: 20,customHP: 1,customDamage: 15,customSpeed: 14, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },
+    {boss: "enem1",type: "enem11",xPos: 80,yPos: 6,customHP: 1,customDamage: 15,customSpeed: 21, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },
+    {boss: "enem1",type: "enem11",xPos: 14,yPos: 40,customHP: 1,customDamage: 15,customSpeed: 7, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },
+    {boss: "enem1",type: "enem11",xPos: 14,yPos: 8,customHP: 1,customDamage: 15,customSpeed: 20, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },
+    {boss: "enem1",type: "enem11",xPos: 68,yPos: 12,customHP: 1,customDamage: 15,customSpeed: 18, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },
+    {boss: "enem2",type: "enem22",xPos: 86,yPos: 12,customHP: 1,customDamage: 15,customSpeed: 16},
+    {boss: "enem2",type: "enem22",xPos: 74,yPos: 20,customHP: 1,customDamage: 15,customSpeed: 14},
+    {boss: "enem2",type: "enem22",xPos: 20,yPos: 6,customHP: 1,customDamage: 15,customSpeed: 21},
+    {boss: "enem2",type: "enem22",xPos: 86,yPos: 40,customHP: 1,customDamage: 15,customSpeed: 7},
+    {boss: "enem2",type: "enem22",xPos: 86,yPos: 8,customHP: 1,customDamage: 15,customSpeed: 20},
+    {boss: "enem2",type: "enem22",xPos: 32,yPos: 12,customHP: 1,customDamage: 15,customSpeed: 18},
+    {boss: "enem3",type: "enem33",xPos: 24,yPos: 12,customHP: 1,customDamage: 15,customSpeed: 16, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },
+    {boss: "enem3",type: "enem33",xPos: 78,yPos: 20,customHP: 1,customDamage: 15,customSpeed: 14, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },
+    {boss: "enem3",type: "enem33",xPos: 38,yPos: 6,customHP: 1,customDamage: 15,customSpeed: 21, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },
+    {boss: "enem3",type: "enem33",xPos: 24,yPos: 24,customHP: 1,customDamage: 15,customSpeed: 7, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },
+    {boss: "enem3",type: "enem33",xPos: 24,yPos: 8,customHP: 1,customDamage: 15,customSpeed: 20, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },
+    {boss: "enem3",type: "enem33",xPos: 66,yPos: 12,customHP: 1,customDamage: 15,customSpeed: 18, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },
+    {boss: "enem4",type: "enem44",xPos: 18,yPos: 12,customHP: 1,customDamage: 15,customSpeed: 16},
+    {boss: "enem4",type: "enem44",xPos: 32,yPos: 20,customHP: 1,customDamage: 15,customSpeed: 14},
+    {boss: "enem4",type: "enem44",xPos: 70,yPos: 6,customHP: 1,customDamage: 15,customSpeed: 21},
+    {boss: "enem4",type: "enem44",xPos: 18,yPos: 40,customHP: 1,customDamage: 15,customSpeed: 7},
+    {boss: "enem4",type: "enem44",xPos: 18,yPos: 8,customHP: 1,customDamage: 15,customSpeed: 20},
+    {boss: "enem4",type: "enem44",xPos: 84,yPos: 12,customHP: 1,customDamage: 15,customSpeed: 18},
+    {boss: "enem5",type: "enem55",xPos: 84,yPos: 12,customHP: 1,customDamage: 18,customSpeed: 16, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },
+    {boss: "enem5",type: "enem55",xPos: 64,yPos: 20,customHP: 1,customDamage: 18,customSpeed: 14, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },
+    {boss: "enem5",type: "enem55",xPos: 14,yPos: 6,customHP: 1,customDamage: 18,customSpeed: 21, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },
+    {boss: "enem5",type: "enem55",xPos: 84,yPos: 40,customHP: 1,customDamage: 18,customSpeed: 7, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },
+    {boss: "enem5",type: "enem55",xPos: 84,yPos: 8,customHP: 1,customDamage: 18,customSpeed: 20, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 },
+    {boss: "enem5",type: "enem55",xPos: 52,yPos: 12,customHP: 1,customDamage: 18,customSpeed: 18, waveAmplitude: 6, waveFrequency: 1.2, wavePhase: 0 }
 ];
 
 const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 230, bossDelayAbDop: 4200 }, // мелкая дёрганая волна, самый быстрый темп
-	{ boss: 'enem2', bossDelayAb: 300, bossDelayAbDop: 5100 }, // тугой колючий weave
-	{ boss: 'enem3', bossDelayAb: 340, bossDelayAbDop: 5600 }, // поплавковая волна на течении
-	{ boss: 'enem4', bossDelayAb: 400, bossDelayAbDop: 6100 }, // перебор струн, долгая пауза перед рывком
-	{ boss: 'enem5', bossDelayAb: 250, bossDelayAbDop: 4600 }, // величавая финальная волна
+	{ boss: 'enem1', bossDelayAb: 230, bossDelayAbDop: 4737, firstWaveDelayMs: 2274 }, // мелкая дёрганая волна, самый быстрый темп
+	{ boss: 'enem2', bossDelayAb: 300, bossDelayAbDop: 5559, firstWaveDelayMs: 2400 }, // тугой колючий weave
+	{ boss: 'enem3', bossDelayAb: 340, bossDelayAbDop: 5566, firstWaveDelayMs: 2400 }, // поплавковая волна на течении
+	{ boss: 'enem4', bossDelayAb: 400, bossDelayAbDop: 5185, firstWaveDelayMs: 2400 }, // перебор струн, долгая пауза перед рывком
+	{ boss: 'enem5', bossDelayAb: 250, bossDelayAbDop: 4825, firstWaveDelayMs: 2316 }, // величавая финальная волна
 ];
 
 const bossAbilitiesDop = [
-	// Юркач
-	{ boss: 'enem1', indexAbilities: [0, 1] },
-	{ boss: 'enem1', indexAbilities: [6, 7] },
-	{ boss: 'enem1', indexAbilities: [2, 3, 10] },
-	{ boss: 'enem1', indexAbilities: [4, 5, 11] },
-	{ boss: 'enem1', indexAbilities: [0, 2, 4, 6] },
-	{ boss: 'enem1', indexAbilities: [0, 1, 8, 9] },
-	{ boss: 'enem1', indexAbilities: [0, 1] },
-	{ boss: 'enem1', indexAbilities: [12, 13, 14, 15] },
-
-	// Ершак
-	{ boss: 'enem2', indexAbilities: [0, 1] },
-	{ boss: 'enem2', indexAbilities: [2, 3] },
-	{ boss: 'enem2', indexAbilities: [4, 5, 10] },
-	{ boss: 'enem2', indexAbilities: [8, 9, 11, 12] },
-	{ boss: 'enem2', indexAbilities: [0, 1, 2, 3] },
-	{ boss: 'enem2', indexAbilities: [0, 1, 6, 7] },
-	{ boss: 'enem2', indexAbilities: [0, 1] },
-	{ boss: 'enem2', indexAbilities: [13, 14, 15, 10] },
-
-	// Сетевик
-	{ boss: 'enem3', indexAbilities: [0, 1] },
-	{ boss: 'enem3', indexAbilities: [6, 7] },
-	{ boss: 'enem3', indexAbilities: [2, 3, 10] },
-	{ boss: 'enem3', indexAbilities: [4, 5, 11] },
-	{ boss: 'enem3', indexAbilities: [0, 2, 4, 6] },
-	{ boss: 'enem3', indexAbilities: [0, 1, 12, 13] },
-	{ boss: 'enem3', indexAbilities: [0, 1] },
-	{ boss: 'enem3', indexAbilities: [8, 9, 14, 15] },
-
-	// Струнобой
-	{ boss: 'enem4', indexAbilities: [0, 1] },
-	{ boss: 'enem4', indexAbilities: [2, 3] },
-	{ boss: 'enem4', indexAbilities: [4, 5, 8, 9] },
-	{ boss: 'enem4', indexAbilities: [10, 11, 13, 14] },
-	{ boss: 'enem4', indexAbilities: [0, 1, 2, 3] },
-	{ boss: 'enem4', indexAbilities: [0, 1, 6, 7] },
-	{ boss: 'enem4', indexAbilities: [0, 1] },
-	{ boss: 'enem4', indexAbilities: [12, 13, 14, 15] },
-
-	// Ладейник
-	{ boss: 'enem5', indexAbilities: [0, 1] },
-	{ boss: 'enem5', indexAbilities: [2, 3] },
-	{ boss: 'enem5', indexAbilities: [4, 5, 10, 11] },
-	{ boss: 'enem5', indexAbilities: [6, 7, 12] },
-	{ boss: 'enem5', indexAbilities: [0, 1, 2, 3] },
-	{ boss: 'enem5', indexAbilities: [0, 1, 8, 9] },
-	{ boss: 'enem5', indexAbilities: [0, 1] },
-	{ boss: 'enem5', indexAbilities: [10, 11, 13, 14, 15] },
+    {boss: "enem1",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem1",indexAbilities: [6,7]},
+    {boss: "enem1",indexAbilities: [2,3,10]},
+    {boss: "enem1",indexAbilities: [4,5,11]},
+    {boss: "enem1",indexAbilities: [0,2,4,6]},
+    {boss: "enem1",indexAbilities: [16,20,17],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Юркая петля рыбы — знакомство",openingOrder: 1},
+    {boss: "enem1",indexAbilities: [16,20,18],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Юркая петля рыбы — иной конец"},
+    {boss: "enem1",indexAbilities: [21,18,21,17],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Юркая петля рыбы — завершение"},
+    {boss: "enem2",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem2",indexAbilities: [2,3]},
+    {boss: "enem2",indexAbilities: [4,5,10]},
+    {boss: "enem2",indexAbilities: [8,9,11,12]},
+    {boss: "enem2",indexAbilities: [0,1,2,3]},
+    {boss: "enem2",indexAbilities: [16,20],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Колючий плавник — знакомство",openingOrder: 1},
+    {boss: "enem2",indexAbilities: [16,20,18],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Колючий плавник — иной конец"},
+    {boss: "enem2",indexAbilities: [21,17,21,18],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Колючий плавник — завершение"},
+    {boss: "enem3",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem3",indexAbilities: [6,7]},
+    {boss: "enem3",indexAbilities: [2,3,10]},
+    {boss: "enem3",indexAbilities: [4,5,11]},
+    {boss: "enem3",indexAbilities: [0,2,4,6]},
+    {boss: "enem3",indexAbilities: [19,18],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Поплавки и грузило — знакомство",openingOrder: 1},
+    {boss: "enem3",indexAbilities: [19,18,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Поплавки и грузило — иной конец"},
+    {boss: "enem3",indexAbilities: [19,21,18,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Поплавки и грузило — завершение"},
+    {boss: "enem4",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem4",indexAbilities: [2,3]},
+    {boss: "enem4",indexAbilities: [4,5,8,9]},
+    {boss: "enem4",indexAbilities: [10,11,13,14]},
+    {boss: "enem4",indexAbilities: [0,1,2,3]},
+    {boss: "enem4",indexAbilities: [16,20,18,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Оборванный перебор — знакомство",openingOrder: 1,shotGapsMs: [360,900,360]},
+    {boss: "enem4",indexAbilities: [16,20,21],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Оборванный перебор — иной конец",shotGapsMs: [360,900,360]},
+    {boss: "enem4",indexAbilities: [18,21,16,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Оборванный перебор — завершение",shotGapsMs: [360,900,360]},
+    {boss: "enem5",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem5",indexAbilities: [2,3]},
+    {boss: "enem5",indexAbilities: [4,5,10,11]},
+    {boss: "enem5",indexAbilities: [6,7,12]},
+    {boss: "enem5",indexAbilities: [0,1,2,3]},
+    {boss: "enem5",indexAbilities: [16,17,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Борт и встречное весло — знакомство",openingOrder: 1},
+    {boss: "enem5",indexAbilities: [16,17,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Борт и встречное весло — иной конец"},
+    {boss: "enem5",indexAbilities: [18,21,17,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Борт и встречное весло — завершение"}
 ];
 
 // Лорные названия связок. Уровень 33 — рыбацкое: Юркач (юркая рыбка), Ершак (ёрш),

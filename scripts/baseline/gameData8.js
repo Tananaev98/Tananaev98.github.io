@@ -1,0 +1,433 @@
+let lvlNumber = 8;
+let factorChar = (lvlNumber * 5) / 100;
+
+const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
+	scaleLongComboDamage: true,
+	scaleShortComboDamage: true,
+	levelCadence: 0.86, damageMultiplier: 1.11, minWaveDelay: 2340, minShotDelay: 153, minTelegraphMs: 520,
+	phases: [
+		{ phase: 1, minHp: 0.66, cadence: 1.00, speed: 0.98, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.10, maxActiveAttacks: 13 },
+		{ phase: 2, minHp: 0.31, cadence: 0.82, speed: 1.08, damage: 1.11, telegraphMultiplier: 0.92, surpriseChance: 0.19, maxActiveAttacks: 17 },
+		{ phase: 3, minHp: 0.00, cadence: 0.69, speed: 1.17, damage: 1.21, telegraphMultiplier: 0.86, surpriseChance: 0.27, maxActiveAttacks: 19 }
+	],
+	bosses: {
+		enem1: { combatIdentity: "Горячий край пирожка", combatTrick: "короткий первый заход продолжается более быстрым довеском с прежнего края", signatureEvery: 4, movementStyle: 'lateRush', cadence: 1.04, telegraphMs: 830, speedMultiplier: 1.00, damageMultiplier: 1.03, speedVariance: [0.84, 0.95, 1.06, 1.16, 1.24] }, // RIGHT_COLUMN: ровная жарящая колонна
+		enem2: { combatIdentity: "Скольжение блина", combatTrick: "ведёт прицел вдоль прохода, затем возвращает угрозу за спину прохода", signatureEvery: 4, movementStyle: 'pause', cadence: 0.92, telegraphMs: 720, speedMultiplier: 1.12, damageMultiplier: 1.06, speedVariance: [0.90, 1.00, 1.10, 1.20, 1.28] }, // LEFT_SLIDE: скользит с левого края
+		enem3: { combatIdentity: "Складки каравая", combatTrick: "разводит две цели, затем закрывает оставленную между ними полосу", signatureEvery: 4, movementStyle: 'drift', cadence: 1.18, telegraphMs: 1000, speedMultiplier: 0.86, damageMultiplier: 1.24, speedVariance: [0.76, 0.86, 0.96, 1.06, 1.14] }, // BOTTOM_CRUSH: тяжёлое хлебное давление
+		enem4: { combatIdentity: "Отскок яблока", combatTrick: "повторяет удар в прежнем секторе вместо ожидаемого чередования", signatureEvery: 4, movementStyle: 'straight', cadence: 0.80, telegraphMs: 600, speedMultiplier: 1.20, damageMultiplier: 1.10, speedVariance: [0.78, 0.92, 1.08, 1.22, 1.34] }, // HIGH_BOUNCE: зависание → падение
+		enem5: { combatIdentity: "Щелчок скорлупы", combatTrick: "двойной выпад иногда получает третий укус с другой стороны", signatureEvery: 4, movementStyle: 'accelerate', cadence: 0.76, telegraphMs: 650, speedMultiplier: 1.16, damageMultiplier: 1.18, speedVariance: [0.92, 1.02, 1.12, 1.22, 1.30] } // H_PAIRS: ритмичные щелчки парами
+	}
+};
+
+
+const ENEMY_TYPES = {
+
+	enem11: {
+		name: 'enem11',
+		image: 'images/enemies/regions/1_smesh_les/lvl8/11.webp',
+		baseHP: 100,
+		baseSpeed: 0.020,
+		baseDamage: 20,
+		spawnWeight: 5,
+		baseExp: 0,
+		size: '6%'
+	},
+
+	enem22: {
+		name: 'enem22',
+		image: 'images/enemies/regions/1_smesh_les/lvl8/22.webp',
+		baseHP: 100,
+		baseSpeed: 0.020,
+		baseDamage: 20,
+		spawnWeight: 5,
+		baseExp: 0,
+		size: '6%'
+	},
+
+	enem33: {
+		name: 'enem33',
+		image: 'images/enemies/regions/1_smesh_les/lvl8/33.webp',
+		baseHP: 100,
+		baseSpeed: 0.020,
+		baseDamage: 20,
+		spawnWeight: 5,
+		baseExp: 0,
+		size: '6%'
+	},
+
+	enem44: {
+		name: 'enem44',
+		image: 'images/enemies/regions/1_smesh_les/lvl8/44.webp',
+		baseHP: 100,
+		baseSpeed: 0.020,
+		baseDamage: 20,
+		spawnWeight: 5,
+		baseExp: 0,
+		size: '6%'
+	},
+
+	enem55: {
+		name: 'enem55',
+		image: 'images/enemies/regions/1_smesh_les/lvl8/55.webp',
+		baseHP: 100,
+		baseSpeed: 0.020,
+		baseDamage: 20,
+		spawnWeight: 5,
+		baseExp: 0,
+		size: '6%'
+	},
+
+	enem1: {
+		name: 'enem1',
+		dispName: 'Жарёныш',
+		image: 'images/enemies/regions/1_smesh_les/lvl8/1.webp',
+		baseHP: (4350) + (4350 * factorChar),
+		baseSpeed: 0,
+		baseDamage: (20) + (20) * factorChar,
+		spawnWeight: 5,
+		baseExp: 250,
+		xPos: 38,
+		size: '24%',
+        deathAnimation: { preset: 'ashFade', durationMs: 1150 }
+	},
+
+	enem2: {
+		name: 'enem2',
+		dispName: 'Скользыш',
+		image: 'images/enemies/regions/1_smesh_les/lvl8/2.webp',
+		baseHP: (15000) + (15000 * factorChar),
+		baseSpeed: 0,
+		baseDamage: (22) + (22) * factorChar,
+		spawnWeight: 15,
+		baseExp: 400,
+		xPos: 36,
+		size: '26%',
+        deathAnimation: { preset: 'meltDown', durationMs: 1200 }
+	},
+
+	enem3: {
+		name: 'enem3',
+		dispName: 'Буханка',
+		image: 'images/enemies/regions/1_smesh_les/lvl8/3.webp',
+		baseHP: (24000) + (24000 * factorChar),
+		baseSpeed: 0,
+		baseDamage: (24) + (24) * factorChar,
+		spawnWeight: 20,
+		baseExp: 600,
+		xPos: 35,
+		size: '28%',
+        deathAnimation: { preset: 'puffPop', durationMs: 1000 }
+	},
+
+	enem4: {
+		name: 'enem4',
+		dispName: 'Катёныш',
+		image: 'images/enemies/regions/1_smesh_les/lvl8/4.webp',
+		baseHP: (68000) + (68000 * factorChar),
+		baseSpeed: 0,
+		baseDamage: (26) + (26) * factorChar,
+		spawnWeight: 10,
+		baseExp: 800,
+		xPos: 34,
+		size: '26%',
+        deathAnimation: { preset: 'rollOff', durationMs: 1250 }
+	},
+
+	enem5: {
+		name: 'enem5',
+		dispName: 'Щелкун',
+		image: 'images/enemies/regions/1_smesh_les/lvl8/5.webp',
+		baseHP: (82000) + (82000 * factorChar),
+		baseSpeed: 0,
+		baseDamage: (28) + (28) * factorChar,
+		spawnWeight: 5,
+		baseExp: 0,
+		xPos: 34,
+		size: '28%',
+        deathAnimation: { preset: 'shatterBurst', durationMs: 1050 }
+	},
+
+};
+
+
+let bossM = ['enem1', 'enem2', 'enem3', 'enem4', 'enem5'];
+let timeNextBoss = 5;
+const bossInterval = 5;
+
+// Уровень 8 — Кухня взбунтовалась (ожившая еда)
+// Боссы по центру; атаки — края (x≤18 / x≥78) и/или ниже босса.
+// Быстрые (speed≥16) стартуют высоко (y≤10); медленные могут ниже (~46–56).
+// У каждого босса свой рисунок угрозы — не копия прошлых уровней.
+
+const bossAbilities = [
+
+	// ===== Жарёныш: RIGHT_COLUMN — почти все x=86..94; фаст 2 справа + 1 слева =====
+	// столбик жара справа
+	{ boss: 'enem1', type: 'enem11', xPos: 86, yPos: 14, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 4 },  //0
+	{ boss: 'enem1', type: 'enem11', xPos: 90, yPos: 22, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 5 },  //1
+	{ boss: 'enem1', type: 'enem11', xPos: 88, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 3 },  //2
+	{ boss: 'enem1', type: 'enem11', xPos: 92, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 4 },  //3
+	{ boss: 'enem1', type: 'enem11', xPos: 86, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 5 },  //4
+	{ boss: 'enem1', type: 'enem11', xPos: 90, yPos: 34, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 3 },  //5
+	{ boss: 'enem1', type: 'enem11', xPos: 88, yPos: 12, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 4 },  //6
+	{ boss: 'enem1', type: 'enem11', xPos: 92, yPos: 38, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 5 },  //7
+	// быстрые искры — два справа, один слева
+	{ boss: 'enem1', type: 'enem11', xPos: 90, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 22 }, //8
+	{ boss: 'enem1', type: 'enem11', xPos: 86, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 24 }, //9
+	{ boss: 'enem1', type: 'enem11', xPos: 12, yPos: 7,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 26 }, //10
+	// редкий низ + микс
+	{ boss: 'enem1', type: 'enem11', xPos: 88, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 4 },  //11
+	{ boss: 'enem1', type: 'enem11', xPos: 90, yPos: 22, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 5 },  //12
+	{ boss: 'enem1', type: 'enem11', xPos: 90, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 22 }, //13
+	{ boss: 'enem1', type: 'enem11', xPos: 12, yPos: 7,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 26 }, //14
+	{ boss: 'enem1', type: 'enem11', xPos: 86, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 3 },  //15
+
+	// ===== Скользыш: LEFT_SLIDE — каскад слева средними скоростями; низ 3 точки (не стена); фаст 2 =====
+	// каскад масла по левому флангу
+	{ boss: 'enem2', type: 'enem22', xPos: 8,  yPos: 14, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 12 }, //0
+	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 22, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 14 }, //1
+	{ boss: 'enem2', type: 'enem22', xPos: 12, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 11 }, //2
+	{ boss: 'enem2', type: 'enem22', xPos: 8,  yPos: 38, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 13 }, //3
+	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 15 }, //4
+	// три точки снизу — не полная стена
+	{ boss: 'enem2', type: 'enem22', xPos: 12, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 3 },  //5
+	{ boss: 'enem2', type: 'enem22', xPos: 40, yPos: 52, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 4 },  //6
+	{ boss: 'enem2', type: 'enem22', xPos: 78, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 3 },  //7
+	// быстрый подброс — два удара
+	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 22 }, //8
+	{ boss: 'enem2', type: 'enem22', xPos: 14, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 26 }, //9
+	// микс: каскад + подброс
+	{ boss: 'enem2', type: 'enem22', xPos: 12, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 11 }, //10
+	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 22 }, //11
+	{ boss: 'enem2', type: 'enem22', xPos: 40, yPos: 52, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 4 },  //12
+	{ boss: 'enem2', type: 'enem22', xPos: 8,  yPos: 38, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 13 }, //13
+	{ boss: 'enem2', type: 'enem22', xPos: 14, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 26 }, //14
+	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 22, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 14 }, //15
+
+	// ===== Буханка: BOTTOM_CRUSH — единственная полная стена (8 точек); mid ≤2; фаст 2 =====
+	// тяжёлая стена у крепости
+	{ boss: 'enem3', type: 'enem33', xPos: 10, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 2 },  //0
+	{ boss: 'enem3', type: 'enem33', xPos: 24, yPos: 52, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3 },  //1
+	{ boss: 'enem3', type: 'enem33', xPos: 38, yPos: 54, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 2 },  //2
+	{ boss: 'enem3', type: 'enem33', xPos: 52, yPos: 52, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3 },  //3
+	{ boss: 'enem3', type: 'enem33', xPos: 66, yPos: 54, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 2 },  //4
+	{ boss: 'enem3', type: 'enem33', xPos: 80, yPos: 52, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3 },  //5
+	{ boss: 'enem3', type: 'enem33', xPos: 94, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 2 },  //6
+	{ boss: 'enem3', type: 'enem33', xPos: 46, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3 },  //7
+	// два крошечных фланговых
+	{ boss: 'enem3', type: 'enem33', xPos: 8,  yPos: 24, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 10 }, //8
+	{ boss: 'enem3', type: 'enem33', xPos: 92, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 11 }, //9
+	// два быстрых удара буханкой
+	{ boss: 'enem3', type: 'enem33', xPos: 10, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 22 }, //10
+	{ boss: 'enem3', type: 'enem33', xPos: 86, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 24 }, //11
+	// микс: стена + удар
+	{ boss: 'enem3', type: 'enem33', xPos: 52, yPos: 52, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3 },  //12
+	{ boss: 'enem3', type: 'enem33', xPos: 8,  yPos: 24, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 10 }, //13
+	{ boss: 'enem3', type: 'enem33', xPos: 10, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 22 }, //14
+	{ boss: 'enem3', type: 'enem33', xPos: 80, yPos: 52, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3 },  //15
+
+	// ===== Катёныш: HIGH_BOUNCE — чередование краёв y5–28; без дна; фаст 3 (21/25/23) =====
+	// отскоки по краям на высоте
+	{ boss: 'enem4', type: 'enem44', xPos: 8,  yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 5 },  //0
+	{ boss: 'enem4', type: 'enem44', xPos: 92, yPos: 14, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 4 },  //1
+	{ boss: 'enem4', type: 'enem44', xPos: 10, yPos: 20, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 6 },  //2
+	{ boss: 'enem4', type: 'enem44', xPos: 90, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 5 },  //3
+	{ boss: 'enem4', type: 'enem44', xPos: 8,  yPos: 12, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 4 },  //4
+	{ boss: 'enem4', type: 'enem44', xPos: 92, yPos: 22, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 5 },  //5
+	{ boss: 'enem4', type: 'enem44', xPos: 12, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 6 },  //6
+	{ boss: 'enem4', type: 'enem44', xPos: 88, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 5 },  //7
+	// быстрые отскоки — нечётные скорости
+	{ boss: 'enem4', type: 'enem44', xPos: 10, yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 21 }, //8
+	{ boss: 'enem4', type: 'enem44', xPos: 90, yPos: 7,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 25 }, //9
+	{ boss: 'enem4', type: 'enem44', xPos: 14, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 23 }, //10
+	// микс: отскок + рывок (без нижней стены)
+	{ boss: 'enem4', type: 'enem44', xPos: 8,  yPos: 20, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 5 },  //11
+	{ boss: 'enem4', type: 'enem44', xPos: 10, yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 21 }, //12
+	{ boss: 'enem4', type: 'enem44', xPos: 92, yPos: 14, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 4 },  //13
+	{ boss: 'enem4', type: 'enem44', xPos: 90, yPos: 7,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 25 }, //14
+	{ boss: 'enem4', type: 'enem44', xPos: 12, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 6 },  //15
+
+	// ===== Щелкун: H_PAIRS — горизонтальные пары на одном фланге; низ ≤2; фаст 3 =====
+	// горизонтальные пары слева
+	{ boss: 'enem5', type: 'enem55', xPos: 8,  yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //0
+	{ boss: 'enem5', type: 'enem55', xPos: 14, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 5 },  //1
+	// горизонтальные пары справа
+	{ boss: 'enem5', type: 'enem55', xPos: 86, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 3 },  //2
+	{ boss: 'enem5', type: 'enem55', xPos: 92, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //3
+	// ещё пара слева ниже
+	{ boss: 'enem5', type: 'enem55', xPos: 10, yPos: 36, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 5 },  //4
+	{ boss: 'enem5', type: 'enem55', xPos: 16, yPos: 36, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //5
+	// редкий низ — две точки
+	{ boss: 'enem5', type: 'enem55', xPos: 12, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 3 },  //6
+	{ boss: 'enem5', type: 'enem55', xPos: 88, yPos: 52, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //7
+	// быстрый щелчок — три удара
+	{ boss: 'enem5', type: 'enem55', xPos: 10, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 22 }, //8
+	{ boss: 'enem5', type: 'enem55', xPos: 86, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 24 }, //9
+	{ boss: 'enem5', type: 'enem55', xPos: 14, yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 26 }, //10
+	// микс: пара + щелчок
+	{ boss: 'enem5', type: 'enem55', xPos: 8,  yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //11
+	{ boss: 'enem5', type: 'enem55', xPos: 86, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 3 },  //12
+	{ boss: 'enem5', type: 'enem55', xPos: 10, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 22 }, //13
+	{ boss: 'enem5', type: 'enem55', xPos: 16, yPos: 36, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //14
+	{ boss: 'enem5', type: 'enem55', xPos: 86, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 24 }, //15
+
+    // Приёмы из scripts/combat-designs.js; индексы считаются отдельно для каждого босса.
+    {boss: "enem1",type: "enem11",xPos: 82,yPos: 12,customHP: 1,customDamage: 28,customSpeed: 16},
+    {boss: "enem1",type: "enem11",xPos: 75,yPos: 20,customHP: 1,customDamage: 28,customSpeed: 14},
+    {boss: "enem1",type: "enem11",xPos: 20,yPos: 6,customHP: 1,customDamage: 28,customSpeed: 21},
+    {boss: "enem1",type: "enem11",xPos: 82,yPos: 40,customHP: 1,customDamage: 28,customSpeed: 7},
+    {boss: "enem1",type: "enem11",xPos: 82,yPos: 8,customHP: 1,customDamage: 28,customSpeed: 20},
+    {boss: "enem1",type: "enem11",xPos: 36,yPos: 12,customHP: 1,customDamage: 28,customSpeed: 18},
+    {boss: "enem2",type: "enem22",xPos: 12,yPos: 12,customHP: 1,customDamage: 30.8,customSpeed: 16},
+    {boss: "enem2",type: "enem22",xPos: 32,yPos: 20,customHP: 1,customDamage: 30.8,customSpeed: 14},
+    {boss: "enem2",type: "enem22",xPos: 60,yPos: 6,customHP: 1,customDamage: 30.8,customSpeed: 21},
+    {boss: "enem2",type: "enem22",xPos: 12,yPos: 40,customHP: 1,customDamage: 30.8,customSpeed: 7},
+    {boss: "enem2",type: "enem22",xPos: 12,yPos: 8,customHP: 1,customDamage: 30.8,customSpeed: 20},
+    {boss: "enem2",type: "enem22",xPos: 84,yPos: 12,customHP: 1,customDamage: 30.8,customSpeed: 18},
+    {boss: "enem3",type: "enem33",xPos: 20,yPos: 12,customHP: 1,customDamage: 33.6,customSpeed: 16},
+    {boss: "enem3",type: "enem33",xPos: 44,yPos: 20,customHP: 1,customDamage: 33.6,customSpeed: 14},
+    {boss: "enem3",type: "enem33",xPos: 78,yPos: 6,customHP: 1,customDamage: 33.6,customSpeed: 21},
+    {boss: "enem3",type: "enem33",xPos: 20,yPos: 40,customHP: 1,customDamage: 33.6,customSpeed: 7},
+    {boss: "enem3",type: "enem33",xPos: 20,yPos: 8,customHP: 1,customDamage: 33.6,customSpeed: 20},
+    {boss: "enem3",type: "enem33",xPos: 44,yPos: 12,customHP: 1,customDamage: 33.6,customSpeed: 18},
+    {boss: "enem4",type: "enem44",xPos: 86,yPos: 12,customHP: 1,customDamage: 36.4,customSpeed: 16},
+    {boss: "enem4",type: "enem44",xPos: 72,yPos: 20,customHP: 1,customDamage: 36.4,customSpeed: 14},
+    {boss: "enem4",type: "enem44",xPos: 14,yPos: 6,customHP: 1,customDamage: 36.4,customSpeed: 21},
+    {boss: "enem4",type: "enem44",xPos: 86,yPos: 40,customHP: 1,customDamage: 36.4,customSpeed: 7},
+    {boss: "enem4",type: "enem44",xPos: 86,yPos: 8,customHP: 1,customDamage: 36.4,customSpeed: 20},
+    {boss: "enem4",type: "enem44",xPos: 29,yPos: 12,customHP: 1,customDamage: 36.4,customSpeed: 18},
+    {boss: "enem5",type: "enem55",xPos: 16,yPos: 12,customHP: 1,customDamage: 39.2,customSpeed: 16},
+    {boss: "enem5",type: "enem55",xPos: 27,yPos: 20,customHP: 1,customDamage: 39.2,customSpeed: 14},
+    {boss: "enem5",type: "enem55",xPos: 76,yPos: 6,customHP: 1,customDamage: 39.2,customSpeed: 21},
+    {boss: "enem5",type: "enem55",xPos: 16,yPos: 40,customHP: 1,customDamage: 39.2,customSpeed: 7},
+    {boss: "enem5",type: "enem55",xPos: 16,yPos: 8,customHP: 1,customDamage: 39.2,customSpeed: 20},
+    {boss: "enem5",type: "enem55",xPos: 88,yPos: 12,customHP: 1,customDamage: 39.2,customSpeed: 18}
+];
+
+
+const mBossDelayAb = [
+	{ boss: 'enem1', bossDelayAb: 260, bossDelayAbDop: 5300, firstWaveDelayMs: 2400 }, // жар шипит часто, остывает медленно
+	{ boss: 'enem2', bossDelayAb: 235, bossDelayAbDop: 5900, firstWaveDelayMs: 2400 }, // масло стекает, подброс внезапный
+	{ boss: 'enem3', bossDelayAb: 320, bossDelayAbDop: 6500, firstWaveDelayMs: 2400 }, // буханка тяжёлая, стена давит долго
+	{ boss: 'enem4', bossDelayAb: 210, bossDelayAbDop: 4700, firstWaveDelayMs: 2256 }, // каток прыгает без передышки
+	{ boss: 'enem5', bossDelayAb: 275, bossDelayAbDop: 5200, firstWaveDelayMs: 2400 }, // щелчки ритмичны, пауза между парами
+];
+
+// Способности: медленные / средние / быстрые / микс
+const bossAbilitiesDop = [
+    {boss: "enem1",indexAbilities: [0,1,2,3]},
+    {boss: "enem1",indexAbilities: [0,1,2,3,4,5,6,7]},
+    {boss: "enem1",indexAbilities: [8,9,10],openingOrder: 0},
+    {boss: "enem1",indexAbilities: [8,10,9]},
+    {boss: "enem1",indexAbilities: [19,20,16],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Горячий край пирожка — знакомство",openingOrder: 1},
+    {boss: "enem1",indexAbilities: [19,20,18],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Горячий край пирожка — иной конец"},
+    {boss: "enem1",indexAbilities: [21,17,21,18,16],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Горячий край пирожка — завершение"},
+    {boss: "enem2",indexAbilities: [0,1,2,3,4]},
+    {boss: "enem2",indexAbilities: [0,2,4]},
+    {boss: "enem2",indexAbilities: [5,6,7]},
+    {boss: "enem2",indexAbilities: [8,9],openingOrder: 0},
+    {boss: "enem2",indexAbilities: [16,17,18],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Скольжение блина — знакомство",openingOrder: 1},
+    {boss: "enem2",indexAbilities: [16,17,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Скольжение блина — иной конец"},
+    {boss: "enem2",indexAbilities: [21,18,17,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Скольжение блина — завершение"},
+    {boss: "enem3",indexAbilities: [0,1,2,3,4,5,6,7]},
+    {boss: "enem3",indexAbilities: [0,2,4,6]},
+    {boss: "enem3",indexAbilities: [8,9,10,11]},
+    {boss: "enem3",indexAbilities: [10,11],openingOrder: 0},
+    {boss: "enem3",indexAbilities: [16,18,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Складки каравая — знакомство",openingOrder: 1},
+    {boss: "enem3",indexAbilities: [16,18,17],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Складки каравая — иной конец"},
+    {boss: "enem3",indexAbilities: [20,18,21,17],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Складки каравая — завершение"},
+    {boss: "enem4",indexAbilities: [0,1,2,3]},
+    {boss: "enem4",indexAbilities: [0,1,2,3,4,5,6,7]},
+    {boss: "enem4",indexAbilities: [8,9,10],openingOrder: 0},
+    {boss: "enem4",indexAbilities: [8,10,9]},
+    {boss: "enem4",indexAbilities: [16,20,17],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Отскок яблока — знакомство",openingOrder: 1},
+    {boss: "enem4",indexAbilities: [16,20,18],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Отскок яблока — иной конец"},
+    {boss: "enem4",indexAbilities: [21,18,21,17],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Отскок яблока — завершение"},
+    {boss: "enem5",indexAbilities: [0,1,2,3]},
+    {boss: "enem5",indexAbilities: [4,5,2,3]},
+    {boss: "enem5",indexAbilities: [8,9,10],openingOrder: 0},
+    {boss: "enem5",indexAbilities: [8,10,9]},
+    {boss: "enem5",indexAbilities: [16,20],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Щелчок скорлупы — знакомство",openingOrder: 1},
+    {boss: "enem5",indexAbilities: [16,20,18],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Щелчок скорлупы — иной конец"},
+    {boss: "enem5",indexAbilities: [21,17,21,18],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Щелчок скорлупы — завершение"}
+];
+
+// Лорные названия связок. Уровень 8: Жарёныш (масло, корка), Скользыш (слизь),
+// Буханка (хлеб, закваска), Катёныш (круглый, подскоки), Щелкун (жвалы, скорлупа).
+const UPGRADE_VARIANT_NAMES = {
+    enem1: {
+        variant1: 'Жарящий удар', variant2: 'Кипящее масло', variant3: 'Жареная сила',
+        variant4: 'Хрустящая корка', variant5: 'Плевок масла', variant6: 'Обжигающий укус',
+        variant7: 'Жареная мощь', variant8: 'Панированная броня', variant9: 'Стремительный жар',
+        variant10: 'Живучий жарёныш', variant11: 'Цепкая корочка', variant12: 'Плевок и в масло',
+        variant13: 'Плотная корка', variant14: 'Неутомимый жар', variant15: 'Подскок на сковороде',
+        variant16: 'Брызг масла', variant17: 'Жареная хватка', variant18: 'Румяный прищур',
+        variant19: 'Мгновенный плевок', variant20: 'Масляный нюх', variant21: 'Стойкая корка',
+        variant22: 'Юркий жарёныш', variant23: 'Жареная стойкость', variant24: 'Чуткая корочка',
+        variant25: 'Ускользающий в масло', variant26: 'Дикое шкварчание', variant27: 'Обжигающая мощь',
+        variant28: 'Внезапный плевок', variant29: 'Каменная корка', variant30: 'Разросшийся жар',
+        variant31: 'Жареный рывок', variant32: 'Живучая корка', variant33: 'Неутомимое шкварчание',
+        variant34: 'Жареная прыть', variant35: 'Жареная выносливость'
+    },
+    enem2: {
+        variant1: 'Скользящий удар', variant2: 'Обжигающая корочка', variant3: 'Блинная сила',
+        variant4: 'Поджаристая корочка', variant5: 'Меткое скольжение', variant6: 'Горячее масло',
+        variant7: 'Блинная мощь', variant8: 'Плотное тесто', variant9: 'Стремительное скольжение',
+        variant10: 'Живучий скользыш', variant11: 'Цепкое тесто', variant12: 'Скольжение и в тень',
+        variant13: 'Толстое тесто', variant14: 'Неутомимое скольжение', variant15: 'Пружинистое скольжение',
+        variant16: 'Плевок горячего масла', variant17: 'Скользкая хватка', variant18: 'Немигающий блеск',
+        variant19: 'Мгновенное скольжение', variant20: 'Румяный аромат', variant21: 'Стойкое тесто',
+        variant22: 'Юркий скользыш', variant23: 'Скользкая стойкость', variant24: 'Чуткая корочка',
+        variant25: 'Неуловимый скользыш', variant26: 'Дикое скольжение', variant27: 'Мощь горячего масла',
+        variant28: 'Внезапное скольжение', variant29: 'Подгоревшая корочка', variant30: 'Разросшийся блин',
+        variant31: 'Скользящий рывок', variant32: 'Живучее тесто', variant33: 'Неутомимый скользыш',
+        variant34: 'Скользкая прыть', variant35: 'Скользкая выносливость'
+    },
+    enem3: {
+        variant1: 'Хлебный удар', variant2: 'Зачерствевшая корка', variant3: 'Хлебная сила',
+        variant4: 'Мякоть-щит', variant5: 'Бросок горбушки', variant6: 'Кислая закваска',
+        variant7: 'Хлебная мощь', variant8: 'Толстая корка', variant9: 'Тяжёлый навал',
+        variant10: 'Живучая буханка', variant11: 'Цепкий мякиш', variant12: 'Крошки и в норку',
+        variant13: 'Плотный мякиш', variant14: 'Неутомимая выпечка', variant15: 'Пружинистый мякиш',
+        variant16: 'Меткая горбушка', variant17: 'Хлебная хватка', variant18: 'Взгляд из-под корки',
+        variant19: 'Мгновенный навал', variant20: 'Хлебный дух', variant21: 'Стойкая корка',
+        variant22: 'Юркая горбушка', variant23: 'Хлебная стойкость', variant24: 'Чуткий мякиш',
+        variant25: 'Ускользающие крошки', variant26: 'Дикая закваска', variant27: 'Кислая мощь',
+        variant28: 'Внезапный навал', variant29: 'Каменная корка', variant30: 'Разбухшая сила',
+        variant31: 'Хлебный рывок', variant32: 'Живучая корка', variant33: 'Неутомимый навал',
+        variant34: 'Хлебная прыть', variant35: 'Хлебная выносливость'
+    },
+    enem4: {
+        variant1: 'Катящийся удар', variant2: 'Острый скол', variant3: 'Катящаяся сила',
+        variant4: 'Круглая защита', variant5: 'Меткий подскок', variant6: 'Едкий скол',
+        variant7: 'Катящаяся мощь', variant8: 'Прочная скорлупа', variant9: 'Стремительный подскок',
+        variant10: 'Живучий катёныш', variant11: 'Цепкая скорлупа', variant12: 'Скол и вкатился',
+        variant13: 'Толстая скорлупа', variant14: 'Неутомимое качение', variant15: 'Пружинистый подскок',
+        variant16: 'Скол-бросок', variant17: 'Катящаяся хватка', variant18: 'Зависший взгляд',
+        variant19: 'Мгновенное падение', variant20: 'Пыльный нюх', variant21: 'Стойкая скорлупа',
+        variant22: 'Юркий катёныш', variant23: 'Катящаяся стойкость', variant24: 'Чуткая скорлупа',
+        variant25: 'Ускользающий подскок', variant26: 'Дикое качение', variant27: 'Мощь скола',
+        variant28: 'Внезапное падение', variant29: 'Каменная скорлупа', variant30: 'Разросшийся подскок',
+        variant31: 'Катящийся рывок', variant32: 'Живучая скорлупа', variant33: 'Неутомимое падение',
+        variant34: 'Катящаяся прыть', variant35: 'Катящаяся выносливость'
+    },
+    enem5: {
+        variant1: 'Щёлкающий удар', variant2: 'Раскалывающая трещина', variant3: 'Щёлкающая сила',
+        variant4: 'Скорлупа-щит', variant5: 'Меткий щелчок', variant6: 'Ядровый сок',
+        variant7: 'Щёлкающая мощь', variant8: 'Прочная скорлупа', variant9: 'Стремительный щелчок',
+        variant10: 'Живучий щелкун', variant11: 'Цепкие когти скорлупы', variant12: 'Щелчок и в кору',
+        variant13: 'Толстая скорлупа', variant14: 'Неутомимый щелчок', variant15: 'Ритмичный подскок',
+        variant16: 'Меткий коготь скорлупы', variant17: 'Щёлкающая хватка', variant18: 'Взгляд из трещины',
+        variant19: 'Мгновенный щелчок', variant20: 'Ореховый нюх', variant21: 'Стойкая скорлупа',
+        variant22: 'Юркий щелкун', variant23: 'Щёлкающая стойкость', variant24: 'Чуткое ядро',
+        variant25: 'Ускользающий щелчок', variant26: 'Дикий треск', variant27: 'Мощь ядра',
+        variant28: 'Внезапный щелчок', variant29: 'Каменная скорлупа', variant30: 'Разросшееся ядро',
+        variant31: 'Щёлкающий рывок', variant32: 'Живучая скорлупа', variant33: 'Неутомимый треск',
+        variant34: 'Щёлкающая прыть', variant35: 'Щёлкающая выносливость'
+    }
+};

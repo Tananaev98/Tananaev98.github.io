@@ -74,6 +74,11 @@
 let lvlNumber = 48;
 
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	scaleLongComboDamage: true,
 	scaleShortComboDamage: true,
 	levelCadence: 1.00,
@@ -88,27 +93,27 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.80, speed: 1.12, damage: 1.22, telegraphMultiplier: 0.90, surpriseChance: 0.18, maxActiveAttacks: 14 }
 	],
 	bosses: {
-		enem1: {
+		enem1: { combatIdentity: "Хват и прыжок жабы", combatTrick: "двойной выпад иногда получает третий укус с другой стороны", signatureEvery: 4,
 			// Жабоскок: STICKY_CLING — атаки из повторяющихся точек хвата, изредка большой прыжок
 			movementStyle: 'pause', cadence: 1.02, telegraphMs: 900, speedMultiplier: 0.94, damageMultiplier: 0.90,
 			speedVariance: [0.82, 0.92, 1.00, 1.08, 1.16]
 		}, // Жабоскок: STICKY_CLING — атаки из повторяющихся точек хвата, изредка большой прыжок
-		enem2: {
+		enem2: { combatIdentity: "Кандальный оборот", combatTrick: "ведёт прицел вдоль прохода, затем возвращает угрозу за спину прохода", signatureEvery: 4,
 			// Кандальник: FOUR_LIMB_LASH — атаки вращаются по четырём точкам разом
 			movementStyle: 'weave', cadence: 0.91, telegraphMs: 770, speedMultiplier: 1.05, damageMultiplier: 1.00,
 			speedVariance: [0.86, 0.95, 1.05, 1.14, 1.22]
 		}, // Кандальник: FOUR_LIMB_LASH — атаки вращаются по четырём точкам разом
-		enem3: {
+		enem3: { combatIdentity: "Хлыст за воротом", combatTrick: "показывает боковой замах, но заканчивает серединой; позднее конец возвращается на край", signatureEvery: 4,
 			// Плескун: CHAIN_WHIP_REACH — редкий очень дальний одиночный хлыст цепи
 			movementStyle: 'lateRush', cadence: 1.16, telegraphMs: 1030, speedMultiplier: 0.82, damageMultiplier: 1.18,
 			speedVariance: [0.80, 0.88, 0.96, 1.04, 1.12]
 		}, // Плескун: CHAIN_WHIP_REACH — редкий очень дальний одиночный хлыст цепи
-		enem4: {
+		enem4: { combatIdentity: "Ведро задерживает второе", combatTrick: "две короткие группы разделены паузой; вторая группа меняет сторону", signatureEvery: 4,
 			// Усоструй: YOKE_SEESAW — строго поочерёдные удары обоих вёдер на тугом нервном темпе
 			movementStyle: 'accelerate', cadence: 0.85, telegraphMs: 680, speedMultiplier: 1.14, damageMultiplier: 1.05,
 			speedVariance: [0.88, 0.98, 1.08, 1.18, 1.26]
 		}, // Усоструй: YOKE_SEESAW — строго поочерёдные удары обоих вёдер на тугом нервном темпе
-		enem5: {
+		enem5: { combatIdentity: "Багор после каната", combatTrick: "медленный первый снаряд остаётся фоном для более срочного второго", signatureEvery: 4,
 			// Багорыч: HOOK_AND_ROPE — точный дальний укол багром + широкий захлёст канатом
 			movementStyle: 'straight', cadence: 0.80, telegraphMs: 990, speedMultiplier: 1.06, damageMultiplier: 1.14,
 			speedVariance: [0.86, 0.94, 1.03, 1.12, 1.20]
@@ -348,77 +353,100 @@ const ENEMY_TYPES = {
 	{ boss: 'enem5', type: 'enem55', xPos: 70, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 15 }, //19 цепь-B звено 1 (голова, vertical)
 	{ boss: 'enem5', type: 'enem55', xPos: 74, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 11 }, //20 цепь-B звено 2
 	{ boss: 'enem5', type: 'enem55', xPos: 68, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 8 }   //21 цепь-B звено 3
+,
+    // Приёмы из scripts/combat-designs.js; индексы считаются отдельно для каждого босса.
+    {boss: "enem1",type: "enem11",xPos: 18,yPos: 12,customHP: 1,customDamage: 20,customSpeed: 16},
+    {boss: "enem1",type: "enem11",xPos: 30,yPos: 20,customHP: 1,customDamage: 20,customSpeed: 14},
+    {boss: "enem1",type: "enem11",xPos: 82,yPos: 6,customHP: 1,customDamage: 20,customSpeed: 21},
+    {boss: "enem1",type: "enem11",xPos: 18,yPos: 40,customHP: 1,customDamage: 20,customSpeed: 7},
+    {boss: "enem1",type: "enem11",xPos: 18,yPos: 8,customHP: 1,customDamage: 20,customSpeed: 20},
+    {boss: "enem1",type: "enem11",xPos: 70,yPos: 12,customHP: 1,customDamage: 20,customSpeed: 18},
+    {boss: "enem2",type: "enem22",xPos: 88,yPos: 12,customHP: 1,customDamage: 22,customSpeed: 16},
+    {boss: "enem2",type: "enem22",xPos: 68,yPos: 20,customHP: 1,customDamage: 22,customSpeed: 14},
+    {boss: "enem2",type: "enem22",xPos: 42,yPos: 6,customHP: 1,customDamage: 22,customSpeed: 21},
+    {boss: "enem2",type: "enem22",xPos: 88,yPos: 40,customHP: 1,customDamage: 22,customSpeed: 7},
+    {boss: "enem2",type: "enem22",xPos: 88,yPos: 8,customHP: 1,customDamage: 22,customSpeed: 20},
+    {boss: "enem2",type: "enem22",xPos: 16,yPos: 12,customHP: 1,customDamage: 22,customSpeed: 18},
+    {boss: "enem3",type: "enem33",xPos: 24,yPos: 12,customHP: 1,customDamage: 24,customSpeed: 16},
+    {boss: "enem3",type: "enem33",xPos: 38,yPos: 20,customHP: 1,customDamage: 24,customSpeed: 14},
+    {boss: "enem3",type: "enem33",xPos: 84,yPos: 6,customHP: 1,customDamage: 24,customSpeed: 21},
+    {boss: "enem3",type: "enem33",xPos: 24,yPos: 40,customHP: 1,customDamage: 24,customSpeed: 7},
+    {boss: "enem3",type: "enem33",xPos: 24,yPos: 8,customHP: 1,customDamage: 24,customSpeed: 20},
+    {boss: "enem3",type: "enem33",xPos: 52,yPos: 12,customHP: 1,customDamage: 24,customSpeed: 18},
+    {boss: "enem4",type: "enem44",xPos: 82,yPos: 12,customHP: 1,customDamage: 26,customSpeed: 16},
+    {boss: "enem4",type: "enem44",xPos: 72,yPos: 20,customHP: 1,customDamage: 26,customSpeed: 14},
+    {boss: "enem4",type: "enem44",xPos: 14,yPos: 6,customHP: 1,customDamage: 26,customSpeed: 21},
+    {boss: "enem4",type: "enem44",xPos: 82,yPos: 40,customHP: 1,customDamage: 26,customSpeed: 7},
+    {boss: "enem4",type: "enem44",xPos: 82,yPos: 8,customHP: 1,customDamage: 26,customSpeed: 20},
+    {boss: "enem4",type: "enem44",xPos: 28,yPos: 12,customHP: 1,customDamage: 26,customSpeed: 18},
+    {boss: "enem5",type: "enem55",xPos: 22,yPos: 12,customHP: 1,customDamage: 28,customSpeed: 16},
+    {boss: "enem5",type: "enem55",xPos: 86,yPos: 20,customHP: 1,customDamage: 28,customSpeed: 14},
+    {boss: "enem5",type: "enem55",xPos: 36,yPos: 6,customHP: 1,customDamage: 28,customSpeed: 21},
+    {boss: "enem5",type: "enem55",xPos: 22,yPos: 24,customHP: 1,customDamage: 28,customSpeed: 7},
+    {boss: "enem5",type: "enem55",xPos: 22,yPos: 8,customHP: 1,customDamage: 28,customSpeed: 20},
+    {boss: "enem5",type: "enem55",xPos: 68,yPos: 12,customHP: 1,customDamage: 28,customSpeed: 18}
 ];
 
  const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 315, bossDelayAbDop: 5900 }, // цепляется и выжидает
-	{ boss: 'enem2', bossDelayAb: 235, bossDelayAbDop: 4500 }, // четыре конечности, быстрый ритм
-	{ boss: 'enem3', bossDelayAb: 405, bossDelayAbDop: 6850 }, // самый долгий отдых — награда за терпение
-	{ boss: 'enem4', bossDelayAb: 180, bossDelayAbDop: 3400 }, // самый частый — нервный тугой темп
-	{ boss: 'enem5', bossDelayAb: 250, bossDelayAbDop: 5050 }, // собранный финал
+	{ boss: 'enem1', bossDelayAb: 315, bossDelayAbDop: 5900, firstWaveDelayMs: 2400 }, // цепляется и выжидает
+	{ boss: 'enem2', bossDelayAb: 235, bossDelayAbDop: 4500, firstWaveDelayMs: 2160 }, // четыре конечности, быстрый ритм
+	{ boss: 'enem3', bossDelayAb: 405, bossDelayAbDop: 6850, firstWaveDelayMs: 2400 }, // самый долгий отдых — награда за терпение
+	{ boss: 'enem4', bossDelayAb: 180, bossDelayAbDop: 3400, firstWaveDelayMs: 1632 }, // самый частый — нервный тугой темп
+	{ boss: 'enem5', bossDelayAb: 250, bossDelayAbDop: 5050, firstWaveDelayMs: 2400 }, // собранный финал
  ];
 
  const bossAbilitiesDop = [
-	// Жабоскок — STICKY_CLING
-	{ boss: 'enem1', indexAbilities: [0, 1] },
-	{ boss: 'enem1', indexAbilities: [2, 3] },
-	{ boss: 'enem1', indexAbilities: [4, 5] },
-	{ boss: 'enem1', indexAbilities: [6, 7] },
-	{ boss: 'enem1', indexAbilities: [8, 14, 9, 15] },
-	{ boss: 'enem1', indexAbilities: [0, 1, 6] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem1', indexAbilities: [16, 17, 18, 19, 20], isChain: true }, // ← цепь-A (5, irregular)
-	{ boss: 'enem1', indexAbilities: [21, 22, 23, 24], isChain: true }, // ← цепь-B (4, diagonal)
-	{ boss: 'enem1', indexAbilities: [12, 13] }, // нежданчик: большой прыжок в новую точку
-	{ boss: 'enem1', indexAbilities: [0, 1, 10, 2, 3, 11] }, // сигнатурная: обе точки хвата разом на полной скорости
-
-	// Кандальник — FOUR_LIMB_LASH
-	{ boss: 'enem2', indexAbilities: [0, 1] },
-	{ boss: 'enem2', indexAbilities: [2, 3] },
-	{ boss: 'enem2', indexAbilities: [4, 5] },
-	{ boss: 'enem2', indexAbilities: [6, 7] },
-	{ boss: 'enem2', indexAbilities: [8, 9, 14, 15] },
-	{ boss: 'enem2', indexAbilities: [0, 1, 4] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem2', indexAbilities: [16, 17, 18, 19, 20], isChain: true }, // ← цепь-A (5, irregular)
-	{ boss: 'enem2', indexAbilities: [21, 22, 23, 24], isChain: true }, // ← цепь-B (4, zigzag)
-	{ boss: 'enem2', indexAbilities: [12, 13] }, // нежданчик: все четыре конечности почти разом
-	{ boss: 'enem2', indexAbilities: [0, 2, 4, 6, 1, 3, 5, 7] }, // сигнатурная: полный оборот по четырём точкам подряд
-
-	// Плескун — CHAIN_WHIP_REACH
-	{ boss: 'enem3', indexAbilities: [0, 1, 2] },
-	{ boss: 'enem3', indexAbilities: [3, 4] },
-	{ boss: 'enem3', indexAbilities: [5, 6] },
-	{ boss: 'enem3', indexAbilities: [7, 8] },
-	{ boss: 'enem3', indexAbilities: [9, 10] },
-	{ boss: 'enem3', indexAbilities: [0, 1, 7] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem3', indexAbilities: [16, 17, 18, 19], isChain: true }, // ← цепь-A (4, zigzag)
-	{ boss: 'enem3', indexAbilities: [20, 21, 22, 23], isChain: true }, // ← цепь-B (4, vertical)
-	{ boss: 'enem3', indexAbilities: [14, 15] }, // нежданчик: хлыст раньше долгого дребезжания
-	{ boss: 'enem3', indexAbilities: [3, 11, 4, 12] }, // сигнатурная: два дальних хлыста с обеих сторон разом
-
-	// Усоструй — YOKE_SEESAW
-	{ boss: 'enem4', indexAbilities: [0, 1] },
-	{ boss: 'enem4', indexAbilities: [2, 3] },
-	{ boss: 'enem4', indexAbilities: [4, 5] },
-	{ boss: 'enem4', indexAbilities: [6, 7] },
-	{ boss: 'enem4', indexAbilities: [8, 9, 10] },
-	{ boss: 'enem4', indexAbilities: [0, 1, 4] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem4', indexAbilities: [16, 17, 18, 19], isChain: true }, // ← цепь-A (4, vertical)
-	{ boss: 'enem4', indexAbilities: [20, 21, 22, 23, 24], isChain: true }, // ← цепь-B (5, irregular)
-	{ boss: 'enem4', indexAbilities: [13] }, // нежданчик: оба ведра почти одновременно
-	{ boss: 'enem4', indexAbilities: [0, 1, 2, 3, 11, 12, 14, 15] }, // сигнатурная: полный тугой седл на пределе темпа
-
-	// Багорыч — HOOK_AND_ROPE, финальный облик
-	{ boss: 'enem5', indexAbilities: [0, 1] },
-	{ boss: 'enem5', indexAbilities: [2, 3] },
-	{ boss: 'enem5', indexAbilities: [4, 5] },
-	{ boss: 'enem5', indexAbilities: [6, 7] },
-	{ boss: 'enem5', indexAbilities: [10, 11, 12] },
-	{ boss: 'enem5', indexAbilities: [0, 1, 4] }, // same-start с [0,1], расходится быстрым акцентом
-	{ boss: 'enem5', indexAbilities: [16, 17, 18], isChain: true }, // ← цепь-A (3, arc)
-	{ boss: 'enem5', indexAbilities: [19, 20, 21], isChain: true }, // ← цепь-B (3, vertical)
-	{ boss: 'enem5', indexAbilities: [13] }, // нежданчик: багор и канат разом с обеих сторон
-	{ boss: 'enem5', indexAbilities: [0, 2, 6, 1, 3, 7, 14, 15] }, // сигнатурная кульминация: багор и канат по всему полю подряд
- ];
+    {boss: "enem1",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem1",indexAbilities: [2,3]},
+    {boss: "enem1",indexAbilities: [4,5]},
+    {boss: "enem1",indexAbilities: [6,7]},
+    {boss: "enem1",indexAbilities: [8,14,9,15]},
+    {boss: "enem1",indexAbilities: [25,29],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Хват и прыжок жабы — знакомство",openingOrder: 1},
+    {boss: "enem1",indexAbilities: [25,29,27],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Хват и прыжок жабы — иной конец"},
+    {boss: "enem1",indexAbilities: [30,26,30,27],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Хват и прыжок жабы — завершение"},
+    {boss: "enem1",indexAbilities: [16,17,18,19,20],isChain: true},
+    {boss: "enem1",indexAbilities: [21,22,23,24],isChain: true},
+    {boss: "enem2",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem2",indexAbilities: [2,3]},
+    {boss: "enem2",indexAbilities: [4,5]},
+    {boss: "enem2",indexAbilities: [6,7]},
+    {boss: "enem2",indexAbilities: [8,9,14,15]},
+    {boss: "enem2",indexAbilities: [25,26,27],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Кандальный оборот — знакомство",openingOrder: 1},
+    {boss: "enem2",indexAbilities: [25,26,29],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Кандальный оборот — иной конец"},
+    {boss: "enem2",indexAbilities: [30,27,26,29],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Кандальный оборот — завершение"},
+    {boss: "enem2",indexAbilities: [16,17,18,19,20],isChain: true},
+    {boss: "enem2",indexAbilities: [21,22,23,24],isChain: true},
+    {boss: "enem3",indexAbilities: [0,1,2]},
+    {boss: "enem3",indexAbilities: [3,4],openingOrder: 0},
+    {boss: "enem3",indexAbilities: [5,6]},
+    {boss: "enem3",indexAbilities: [7,8]},
+    {boss: "enem3",indexAbilities: [9,10]},
+    {boss: "enem3",indexAbilities: [24,25,29],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Хлыст за воротом — знакомство",openingOrder: 1},
+    {boss: "enem3",indexAbilities: [24,25,28],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Хлыст за воротом — иной конец"},
+    {boss: "enem3",indexAbilities: [26,29,25,28],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Хлыст за воротом — завершение"},
+    {boss: "enem3",indexAbilities: [16,17,18,19],isChain: true},
+    {boss: "enem3",indexAbilities: [20,21,22,23],isChain: true},
+    {boss: "enem4",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem4",indexAbilities: [2,3]},
+    {boss: "enem4",indexAbilities: [4,5]},
+    {boss: "enem4",indexAbilities: [6,7]},
+    {boss: "enem4",indexAbilities: [8,9,10]},
+    {boss: "enem4",indexAbilities: [25,29,27,30],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Ведро задерживает второе — знакомство",openingOrder: 1,shotGapsMs: [360,900,360]},
+    {boss: "enem4",indexAbilities: [25,29,30],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Ведро задерживает второе — иной конец",shotGapsMs: [360,900,360]},
+    {boss: "enem4",indexAbilities: [27,30,25,29],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Ведро задерживает второе — завершение",shotGapsMs: [360,900,360]},
+    {boss: "enem4",indexAbilities: [16,17,18,19],isChain: true},
+    {boss: "enem4",indexAbilities: [20,21,22,23,24],isChain: true},
+    {boss: "enem5",indexAbilities: [0,1],openingOrder: 0},
+    {boss: "enem5",indexAbilities: [2,3]},
+    {boss: "enem5",indexAbilities: [4,5]},
+    {boss: "enem5",indexAbilities: [6,7]},
+    {boss: "enem5",indexAbilities: [10,11,12]},
+    {boss: "enem5",indexAbilities: [25,24],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Багор после каната — знакомство",openingOrder: 1},
+    {boss: "enem5",indexAbilities: [25,24,26],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Багор после каната — иной конец"},
+    {boss: "enem5",indexAbilities: [25,27,24,26],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Багор после каната — завершение"},
+    {boss: "enem5",indexAbilities: [16,17,18],isChain: true},
+    {boss: "enem5",indexAbilities: [19,20,21],isChain: true}
+];
 
 // Лорные названия связок временных улучшений — у каждого босса свой словарь
 // образов конкретно ЕГО материала/повадки (раздел 12.1), полных совпадений

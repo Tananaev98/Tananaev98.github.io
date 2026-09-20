@@ -7,6 +7,11 @@ let factorChar = (lvlNumber * 5) / 100;
 // только из углов / финал смешивает почерк всех четверых и впервые
 // перекрывает всю нижнюю полосу разом.
 const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
 	levelCadence: 0.83, damageMultiplier: 1.702, minWaveDelay: 2000, minShotDelay: 140, minTelegraphMs: 520,
 	phases: [
 		{ phase: 1, minHp: 0.64, cadence: 1.00, speed: 1.00, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.17, maxActiveAttacks: 16 },
@@ -14,11 +19,11 @@ const bossCombatConfig = {
 		{ phase: 3, minHp: 0.00, cadence: 0.66, speed: 1.23, damage: 1.31, telegraphMultiplier: 0.80, surpriseChance: 0.39, maxActiveAttacks: 22 }
 	],
 	bosses: {
-		enem1: { movementStyle: 'accelerate',      cadence: 1.02, telegraphMs: 850, speedMultiplier: 0.94, damageMultiplier: 0.94, speedVariance: [0.86, 0.94, 1.02, 1.10, 1.18] }, // ХЛЫСТЕНЬ: зигзаг цепа без нижней стены
-		enem2: { movementStyle: 'lateRush',   cadence: 0.91, telegraphMs: 745, speedMultiplier: 1.05, damageMultiplier: 0.91, speedVariance: [0.85, 0.95, 1.05, 1.15, 1.25] }, // РЕШЕТЕНЬ: симметричные когтистые выпады с флангов
-		enem3: { movementStyle: 'drift',      cadence: 0.86, telegraphMs: 615, speedMultiplier: 1.19, damageMultiplier: 0.63, speedVariance: [0.91, 1.04, 1.17, 1.30, 1.43] }, // ПЫЛЮГА: нервный дождь мякины сверху
-		enem4: { movementStyle: 'straight',   cadence: 1.03, telegraphMs: 620, speedMultiplier: 1.02, damageMultiplier: 1.13, speedVariance: [0.83, 0.93, 1.03, 1.13, 1.23] }, // КОЛОСЕНЬ: щелчки серпов только из четырёх углов
-		enem5: { movementStyle: 'weave',      cadence: 0.71, telegraphMs: 610, speedMultiplier: 1.18, damageMultiplier: 1.11, speedVariance: [0.79, 0.92, 1.05, 1.18, 1.31] }  // ОВИННИК: мечется меж снопами змейкой — сплетает дождь мякины сверху с когтями с флангов в одну ловушку
+		enem1: { combatIdentity: "Обратный ход цепа", combatTrick: "повторяет удар в прежнем секторе вместо ожидаемого чередования", signatureEvery: 4, movementStyle: 'accelerate',      cadence: 1.02, telegraphMs: 850, speedMultiplier: 0.94, damageMultiplier: 0.94, speedVariance: [0.86, 0.94, 1.02, 1.10, 1.18] }, // ХЛЫСТЕНЬ: зигзаг цепа без нижней стены
+		enem2: { combatIdentity: "Просев через решето", combatTrick: "разводит две цели, затем закрывает оставленную между ними полосу", signatureEvery: 4, movementStyle: 'lateRush',   cadence: 0.91, telegraphMs: 745, speedMultiplier: 1.05, damageMultiplier: 0.91, speedVariance: [0.85, 0.95, 1.05, 1.15, 1.25] }, // РЕШЕТЕНЬ: симметричные когтистые выпады с флангов
+		enem3: { combatIdentity: "Пыль скрывает бросок", combatTrick: "медленный первый снаряд остаётся фоном для более срочного второго", signatureEvery: 4, movementStyle: 'drift',      cadence: 0.86, telegraphMs: 615, speedMultiplier: 1.19, damageMultiplier: 0.63, speedVariance: [0.91, 1.04, 1.17, 1.30, 1.43] }, // ПЫЛЮГА: нервный дождь мякины сверху
+		enem4: { combatIdentity: "Серпы из снопа", combatTrick: "двойной выпад иногда получает третий укус с другой стороны", signatureEvery: 4, movementStyle: 'straight',   cadence: 1.03, telegraphMs: 620, speedMultiplier: 1.02, damageMultiplier: 1.13, speedVariance: [0.83, 0.93, 1.03, 1.13, 1.23] }, // КОЛОСЕНЬ: щелчки серпов только из четырёх углов
+		enem5: { combatIdentity: "Огонь между снопами", combatTrick: "сводит угрозы с краёв к внутренним полосам, затем размыкает рисунок", signatureEvery: 4, movementStyle: 'weave',      cadence: 0.71, telegraphMs: 610, speedMultiplier: 1.18, damageMultiplier: 1.11, speedVariance: [0.79, 0.92, 1.05, 1.18, 1.31] }  // ОВИННИК: мечется меж снопами змейкой — сплетает дождь мякины сверху с когтями с флангов в одну ловушку
 	}
 };
 
@@ -266,66 +271,89 @@ const bossAbilities = [
 	{ boss: 'enem5', type: 'enem55', xPos: 69, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //12
 	{ boss: 'enem5', type: 'enem55', xPos: 89, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //13
 	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 28, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 12 } //14
+,
+    // Приёмы из scripts/combat-designs.js; индексы считаются отдельно для каждого босса.
+    {boss: "enem1",type: "enem11",xPos: 16,yPos: 12,customHP: 1,customDamage: 15,customSpeed: 16},
+    {boss: "enem1",type: "enem11",xPos: 28,yPos: 20,customHP: 1,customDamage: 15,customSpeed: 14},
+    {boss: "enem1",type: "enem11",xPos: 78,yPos: 6,customHP: 1,customDamage: 15,customSpeed: 21},
+    {boss: "enem1",type: "enem11",xPos: 16,yPos: 40,customHP: 1,customDamage: 15,customSpeed: 7},
+    {boss: "enem1",type: "enem11",xPos: 16,yPos: 8,customHP: 1,customDamage: 15,customSpeed: 20},
+    {boss: "enem1",type: "enem11",xPos: 86,yPos: 12,customHP: 1,customDamage: 15,customSpeed: 18},
+    {boss: "enem2",type: "enem22",xPos: 24,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 16},
+    {boss: "enem2",type: "enem22",xPos: 46,yPos: 20,customHP: 1,customDamage: 13,customSpeed: 14},
+    {boss: "enem2",type: "enem22",xPos: 76,yPos: 6,customHP: 1,customDamage: 13,customSpeed: 21},
+    {boss: "enem2",type: "enem22",xPos: 24,yPos: 40,customHP: 1,customDamage: 13,customSpeed: 7},
+    {boss: "enem2",type: "enem22",xPos: 24,yPos: 8,customHP: 1,customDamage: 13,customSpeed: 20},
+    {boss: "enem2",type: "enem22",xPos: 46,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 18},
+    {boss: "enem3",type: "enem33",xPos: 82,yPos: 12,customHP: 1,customDamage: 15,customSpeed: 16},
+    {boss: "enem3",type: "enem33",xPos: 20,yPos: 20,customHP: 1,customDamage: 15,customSpeed: 14},
+    {boss: "enem3",type: "enem33",xPos: 66,yPos: 6,customHP: 1,customDamage: 15,customSpeed: 21},
+    {boss: "enem3",type: "enem33",xPos: 82,yPos: 24,customHP: 1,customDamage: 15,customSpeed: 7},
+    {boss: "enem3",type: "enem33",xPos: 82,yPos: 8,customHP: 1,customDamage: 15,customSpeed: 20},
+    {boss: "enem3",type: "enem33",xPos: 34,yPos: 12,customHP: 1,customDamage: 15,customSpeed: 18},
+    {boss: "enem4",type: "enem44",xPos: 14,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 16},
+    {boss: "enem4",type: "enem44",xPos: 25,yPos: 20,customHP: 1,customDamage: 13,customSpeed: 14},
+    {boss: "enem4",type: "enem44",xPos: 80,yPos: 6,customHP: 1,customDamage: 13,customSpeed: 21},
+    {boss: "enem4",type: "enem44",xPos: 14,yPos: 40,customHP: 1,customDamage: 13,customSpeed: 7},
+    {boss: "enem4",type: "enem44",xPos: 14,yPos: 8,customHP: 1,customDamage: 13,customSpeed: 20},
+    {boss: "enem4",type: "enem44",xPos: 70,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 18},
+    {boss: "enem5",type: "enem55",xPos: 86,yPos: 12,customHP: 1,customDamage: 16,customSpeed: 16},
+    {boss: "enem5",type: "enem55",xPos: 68,yPos: 20,customHP: 1,customDamage: 16,customSpeed: 14},
+    {boss: "enem5",type: "enem55",xPos: 18,yPos: 6,customHP: 1,customDamage: 16,customSpeed: 21},
+    {boss: "enem5",type: "enem55",xPos: 86,yPos: 40,customHP: 1,customDamage: 16,customSpeed: 7},
+    {boss: "enem5",type: "enem55",xPos: 86,yPos: 8,customHP: 1,customDamage: 16,customSpeed: 20},
+    {boss: "enem5",type: "enem55",xPos: 34,yPos: 12,customHP: 1,customDamage: 16,customSpeed: 18}
 ];
 
 const mBossDelayAb = [
-	{ boss: 'enem1', bossDelayAb: 400, bossDelayAbDop: 6200 }, // редкий зигзаг, щедрая передышка
-	{ boss: 'enem2', bossDelayAb: 295, bossDelayAbDop: 5050 }, // симметричные выпады, смена ритма
-	{ boss: 'enem3', bossDelayAb: 225, bossDelayAbDop: 4400 }, // частый нервный дождь
-	{ boss: 'enem4', bossDelayAb: 235, bossDelayAbDop: 4500 }, // нервные щелчки из углов
-	{ boss: 'enem5', bossDelayAb: 245, bossDelayAbDop: 4150 }, // финал: плотнее всех, но честный
+	{ boss: 'enem1', bossDelayAb: 400, bossDelayAbDop: 6024, firstWaveDelayMs: 2400 }, // редкий зигзаг, щедрая передышка
+	{ boss: 'enem2', bossDelayAb: 295, bossDelayAbDop: 5362, firstWaveDelayMs: 2400 }, // симметричные выпады, смена ритма
+	{ boss: 'enem3', bossDelayAb: 225, bossDelayAbDop: 5060, firstWaveDelayMs: 2400 }, // частый нервный дождь
+	{ boss: 'enem4', bossDelayAb: 235, bossDelayAbDop: 4270, firstWaveDelayMs: 2050 }, // нервные щелчки из углов
+	{ boss: 'enem5', bossDelayAb: 245, bossDelayAbDop: 4773, firstWaveDelayMs: 2291 }, // финал: плотнее всех, но честный
 ];
 
 const bossAbilitiesDop = [
-	// Хлыстень
-	{ boss: 'enem1', indexAbilities: [0] },
-	{ boss: 'enem1', indexAbilities: [1] },
-	{ boss: 'enem1', indexAbilities: [0, 1] },
-	{ boss: 'enem1', indexAbilities: [2, 3, 4] },
-	{ boss: 'enem1', indexAbilities: [6, 7, 8, 9] },
-	{ boss: 'enem1', indexAbilities: [11, 9, 12] }, // ритмическая
-	{ boss: 'enem1', indexAbilities: [0, 2, 4, 6, 8, 10] }, // опасная сигнатурная
-	{ boss: 'enem1', indexAbilities: [13, 10, 14, 15] }, // смешанная поздняя
-
-	// Решетень
-	{ boss: 'enem2', indexAbilities: [0] },
-	{ boss: 'enem2', indexAbilities: [1] },
-	{ boss: 'enem2', indexAbilities: [0, 1] },
-	{ boss: 'enem2', indexAbilities: [2, 3] },
-	{ boss: 'enem2', indexAbilities: [4, 5] },
-	{ boss: 'enem2', indexAbilities: [6, 10, 7] }, // ритмическая
-	{ boss: 'enem2', indexAbilities: [0, 1, 2, 3, 4, 5, 8] }, // опасная сигнатурная
-	{ boss: 'enem2', indexAbilities: [9, 12, 13, 15] }, // смешанная поздняя
-
-	// Пылюга
-	{ boss: 'enem3', indexAbilities: [2] },
-	{ boss: 'enem3', indexAbilities: [3] },
-	{ boss: 'enem3', indexAbilities: [2, 3] },
-	{ boss: 'enem3', indexAbilities: [0, 1, 5] },
-	{ boss: 'enem3', indexAbilities: [6, 7] },
-	{ boss: 'enem3', indexAbilities: [8, 9, 10] }, // ритмическая
-	{ boss: 'enem3', indexAbilities: [0, 1, 2, 3, 4, 5, 10] }, // опасная сигнатурная: почти весь дождь + резкий центр
-	{ boss: 'enem3', indexAbilities: [11, 12, 13] }, // смешанная поздняя
-
-	// Колосень
-	{ boss: 'enem4', indexAbilities: [0] },
-	{ boss: 'enem4', indexAbilities: [1] },
-	{ boss: 'enem4', indexAbilities: [0, 1] },
-	{ boss: 'enem4', indexAbilities: [6, 7] },
-	{ boss: 'enem4', indexAbilities: [2, 3, 10, 11] },
-	{ boss: 'enem4', indexAbilities: [4, 12, 5] }, // ритмическая
-	{ boss: 'enem4', indexAbilities: [0, 2, 4, 8, 13, 15] }, // опасная сигнатурная
-	{ boss: 'enem4', indexAbilities: [1, 3, 9, 14] }, // смешанная поздняя
-
-	// Овинник — смешивает почерк всех четырёх предыдущих боссов уровня
-	{ boss: 'enem5', indexAbilities: [0] },
-	{ boss: 'enem5', indexAbilities: [3] },
-	{ boss: 'enem5', indexAbilities: [0, 3] },
-	{ boss: 'enem5', indexAbilities: [1, 2] },
-	{ boss: 'enem5', indexAbilities: [4, 5] },
-	{ boss: 'enem5', indexAbilities: [7, 8, 6] }, // ритмическая
-	{ boss: 'enem5', indexAbilities: [9, 10, 11, 12, 13, 14] }, // сигнатура
-	{ boss: 'enem5', indexAbilities: [0, 4, 7, 9, 14] }, // смешанная поздняя
+    {boss: "enem1",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem1",indexAbilities: [1]},
+    {boss: "enem1",indexAbilities: [0,1]},
+    {boss: "enem1",indexAbilities: [2,3,4]},
+    {boss: "enem1",indexAbilities: [6,7,8,9]},
+    {boss: "enem1",indexAbilities: [16,20,17],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Обратный ход цепа — знакомство",openingOrder: 1},
+    {boss: "enem1",indexAbilities: [16,20,18],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Обратный ход цепа — иной конец"},
+    {boss: "enem1",indexAbilities: [21,18,21,17],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Обратный ход цепа — завершение"},
+    {boss: "enem2",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem2",indexAbilities: [1]},
+    {boss: "enem2",indexAbilities: [0,1]},
+    {boss: "enem2",indexAbilities: [2,3]},
+    {boss: "enem2",indexAbilities: [4,5]},
+    {boss: "enem2",indexAbilities: [16,18,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Просев через решето — знакомство",openingOrder: 1},
+    {boss: "enem2",indexAbilities: [16,18,17],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Просев через решето — иной конец"},
+    {boss: "enem2",indexAbilities: [20,18,21,17],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Просев через решето — завершение"},
+    {boss: "enem3",indexAbilities: [2],openingOrder: 0},
+    {boss: "enem3",indexAbilities: [3]},
+    {boss: "enem3",indexAbilities: [2,3]},
+    {boss: "enem3",indexAbilities: [0,1,5]},
+    {boss: "enem3",indexAbilities: [6,7]},
+    {boss: "enem3",indexAbilities: [19,18],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Пыль скрывает бросок — знакомство",openingOrder: 1},
+    {boss: "enem3",indexAbilities: [19,18,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Пыль скрывает бросок — иной конец"},
+    {boss: "enem3",indexAbilities: [19,21,18,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Пыль скрывает бросок — завершение"},
+    {boss: "enem4",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem4",indexAbilities: [1]},
+    {boss: "enem4",indexAbilities: [0,1]},
+    {boss: "enem4",indexAbilities: [6,7]},
+    {boss: "enem4",indexAbilities: [2,3,10,11]},
+    {boss: "enem4",indexAbilities: [16,20],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Серпы из снопа — знакомство",openingOrder: 1},
+    {boss: "enem4",indexAbilities: [16,20,18],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Серпы из снопа — иной конец"},
+    {boss: "enem4",indexAbilities: [21,17,21,18],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Серпы из снопа — завершение"},
+    {boss: "enem5",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem5",indexAbilities: [3]},
+    {boss: "enem5",indexAbilities: [0,3]},
+    {boss: "enem5",indexAbilities: [1,2]},
+    {boss: "enem5",indexAbilities: [4,5]},
+    {boss: "enem5",indexAbilities: [15,17,16,20],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Огонь между снопами — знакомство",openingOrder: 1},
+    {boss: "enem5",indexAbilities: [15,17,19],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Огонь между снопами — иной конец"},
+    {boss: "enem5",indexAbilities: [16,20,15,17],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Огонь между снопами — завершение"}
 ];
 
 // Лорные названия связок. Уровень 23 — молотьба: Хлыстень (цеп), Решетень (решето),

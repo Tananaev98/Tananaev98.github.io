@@ -1,0 +1,507 @@
+let lvlNumber = 5; 
+
+let factorChar = (lvlNumber*5) / 100;
+
+const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
+	scaleLongComboDamage: true,
+	scaleShortComboDamage: true,
+	levelCadence: 0.92, damageMultiplier: 1.06, minWaveDelay: 2440, minShotDelay: 160, minTelegraphMs: 550,
+	phases: [
+		{ phase: 1, minHp: 0.66, cadence: 1.00, speed: 0.96, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.08, maxActiveAttacks: 12 },
+		{ phase: 2, minHp: 0.31, cadence: 0.84, speed: 1.06, damage: 1.09, telegraphMultiplier: 0.94, surpriseChance: 0.16, maxActiveAttacks: 15 },
+		{ phase: 3, minHp: 0.00, cadence: 0.72, speed: 1.14, damage: 1.18, telegraphMultiplier: 0.88, surpriseChance: 0.24, maxActiveAttacks: 17 }
+	],
+	bosses: {
+		enem1: { signatureEvery: 4, movementStyle: 'drift', cadence: 0.96, telegraphMs: 780, speedMultiplier: 1.04, damageMultiplier: 0.98, speedVariance: [0.86, 0.96, 1.06, 1.16, 1.24] }, // TOP_FEATHER: перья сносит в сторону
+		enem2: { signatureEvery: 4, movementStyle: 'straight', cadence: 1.10, telegraphMs: 940, speedMultiplier: 0.88, damageMultiplier: 1.05, speedVariance: [0.78, 0.88, 0.98, 1.08, 1.16] }, // BOTTOM_CROUCH: выжидание перед прыжком
+		enem3: { signatureEvery: 4, movementStyle: 'weave', cadence: 1.14, telegraphMs: 1020, speedMultiplier: 0.84, damageMultiplier: 1.20, speedVariance: [0.76, 0.88, 1.00, 1.14, 1.26] }, // BOTTOM_WALL: тяжёлый кабаний разгон
+		enem4: { signatureEvery: 4, movementStyle: 'accelerate', cadence: 0.82, telegraphMs: 620, speedMultiplier: 1.16, damageMultiplier: 1.07, speedVariance: [0.94, 1.04, 1.14, 1.22, 1.28] }, // LEFT_SCRATCH: частые ускоряющиеся царапины
+		enem5: { signatureEvery: 4, movementStyle: 'lateRush', cadence: 0.78, telegraphMs: 680, speedMultiplier: 1.12, damageMultiplier: 1.15, speedVariance: [0.86, 0.98, 1.10, 1.20, 1.28] } // CONVERGE_FLANKS: волчье схождение флангов
+	}
+};
+
+const ENEMY_TYPES = {
+
+	
+
+	enem11: {  
+
+        name: 'enem11',                     
+
+        image: 'images/enemies/regions/1_smesh_les/lvl5/11.webp',  
+
+        baseHP: 100,                     
+
+        baseSpeed: 0.020,                  
+
+        baseDamage: 20,                    
+
+        spawnWeight: 5,                  
+
+		baseExp: 0,                     
+
+        size: '6%'                        
+
+    },
+
+	
+
+	enem22: {  
+
+        name: 'enem22',                     
+
+        image: 'images/enemies/regions/1_smesh_les/lvl5/22.webp',
+
+        baseHP: 100,
+
+        baseSpeed: 0.020,
+
+        baseDamage: 20,
+
+        spawnWeight: 5,
+
+		baseExp: 0,
+
+        size: '6%'
+
+    },
+
+	
+
+	enem33: {  
+
+        name: 'enem33',                     
+
+        image: 'images/enemies/regions/1_smesh_les/lvl5/33.webp',  
+
+        baseHP: 100,                      
+
+        baseSpeed: 0.020,                 
+
+        baseDamage: 20,                    
+
+        spawnWeight: 5,                  
+
+		baseExp: 0,                     
+
+        size: '6%'                        
+
+    },
+
+	
+
+	enem44: {  
+
+        name: 'enem44',                     
+
+        image: 'images/enemies/regions/1_smesh_les/lvl5/44.webp',  
+
+        baseHP: 100,                      
+
+        baseSpeed: 0.020,                 
+
+        baseDamage: 20,                    
+
+        spawnWeight: 5,                  
+
+		baseExp: 0,                       
+
+        size: '6%'                       
+
+    },
+
+	
+
+	enem55: {  
+
+        name: 'enem55',                     
+
+        image: 'images/enemies/regions/1_smesh_les/lvl5/55.webp',  
+
+        baseHP: 100,                      
+
+        baseSpeed: 0.020,                 
+
+        baseDamage: 20,                    
+
+        spawnWeight: 5,                  
+
+		baseExp: 0,                      
+
+        size: '6%'                       
+
+    },
+
+	
+
+    enem1: {  
+
+        name: 'enem1',                     
+
+		dispName:  'УУ-х',
+
+        image: 'images/enemies/regions/1_smesh_les/lvl5/1.webp',  
+
+        baseHP: (3900) + (3900 * factorChar),
+
+        baseSpeed: 0,                  
+
+        baseDamage: (20)+(20)*factorChar,                      
+
+        spawnWeight: 5,                  
+
+		baseExp: 250,
+
+		xPos: 38,
+
+        size: '24%',
+        deathAnimation: { preset: 'ashFade', durationMs: 1200 }                        
+
+    },
+
+    enem2: {  
+
+        name: 'enem2',
+
+		dispName:  'Мурка',
+
+        image: 'images/enemies/regions/1_smesh_les/lvl5/2.webp',
+
+        baseHP: (15000) + (15000 * factorChar),
+
+        baseSpeed: 0,
+
+        baseDamage: (22)+(22)*factorChar,
+
+        spawnWeight: 15,                  
+
+		baseExp: 400, 
+
+		xPos: 36,
+
+        size: '26%',
+        deathAnimation: { preset: 'spinAway', durationMs: 1150 }
+
+    },
+
+    enem3: {  
+
+        name: 'enem3',
+
+		dispName:  'Секач',
+
+        image: 'images/enemies/regions/1_smesh_les/lvl5/3.webp',
+
+        baseHP: (21000) + (21000) *factorChar,
+
+        baseSpeed: 0,
+
+        baseDamage: (24)+(24)*factorChar,
+
+        spawnWeight: 20,
+
+		baseExp: 600,
+
+		xPos: 35,		
+
+        size: '30%',
+        deathAnimation: { preset: 'heavySink', durationMs: 1450 }                        
+
+    }, 
+
+	
+
+	enem4: {  
+
+        name: 'enem4',
+
+		dispName:  'Царапка',
+
+        image: 'images/enemies/regions/1_smesh_les/lvl5/4.webp',
+
+        baseHP: (62000)+(62000)*factorChar,
+
+        baseSpeed: 0,
+
+        baseDamage: (26)+(26)*factorChar,
+
+        spawnWeight: 10,
+
+		baseExp: 800,
+
+		xPos: 34,
+
+        size: '28%',
+        deathAnimation: { preset: 'fleeStretch', durationMs: 1000 }                        
+
+    },
+
+	
+
+	enem5: {  
+
+        name: 'enem5',
+
+		dispName:  'Волчок',
+
+        image: 'images/enemies/regions/1_smesh_les/lvl5/5.webp',
+
+        baseHP: (76000)+(76000)*factorChar,
+
+        baseSpeed: 0,
+
+        baseDamage: (28)+(28)*factorChar,
+
+        spawnWeight: 5,
+
+		baseExp: 0,
+
+		xPos: 34,		
+
+        size: '30%',
+        deathAnimation: { preset: 'rollOff', durationMs: 1300 }                        
+
+    },
+
+	
+
+};
+
+let bossM = ['enem1', 'enem2', 'enem3', 'enem4', 'enem5'];
+let timeNextBoss = 5;
+const bossInterval = 5;
+
+// Уровень 5 — Ночная смена
+// Атаки по краям / ниже босса; быстрые — сверху. Один архетип на босса.
+
+const bossAbilities = [
+	// ===== УУ-х (филин): TOP_FEATHER — перья сверху доминируют =====
+	{ boss: 'enem1', type: 'enem11', xPos: 8,  yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 4 },  //0
+	{ boss: 'enem1', type: 'enem11', xPos: 14, yPos: 12, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 5 },  //1
+	{ boss: 'enem1', type: 'enem11', xPos: 86, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 4 },  //2
+	{ boss: 'enem1', type: 'enem11', xPos: 92, yPos: 12, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 5 },  //3
+	{ boss: 'enem1', type: 'enem11', xPos: 10, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 3 },  //4
+	{ boss: 'enem1', type: 'enem11', xPos: 90, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 3 },  //5
+	{ boss: 'enem1', type: 'enem11', xPos: 8,  yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 20 }, //6
+	{ boss: 'enem1', type: 'enem11', xPos: 14, yPos: 7,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 24 }, //7
+	{ boss: 'enem1', type: 'enem11', xPos: 18, yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 22 }, //8
+	{ boss: 'enem1', type: 'enem11', xPos: 82, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 26 }, //9
+	{ boss: 'enem1', type: 'enem11', xPos: 88, yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 28 }, //10
+	{ boss: 'enem1', type: 'enem11', xPos: 92, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 22 }, //11
+	{ boss: 'enem1', type: 'enem11', xPos: 10, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 12 }, //12
+	{ boss: 'enem1', type: 'enem11', xPos: 90, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 14 }, //13
+	{ boss: 'enem1', type: 'enem11', xPos: 12, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 24 }, //14
+	{ boss: 'enem1', type: 'enem11', xPos: 86, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem1.baseDamage, customSpeed: 20 }, //15
+
+	// ===== Мурка: BOTTOM_CROUCH — засада снизу слева + прыжок справа сверху =====
+	{ boss: 'enem2', type: 'enem22', xPos: 8,  yPos: 46, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 3 },  //0
+	{ boss: 'enem2', type: 'enem22', xPos: 12, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 4 },  //1
+	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 54, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 5 },  //2
+	{ boss: 'enem2', type: 'enem22', xPos: 16, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 3 },  //3
+	{ boss: 'enem2', type: 'enem22', xPos: 8,  yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 4 },  //4
+	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 38, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 5 },  //5
+	{ boss: 'enem2', type: 'enem22', xPos: 92, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 4 },  //6
+	{ boss: 'enem2', type: 'enem22', xPos: 88, yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 24 }, //7
+	{ boss: 'enem2', type: 'enem22', xPos: 92, yPos: 7,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 28 }, //8
+	{ boss: 'enem2', type: 'enem22', xPos: 86, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 22 }, //9
+	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 6 },  //10
+	{ boss: 'enem2', type: 'enem22', xPos: 90, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 26 }, //11
+	{ boss: 'enem2', type: 'enem22', xPos: 8,  yPos: 20, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 12 }, //12
+	{ boss: 'enem2', type: 'enem22', xPos: 14, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 20 }, //13
+	{ boss: 'enem2', type: 'enem22', xPos: 90, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 5 },  //14
+	{ boss: 'enem2', type: 'enem22', xPos: 92, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem2.baseDamage, customSpeed: 24 }, //15
+
+	// ===== Секач: BOTTOM_WALL — таран-стена снизу (единственная на уровне) + клин =====
+	{ boss: 'enem3', type: 'enem33', xPos: 12, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3 },  //0
+	{ boss: 'enem3', type: 'enem33', xPos: 28, yPos: 52, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 4 },  //1
+	{ boss: 'enem3', type: 'enem33', xPos: 44, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3 },  //2
+	{ boss: 'enem3', type: 'enem33', xPos: 60, yPos: 52, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 5 },  //3
+	{ boss: 'enem3', type: 'enem33', xPos: 76, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3 },  //4
+	{ boss: 'enem3', type: 'enem33', xPos: 90, yPos: 52, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 4 },  //5
+	{ boss: 'enem3', type: 'enem33', xPos: 20, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 2 },  //6
+	{ boss: 'enem3', type: 'enem33', xPos: 80, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 2 },  //7
+	{ boss: 'enem3', type: 'enem33', xPos: 8,  yPos: 24, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 4 },  //8
+	{ boss: 'enem3', type: 'enem33', xPos: 92, yPos: 24, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 5 },  //9
+	{ boss: 'enem3', type: 'enem33', xPos: 10, yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 22 }, //10
+	{ boss: 'enem3', type: 'enem33', xPos: 90, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 26 }, //11
+	{ boss: 'enem3', type: 'enem33', xPos: 36, yPos: 52, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 3 },  //12
+	{ boss: 'enem3', type: 'enem33', xPos: 12, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 24 }, //13
+	{ boss: 'enem3', type: 'enem33', xPos: 72, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 4 },  //14
+	{ boss: 'enem3', type: 'enem33', xPos: 88, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem3.baseDamage, customSpeed: 20 }, //15
+
+	// ===== Царапка: LEFT_SCRATCH — когти густо слева =====
+	{ boss: 'enem4', type: 'enem44', xPos: 8,  yPos: 10, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 4 },  //0
+	{ boss: 'enem4', type: 'enem44', xPos: 10, yPos: 18, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 5 },  //1
+	{ boss: 'enem4', type: 'enem44', xPos: 12, yPos: 26, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 3 },  //2
+	{ boss: 'enem4', type: 'enem44', xPos: 8,  yPos: 34, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 4 },  //3
+	{ boss: 'enem4', type: 'enem44', xPos: 14, yPos: 42, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 5 },  //4
+	{ boss: 'enem4', type: 'enem44', xPos: 10, yPos: 50, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 3 },  //5
+	{ boss: 'enem4', type: 'enem44', xPos: 16, yPos: 14, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 4 },  //6
+	{ boss: 'enem4', type: 'enem44', xPos: 90, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 5 },  //7
+	{ boss: 'enem4', type: 'enem44', xPos: 8,  yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 22 }, //8
+	{ boss: 'enem4', type: 'enem44', xPos: 12, yPos: 7,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 26 }, //9
+	{ boss: 'enem4', type: 'enem44', xPos: 10, yPos: 9,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 24 }, //10
+	{ boss: 'enem4', type: 'enem44', xPos: 14, yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 28 }, //11
+	{ boss: 'enem4', type: 'enem44', xPos: 16, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 20 }, //12
+	{ boss: 'enem4', type: 'enem44', xPos: 10, yPos: 28, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 12 }, //13
+	{ boss: 'enem4', type: 'enem44', xPos: 92, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 22 }, //14
+	{ boss: 'enem4', type: 'enem44', xPos: 8,  yPos: 40, customHP: 1, customDamage: ENEMY_TYPES.enem4.baseDamage, customSpeed: 4 },  //15
+
+	// ===== Волчок: CONVERGE_FLANKS — стая сходится с флангов, без стены =====
+	{ boss: 'enem5', type: 'enem55', xPos: 10, yPos: 12, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //0
+	{ boss: 'enem5', type: 'enem55', xPos: 90, yPos: 12, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 5 },  //1
+	{ boss: 'enem5', type: 'enem55', xPos: 10, yPos: 24, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 3 },  //2
+	{ boss: 'enem5', type: 'enem55', xPos: 90, yPos: 24, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //3
+	{ boss: 'enem5', type: 'enem55', xPos: 10, yPos: 36, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 5 },  //4
+	{ boss: 'enem5', type: 'enem55', xPos: 90, yPos: 36, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 3 },  //5
+	{ boss: 'enem5', type: 'enem55', xPos: 8,  yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 4 },  //6
+	{ boss: 'enem5', type: 'enem55', xPos: 92, yPos: 48, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 5 },  //7
+	{ boss: 'enem5', type: 'enem55', xPos: 8,  yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 22 }, //8
+	{ boss: 'enem5', type: 'enem55', xPos: 14, yPos: 7,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 26 }, //9
+	{ boss: 'enem5', type: 'enem55', xPos: 86, yPos: 5,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 24 }, //10
+	{ boss: 'enem5', type: 'enem55', xPos: 92, yPos: 8,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 28 }, //11
+	{ boss: 'enem5', type: 'enem55', xPos: 10, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 20 }, //12
+	{ boss: 'enem5', type: 'enem55', xPos: 10, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 12 }, //13
+	{ boss: 'enem5', type: 'enem55', xPos: 90, yPos: 30, customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 14 }, //14
+	{ boss: 'enem5', type: 'enem55', xPos: 88, yPos: 6,  customHP: 1, customDamage: ENEMY_TYPES.enem5.baseDamage, customSpeed: 24 }, //15
+];
+
+const mBossDelayAb = [
+	{ boss: 'enem1', bossDelayAb: 320, bossDelayAbDop: 5600, firstWaveDelayMs: 2400 },
+	{ boss: 'enem2', bossDelayAb: 260, bossDelayAbDop: 5000, firstWaveDelayMs: 2400 },
+	{ boss: 'enem3', bossDelayAb: 220, bossDelayAbDop: 6800, firstWaveDelayMs: 2400 },
+	{ boss: 'enem4', bossDelayAb: 240, bossDelayAbDop: 5200, firstWaveDelayMs: 2400 },
+	{ boss: 'enem5', bossDelayAb: 280, bossDelayAbDop: 4800, firstWaveDelayMs: 2304 },
+];
+
+const bossAbilitiesDop = [
+	// УУ-х
+	{ boss: 'enem1', indexAbilities: [0, 1, 2, 3] },
+	{ boss: 'enem1', indexAbilities: [6, 7, 8, 9, 10, 11] },
+	{ boss: 'enem1', indexAbilities: [6, 8, 10, 7, 9, 11] },
+	{ boss: 'enem1', indexAbilities: [0, 6, 2, 9] },
+	{ boss: 'enem1', indexAbilities: [4, 5, 14, 15] },
+	{ boss: 'enem1', indexAbilities: [12, 14, 13, 15, 4] },
+	{ boss: 'enem1', indexAbilities: [0, 1] },
+	{ boss: 'enem1', indexAbilities: [2, 3] },
+
+	// Мурка
+	{ boss: 'enem2', indexAbilities: [0, 1, 2, 3, 4, 5] },
+	{ boss: 'enem2', indexAbilities: [0, 1, 2, 6] },
+	{ boss: 'enem2', indexAbilities: [7, 8, 9] },
+	{ boss: 'enem2', indexAbilities: [7, 9, 8, 11] },
+	{ boss: 'enem2', indexAbilities: [1, 7, 10, 11] },
+	{ boss: 'enem2', indexAbilities: [12, 13, 14, 15, 5] },
+	{ boss: 'enem2', indexAbilities: [0, 1, 2] },
+	{ boss: 'enem2', indexAbilities: [4, 5] },
+
+	// Секач
+	{ boss: 'enem3', indexAbilities: [0, 1, 2, 3, 4, 5, 6, 7] },
+	{ boss: 'enem3', indexAbilities: [0, 2, 4, 6, 8] },
+	{ boss: 'enem3', indexAbilities: [10, 11] },
+	{ boss: 'enem3', indexAbilities: [8, 9, 10, 11] },
+	{ boss: 'enem3', indexAbilities: [2, 10, 9, 11] },
+	{ boss: 'enem3', indexAbilities: [12, 13, 14, 15] },
+	{ boss: 'enem3', indexAbilities: [0, 1, 2] },
+	{ boss: 'enem3', indexAbilities: [3, 4, 5] },
+
+	// Царапка
+	{ boss: 'enem4', indexAbilities: [0, 1, 2, 3, 4, 5, 6] },
+	{ boss: 'enem4', indexAbilities: [0, 2, 4, 7] },
+	{ boss: 'enem4', indexAbilities: [8, 9, 10, 11, 12] },
+	{ boss: 'enem4', indexAbilities: [8, 10, 12, 9, 11] },
+	{ boss: 'enem4', indexAbilities: [1, 8, 5, 12] },
+	{ boss: 'enem4', indexAbilities: [13, 14, 15, 11, 3] },
+	{ boss: 'enem4', indexAbilities: [0, 1, 2] },
+	{ boss: 'enem4', indexAbilities: [3, 4, 5] },
+
+	// Волчок
+	{ boss: 'enem5', indexAbilities: [0, 1, 2, 3, 4, 5] },
+	{ boss: 'enem5', indexAbilities: [0, 1, 6, 7] },
+	{ boss: 'enem5', indexAbilities: [8, 9, 10, 11, 12] },
+	{ boss: 'enem5', indexAbilities: [8, 10, 12, 9, 11] },
+	{ boss: 'enem5', indexAbilities: [2, 8, 3, 10] },
+	{ boss: 'enem5', indexAbilities: [13, 12, 14, 15, 6] },
+	{ boss: 'enem5', indexAbilities: [0, 2, 4] },
+	{ boss: 'enem5', indexAbilities: [1, 3, 5] },
+];
+
+// Лорные названия связок. Уровень 5: УУ-х (сова), Мурка (кошка), Секач (кабан),
+// Царапка (дикий когтистый зверёк), Волчок (юркий вихрем кружащий волчонок).
+const UPGRADE_VARIANT_NAMES = {
+    enem1: {
+        variant1: 'Совиный удар', variant2: 'Когтистый захват', variant3: 'Совиная сила',
+        variant4: 'Пуховая защита', variant5: 'Пикирующий удар', variant6: 'Едкий клёв',
+        variant7: 'Совиная мощь', variant8: 'Плотное оперение', variant9: 'Бесшумный полёт',
+        variant10: 'Живучие перья', variant11: 'Цепкие когти', variant12: 'Клёв и в ночь',
+        variant13: 'Крепкие крылья', variant14: 'Неутомимый ночной полёт', variant15: 'Пружинистый взлёт',
+        variant16: 'Взгляд во тьме', variant17: 'Совиная хватка', variant18: 'Немигающий взгляд',
+        variant19: 'Мгновенное пике', variant20: 'Ночной слух', variant21: 'Стойкое оперение',
+        variant22: 'Юркий летун', variant23: 'Совиная стойкость', variant24: 'Слух совы',
+        variant25: 'Ускользающая тень', variant26: 'Дикий клёкот', variant27: 'Мощь клюва',
+        variant28: 'Внезапное пике', variant29: 'Каменные перья', variant30: 'Размах крыльев',
+        variant31: 'Совиный рывок', variant32: 'Живучее оперение', variant33: 'Неутомимый полёт',
+        variant34: 'Совиная прыть', variant35: 'Совиная выносливость'
+    },
+    enem2: {
+        variant1: 'Кошачий удар', variant2: 'Царапающий выпад', variant3: 'Кошачья сила',
+        variant4: 'Пушистая шубка', variant5: 'Меткий прыжок', variant6: 'Едкое шипение',
+        variant7: 'Кошачья мощь', variant8: 'Плотная шёрстка', variant9: 'Стремительный прыжок',
+        variant10: 'Живучая мурка', variant11: 'Цепкие лапки', variant12: 'Царап и под лавку',
+        variant13: 'Мягкие но крепкие лапы', variant14: 'Неутомимая охотница', variant15: 'Пружинистая присядка',
+        variant16: 'Меткий коготок', variant17: 'Кошачья хватка', variant18: 'Пронзительный взгляд',
+        variant19: 'Мгновенный бросок', variant20: 'Кошачий нюх', variant21: 'Стойкая к падениям',
+        variant22: 'Юркая мурка', variant23: 'Кошачья стойкость', variant24: 'Чуткие усы',
+        variant25: 'Ускользающий хвост', variant26: 'Дикое мяуканье', variant27: 'Мощь когтей',
+        variant28: 'Внезапный бросок', variant29: 'Выдержка перед прыжком', variant30: 'Разросшиеся когти',
+        variant31: 'Кошачий рывок', variant32: 'Живучая шёрстка', variant33: 'Неутомимая присядка',
+        variant34: 'Кошачья прыть', variant35: 'Девять жизней'
+    },
+    enem3: {
+        variant1: 'Клыкастый удар', variant2: 'Разрывающий клык', variant3: 'Кабанья сила',
+        variant4: 'Грязевая шкура', variant5: 'Меткий наскок', variant6: 'Едкая слюна',
+        variant7: 'Кабанья мощь', variant8: 'Толстая щетина', variant9: 'Тяжёлый разгон',
+        variant10: 'Живучий секач', variant11: 'Цепкие клыки', variant12: 'Клык и в грязь',
+        variant13: 'Прочная щетина', variant14: 'Неутомимый секач', variant15: 'Разгоняющийся наскок',
+        variant16: 'Меткий клык', variant17: 'Кабанья хватка', variant18: 'Налитые кровью глаза',
+        variant19: 'Мгновенный наскок', variant20: 'Кабаний нюх', variant21: 'Стойкая щетина',
+        variant22: 'Юркий для своего веса', variant23: 'Кабанья стойкость', variant24: 'Чуткий пятачок',
+        variant25: 'Ускользающий в чащу', variant26: 'Дикая ярость', variant27: 'Мощь клыков',
+        variant28: 'Внезапный разгон', variant29: 'Каменная толща', variant30: 'Разросшиеся клыки',
+        variant31: 'Кабаний рывок', variant32: 'Живучая щетина', variant33: 'Неутомимый разгон',
+        variant34: 'Кабанья прыть', variant35: 'Кабанья выносливость'
+    },
+    enem4: {
+        variant1: 'Дикий царап', variant2: 'Рваный коготь', variant3: 'Дикая сила',
+        variant4: 'Свалявшаяся шерсть', variant5: 'Росчерк когтя', variant6: 'Слюна дикарки',
+        variant7: 'Дикая мощь', variant8: 'Колючая шерсть', variant9: 'Учащающийся царап',
+        variant10: 'Живучая царапка', variant11: 'Впившиеся когти', variant12: 'Царап и в нору',
+        variant13: 'Свалявшаяся шкура', variant14: 'Неутомимая царапка', variant15: 'Пружинистый рывок',
+        variant16: 'Меткий росчерк', variant17: 'Дикая хватка', variant18: 'Взгляд из кустов',
+        variant19: 'Мгновенный росчерк', variant20: 'Дикий нюх', variant21: 'Стойкая к боли',
+        variant22: 'Юркая царапка', variant23: 'Дикая стойкость', variant24: 'Чуткие усы царапки',
+        variant25: 'Ускользающая в кусты', variant26: 'Дикий визг', variant27: 'Мощь когтей',
+        variant28: 'Внезапный росчерк', variant29: 'Выдержка дикарки', variant30: 'Учащающаяся сила',
+        variant31: 'Дикий рывок', variant32: 'Свалявшаяся живучесть', variant33: 'Неутомимый царап',
+        variant34: 'Дикая прыть', variant35: 'Дикая выносливость'
+    },
+    enem5: {
+        variant1: 'Волчий вихрь', variant2: 'Кружащий клык', variant3: 'Волчковая сила',
+        variant4: 'Свернувшаяся шкура', variant5: 'Меткий вихрь', variant6: 'Укус на вертушке',
+        variant7: 'Волчковая мощь', variant8: 'Плотный мех', variant9: 'Раскручивающийся рывок',
+        variant10: 'Живучий волчок', variant11: 'Когти вертушки', variant12: 'Укус на кружении',
+        variant13: 'Крепкий загривок', variant14: 'Неутомимое кружение', variant15: 'Пружинистое верчение',
+        variant16: 'Бросок с разворота', variant17: 'Волчковая хватка', variant18: 'Головокружительный взгляд',
+        variant19: 'Мгновенный вихрь', variant20: 'Волчий нюх', variant21: 'Стойкое кружение',
+        variant22: 'Юркий волчок', variant23: 'Волчковая стойкость', variant24: 'Ухо на вертушке',
+        variant25: 'Ускользающее кружение', variant26: 'Дикий вихрь', variant27: 'Мощь клыка',
+        variant28: 'Внезапный вихрь', variant29: 'Каменная устойчивость', variant30: 'Разгоняющееся кружение',
+        variant31: 'Волчковый рывок', variant32: 'Живучий мех', variant33: 'Неутомимый вихрь',
+        variant34: 'Волчковая прыть', variant35: 'Волчковая выносливость'
+    }
+};
