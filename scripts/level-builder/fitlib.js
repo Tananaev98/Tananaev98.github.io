@@ -46,7 +46,7 @@ function fitShape(L,role,shape,target,a0min,gmax,a0span){
 // Комбо из «прижатых» атак (быстрые сверху с окном y 4-10 ~ время полёта почти не регулируется; медленные бомбы): времена прилёта задаёт скорость,
 // а расстановку по времени — ПАУЗЫ МЕЖДУ ПОЯВЛЕНИЯМИ (shotGapsMs). Перебор пауз для формы автора: наиболее близкая к цели тугость ф3 при честности.
 function fitGaps(L,role,shape,target,slowAt){
-  const tk=parseShape(shape).map(o=>({...o,w:1})),T=+target||200,MIN=pm.SEQ_MIN_MS+15; const n=tk.length; const opts=[0,150,250,350,450,550,700,900,1100];
+  const tk=parseShape(shape).map(o=>({...o,w:1})),T=+target||200,MIN=pm.SEQ_MIN_MS+15; const n=tk.length; const opts=n>4?[0,250,550]:n>3?[0,250,400,700]:[0,150,250,350,450,550,700,900,1100];
   const step=stepOf(L,role); let best=null;
   const ctx0=lib.ctxFor(L,role), bb0=ctx0.bossCombatConfig.bosses[role];
   const baseFlight=(sp)=>{ const eb=ctx0.ENEMY_TYPES[role+role.slice(-1)]; const pps=eb.baseSpeed*sp*bb0.speedMultiplier*L.phases[0].speed*model.BASE_SPEED_GAME; return model.flightMs(5,pps,bb0.movementStyle||null,ctx0.bossCombatConfig.movementStyles); };

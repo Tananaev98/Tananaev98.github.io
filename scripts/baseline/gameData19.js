@@ -1,0 +1,433 @@
+let lvlNumber = 19;
+let factorChar = (lvlNumber * 5) / 100;
+
+// Уровень 19 — «Пожиратели урожая», область II «Золотые поля».
+// Пять архетипов: плотный рой сверху / встречные зигзаг-тараны панциря /
+// одиночные вылазки из нор по углам / горизонтальные пары с одного бока /
+// финал смешивает почерк всех четверых и впервые перекрывает низ поля разом.
+const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
+	levelCadence: 0.89, damageMultiplier: 1.997, minWaveDelay: 2080, minShotDelay: 148, minTelegraphMs: 540,
+	phases: [
+		{ phase: 1, minHp: 0.65, cadence: 1.00, speed: 1.00, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.15, maxActiveAttacks: 15 },
+		{ phase: 2, minHp: 0.30, cadence: 0.83, speed: 1.10, damage: 1.15, telegraphMultiplier: 0.90, surpriseChance: 0.25, maxActiveAttacks: 17 },
+		{ phase: 3, minHp: 0.00, cadence: 0.70, speed: 1.19, damage: 1.27, telegraphMultiplier: 0.83, surpriseChance: 0.35, maxActiveAttacks: 20 }
+	],
+	bosses: {
+		enem1: { combatIdentity: "Два всплеска роя", combatTrick: "две короткие группы разделены паузой; вторая группа меняет сторону", signatureEvery: 4, movementStyle: 'pause',      cadence: 1.00, telegraphMs: 720, speedMultiplier: 1.05, damageMultiplier: 0.86, speedVariance: [0.86, 0.96, 1.06, 1.16, 1.26] }, // ПРОЖОРЕНЬ: плотный рой сыплется сверху
+		enem2: { combatIdentity: "Панцирь и укус", combatTrick: "двойной выпад иногда получает третий укус с другой стороны", signatureEvery: 4, movementStyle: 'drift', cadence: 0.90, telegraphMs: 780, speedMultiplier: 0.98, damageMultiplier: 1.02, speedVariance: [0.84, 0.94, 1.04, 1.14, 1.24] }, // ЛАТНИК: встречные зигзаг-тараны панциря
+		enem3: { combatIdentity: "Нора и запасной выход", combatTrick: "медленный первый снаряд остаётся фоном для более срочного второго", signatureEvery: 4, movementStyle: 'weave',   cadence: 0.78, telegraphMs: 600, speedMultiplier: 1.18, damageMultiplier: 0.64, speedVariance: [0.90, 1.02, 1.14, 1.26, 1.38] }, // ЗУБОСКАЛ: нервные вылазки из нор по углам
+		enem4: { combatIdentity: "Кража зерна с разворотом", combatTrick: "показывает боковой замах, но заканчивает серединой; позднее конец возвращается на край", signatureEvery: 4, movementStyle: 'accelerate',      cadence: 0.88, telegraphMs: 730, speedMultiplier: 1.06, damageMultiplier: 0.88, speedVariance: [0.85, 0.95, 1.05, 1.15, 1.25] }, // ХЛЕБОКРАД: горизонтальные пары с одного бока
+		enem5: { combatIdentity: "Голодное схождение", combatTrick: "сводит угрозы с краёв к внутренним полосам, затем размыкает рисунок", signatureEvery: 4, movementStyle: 'lateRush',      cadence: 0.74, telegraphMs: 630, speedMultiplier: 1.12, damageMultiplier: 1.08, speedVariance: [0.82, 0.95, 1.08, 1.21, 1.34] }  // НЕНАСЫТЬ: голоден до всего поля разом — жрёт пространство роем, тараном и вылазками из нор без разбора
+	}
+};
+
+const ENEMY_TYPES = {
+
+	enem11: {
+        image: 'images/enemies/regions/2_zolot_polya/lvl19/11.webp',
+        baseHP: 100,
+        baseSpeed: 0.020,
+        baseDamage: 20,
+        spawnWeight: 5,
+		baseExp: 0,
+        size: '6%'
+    },
+
+	enem22: {
+        image: 'images/enemies/regions/2_zolot_polya/lvl19/22.webp',
+        baseHP: 100,
+        baseSpeed: 0.020,
+        baseDamage: 20,
+        spawnWeight: 5,
+		baseExp: 0,
+        size: '6%'
+    },
+
+	enem33: {
+        image: 'images/enemies/regions/2_zolot_polya/lvl19/33.webp',
+        baseHP: 100,
+        baseSpeed: 0.020,
+        baseDamage: 20,
+        spawnWeight: 5,
+		baseExp: 0,
+        size: '6%'
+    },
+
+	enem44: {
+        image: 'images/enemies/regions/2_zolot_polya/lvl19/44.webp',
+        baseHP: 100,
+        baseSpeed: 0.020,
+        baseDamage: 20,
+        spawnWeight: 5,
+		baseExp: 0,
+        size: '6%'
+    },
+
+	enem55: {
+        image: 'images/enemies/regions/2_zolot_polya/lvl19/55.webp',
+        baseHP: 100,
+        baseSpeed: 0.020,
+        baseDamage: 20,
+        spawnWeight: 5,
+		baseExp: 0,
+        size: '6%'
+    },
+
+	enem1: {
+		name: 'enem1',
+		dispName: 'Прожорень',
+		image: 'images/enemies/regions/2_zolot_polya/lvl19/1.webp',
+		baseHP: 2600 + (2600 * factorChar),
+		baseSpeed: 0,
+		baseDamage: 20 + (20 * factorChar),
+		spawnWeight: 5,
+		baseExp: 200,
+		xPos: 50,
+		size: '26%',
+        deathAnimation: { preset: 'dissolveRise', durationMs: 1400 }
+	},
+
+	enem2: {
+		name: 'enem2',
+		dispName: 'Латник',
+		image: 'images/enemies/regions/2_zolot_polya/lvl19/2.webp',
+		baseHP: 6500 + (6500 * factorChar),
+		baseSpeed: 0,
+		baseDamage: 22 + (22 * factorChar),
+		spawnWeight: 15,
+		baseExp: 320,
+		xPos: 50,
+		size: '26%',
+        deathAnimation: { preset: 'ashFade', durationMs: 1250 }
+	},
+
+	enem3: {
+		name: 'enem3',
+		dispName: 'Зубоскал',
+		image: 'images/enemies/regions/2_zolot_polya/lvl19/3.webp',
+		baseHP: 11500 + (11500 * factorChar),
+		baseSpeed: 0,
+		baseDamage: 24 + (24 * factorChar),
+		spawnWeight: 20,
+		baseExp: 430,
+		xPos: 50,
+		size: '26%',
+        deathAnimation: { preset: 'spinAway', durationMs: 1200 }
+	},
+
+	enem4: {
+		name: 'enem4',
+		dispName: 'Хлебокрад',
+		image: 'images/enemies/regions/2_zolot_polya/lvl19/4.webp',
+		baseHP: 18500 + (18500 * factorChar),
+		baseSpeed: 0,
+		baseDamage: 26 + (26 * factorChar),
+		spawnWeight: 10,
+		baseExp: 560,
+		xPos: 65,
+		size: '26%',
+        deathAnimation: { preset: 'crumbleShake', durationMs: 1350 }
+	},
+
+	enem5: {
+		name: 'enem5',
+		dispName: 'Ненасыть',
+		image: 'images/enemies/regions/2_zolot_polya/lvl19/5.webp',
+		baseHP: 28000 + (28000 * factorChar),
+		baseSpeed: 0,
+		baseDamage: 28 + (28 * factorChar),
+		spawnWeight: 5,
+		baseExp: 0,
+		xPos: 50,
+		size: '30%',
+        deathAnimation: { preset: 'heavySink', durationMs: 1550 }
+	}
+};
+
+// Урон по проверенной лестнице light/medium/heavy — та же, что и на соседних уровнях.
+const attackDamage = {
+	enem1: {
+		light: Math.round(ENEMY_TYPES.enem1.baseDamage * 0.34),
+		medium: Math.round(ENEMY_TYPES.enem1.baseDamage * 0.46),
+		heavy: Math.round(ENEMY_TYPES.enem1.baseDamage * 0.58)
+	},
+	enem2: {
+		light: Math.round(ENEMY_TYPES.enem2.baseDamage * 0.28),
+		medium: Math.round(ENEMY_TYPES.enem2.baseDamage * 0.38),
+		heavy: Math.round(ENEMY_TYPES.enem2.baseDamage * 0.50)
+	},
+	enem3: {
+		light: Math.round(ENEMY_TYPES.enem3.baseDamage * 0.30),
+		medium: Math.round(ENEMY_TYPES.enem3.baseDamage * 0.40),
+		heavy: Math.round(ENEMY_TYPES.enem3.baseDamage * 0.48)
+	},
+	enem4: {
+		light: Math.round(ENEMY_TYPES.enem4.baseDamage * 0.24),
+		medium: Math.round(ENEMY_TYPES.enem4.baseDamage * 0.33),
+		heavy: Math.round(ENEMY_TYPES.enem4.baseDamage * 0.42)
+	},
+	enem5: {
+		light: Math.round(ENEMY_TYPES.enem5.baseDamage * 0.26),
+		medium: Math.round(ENEMY_TYPES.enem5.baseDamage * 0.36),
+		heavy: Math.round(ENEMY_TYPES.enem5.baseDamage * 0.62)
+	}
+};
+
+let bossM = ['enem1', 'enem2', 'enem3', 'enem4', 'enem5'];
+let timeNextBoss = 5;
+const bossInterval = 5;
+
+const bossAbilities = [
+	// ===== Прожорень: плотный рой сыплется сверху =====
+	{ boss: 'enem1', type: 'enem11', xPos: 15, yPos: 8,  customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 22 }, //0
+	{ boss: 'enem1', type: 'enem11', xPos: 30, yPos: 6,  customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 24 }, //1
+	{ boss: 'enem1', type: 'enem11', xPos: 45, yPos: 5,  customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 26 }, //2
+	{ boss: 'enem1', type: 'enem11', xPos: 55, yPos: 5,  customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 26 }, //3
+	{ boss: 'enem1', type: 'enem11', xPos: 70, yPos: 6,  customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 24 }, //4
+	{ boss: 'enem1', type: 'enem11', xPos: 85, yPos: 8,  customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 22 }, //5
+	{ boss: 'enem1', type: 'enem11', xPos: 22, yPos: 11, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 18 }, //6
+	{ boss: 'enem1', type: 'enem11', xPos: 78, yPos: 11, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 18 }, //7
+	{ boss: 'enem1', type: 'enem11', xPos: 38, yPos: 10, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 20 }, //8
+	{ boss: 'enem1', type: 'enem11', xPos: 62, yPos: 10, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 20 }, //9
+	{ boss: 'enem1', type: 'enem11', xPos: 50, yPos: 9,  customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 27 }, //10 самый резкий центральный обрывок
+	{ boss: 'enem1', type: 'enem11', xPos: 12, yPos: 20, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 14 }, //11
+	{ boss: 'enem1', type: 'enem11', xPos: 88, yPos: 20, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 14 }, //12
+	{ boss: 'enem1', type: 'enem11', xPos: 50, yPos: 46, customHP: 1, customDamage: attackDamage.enem1.heavy,  customSpeed: 5 },  //13 редкий контраст: тяжёлая масса роя падает вниз медленно
+	{ boss: 'enem1', type: 'enem11', xPos: 25, yPos: 44, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 7 },  //14
+	{ boss: 'enem1', type: 'enem11', xPos: 75, yPos: 44, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 7 },  //15
+
+	// ===== Латник: встречные зигзаг-тараны панциря =====
+	{ boss: 'enem2', type: 'enem22', xPos: 20, yPos: 42, customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 6 },  //0
+	{ boss: 'enem2', type: 'enem22', xPos: 80, yPos: 42, customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 6 },  //1
+	{ boss: 'enem2', type: 'enem22', xPos: 30, yPos: 34, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 9 },  //2
+	{ boss: 'enem2', type: 'enem22', xPos: 70, yPos: 34, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 9 },  //3
+	{ boss: 'enem2', type: 'enem22', xPos: 18, yPos: 24, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 12 }, //4
+	{ boss: 'enem2', type: 'enem22', xPos: 82, yPos: 24, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 12 }, //5
+	{ boss: 'enem2', type: 'enem22', xPos: 40, yPos: 16, customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 15 }, //6
+	{ boss: 'enem2', type: 'enem22', xPos: 60, yPos: 16, customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 15 }, //7
+	{ boss: 'enem2', type: 'enem22', xPos: 25, yPos: 11, customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 17 }, //8
+	{ boss: 'enem2', type: 'enem22', xPos: 75, yPos: 11, customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 17 }, //9
+	{ boss: 'enem2', type: 'enem22', xPos: 50, yPos: 8,  customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 21 }, //10
+	{ boss: 'enem2', type: 'enem22', xPos: 10, yPos: 47, customHP: 1, customDamage: attackDamage.enem2.heavy,  customSpeed: 4 },  //11
+	{ boss: 'enem2', type: 'enem22', xPos: 90, yPos: 47, customHP: 1, customDamage: attackDamage.enem2.heavy,  customSpeed: 4 },  //12
+	{ boss: 'enem2', type: 'enem22', xPos: 50, yPos: 37, customHP: 1, customDamage: attackDamage.enem2.heavy,  customSpeed: 10 }, //13 нежданчик: тяжёлый таран из центра
+	{ boss: 'enem2', type: 'enem22', xPos: 35, yPos: 6,  customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 23 }, //14
+	{ boss: 'enem2', type: 'enem22', xPos: 65, yPos: 5,  customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 24 }, //15
+
+	// ===== Зубоскал: нервные вылазки из нор по углам =====
+	{ boss: 'enem3', type: 'enem33', xPos: 12, yPos: 8,  customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 22 }, //0
+	{ boss: 'enem3', type: 'enem33', xPos: 88, yPos: 7,  customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 23 }, //1
+	{ boss: 'enem3', type: 'enem33', xPos: 14, yPos: 11, customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 18 }, //2
+	{ boss: 'enem3', type: 'enem33', xPos: 86, yPos: 10, customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 18 }, //3
+	{ boss: 'enem3', type: 'enem33', xPos: 10, yPos: 6,  customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 26 }, //4
+	{ boss: 'enem3', type: 'enem33', xPos: 90, yPos: 5,  customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 27 }, //5
+	{ boss: 'enem3', type: 'enem33', xPos: 14, yPos: 48, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 6 },  //6
+	{ boss: 'enem3', type: 'enem33', xPos: 86, yPos: 48, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 7 },  //7
+	{ boss: 'enem3', type: 'enem33', xPos: 18, yPos: 44, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 9 },  //8
+	{ boss: 'enem3', type: 'enem33', xPos: 82, yPos: 44, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 9 },  //9
+	{ boss: 'enem3', type: 'enem33', xPos: 12, yPos: 20, customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 14 }, //10
+	{ boss: 'enem3', type: 'enem33', xPos: 88, yPos: 20, customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 14 }, //11
+	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 46, customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 5 },  //12 редкий контраст: центр вместо угла
+	{ boss: 'enem3', type: 'enem33', xPos: 20, yPos: 9,  customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 21 }, //13
+	{ boss: 'enem3', type: 'enem33', xPos: 80, yPos: 8,  customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 21 }, //14
+	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 6,  customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 25 }, //15 нежданчик: второй центральный бросок сверху
+
+	// ===== Хлебокрад: горизонтальные пары краж с одного бока =====
+	{ boss: 'enem4', type: 'enem44', xPos: 20, yPos: 44, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 6 },  //0
+	{ boss: 'enem4', type: 'enem44', xPos: 24, yPos: 38, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 9 },  //1
+	{ boss: 'enem4', type: 'enem44', xPos: 18, yPos: 30, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 12 }, //2
+	{ boss: 'enem4', type: 'enem44', xPos: 26, yPos: 22, customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 15 }, //3
+	{ boss: 'enem4', type: 'enem44', xPos: 16, yPos: 11, customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 18 }, //4
+	{ boss: 'enem4', type: 'enem44', xPos: 28, yPos: 8,  customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 21 }, //5
+	{ boss: 'enem4', type: 'enem44', xPos: 14, yPos: 48, customHP: 1, customDamage: attackDamage.enem4.heavy,  customSpeed: 4 },  //6
+	{ boss: 'enem4', type: 'enem44', xPos: 30, yPos: 44, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 7 },  //7
+	{ boss: 'enem4', type: 'enem44', xPos: 78, yPos: 40, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 10 }, //8 редкий встречный удар с другого бока
+	{ boss: 'enem4', type: 'enem44', xPos: 85, yPos: 11, customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 17 }, //9
+	{ boss: 'enem4', type: 'enem44', xPos: 50, yPos: 34, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 11 }, //10
+	{ boss: 'enem4', type: 'enem44', xPos: 22, yPos: 26, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 13 }, //11
+	{ boss: 'enem4', type: 'enem44', xPos: 26, yPos: 10, customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 16 }, //12
+	{ boss: 'enem4', type: 'enem44', xPos: 18, yPos: 6,  customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 23 }, //13
+	{ boss: 'enem4', type: 'enem44', xPos: 24, yPos: 46, customHP: 1, customDamage: attackDamage.enem4.heavy,  customSpeed: 5 },  //14
+	{ boss: 'enem4', type: 'enem44', xPos: 74, yPos: 9,  customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 22 }, //15 редкий быстрый удар с правого бока
+
+	// ===== Ненасыть: смешивает почерк всех четверых, впервые перекрывает низ разом =====
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 38, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 7 },  //0 эхо Прожореня: рой из центра
+	{ boss: 'enem5', type: 'enem55', xPos: 25, yPos: 30, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 10 }, //1 эхо Латника: зигзаг слева
+	{ boss: 'enem5', type: 'enem55', xPos: 75, yPos: 30, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 10 }, //2
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 20, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 14 }, //3 эхо Зубоскала: угловой контраст в центр
+	{ boss: 'enem5', type: 'enem55', xPos: 18, yPos: 9,  customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 21 }, //4 эхо Хлебокрада: боковой рывок
+	{ boss: 'enem5', type: 'enem55', xPos: 82, yPos: 8,  customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 22 }, //5
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 5,  customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 26 }, //6 самый резкий финальный рывок
+	{ boss: 'enem5', type: 'enem55', xPos: 35, yPos: 12, customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 17 }, //7
+	{ boss: 'enem5', type: 'enem55', xPos: 65, yPos: 12, customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 17 }, //8
+	{ boss: 'enem5', type: 'enem55', xPos: 11, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //9 нижний ряд: начало полного прохода
+	{ boss: 'enem5', type: 'enem55', xPos: 30, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //10
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //11
+	{ boss: 'enem5', type: 'enem55', xPos: 69, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //12
+	{ boss: 'enem5', type: 'enem55', xPos: 89, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //13 конец ряда — рой сожрал всю ширину поля
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 28, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 11 } //14 неожиданный удар из центра после прохода
+,
+    // Приёмы из scripts/combat-designs.js; индексы считаются отдельно для каждого босса.
+    {boss: "enem1",type: "enem11",xPos: 12,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 16},
+    {boss: "enem1",type: "enem11",xPos: 26,yPos: 20,customHP: 1,customDamage: 13,customSpeed: 14},
+    {boss: "enem1",type: "enem11",xPos: 76,yPos: 6,customHP: 1,customDamage: 13,customSpeed: 21},
+    {boss: "enem1",type: "enem11",xPos: 12,yPos: 40,customHP: 1,customDamage: 13,customSpeed: 7},
+    {boss: "enem1",type: "enem11",xPos: 12,yPos: 8,customHP: 1,customDamage: 13,customSpeed: 20},
+    {boss: "enem1",type: "enem11",xPos: 88,yPos: 12,customHP: 1,customDamage: 13,customSpeed: 18},
+    {boss: "enem2",type: "enem22",xPos: 82,yPos: 12,customHP: 1,customDamage: 12,customSpeed: 16},
+    {boss: "enem2",type: "enem22",xPos: 70,yPos: 20,customHP: 1,customDamage: 12,customSpeed: 14},
+    {boss: "enem2",type: "enem22",xPos: 16,yPos: 6,customHP: 1,customDamage: 12,customSpeed: 21},
+    {boss: "enem2",type: "enem22",xPos: 82,yPos: 40,customHP: 1,customDamage: 12,customSpeed: 7},
+    {boss: "enem2",type: "enem22",xPos: 82,yPos: 8,customHP: 1,customDamage: 12,customSpeed: 20},
+    {boss: "enem2",type: "enem22",xPos: 28,yPos: 12,customHP: 1,customDamage: 12,customSpeed: 18},
+    {boss: "enem3",type: "enem33",xPos: 20,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 16},
+    {boss: "enem3",type: "enem33",xPos: 78,yPos: 20,customHP: 1,customDamage: 14,customSpeed: 14},
+    {boss: "enem3",type: "enem33",xPos: 34,yPos: 6,customHP: 1,customDamage: 14,customSpeed: 21},
+    {boss: "enem3",type: "enem33",xPos: 20,yPos: 24,customHP: 1,customDamage: 14,customSpeed: 7},
+    {boss: "enem3",type: "enem33",xPos: 20,yPos: 8,customHP: 1,customDamage: 14,customSpeed: 20},
+    {boss: "enem3",type: "enem33",xPos: 66,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 18},
+    {boss: "enem4",type: "enem44",xPos: 14,yPos: 12,customHP: 1,customDamage: 12,customSpeed: 16},
+    {boss: "enem4",type: "enem44",xPos: 32,yPos: 20,customHP: 1,customDamage: 12,customSpeed: 14},
+    {boss: "enem4",type: "enem44",xPos: 84,yPos: 6,customHP: 1,customDamage: 12,customSpeed: 21},
+    {boss: "enem4",type: "enem44",xPos: 14,yPos: 40,customHP: 1,customDamage: 12,customSpeed: 7},
+    {boss: "enem4",type: "enem44",xPos: 14,yPos: 8,customHP: 1,customDamage: 12,customSpeed: 20},
+    {boss: "enem4",type: "enem44",xPos: 46,yPos: 12,customHP: 1,customDamage: 12,customSpeed: 18},
+    {boss: "enem5",type: "enem55",xPos: 88,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 16},
+    {boss: "enem5",type: "enem55",xPos: 70,yPos: 20,customHP: 1,customDamage: 14,customSpeed: 14},
+    {boss: "enem5",type: "enem55",xPos: 12,yPos: 6,customHP: 1,customDamage: 14,customSpeed: 21},
+    {boss: "enem5",type: "enem55",xPos: 88,yPos: 40,customHP: 1,customDamage: 14,customSpeed: 7},
+    {boss: "enem5",type: "enem55",xPos: 88,yPos: 8,customHP: 1,customDamage: 14,customSpeed: 20},
+    {boss: "enem5",type: "enem55",xPos: 32,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 18}
+];
+
+const mBossDelayAb = [
+	{ boss: 'enem1', bossDelayAb: 260, bossDelayAbDop: 4600, firstWaveDelayMs: 2208 }, // рой частый, но телеграф честный
+	{ boss: 'enem2', bossDelayAb: 300, bossDelayAbDop: 5100, firstWaveDelayMs: 2400 }, // тараны, смена ритма
+	{ boss: 'enem3', bossDelayAb: 240, bossDelayAbDop: 4500, firstWaveDelayMs: 2160 }, // нервные вылазки из нор
+	{ boss: 'enem4', bossDelayAb: 290, bossDelayAbDop: 5000, firstWaveDelayMs: 2400 }, // кражи парами, редкий встречный бок
+	{ boss: 'enem5', bossDelayAb: 255, bossDelayAbDop: 4200, firstWaveDelayMs: 2016 }, // финал: плотнее всех, но честный
+];
+
+const bossAbilitiesDop = [
+    {boss: "enem1",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem1",indexAbilities: [5]},
+    {boss: "enem1",indexAbilities: [0,5]},
+    {boss: "enem1",indexAbilities: [1,2,3,4]},
+    {boss: "enem1",indexAbilities: [6,7,8,9]},
+    {boss: "enem1",indexAbilities: [16,20,18,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Два всплеска роя — знакомство",openingOrder: 1,shotGapsMs: [360,900,360]},
+    {boss: "enem1",indexAbilities: [16,20,21],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Два всплеска роя — иной конец",shotGapsMs: [360,900,360]},
+    {boss: "enem1",indexAbilities: [18,21,16,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Два всплеска роя — завершение",shotGapsMs: [360,900,360]},
+    {boss: "enem2",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem2",indexAbilities: [1]},
+    {boss: "enem2",indexAbilities: [0,1]},
+    {boss: "enem2",indexAbilities: [2,3]},
+    {boss: "enem2",indexAbilities: [4,5]},
+    {boss: "enem2",indexAbilities: [16,20],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Панцирь и укус — знакомство",openingOrder: 1},
+    {boss: "enem2",indexAbilities: [16,20,18],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Панцирь и укус — иной конец"},
+    {boss: "enem2",indexAbilities: [21,17,21,18],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Панцирь и укус — завершение"},
+    {boss: "enem3",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem3",indexAbilities: [1]},
+    {boss: "enem3",indexAbilities: [0,1]},
+    {boss: "enem3",indexAbilities: [6,7]},
+    {boss: "enem3",indexAbilities: [2,3,10,11]},
+    {boss: "enem3",indexAbilities: [19,18],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Нора и запасной выход — знакомство",openingOrder: 1},
+    {boss: "enem3",indexAbilities: [19,18,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Нора и запасной выход — иной конец"},
+    {boss: "enem3",indexAbilities: [19,21,18,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Нора и запасной выход — завершение"},
+    {boss: "enem4",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem4",indexAbilities: [6]},
+    {boss: "enem4",indexAbilities: [0,6]},
+    {boss: "enem4",indexAbilities: [1,2,3]},
+    {boss: "enem4",indexAbilities: [9,10,11]},
+    {boss: "enem4",indexAbilities: [16,17,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Кража зерна с разворотом — знакомство",openingOrder: 1},
+    {boss: "enem4",indexAbilities: [16,17,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Кража зерна с разворотом — иной конец"},
+    {boss: "enem4",indexAbilities: [18,21,17,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Кража зерна с разворотом — завершение"},
+    {boss: "enem5",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem5",indexAbilities: [3]},
+    {boss: "enem5",indexAbilities: [0,3]},
+    {boss: "enem5",indexAbilities: [1,2]},
+    {boss: "enem5",indexAbilities: [4,5]},
+    {boss: "enem5",indexAbilities: [15,17,16,20],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Голодное схождение — знакомство",openingOrder: 1},
+    {boss: "enem5",indexAbilities: [15,17,19],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Голодное схождение — иной конец"},
+    {boss: "enem5",indexAbilities: [16,20,15,17],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Голодное схождение — завершение"}
+];
+
+// Лорные названия связок. Уровень 19 — вредители урожая: Прожорень (рой саранчи),
+// Латник (жук-таран), Зубоскал (зубастый нора-житель), Хлебокрад (ворующий грызун),
+// Ненасыть (пожирает всё поле разом).
+const UPGRADE_VARIANT_NAMES = {
+    enem1: {
+        variant1: 'Роевой укус', variant2: 'Жвалы саранчи', variant3: 'Роевая сила',
+        variant4: 'Хитиновая защита', variant5: 'Укус роя', variant6: 'Слюна саранчи',
+        variant7: 'Роевая мощь', variant8: 'Плотный хитин', variant9: 'Плотный дождь роя',
+        variant10: 'Живучий Прожорень', variant11: 'Цепкие жвалы', variant12: 'Укус и в тучу',
+        variant13: 'Толстый хитин', variant14: 'Неутомимый рой', variant15: 'Пружинистые крылья',
+        variant16: 'Меткие жвалы', variant17: 'Роевая хватка', variant18: 'Взгляд роя',
+        variant19: 'Мгновенный дождь роя', variant20: 'Голодный дух', variant21: 'Стойкий хитин',
+        variant22: 'Юркий Прожорень', variant23: 'Роевая стойкость', variant24: 'Чуткие крылья',
+        variant25: 'Ускользающий рой', variant26: 'Дикий голод роя', variant27: 'Мощь слюны',
+        variant28: 'Внезапный дождь', variant29: 'Каменный хитин', variant30: 'Разросшийся рой',
+        variant31: 'Роевой рывок', variant32: 'Живучий хитин', variant33: 'Дождь роя вновь',
+        variant34: 'Роевая прыть', variant35: 'Роевая выносливость'
+    },
+    enem2: {
+        variant1: 'Таранный удар', variant2: 'Рог панциря', variant3: 'Таранная сила',
+        variant4: 'Панцирная броня', variant5: 'Меткий таран', variant6: 'Слизь панциря',
+        variant7: 'Таранная мощь', variant8: 'Прочный панцирь', variant9: 'Зигзагующий таран',
+        variant10: 'Живучий Латник', variant11: 'Цепкие лапки', variant12: 'Таран и в землю',
+        variant13: 'Толстый панцирь', variant14: 'Неутомимый Латник', variant15: 'Пружинистый разгон',
+        variant16: 'Меткий рог', variant17: 'Таранная хватка', variant18: 'Взгляд из-под панциря',
+        variant19: 'Мгновенный таран', variant20: 'Панцирный дух', variant21: 'Стойкий панцирь',
+        variant22: 'Юркий Латник', variant23: 'Таранная стойкость', variant24: 'Чуткие усики',
+        variant25: 'Ускользающий таран', variant26: 'Дикий таран', variant27: 'Мощь слизи',
+        variant28: 'Внезапный таран', variant29: 'Панцирь-камень', variant30: 'Разросшийся панцирь',
+        variant31: 'Таранный рывок', variant32: 'Живучий панцирь', variant33: 'Зигзаг тарана вновь',
+        variant34: 'Таранная прыть', variant35: 'Таранная выносливость'
+    },
+    enem3: {
+        variant1: 'Зубастый укус', variant2: 'Острый резец', variant3: 'Зубастая сила',
+        variant4: 'Защита норы', variant5: 'Вылазка из норы', variant6: 'Едкая слюна',
+        variant7: 'Зубастая мощь', variant8: 'Прочная нора', variant9: 'Нервная вылазка из угла',
+        variant10: 'Живучий Зубоскал', variant11: 'Цепкие резцы', variant12: 'Укус и в нору',
+        variant13: 'Крепкая нора', variant14: 'Неутомимый Зубоскал', variant15: 'Выскок из норы',
+        variant16: 'Меткий резец', variant17: 'Зубастая хватка', variant18: 'Оскаленный взгляд',
+        variant19: 'Мгновенная вылазка', variant20: 'Земляной дух', variant21: 'Стойкая нора',
+        variant22: 'Юркий Зубоскал', variant23: 'Зубастая стойкость', variant24: 'Чуткие усы',
+        variant25: 'Ускользающий в нору', variant26: 'Дикий оскал', variant27: 'Мощь слюны',
+        variant28: 'Внезапная вылазка из угла', variant29: 'Каменная нора', variant30: 'Разросшаяся нора',
+        variant31: 'Зубастый рывок', variant32: 'Живучая нора', variant33: 'Неутомимая вылазка',
+        variant34: 'Зубастая прыть', variant35: 'Зубастая выносливость'
+    },
+    enem4: {
+        variant1: 'Ворующий укус', variant2: 'Резец-клюв воришки', variant3: 'Воровская сила',
+        variant4: 'Пуховая защита', variant5: 'Налёт парой', variant6: 'Едкая крошка',
+        variant7: 'Воровская мощь', variant8: 'Плотное оперение', variant9: 'Горизонтальный налёт',
+        variant10: 'Живучий Хлебокрад', variant11: 'Коготки воришки', variant12: 'Налёт и в колосья',
+        variant13: 'Толстое оперение', variant14: 'Неутомимый Хлебокрад', variant15: 'Прыжок к добыче',
+        variant16: 'Меткий резец-клюв', variant17: 'Воровская хватка', variant18: 'Взгляд на крошки',
+        variant19: 'Мгновенный налёт', variant20: 'Хлебный дух', variant21: 'Стойкое оперение',
+        variant22: 'Юркий Хлебокрад', variant23: 'Воровская стойкость', variant24: 'Клюв на крошки',
+        variant25: 'Ускользающий с крошкой', variant26: 'Дикий налёт', variant27: 'Мощь клюва',
+        variant28: 'Внезапный налёт парой', variant29: 'Закрома воришки', variant30: 'Разросшиеся запасы',
+        variant31: 'Воровской рывок', variant32: 'Живучее оперение', variant33: 'Неутомимый налёт',
+        variant34: 'Воровская прыть', variant35: 'Воровская выносливость'
+    },
+    enem5: {
+        variant1: 'Ненасытный укус', variant2: 'Острая пасть', variant3: 'Ненасытная сила',
+        variant4: 'Всеядная защита', variant5: 'Захват поля', variant6: 'Едкий голод',
+        variant7: 'Ненасытная мощь', variant8: 'Шкура обжоры', variant9: 'Рывок отовсюду',
+        variant10: 'Живучая Ненасыть', variant11: 'Цепкая пасть', variant12: 'Захват и всё поле',
+        variant13: 'Толстая шкура', variant14: 'Неутомимая Ненасыть', variant15: 'Бросок голода',
+        variant16: 'Укус отовсюду', variant17: 'Ненасытная хватка', variant18: 'Взгляд на всё поле',
+        variant19: 'Мгновенный захват', variant20: 'Всепоглощающий дух', variant21: 'Шкура-стойкость',
+        variant22: 'Юркая Ненасыть', variant23: 'Ненасытная стойкость', variant24: 'Чуткий голод',
+        variant25: 'Ускользающая прожорливость', variant26: 'Дикий голод', variant27: 'Мощь пасти',
+        variant28: 'Внезапный захват поля', variant29: 'Каменная ненасытность', variant30: 'Разросшийся голод',
+        variant31: 'Ненасытный рывок', variant32: 'Живучая шкура', variant33: 'Неутомимая прожорливость',
+        variant34: 'Ненасытная прыть', variant35: 'Ненасытная выносливость'
+    }
+};

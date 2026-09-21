@@ -271,7 +271,8 @@ function writeLevel(L, solvedByRole) {
     // --- bossCombatConfig
     const P = [];
     P.push('const bossCombatConfig = {');
-    P.push('\tscaleLongComboDamage: true,\n\tscaleShortComboDamage: true,');
+    if (old.scaleLongComboDamage !== undefined) P.push('\tscaleLongComboDamage: ' + old.scaleLongComboDamage + ',\n\tscaleShortComboDamage: ' + old.scaleShortComboDamage + ',');
+    if (old.musicMood) P.push('\tmusicMood: ' + q(old.musicMood) + ',');
     for (const k of ['waveJitter', 'busyRetryMs', 'defaultRecoveryMs', 'selection', 'movementStyles']) P.push(`\t${k}: ${JSON.stringify(old[k]).replace(/"([a-zA-Z0-9]+)":/g, '$1: ').replace(/,/g, ', ')},`);
     P.push(`\tlevelCadence: ${f(L.cfg.levelCadence)}, damageMultiplier: ${f(old.damageMultiplier)}, minWaveDelay: ${L.cfg.minWaveDelay}, minShotDelay: ${L.cfg.minShotDelay}, minTelegraphMs: ${L.cfg.minTelegraphMs},`);
     P.push('\tphases: [');
@@ -284,7 +285,7 @@ function writeLevel(L, solvedByRole) {
     ROLES.forEach((r, i) => {
         const b = L.bosses[r]; const o = old.bosses[r];
         const sv = b.speedVariance || o.speedVariance;
-        P.push(`\t\t${r}: { combatIdentity: ${q(b.identity)}, combatTrick: ${q(b.trick)}, signatureEvery: ${b.signatureEvery ?? o.signatureEvery}, movementStyle: '${b.style}', cadence: ${f(b.cadence)}, telegraphMs: ${b.telegraphMs}, speedMultiplier: ${f(b.speedMultiplier)}, damageMultiplier: ${f(o.damageMultiplier)}, speedVariance: [${sv.map(f).join(', ')}] }${i < 4 ? ',' : ''}`);
+        P.push(`\t\t${r}: { combatIdentity: ${q(b.identity)}, combatTrick: ${q(b.trick)}, signatureEvery: ${b.signatureEvery ?? o.signatureEvery}, movementStyle: '${b.style}', cadence: ${f(b.cadence)}, telegraphMs: ${b.telegraphMs}, speedMultiplier: ${f(b.speedMultiplier)}, damageMultiplier: ${f(o.damageMultiplier)}, speedVariance: [${sv.map(f).join(', ')}]${o.healthMultiplier !== undefined ? `, healthMultiplier: ${f(o.healthMultiplier)}` : ''}${o.appearMessage ? `, appearMessage: ${q(o.appearMessage)}` : ''}${o.phaseMessages ? `, phaseMessages: ${JSON.stringify(o.phaseMessages).replace(/"(d)":/g, '$1: ').replace(/,/g, ', ')}` : ''} }${i < 4 ? ',' : ''}`);
     });
     P.push('\t}');
     P.push('};');
@@ -305,7 +306,7 @@ function writeLevel(L, solvedByRole) {
         AB.push(`\t// ===== ${b.title} =====`);
         reg.forEach((a, i) => {
             const t = 'enem' + (ri + 1) + (ri + 1);
-            AB.push(`\t{ boss: '${r}', type: '${t}', xPos: ${a.x}, yPos: ${a.y}, customHP: 1, customDamage: ENEMY_TYPES.${r}.baseDamage, customSpeed: ${a.s}${a.w ? `, waveAmplitude: ${f(a.w[0])}, waveFrequency: ${f(a.w[1])}${a.w[2] !== undefined ? `, wavePhase: ${f(a.w[2])}` : ''}` : ''} }, // ${i} ${a.combo}`);
+            AB.push(`\t{ boss: '${r}', type: '${t}', xPos: ${a.x}, yPos: ${a.y}, customHP: 1, customDamage: ${L.damageByClass ? `attackDamage.${r}.${(L.damageClassOverride && L.damageClassOverride[r]) || (a.s >= 13 ? 'light' : a.s >= 7 ? 'medium' : 'heavy')}` : (L.damageTiers && L.damageTiers[r]) ? L.damageTiers[r][a.s >= 18 ? 0 : a.s >= 11 ? 1 : 2] : `ENEMY_TYPES.${r}.baseDamage`}, customSpeed: ${a.s}${a.w ? `, waveAmplitude: ${f(a.w[0])}, waveFrequency: ${f(a.w[1])}${a.w[2] !== undefined ? `, wavePhase: ${f(a.w[2])}` : ''}` : ''} }, // ${i} ${a.combo}`);
         });
         AB.push('');
         DOP.push(`\t// ${b.title}`);

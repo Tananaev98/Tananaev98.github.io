@@ -9,18 +9,18 @@ const bossCombatConfig = {
 	defaultRecoveryMs: 180,
 	selection: {historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35},
 	movementStyles: {accelerate: {start: 0.72, gain: 0.9}, lateRush: {switchAt: 0.55, early: 0.72, late: 1.48}, pause: {at: 0.42, durationMs: 420, after: 1.22}, weave: {frequency: 1.35, amplitude: 5.5}, drift: {shift: 10}},
-	levelCadence: 0.82, damageMultiplier: 0.613, minWaveDelay: 2260, minShotDelay: 147, minTelegraphMs: 490,
+	levelCadence: 0.82, damageMultiplier: 0.613, minWaveDelay: 2710, minShotDelay: 147, minTelegraphMs: 490,
 	phases: [
 		{ phase: 1, minHp: 0.659, cadence: 0.999, speed: 0.99, damage: 1, telegraphMultiplier: 0.998, surpriseChance: 0.11, maxActiveAttacks: 14 },
 		{ phase: 2, minHp: 0.309, cadence: 0.791, speed: 1.099, damage: 1.12, telegraphMultiplier: 0.909, surpriseChance: 0.221, maxActiveAttacks: 18 },
 		{ phase: 3, minHp: 0, cadence: 0.661, speed: 1.201, damage: 1.24, telegraphMultiplier: 0.851, surpriseChance: 0.3, maxActiveAttacks: 20 }
 	],
 	bosses: {
-		enem1: { combatIdentity: "Удар и искры", combatTrick: "две короткие группы разделены паузой; вторая группа меняет сторону", signatureEvery: 4, movementStyle: 'straight', cadence: 1.12, telegraphMs: 881, speedMultiplier: 0.941, damageMultiplier: 1.16, speedVariance: [0.78, 0.88, 0.98, 1.1, 1.2] },
-		enem2: { combatIdentity: "Пропил и обратный ход", combatTrick: "ведёт прицел вдоль прохода, затем возвращает угрозу за спину прохода", signatureEvery: 4, movementStyle: 'weave', cadence: 0.8, telegraphMs: 580, speedMultiplier: 1.22, damageMultiplier: 1.09, speedVariance: [0.94, 1.04, 1.14, 1.24, 1.34] },
-		enem3: { combatIdentity: "Осколки горшка", combatTrick: "разводит две цели, затем закрывает оставленную между ними полосу", signatureEvery: 4, movementStyle: 'accelerate', cadence: 0.941, telegraphMs: 721, speedMultiplier: 1.1, damageMultiplier: 1.14, speedVariance: [0.86, 0.98, 1.1, 1.22, 1.3] },
-		enem4: { combatIdentity: "Переплетение нити", combatTrick: "повторяет удар в прежнем секторе вместо ожидаемого чередования", signatureEvery: 4, movementStyle: 'lateRush', cadence: 0.841, telegraphMs: 585, speedMultiplier: 1.18, damageMultiplier: 1.12, speedVariance: [0.9, 1.02, 1.14, 1.26, 1.34] },
-		enem5: { combatIdentity: "Замыкание обруча", combatTrick: "сводит угрозы с краёв к внутренним полосам, затем размыкает рисунок", signatureEvery: 4, movementStyle: 'drift', cadence: 0.721, telegraphMs: 621, speedMultiplier: 1.2, damageMultiplier: 1.22, speedVariance: [0.74, 0.9, 1.08, 1.26, 1.38] }
+		enem1: { combatIdentity: "Удар и искры", combatTrick: "тяжёлые удары идут по прямой; позже брошенные искры быстрее и прилетают раньше медленных — порядок прилёта не совпадает с порядком появления", signatureEvery: 4, movementStyle: 'straight', cadence: 1.12, telegraphMs: 881, speedMultiplier: 0.941, damageMultiplier: 1.16, speedVariance: [0.78, 0.88, 0.98, 1.1, 1.2] },
+		enem2: { combatIdentity: "Пила по кругу", combatTrick: "атаки качаются на лету; связки чередуют край и центр — смотри, куда качнёт, а не куда летит", signatureEvery: 4, movementStyle: 'weave', cadence: 0.8, telegraphMs: 580, speedMultiplier: 1.22, damageMultiplier: 1.09, speedVariance: [0.94, 1.04, 1.14, 1.24, 1.34] },
+		enem3: { combatIdentity: "Горшки на разгоне", combatTrick: "атаки разгоняются к концу полёта; связка из трёх-четырёх бросков сжимается — поздние догоняют ранних", signatureEvery: 4, movementStyle: 'accelerate', cadence: 0.941, telegraphMs: 721, speedMultiplier: 1.1, damageMultiplier: 1.14, speedVariance: [0.86, 0.98, 1.1, 1.22, 1.3] },
+		enem4: { combatIdentity: "Нить и рывок", combatTrick: "в конце полёта атаки резко ускоряются; порядок прилёта не совпадает с порядком появления", signatureEvery: 4, movementStyle: 'lateRush', cadence: 0.841, telegraphMs: 585, speedMultiplier: 1.18, damageMultiplier: 1.12, speedVariance: [0.9, 1.02, 1.14, 1.26, 1.34] },
+		enem5: { combatIdentity: "Обруч и увод", combatTrick: "атаки уходят к центру по пути; серии из четырёх-пяти ударов идут с одного края и центра", signatureEvery: 4, movementStyle: 'drift', cadence: 0.721, telegraphMs: 621, speedMultiplier: 1.2, damageMultiplier: 1.22, speedVariance: [0.74, 0.9, 1.08, 1.26, 1.38] }
 	}
 };
 
@@ -305,55 +305,55 @@ const mBossDelayAb = [
 	{ boss: 'enem2', bossDelayAb: 239, bossDelayAbDop: 5601, firstWaveDelayMs: 2400 }, // 
 	{ boss: 'enem3', bossDelayAb: 261, bossDelayAbDop: 5200, firstWaveDelayMs: 2400 }, // 
 	{ boss: 'enem4', bossDelayAb: 310, bossDelayAbDop: 5800, firstWaveDelayMs: 2400 }, // 
-	{ boss: 'enem5', bossDelayAb: 251, bossDelayAbDop: 5099, firstWaveDelayMs: 2400 }, // 
+	{ boss: 'enem5', bossDelayAb: 251, bossDelayAbDop: 7300, firstWaveDelayMs: 2400 }, // 
 ];
 
 // Способности: основной архетип / дно / быстрые / микс (~7 сетов)
 const bossAbilitiesDop = [
 	// Молотобой
-	{ boss: 'enem1', indexAbilities: [0, 1], shotGapsMs: [250], openingOrder: 0 },
-	{ boss: 'enem1', indexAbilities: [2, 3, 4, 5] },
-	{ boss: 'enem1', indexAbilities: [6, 7, 8] },
-	{ boss: 'enem1', indexAbilities: [9, 10, 11, 12] },
-	{ boss: 'enem1', indexAbilities: [13, 14, 15, 16], signature: true, minPhase: 1, recoveryMs: 650, openingOrder: 1, label: "Удар и искры — знакомство" },
-	{ boss: 'enem1', indexAbilities: [17, 18, 19], signature: true, minPhase: 2, recoveryMs: 650, label: "Удар и искры — иной конец" },
-	{ boss: 'enem1', indexAbilities: [20, 21, 22, 23], signature: true, minPhase: 3, recoveryMs: 950, label: "Удар и искры — завершение" },
+	{ boss: 'enem1', indexAbilities: [0, 1], shotGapsMs: [250], openingOrder: 0, label: "Слева и в центр" },
+	{ boss: 'enem1', indexAbilities: [2, 3, 4, 5], label: "Слева, справа, слева и справа" },
+	{ boss: 'enem1', indexAbilities: [6, 7, 8], label: "Дважды слева и в центр" },
+	{ boss: 'enem1', indexAbilities: [9, 10, 11, 12], label: "Справа, в центр, справа и в центр" },
+	{ boss: 'enem1', indexAbilities: [13, 14, 15, 16], signature: true, minPhase: 1, recoveryMs: 650, openingOrder: 1, label: "Слева, в центр, слева и в центр" },
+	{ boss: 'enem1', indexAbilities: [17, 18, 19], signature: true, minPhase: 2, recoveryMs: 650, label: "Дважды справа и в центр" },
+	{ boss: 'enem1', indexAbilities: [20, 21, 22, 23], signature: true, minPhase: 3, recoveryMs: 950, label: "В центр, слева, в центр и слева" },
 
 	// Пильщик
-	{ boss: 'enem2', indexAbilities: [0, 1, 2, 3, 4], shotGapsMs: [0, 250, 400, 0] },
-	{ boss: 'enem2', indexAbilities: [5, 6, 7, 8], shotGapsMs: [250, 250, 400] },
-	{ boss: 'enem2', indexAbilities: [9, 10, 11, 12], shotGapsMs: [0, 850, 0] },
-	{ boss: 'enem2', indexAbilities: [13, 14], shotGapsMs: [250], openingOrder: 0 },
-	{ boss: 'enem2', indexAbilities: [15, 16, 17], signature: true, minPhase: 1, recoveryMs: 650, shotGapsMs: [0, 0], openingOrder: 1, label: "Пропил и обратный ход — знакомство" },
-	{ boss: 'enem2', indexAbilities: [18, 19, 20], signature: true, minPhase: 2, recoveryMs: 650, shotGapsMs: [250, 250], label: "Пропил и обратный ход — иной конец" },
-	{ boss: 'enem2', indexAbilities: [21, 22, 23, 24], signature: true, minPhase: 3, recoveryMs: 950, shotGapsMs: [0, 0, 550], label: "Пропил и обратный ход — завершение" },
+	{ boss: 'enem2', indexAbilities: [0, 1, 2, 3, 4], shotGapsMs: [0, 250, 400, 0], label: "Слева, в центр, слева, в центр и слева" },
+	{ boss: 'enem2', indexAbilities: [5, 6, 7, 8], shotGapsMs: [250, 250, 400], label: "Справа, в центр и дважды справа" },
+	{ boss: 'enem2', indexAbilities: [9, 10, 11, 12], shotGapsMs: [0, 850, 0], label: "Слева, медленный справа, слева и медленный справа" },
+	{ boss: 'enem2', indexAbilities: [13, 14], shotGapsMs: [250], openingOrder: 0, label: "В центр и справа" },
+	{ boss: 'enem2', indexAbilities: [15, 16, 17], signature: true, minPhase: 1, recoveryMs: 650, shotGapsMs: [0, 0], openingOrder: 1, label: "Два в центр и слева" },
+	{ boss: 'enem2', indexAbilities: [18, 19, 20], signature: true, minPhase: 2, recoveryMs: 650, shotGapsMs: [250, 250], label: "Справа, в центр и справа" },
+	{ boss: 'enem2', indexAbilities: [21, 22, 23, 24], signature: true, minPhase: 3, recoveryMs: 950, shotGapsMs: [0, 0, 550], label: "Слева, два в центр и слева" },
 
 	// Горшечник
-	{ boss: 'enem3', indexAbilities: [0, 1, 2] },
-	{ boss: 'enem3', indexAbilities: [3, 4, 5, 6], shotGapsMs: [0, 400, 0] },
-	{ boss: 'enem3', indexAbilities: [7, 8, 9] },
-	{ boss: 'enem3', indexAbilities: [10, 11, 12], openingOrder: 0 },
-	{ boss: 'enem3', indexAbilities: [13, 14, 15, 16], signature: true, minPhase: 1, recoveryMs: 650, shotGapsMs: [0, 0, 250], openingOrder: 1, label: "Осколки горшка — знакомство" },
-	{ boss: 'enem3', indexAbilities: [17, 18, 19, 20], signature: true, minPhase: 2, recoveryMs: 650, shotGapsMs: [550, 0, 0], label: "Осколки горшка — иной конец" },
-	{ boss: 'enem3', indexAbilities: [21, 22, 23], signature: true, minPhase: 3, recoveryMs: 950, shotGapsMs: [0, 400], label: "Осколки горшка — завершение" },
+	{ boss: 'enem3', indexAbilities: [0, 1, 2], label: "Слева, в центр и слева" },
+	{ boss: 'enem3', indexAbilities: [3, 4, 5, 6], shotGapsMs: [0, 400, 0], label: "Справа, два в центр и справа" },
+	{ boss: 'enem3', indexAbilities: [7, 8, 9], label: "Справа, в центр и справа" },
+	{ boss: 'enem3', indexAbilities: [10, 11, 12], openingOrder: 0, label: "Слева, в центр и медленный справа" },
+	{ boss: 'enem3', indexAbilities: [13, 14, 15, 16], signature: true, minPhase: 1, recoveryMs: 650, shotGapsMs: [0, 0, 250], openingOrder: 1, label: "Слева, в центр, слева и в центр" },
+	{ boss: 'enem3', indexAbilities: [17, 18, 19, 20], signature: true, minPhase: 2, recoveryMs: 650, shotGapsMs: [550, 0, 0], label: "Слева, два в центр и справа" },
+	{ boss: 'enem3', indexAbilities: [21, 22, 23], signature: true, minPhase: 3, recoveryMs: 950, shotGapsMs: [0, 400], label: "Справа и два в центр" },
 
 	// Ниточник
-	{ boss: 'enem4', indexAbilities: [0, 1, 2], shotGapsMs: [0, 0] },
-	{ boss: 'enem4', indexAbilities: [3, 4, 5], openingOrder: 0 },
-	{ boss: 'enem4', indexAbilities: [6, 7, 8], shotGapsMs: [250, 250] },
-	{ boss: 'enem4', indexAbilities: [9, 10, 11], shotGapsMs: [900, 350] },
-	{ boss: 'enem4', indexAbilities: [12, 13, 14, 15], signature: true, minPhase: 1, recoveryMs: 650, shotGapsMs: [0, 250, 0], openingOrder: 1, label: "Переплетение нити — знакомство" },
-	{ boss: 'enem4', indexAbilities: [16, 17, 18, 19], signature: true, minPhase: 2, recoveryMs: 650, shotGapsMs: [0, 0, 0], label: "Переплетение нити — иной конец" },
-	{ boss: 'enem4', indexAbilities: [20, 21, 22, 23], signature: true, minPhase: 3, recoveryMs: 950, shotGapsMs: [250, 0, 250], label: "Переплетение нити — завершение" },
+	{ boss: 'enem4', indexAbilities: [0, 1, 2], shotGapsMs: [0, 0], label: "В центр и дважды слева" },
+	{ boss: 'enem4', indexAbilities: [3, 4, 5], openingOrder: 0, label: "В центр, слева и медленный справа" },
+	{ boss: 'enem4', indexAbilities: [6, 7, 8], shotGapsMs: [250, 250], label: "Справа и два в центр" },
+	{ boss: 'enem4', indexAbilities: [9, 10, 11], shotGapsMs: [900, 350], label: "Медленный справа, слева и в центр" },
+	{ boss: 'enem4', indexAbilities: [12, 13, 14, 15], signature: true, minPhase: 1, recoveryMs: 650, shotGapsMs: [0, 250, 0], openingOrder: 1, label: "Слева, в центр и дважды слева" },
+	{ boss: 'enem4', indexAbilities: [16, 17, 18, 19], signature: true, minPhase: 2, recoveryMs: 650, shotGapsMs: [0, 0, 0], label: "В центр, справа, в центр и справа" },
+	{ boss: 'enem4', indexAbilities: [20, 21, 22, 23], signature: true, minPhase: 3, recoveryMs: 950, shotGapsMs: [250, 0, 250], label: "В центр, справа и два в центр" },
 
 	// Обручник
-	{ boss: 'enem5', indexAbilities: [0, 1, 2], shotGapsMs: [0, 250] },
-	{ boss: 'enem5', indexAbilities: [3, 4, 5, 6], shotGapsMs: [0, 0, 550] },
-	{ boss: 'enem5', indexAbilities: [7, 8, 9], shotGapsMs: [400, 400] },
-	{ boss: 'enem5', indexAbilities: [10, 11, 12, 13], shotGapsMs: [550, 0, 0], openingOrder: 0 },
-	{ boss: 'enem5', indexAbilities: [14, 15, 16], signature: true, minPhase: 1, recoveryMs: 650, shotGapsMs: [250, 0], openingOrder: 1, label: "Замыкание обруча — знакомство" },
-	{ boss: 'enem5', indexAbilities: [17, 18, 19, 20], signature: true, minPhase: 2, recoveryMs: 650, shotGapsMs: [0, 250, 400], label: "Замыкание обруча — иной конец" },
-	{ boss: 'enem5', indexAbilities: [21, 22, 23, 24], signature: true, minPhase: 3, recoveryMs: 950, shotGapsMs: [0, 250, 550], label: "Замыкание обруча — завершение" },
+	{ boss: 'enem5', indexAbilities: [0, 1, 2], shotGapsMs: [0, 250], label: "В центр, слева и в центр" },
+	{ boss: 'enem5', indexAbilities: [3, 4, 5, 6], shotGapsMs: [0, 0, 550], label: "В центр, дважды справа и в центр" },
+	{ boss: 'enem5', indexAbilities: [7, 8, 9], shotGapsMs: [400, 400], label: "Слева, в центр и справа" },
+	{ boss: 'enem5', indexAbilities: [10, 11, 12, 13], shotGapsMs: [550, 0, 0], openingOrder: 0, label: "Трижды справа и в центр" },
+	{ boss: 'enem5', indexAbilities: [14, 15, 16], signature: true, minPhase: 1, recoveryMs: 650, shotGapsMs: [250, 0], openingOrder: 1, label: "Слева и два в центр" },
+	{ boss: 'enem5', indexAbilities: [17, 18, 19, 20], signature: true, minPhase: 2, recoveryMs: 650, shotGapsMs: [0, 250, 400], label: "В центр, дважды слева и в центр" },
+	{ boss: 'enem5', indexAbilities: [21, 22, 23, 24], signature: true, minPhase: 3, recoveryMs: 950, shotGapsMs: [0, 250, 550], label: "Два в центр и дважды слева" },
 
 ];
 

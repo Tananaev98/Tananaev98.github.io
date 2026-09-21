@@ -9,7 +9,7 @@ const bossCombatConfig = {
 	defaultRecoveryMs: 180,
 	selection: {historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35},
 	movementStyles: {accelerate: {start: 0.72, gain: 0.9}, lateRush: {switchAt: 0.55, early: 0.72, late: 1.48}, pause: {at: 0.42, durationMs: 420, after: 1.22}, weave: {frequency: 1.35, amplitude: 5.5}, drift: {shift: 10}},
-	levelCadence: 0.79, damageMultiplier: 0.629, minWaveDelay: 3100, minShotDelay: 145, minTelegraphMs: 480,
+	levelCadence: 0.79, damageMultiplier: 0.629, minWaveDelay: 2701, minShotDelay: 145, minTelegraphMs: 480,
 	phases: [
 		{ phase: 1, minHp: 0.658, cadence: 0.998, speed: 0.999, damage: 1, telegraphMultiplier: 0.997, surpriseChance: 0.119, maxActiveAttacks: 15 },
 		{ phase: 2, minHp: 0.308, cadence: 0.779, speed: 1.121, damage: 1.14, telegraphMultiplier: 0.899, surpriseChance: 0.229, maxActiveAttacks: 19 },

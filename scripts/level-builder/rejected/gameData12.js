@@ -313,7 +313,7 @@ const mBossDelayAb = [
 	{ boss: 'enem2', bossDelayAb: 261, bossDelayAbDop: 5400, firstWaveDelayMs: 2400 }, // 
 	{ boss: 'enem3', bossDelayAb: 321, bossDelayAbDop: 5800, firstWaveDelayMs: 2400 }, // 
 	{ boss: 'enem4', bossDelayAb: 281, bossDelayAbDop: 5201, firstWaveDelayMs: 2400 }, // 
-	{ boss: 'enem5', bossDelayAb: 212, bossDelayAbDop: 8300, firstWaveDelayMs: 2304 }, // 
+	{ boss: 'enem5', bossDelayAb: 212, bossDelayAbDop: 6600, firstWaveDelayMs: 2304 }, // 
 ];
 
 // Способности: основной архетип / дно / быстрые / микс (~7 сетов)

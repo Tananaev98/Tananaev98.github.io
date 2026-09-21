@@ -1,0 +1,433 @@
+let lvlNumber = 20;
+let factorChar = (lvlNumber * 5) / 100;
+
+// Уровень 20 — «Сердце полей», область II «Золотые поля».
+// Пять архетипов: колючие удары с одного бока за раз / симметричные вспышки
+// улыбки с флангов / редкие горькие уколы с долгой паузой / давление снизу
+// вспугнутого перепела / финал смешивает почерк всех четверых и впервые
+// перекрывает всю нижнюю полосу разом.
+const bossCombatConfig = {
+	waveJitter: { min: 0.88, max: 1.12 },
+	busyRetryMs: 180,
+	defaultRecoveryMs: 180,
+	selection: { historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35 },
+	movementStyles: { accelerate: { start: 0.72, gain: 0.9 }, lateRush: { switchAt: 0.55, early: 0.72, late: 1.48 }, pause: { at: 0.42, durationMs: 420, after: 1.22 }, weave: { frequency: 1.35, amplitude: 5.5 }, drift: { shift: 10 } },
+	levelCadence: 0.87, damageMultiplier: 1.656, minWaveDelay: 2060, minShotDelay: 146, minTelegraphMs: 535,
+	phases: [
+		{ phase: 1, minHp: 0.65, cadence: 1.00, speed: 1.00, damage: 1.00, telegraphMultiplier: 1.00, surpriseChance: 0.15, maxActiveAttacks: 15 },
+		{ phase: 2, minHp: 0.30, cadence: 0.82, speed: 1.11, damage: 1.16, telegraphMultiplier: 0.89, surpriseChance: 0.26, maxActiveAttacks: 17 },
+		{ phase: 3, minHp: 0.00, cadence: 0.69, speed: 1.20, damage: 1.28, telegraphMultiplier: 0.82, surpriseChance: 0.36, maxActiveAttacks: 20 }
+	],
+	bosses: {
+		enem1: { combatIdentity: "Колючий обмах василька", combatTrick: "ведёт прицел вдоль прохода, затем возвращает угрозу за спину прохода", signatureEvery: 4, movementStyle: 'drift',   cadence: 1.02, telegraphMs: 800, speedMultiplier: 0.96, damageMultiplier: 0.95, speedVariance: [0.86, 0.94, 1.02, 1.10, 1.18] }, // КОЛЮЧЕНЬ: колючие удары с одного бока за раз
+		enem2: { combatIdentity: "Лепестки и зубы", combatTrick: "разводит две цели, затем закрывает оставленную между ними полосу", signatureEvery: 4, movementStyle: 'straight',      cadence: 0.90, telegraphMs: 740, speedMultiplier: 1.06, damageMultiplier: 0.90, speedVariance: [0.85, 0.95, 1.05, 1.15, 1.25] }, // БЕЛОЗУБКА: симметричные вспышки улыбки с флангов
+		enem3: { combatIdentity: "Горький сок", combatTrick: "медленный первый снаряд остаётся фоном для более срочного второго", signatureEvery: 4, movementStyle: 'accelerate',      cadence: 1.18, telegraphMs: 970, speedMultiplier: 0.85, damageMultiplier: 1.17, speedVariance: [0.76, 0.86, 0.98, 1.10, 1.22] }, // ГОРЧАК: редкие горькие уколы, долгая пауза
+		enem4: { combatIdentity: "Вспугнутый перепел", combatTrick: "двойной выпад иногда получает третий укус с другой стороны", signatureEvery: 4, movementStyle: 'lateRush',   cadence: 0.79, telegraphMs: 620, speedMultiplier: 1.16, damageMultiplier: 0.68, speedVariance: [0.89, 1.02, 1.15, 1.28, 1.41] }, // КЛОХТУН: давление снизу вспугнутого перепела
+		enem5: { combatIdentity: "Полевой круг с разрывом", combatTrick: "показывает боковой замах, но заканчивает серединой; позднее конец возвращается на край", signatureEvery: 4, movementStyle: 'pause', cadence: 0.74, telegraphMs: 630, speedMultiplier: 1.13, damageMultiplier: 1.08, speedVariance: [0.83, 0.96, 1.09, 1.22, 1.35] }  // ПОЛЕВИК: хозяин поля выжидает дольше всех — и обрушивает разом то, что остальные четверо делали по одному
+	}
+};
+
+const ENEMY_TYPES = {
+
+	enem11: {
+        image: 'images/enemies/regions/2_zolot_polya/lvl20/11.webp',
+        baseHP: 100,
+        baseSpeed: 0.020,
+        baseDamage: 20,
+        spawnWeight: 5,
+		baseExp: 0,
+        size: '6%'
+    },
+
+	enem22: {
+        image: 'images/enemies/regions/2_zolot_polya/lvl20/22.webp',
+        baseHP: 100,
+        baseSpeed: 0.020,
+        baseDamage: 20,
+        spawnWeight: 5,
+		baseExp: 0,
+        size: '6%'
+    },
+
+	enem33: {
+        image: 'images/enemies/regions/2_zolot_polya/lvl20/33.webp',
+        baseHP: 100,
+        baseSpeed: 0.020,
+        baseDamage: 20,
+        spawnWeight: 5,
+		baseExp: 0,
+        size: '6%'
+    },
+
+	enem44: {
+        image: 'images/enemies/regions/2_zolot_polya/lvl20/44.webp',
+        baseHP: 100,
+        baseSpeed: 0.020,
+        baseDamage: 20,
+        spawnWeight: 5,
+		baseExp: 0,
+        size: '6%'
+    },
+
+	enem55: {
+        image: 'images/enemies/regions/2_zolot_polya/lvl20/55.webp',
+        baseHP: 100,
+        baseSpeed: 0.020,
+        baseDamage: 20,
+        spawnWeight: 5,
+		baseExp: 0,
+        size: '6%'
+    },
+
+	enem1: {
+		name: 'enem1',
+		dispName: 'Колючень',
+		image: 'images/enemies/regions/2_zolot_polya/lvl20/1.webp',
+		baseHP: 2600 + (2600 * factorChar),
+		baseSpeed: 0,
+		baseDamage: 20 + (20 * factorChar),
+		spawnWeight: 5,
+		baseExp: 200,
+		xPos: 50,
+		size: '26%',
+        deathAnimation: { preset: 'dissolveRise', durationMs: 1400 }
+	},
+
+	enem2: {
+		name: 'enem2',
+		dispName: 'Белозубка',
+		image: 'images/enemies/regions/2_zolot_polya/lvl20/2.webp',
+		baseHP: 6500 + (6500 * factorChar),
+		baseSpeed: 0,
+		baseDamage: 22 + (22 * factorChar),
+		spawnWeight: 15,
+		baseExp: 320,
+		xPos: 50,
+		size: '26%',
+        deathAnimation: { preset: 'ashFade', durationMs: 1250 }
+	},
+
+	enem3: {
+		name: 'enem3',
+		dispName: 'Горчак',
+		image: 'images/enemies/regions/2_zolot_polya/lvl20/3.webp',
+		baseHP: 11500 + (11500 * factorChar),
+		baseSpeed: 0,
+		baseDamage: 24 + (24 * factorChar),
+		spawnWeight: 20,
+		baseExp: 430,
+		xPos: 50,
+		size: '26%',
+        deathAnimation: { preset: 'crumbleShake', durationMs: 1400 }
+	},
+
+	enem4: {
+		name: 'enem4',
+		dispName: 'Клохтун',
+		image: 'images/enemies/regions/2_zolot_polya/lvl20/4.webp',
+		baseHP: 18500 + (18500 * factorChar),
+		baseSpeed: 0,
+		baseDamage: 26 + (26 * factorChar),
+		spawnWeight: 10,
+		baseExp: 560,
+		xPos: 50,
+		size: '26%',
+        deathAnimation: { preset: 'spinAway', durationMs: 1300 }
+	},
+
+	enem5: {
+		name: 'enem5',
+		dispName: 'Полевик',
+		image: 'images/enemies/regions/2_zolot_polya/lvl20/5.webp',
+		baseHP: 28000 + (28000 * factorChar),
+		baseSpeed: 0,
+		baseDamage: 28 + (28 * factorChar),
+		spawnWeight: 5,
+		baseExp: 0,
+		xPos: 50,
+		size: '30%',
+        deathAnimation: { preset: 'heavySink', durationMs: 1550 }
+	}
+};
+
+const attackDamage = {
+	enem1: {
+		light: Math.round(ENEMY_TYPES.enem1.baseDamage * 0.34),
+		medium: Math.round(ENEMY_TYPES.enem1.baseDamage * 0.46),
+		heavy: Math.round(ENEMY_TYPES.enem1.baseDamage * 0.58)
+	},
+	enem2: {
+		light: Math.round(ENEMY_TYPES.enem2.baseDamage * 0.28),
+		medium: Math.round(ENEMY_TYPES.enem2.baseDamage * 0.38),
+		heavy: Math.round(ENEMY_TYPES.enem2.baseDamage * 0.50)
+	},
+	enem3: {
+		light: Math.round(ENEMY_TYPES.enem3.baseDamage * 0.30),
+		medium: Math.round(ENEMY_TYPES.enem3.baseDamage * 0.40),
+		heavy: Math.round(ENEMY_TYPES.enem3.baseDamage * 0.48)
+	},
+	enem4: {
+		light: Math.round(ENEMY_TYPES.enem4.baseDamage * 0.24),
+		medium: Math.round(ENEMY_TYPES.enem4.baseDamage * 0.33),
+		heavy: Math.round(ENEMY_TYPES.enem4.baseDamage * 0.42)
+	},
+	enem5: {
+		light: Math.round(ENEMY_TYPES.enem5.baseDamage * 0.26),
+		medium: Math.round(ENEMY_TYPES.enem5.baseDamage * 0.36),
+		heavy: Math.round(ENEMY_TYPES.enem5.baseDamage * 0.62)
+	}
+};
+
+let bossM = ['enem1', 'enem2', 'enem3', 'enem4', 'enem5'];
+let timeNextBoss = 5;
+const bossInterval = 5;
+
+const bossAbilities = [
+	// ===== Колючень: колючие удары строго с одного бока за раз =====
+	{ boss: 'enem1', type: 'enem11', xPos: 18, yPos: 44, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 5 },  //0
+	{ boss: 'enem1', type: 'enem11', xPos: 22, yPos: 36, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 8 },  //1
+	{ boss: 'enem1', type: 'enem11', xPos: 16, yPos: 26, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 11 }, //2
+	{ boss: 'enem1', type: 'enem11', xPos: 24, yPos: 16, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 14 }, //3
+	{ boss: 'enem1', type: 'enem11', xPos: 18, yPos: 10, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 17 }, //4
+	{ boss: 'enem1', type: 'enem11', xPos: 22, yPos: 6,  customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 23 }, //5
+	{ boss: 'enem1', type: 'enem11', xPos: 82, yPos: 44, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 5 },  //6
+	{ boss: 'enem1', type: 'enem11', xPos: 78, yPos: 36, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 8 },  //7
+	{ boss: 'enem1', type: 'enem11', xPos: 84, yPos: 26, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 11 }, //8
+	{ boss: 'enem1', type: 'enem11', xPos: 76, yPos: 16, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 14 }, //9
+	{ boss: 'enem1', type: 'enem11', xPos: 82, yPos: 10, customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 17 }, //10
+	{ boss: 'enem1', type: 'enem11', xPos: 78, yPos: 6,  customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 24 }, //11
+	{ boss: 'enem1', type: 'enem11', xPos: 50, yPos: 46, customHP: 1, customDamage: attackDamage.enem1.heavy,  customSpeed: 4 },  //12 редкий тяжёлый шип из центра
+	{ boss: 'enem1', type: 'enem11', xPos: 50, yPos: 8,  customHP: 1, customDamage: attackDamage.enem1.light,  customSpeed: 21 }, //13
+	{ boss: 'enem1', type: 'enem11', xPos: 40, yPos: 30, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 10 }, //14
+	{ boss: 'enem1', type: 'enem11', xPos: 60, yPos: 30, customHP: 1, customDamage: attackDamage.enem1.medium, customSpeed: 10 }, //15
+
+	// ===== Белозубка: симметричные вспышки улыбки с флангов =====
+	{ boss: 'enem2', type: 'enem22', xPos: 25, yPos: 38, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 9 },  //0
+	{ boss: 'enem2', type: 'enem22', xPos: 75, yPos: 38, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 9 },  //1
+	{ boss: 'enem2', type: 'enem22', xPos: 20, yPos: 26, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 13 }, //2
+	{ boss: 'enem2', type: 'enem22', xPos: 80, yPos: 26, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 13 }, //3
+	{ boss: 'enem2', type: 'enem22', xPos: 30, yPos: 11, customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 18 }, //4
+	{ boss: 'enem2', type: 'enem22', xPos: 70, yPos: 11, customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 18 }, //5
+	{ boss: 'enem2', type: 'enem22', xPos: 15, yPos: 48, customHP: 1, customDamage: attackDamage.enem2.heavy,  customSpeed: 5 },  //6
+	{ boss: 'enem2', type: 'enem22', xPos: 85, yPos: 48, customHP: 1, customDamage: attackDamage.enem2.heavy,  customSpeed: 5 },  //7
+	{ boss: 'enem2', type: 'enem22', xPos: 50, yPos: 44, customHP: 1, customDamage: attackDamage.enem2.heavy,  customSpeed: 6 },  //8
+	{ boss: 'enem2', type: 'enem22', xPos: 50, yPos: 6,  customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 25 }, //9
+	{ boss: 'enem2', type: 'enem22', xPos: 40, yPos: 33, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 11 }, //10
+	{ boss: 'enem2', type: 'enem22', xPos: 60, yPos: 33, customHP: 1, customDamage: attackDamage.enem2.medium, customSpeed: 11 }, //11
+	{ boss: 'enem2', type: 'enem22', xPos: 35, yPos: 19, customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 15 }, //12
+	{ boss: 'enem2', type: 'enem22', xPos: 65, yPos: 19, customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 15 }, //13
+	{ boss: 'enem2', type: 'enem22', xPos: 50, yPos: 48, customHP: 1, customDamage: attackDamage.enem2.heavy,  customSpeed: 4 },  //14
+	{ boss: 'enem2', type: 'enem22', xPos: 45, yPos: 8,  customHP: 1, customDamage: attackDamage.enem2.light,  customSpeed: 22 }, //15
+
+	// ===== Горчак: редкие горькие уколы, долгая пауза между ними =====
+	{ boss: 'enem3', type: 'enem33', xPos: 20, yPos: 50, customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 4 },  //0
+	{ boss: 'enem3', type: 'enem33', xPos: 80, yPos: 50, customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 4 },  //1
+	{ boss: 'enem3', type: 'enem33', xPos: 35, yPos: 47, customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 5 },  //2
+	{ boss: 'enem3', type: 'enem33', xPos: 65, yPos: 47, customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 5 },  //3
+	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 44, customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 6 },  //4
+	{ boss: 'enem3', type: 'enem33', xPos: 15, yPos: 30, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 8 },  //5
+	{ boss: 'enem3', type: 'enem33', xPos: 85, yPos: 30, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 8 },  //6
+	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 22, customHP: 1, customDamage: attackDamage.enem3.medium, customSpeed: 12 }, //7
+	{ boss: 'enem3', type: 'enem33', xPos: 30, yPos: 12, customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 16 }, //8
+	{ boss: 'enem3', type: 'enem33', xPos: 70, yPos: 11, customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 17 }, //9
+	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 8,  customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 20 }, //10
+	{ boss: 'enem3', type: 'enem33', xPos: 40, yPos: 6,  customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 22 }, //11
+	{ boss: 'enem3', type: 'enem33', xPos: 60, yPos: 5,  customHP: 1, customDamage: attackDamage.enem3.light,  customSpeed: 23 }, //12
+	{ boss: 'enem3', type: 'enem33', xPos: 10, yPos: 48, customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 3 },  //13
+	{ boss: 'enem3', type: 'enem33', xPos: 90, yPos: 48, customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 4 },  //14
+	{ boss: 'enem3', type: 'enem33', xPos: 50, yPos: 34, customHP: 1, customDamage: attackDamage.enem3.heavy,  customSpeed: 9 },  //15
+
+	// ===== Клохтун: давление снизу вспугнутого перепела =====
+	{ boss: 'enem4', type: 'enem44', xPos: 20, yPos: 50, customHP: 1, customDamage: attackDamage.enem4.heavy,  customSpeed: 4 },  //0
+	{ boss: 'enem4', type: 'enem44', xPos: 80, yPos: 50, customHP: 1, customDamage: attackDamage.enem4.heavy,  customSpeed: 4 },  //1
+	{ boss: 'enem4', type: 'enem44', xPos: 35, yPos: 48, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 5 },  //2
+	{ boss: 'enem4', type: 'enem44', xPos: 65, yPos: 48, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 5 },  //3
+	{ boss: 'enem4', type: 'enem44', xPos: 50, yPos: 46, customHP: 1, customDamage: attackDamage.enem4.heavy,  customSpeed: 6 },  //4
+	{ boss: 'enem4', type: 'enem44', xPos: 15, yPos: 44, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 7 },  //5
+	{ boss: 'enem4', type: 'enem44', xPos: 85, yPos: 44, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 7 },  //6
+	{ boss: 'enem4', type: 'enem44', xPos: 50, yPos: 40, customHP: 1, customDamage: attackDamage.enem4.heavy,  customSpeed: 8 },  //7
+	{ boss: 'enem4', type: 'enem44', xPos: 28, yPos: 36, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 9 },  //8
+	{ boss: 'enem4', type: 'enem44', xPos: 72, yPos: 36, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 9 },  //9
+	{ boss: 'enem4', type: 'enem44', xPos: 50, yPos: 26, customHP: 1, customDamage: attackDamage.enem4.medium, customSpeed: 13 }, //10
+	{ boss: 'enem4', type: 'enem44', xPos: 30, yPos: 20, customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 15 }, //11
+	{ boss: 'enem4', type: 'enem44', xPos: 70, yPos: 20, customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 15 }, //12
+	{ boss: 'enem4', type: 'enem44', xPos: 50, yPos: 11, customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 17 }, //13
+	{ boss: 'enem4', type: 'enem44', xPos: 40, yPos: 8,  customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 21 }, //14
+	{ boss: 'enem4', type: 'enem44', xPos: 60, yPos: 7,  customHP: 1, customDamage: attackDamage.enem4.light,  customSpeed: 22 }, //15
+
+	// ===== Полевик: смешивает почерк всех четверых, впервые перекрывает низ разом =====
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 40, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 7 },  //0
+	{ boss: 'enem5', type: 'enem55', xPos: 25, yPos: 30, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 10 }, //1
+	{ boss: 'enem5', type: 'enem55', xPos: 75, yPos: 30, customHP: 1, customDamage: attackDamage.enem5.medium, customSpeed: 10 }, //2
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 22, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 13 }, //3
+	{ boss: 'enem5', type: 'enem55', xPos: 20, yPos: 9,  customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 20 }, //4
+	{ boss: 'enem5', type: 'enem55', xPos: 80, yPos: 8,  customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 21 }, //5
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 5,  customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 25 }, //6
+	{ boss: 'enem5', type: 'enem55', xPos: 35, yPos: 16, customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 17 }, //7
+	{ boss: 'enem5', type: 'enem55', xPos: 65, yPos: 15, customHP: 1, customDamage: attackDamage.enem5.light,  customSpeed: 17 }, //8
+	{ boss: 'enem5', type: 'enem55', xPos: 11, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //9
+	{ boss: 'enem5', type: 'enem55', xPos: 30, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //10
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //11
+	{ boss: 'enem5', type: 'enem55', xPos: 69, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //12
+	{ boss: 'enem5', type: 'enem55', xPos: 89, yPos: 48, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 4 },  //13
+	{ boss: 'enem5', type: 'enem55', xPos: 50, yPos: 30, customHP: 1, customDamage: attackDamage.enem5.heavy,  customSpeed: 12 } //14
+,
+    // Приёмы из scripts/combat-designs.js; индексы считаются отдельно для каждого босса.
+    {boss: "enem1",type: "enem11",xPos: 16,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 16},
+    {boss: "enem1",type: "enem11",xPos: 36,yPos: 20,customHP: 1,customDamage: 14,customSpeed: 14},
+    {boss: "enem1",type: "enem11",xPos: 62,yPos: 6,customHP: 1,customDamage: 14,customSpeed: 21},
+    {boss: "enem1",type: "enem11",xPos: 16,yPos: 40,customHP: 1,customDamage: 14,customSpeed: 7},
+    {boss: "enem1",type: "enem11",xPos: 16,yPos: 8,customHP: 1,customDamage: 14,customSpeed: 20},
+    {boss: "enem1",type: "enem11",xPos: 86,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 18},
+    {boss: "enem2",type: "enem22",xPos: 22,yPos: 12,customHP: 1,customDamage: 12,customSpeed: 16},
+    {boss: "enem2",type: "enem22",xPos: 48,yPos: 20,customHP: 1,customDamage: 12,customSpeed: 14},
+    {boss: "enem2",type: "enem22",xPos: 80,yPos: 6,customHP: 1,customDamage: 12,customSpeed: 21},
+    {boss: "enem2",type: "enem22",xPos: 22,yPos: 40,customHP: 1,customDamage: 12,customSpeed: 7},
+    {boss: "enem2",type: "enem22",xPos: 22,yPos: 8,customHP: 1,customDamage: 12,customSpeed: 20},
+    {boss: "enem2",type: "enem22",xPos: 48,yPos: 12,customHP: 1,customDamage: 12,customSpeed: 18},
+    {boss: "enem3",type: "enem33",xPos: 84,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 16},
+    {boss: "enem3",type: "enem33",xPos: 24,yPos: 20,customHP: 1,customDamage: 14,customSpeed: 14},
+    {boss: "enem3",type: "enem33",xPos: 69,yPos: 6,customHP: 1,customDamage: 14,customSpeed: 21},
+    {boss: "enem3",type: "enem33",xPos: 84,yPos: 24,customHP: 1,customDamage: 14,customSpeed: 7},
+    {boss: "enem3",type: "enem33",xPos: 84,yPos: 8,customHP: 1,customDamage: 14,customSpeed: 20},
+    {boss: "enem3",type: "enem33",xPos: 38,yPos: 12,customHP: 1,customDamage: 14,customSpeed: 18},
+    {boss: "enem4",type: "enem44",xPos: 12,yPos: 12,customHP: 1,customDamage: 12,customSpeed: 16},
+    {boss: "enem4",type: "enem44",xPos: 22,yPos: 20,customHP: 1,customDamage: 12,customSpeed: 14},
+    {boss: "enem4",type: "enem44",xPos: 74,yPos: 6,customHP: 1,customDamage: 12,customSpeed: 21},
+    {boss: "enem4",type: "enem44",xPos: 12,yPos: 40,customHP: 1,customDamage: 12,customSpeed: 7},
+    {boss: "enem4",type: "enem44",xPos: 12,yPos: 8,customHP: 1,customDamage: 12,customSpeed: 20},
+    {boss: "enem4",type: "enem44",xPos: 86,yPos: 12,customHP: 1,customDamage: 12,customSpeed: 18},
+    {boss: "enem5",type: "enem55",xPos: 26,yPos: 12,customHP: 1,customDamage: 15,customSpeed: 16},
+    {boss: "enem5",type: "enem55",xPos: 40,yPos: 20,customHP: 1,customDamage: 15,customSpeed: 14},
+    {boss: "enem5",type: "enem55",xPos: 84,yPos: 6,customHP: 1,customDamage: 15,customSpeed: 21},
+    {boss: "enem5",type: "enem55",xPos: 26,yPos: 40,customHP: 1,customDamage: 15,customSpeed: 7},
+    {boss: "enem5",type: "enem55",xPos: 26,yPos: 8,customHP: 1,customDamage: 15,customSpeed: 20},
+    {boss: "enem5",type: "enem55",xPos: 54,yPos: 12,customHP: 1,customDamage: 15,customSpeed: 18}
+];
+
+const mBossDelayAb = [
+	{ boss: 'enem1', bossDelayAb: 400, bossDelayAbDop: 5522, firstWaveDelayMs: 2400 }, // редкие одноклонные удары, щедрая передышка
+	{ boss: 'enem2', bossDelayAb: 285, bossDelayAbDop: 4853, firstWaveDelayMs: 2329 }, // симметричные вспышки, смена ритма
+	{ boss: 'enem3', bossDelayAb: 450, bossDelayAbDop: 5865, firstWaveDelayMs: 2400 }, // редкие горькие уколы, самая долгая пауза
+	{ boss: 'enem4', bossDelayAb: 235, bossDelayAbDop: 5233, firstWaveDelayMs: 2400 }, // давление снизу, частые вспугивания
+	{ boss: 'enem5', bossDelayAb: 250, bossDelayAbDop: 4830, firstWaveDelayMs: 2318 }, // финал: плотнее всех, но честный
+];
+
+const bossAbilitiesDop = [
+    {boss: "enem1",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem1",indexAbilities: [6]},
+    {boss: "enem1",indexAbilities: [0,6]},
+    {boss: "enem1",indexAbilities: [1,2,3]},
+    {boss: "enem1",indexAbilities: [7,8,9]},
+    {boss: "enem1",indexAbilities: [16,17,18],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Колючий обмах василька — знакомство",openingOrder: 1},
+    {boss: "enem1",indexAbilities: [16,17,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Колючий обмах василька — иной конец"},
+    {boss: "enem1",indexAbilities: [21,18,17,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Колючий обмах василька — завершение"},
+    {boss: "enem2",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem2",indexAbilities: [1]},
+    {boss: "enem2",indexAbilities: [0,1]},
+    {boss: "enem2",indexAbilities: [2,3]},
+    {boss: "enem2",indexAbilities: [4,5]},
+    {boss: "enem2",indexAbilities: [16,18,21],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Лепестки и зубы — знакомство",openingOrder: 1},
+    {boss: "enem2",indexAbilities: [16,18,17],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Лепестки и зубы — иной конец"},
+    {boss: "enem2",indexAbilities: [20,18,21,17],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Лепестки и зубы — завершение"},
+    {boss: "enem3",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem3",indexAbilities: [1]},
+    {boss: "enem3",indexAbilities: [0,1]},
+    {boss: "enem3",indexAbilities: [2,3,4]},
+    {boss: "enem3",indexAbilities: [5,6,7]},
+    {boss: "enem3",indexAbilities: [19,18],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Горький сок — знакомство",openingOrder: 1},
+    {boss: "enem3",indexAbilities: [19,18,20],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Горький сок — иной конец"},
+    {boss: "enem3",indexAbilities: [19,21,18,20],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Горький сок — завершение"},
+    {boss: "enem4",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem4",indexAbilities: [1]},
+    {boss: "enem4",indexAbilities: [0,1]},
+    {boss: "enem4",indexAbilities: [2,3,4]},
+    {boss: "enem4",indexAbilities: [5,6,7]},
+    {boss: "enem4",indexAbilities: [16,20],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Вспугнутый перепел — знакомство",openingOrder: 1},
+    {boss: "enem4",indexAbilities: [16,20,18],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Вспугнутый перепел — иной конец"},
+    {boss: "enem4",indexAbilities: [21,17,21,18],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Вспугнутый перепел — завершение"},
+    {boss: "enem5",indexAbilities: [0],openingOrder: 0},
+    {boss: "enem5",indexAbilities: [3]},
+    {boss: "enem5",indexAbilities: [0,3]},
+    {boss: "enem5",indexAbilities: [1,2]},
+    {boss: "enem5",indexAbilities: [4,5]},
+    {boss: "enem5",indexAbilities: [15,16,20],signature: true,minPhase: 1,shotDelayMs: 360,recoveryMs: 650,label: "Полевой круг с разрывом — знакомство",openingOrder: 1},
+    {boss: "enem5",indexAbilities: [15,16,19],signature: true,minPhase: 2,shotDelayMs: 360,recoveryMs: 650,label: "Полевой круг с разрывом — иной конец"},
+    {boss: "enem5",indexAbilities: [17,20,16,19],signature: true,minPhase: 3,shotDelayMs: 360,recoveryMs: 950,label: "Полевой круг с разрывом — завершение"}
+];
+
+// Лорные названия связок. Уровень 20 — завершение полевой арки: Колючень (репейник),
+// Белозубка (землеройка), Горчак (полынь), Клохтун (вспугнутый перепел), Полевик
+// (хозяин поля, финал арки).
+const UPGRADE_VARIANT_NAMES = {
+    enem1: {
+        variant1: 'Колкий удар', variant2: 'Острая колючка', variant3: 'Колючая сила',
+        variant4: 'Шипастая защита', variant5: 'Укол сбоку', variant6: 'Сок колючки',
+        variant7: 'Колючая мощь', variant8: 'Плотные шипы', variant9: 'Односторонний укол',
+        variant10: 'Живучий Колючень', variant11: 'Цепкие шипы', variant12: 'Укол и в бурьян',
+        variant13: 'Толстые шипы', variant14: 'Неутомимый Колючень', variant15: 'Пружинистые колючки',
+        variant16: 'Меткий шип', variant17: 'Колючая хватка', variant18: 'Колкий взгляд',
+        variant19: 'Укол сбоку вмиг', variant20: 'Бурьянный дух', variant21: 'Стойкие шипы',
+        variant22: 'Юркий Колючень', variant23: 'Колючая стойкость', variant24: 'Чуткие шипы',
+        variant25: 'Ускользающий укол', variant26: 'Дикий укол', variant27: 'Мощь сока',
+        variant28: 'Внезапный укол сбоку', variant29: 'Каменные шипы', variant30: 'Разросшиеся шипы',
+        variant31: 'Колючий рывок', variant32: 'Живучие шипы', variant33: 'Бок укола вновь',
+        variant34: 'Колючая прыть', variant35: 'Колючая выносливость'
+    },
+    enem2: {
+        variant1: 'Улыбка-удар', variant2: 'Острый белый зуб', variant3: 'Зубастая сила',
+        variant4: 'Жёлтая лепестковая корона', variant5: 'Вспышка улыбки', variant6: 'Едкий укус',
+        variant7: 'Зубастая мощь', variant8: 'Плотные лепестки', variant9: 'Симметрия лепестков с флангов',
+        variant10: 'Живучая Белозубка', variant11: 'Цепкие зубки', variant12: 'Улыбка и в землю',
+        variant13: 'Толстый стебель', variant14: 'Неутомимая Белозубка', variant15: 'Пружинистый прыжок',
+        variant16: 'Меткий белый зуб', variant17: 'Зубастая хватка', variant18: 'Белозубая улыбка',
+        variant19: 'Мгновенная вспышка', variant20: 'Полевой цветочный дух', variant21: 'Стойкий стебель',
+        variant22: 'Юркая Белозубка', variant23: 'Зубастая стойкость', variant24: 'Чуткие корни',
+        variant25: 'Ускользающая улыбка', variant26: 'Дикая улыбка', variant27: 'Мощь укуса',
+        variant28: 'Вспышка с флангов вмиг', variant29: 'Каменные зубки', variant30: 'Разросшийся цветок',
+        variant31: 'Зубастый рывок', variant32: 'Живучий стебель', variant33: 'Неутомимая симметрия',
+        variant34: 'Зубастая прыть', variant35: 'Зубастая выносливость'
+    },
+    enem3: {
+        variant1: 'Горький укол', variant2: 'Острый горький шип', variant3: 'Горькая сила',
+        variant4: 'Полынная защита', variant5: 'Меткий горький укол', variant6: 'Едкая горечь',
+        variant7: 'Горькая мощь', variant8: 'Плотная полынь', variant9: 'Долгая пауза перед уколом',
+        variant10: 'Живучий Горчак', variant11: 'Горький шип-крюк', variant12: 'Укол и в полынь',
+        variant13: 'Толстая полынь', variant14: 'Неутомимый Горчак', variant15: 'Пружинистая полынь',
+        variant16: 'Меткая горечь', variant17: 'Горькая хватка', variant18: 'Горький взгляд',
+        variant19: 'Мгновенный горький укол', variant20: 'Полынный дух', variant21: 'Стойкая полынь',
+        variant22: 'Юркий Горчак', variant23: 'Горькая стойкость', variant24: 'Чуткая полынь',
+        variant25: 'Ускользающая горечь', variant26: 'Дикая горечь', variant27: 'Мощь полыни',
+        variant28: 'Внезапный горький укол', variant29: 'Каменная горечь', variant30: 'Разросшаяся полынь',
+        variant31: 'Горький рывок', variant32: 'Живучая полынь', variant33: 'Пауза-укол вновь',
+        variant34: 'Горькая прыть', variant35: 'Горькая выносливость'
+    },
+    enem4: {
+        variant1: 'Клохчущий удар', variant2: 'Клюв клохтуна', variant3: 'Клохчущая сила',
+        variant4: 'Пёстрое оперение', variant5: 'Давление снизу', variant6: 'Едкий клёкот',
+        variant7: 'Клохчущая мощь', variant8: 'Плотное оперение', variant9: 'Вспугнутый напор снизу',
+        variant10: 'Живучий Клохтун', variant11: 'Цепкий коготок', variant12: 'Клёкот и в траву',
+        variant13: 'Крепкое оперение', variant14: 'Неутомимый Клохтун', variant15: 'Взлёт вспугнутого',
+        variant16: 'Меткий клёкот', variant17: 'Клохчущая хватка', variant18: 'Испуганный взгляд',
+        variant19: 'Давление снизу вмиг', variant20: 'Травяной дух', variant21: 'Стойкое оперение',
+        variant22: 'Юркий Клохтун', variant23: 'Клохчущая стойкость', variant24: 'Чуткий клёкот',
+        variant25: 'Ускользающий в траву', variant26: 'Дикий клёкот', variant27: 'Мощь клюва',
+        variant28: 'Внезапное давление снизу', variant29: 'Каменное оперение', variant30: 'Разросшийся напор',
+        variant31: 'Клохчущий рывок', variant32: 'Живучее оперение', variant33: 'Напор снизу вновь',
+        variant34: 'Клохчущая прыть', variant35: 'Клохчущая выносливость'
+    },
+    enem5: {
+        variant1: 'Полевой удар', variant2: 'Колос-нож', variant3: 'Полевая сила',
+        variant4: 'Пшеничная защита', variant5: 'Удар хозяина поля', variant6: 'Горечь поля',
+        variant7: 'Полевая мощь', variant8: 'Плотная пшеница', variant9: 'Обрушение всего разом',
+        variant10: 'Живучий Полевик', variant11: 'Цепкие колосья', variant12: 'Удар и в поле целиком',
+        variant13: 'Толстая пшеница', variant14: 'Хозяин поля', variant15: 'Пружинистое ожидание',
+        variant16: 'Меткий колос', variant17: 'Полевая хватка', variant18: 'Взгляд хозяина',
+        variant19: 'Мгновенное обрушение', variant20: 'Хозяйский дух', variant21: 'Стойкая пшеница',
+        variant22: 'Юркий Полевик', variant23: 'Полевая стойкость', variant24: 'Чуткое поле',
+        variant25: 'Ускользающий в колосьях', variant26: 'Дикое поле', variant27: 'Мощь горечи',
+        variant28: 'Обрушение разом вмиг', variant29: 'Каменное поле', variant30: 'Разросшееся поле',
+        variant31: 'Полевой рывок', variant32: 'Живучая пшеница', variant33: 'Ожидание хозяина',
+        variant34: 'Полевая прыть', variant35: 'Полевая выносливость'
+    }
+};

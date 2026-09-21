@@ -1,7 +1,7 @@
 // УРОВЕНЬ 11 (v3) — форма комбо извлечена из прежней версии, времена подобраны refit.js под честную модель (А11). Правится вручную по А11.
 module.exports = {
     n: 11, timeNextBoss: 6, bossInterval: 4, tight: { p1: 500, floor: 170 },
-    cfg: { levelCadence: 0.82, minWaveDelay: 2260, minShotDelay: 146, minTelegraphMs: 490 },
+    cfg: { levelCadence: 0.82, minWaveDelay: 2710, minShotDelay: 146, minTelegraphMs: 490 },
     phases: [
         { minHp: 0.66, cadence: 1, speed: 0.99, telegraphMultiplier: 1, surpriseChance: 0.11, maxActiveAttacks: 14 },
         { minHp: 0.31, cadence: 0.79, speed: 1.1, telegraphMultiplier: 0.91, surpriseChance: 0.22, maxActiveAttacks: 18 },
@@ -9,7 +9,7 @@ module.exports = {
     ],
     bosses: {
         enem1: { title: 'Молотобой', identity: 'Удар и искры',
-            trick: 'две короткие группы разделены паузой; вторая группа меняет сторону',
+            trick: 'тяжёлые удары идут по прямой; позже брошенные искры быстрее и прилетают раньше медленных — порядок прилёта не совпадает с порядком появления',
             tight: { p1: 400, floor: 120 }, style: 'straight', cadence: 1.12, telegraphMs: 880, speedMultiplier: 0.94, signatureEvery: 4, delay: [280, 5400], firstWave: 2400,
             combos: [
                 { id: 'a', tight: false, open: 0, gaps: [250], beats: '10/13@2516 30/14@2650', label: 'Слева и в центр' },
@@ -20,8 +20,8 @@ module.exports = {
                 { id: 'f', tight: false, sig: true, minPhase: 2, recoveryMs: 650, beats: '88/13@2308 30/16@2358 76/20@2285', label: 'Дважды справа и в центр' },
                 { id: 'g', tight: false, sig: true, minPhase: 3, recoveryMs: 950, beats: '30/12@2464 18/14@2554 70/16@2643 10/19@2685', label: 'В центр, слева, в центр и слева' }
             ] },
-        enem2: { title: 'Пильщик', identity: 'Пропил и обратный ход',
-            trick: 'ведёт прицел вдоль прохода, затем возвращает угрозу за спину прохода',
+        enem2: { title: 'Пильщик', identity: 'Пила по кругу',
+            trick: 'атаки качаются на лету; связки чередуют край и центр — смотри, куда качнёт, а не куда летит',
             tight: { p1: 400, floor: 120 }, style: 'weave', cadence: 0.8, telegraphMs: 580, speedMultiplier: 1.22, signatureEvery: 4, delay: [240, 5600], firstWave: 2400,
             combos: [
                 { id: 'a', tight: false, gaps: [0,250,400,0], beats: '8/13@1964 70/14@2016 16/12@2426 30/13@2806 24/14@2858', label: 'Слева, в центр, слева, в центр и слева' },
@@ -32,8 +32,8 @@ module.exports = {
                 { id: 'f', tight: false, sig: true, minPhase: 2, recoveryMs: 650, gaps: [250,250], beats: '30/12@2100 88/15@1930 76/13@2438', label: 'Справа, в центр и справа' },
                 { id: 'g', tight: false, sig: true, minPhase: 3, recoveryMs: 950, gaps: [0,0,550], beats: '10/14@1800 30/15@1872 70/12@2484 24/14@2734', label: 'Слева, два в центр и слева' }
             ] },
-        enem3: { title: 'Горшечник', identity: 'Осколки горшка',
-            trick: 'разводит две цели, затем закрывает оставленную между ними полосу',
+        enem3: { title: 'Горшечник', identity: 'Горшки на разгоне',
+            trick: 'атаки разгоняются к концу полёта; связка из трёх-четырёх бросков сжимается — поздние догоняют ранних',
             tight: { p1: 400, floor: 120 }, style: 'accelerate', cadence: 0.94, telegraphMs: 720, speedMultiplier: 1.1, signatureEvery: 4, delay: [260, 5200], firstWave: 2400,
             combos: [
                 { id: 'a', tight: false, beats: '8/13@1898 22/12@2130 70/17@2003', label: 'Слева, в центр и слева' },
@@ -44,8 +44,8 @@ module.exports = {
                 { id: 'f', tight: false, sig: true, minPhase: 2, recoveryMs: 650, gaps: [550,0,0], beats: '16/13@1938 30/15@2230 70/14@2594 78/16@2613', label: 'Слева, два в центр и справа' },
                 { id: 'g', tight: false, sig: true, minPhase: 3, recoveryMs: 950, gaps: [0,400], beats: '86/18@1400 30/12@2344 70/16@2218', label: 'Справа и два в центр' }
             ] },
-        enem4: { title: 'Ниточник', identity: 'Переплетение нити',
-            trick: 'повторяет удар в прежнем секторе вместо ожидаемого чередования',
+        enem4: { title: 'Ниточник', identity: 'Нить и рывок',
+            trick: 'в конце полёта атаки резко ускоряются; порядок прилёта не совпадает с порядком появления',
             tight: { p1: 400, floor: 120 }, style: 'lateRush', cadence: 0.84, telegraphMs: 585, speedMultiplier: 1.18, signatureEvery: 4, delay: [310, 5800], firstWave: 2400,
             combos: [
                 { id: 'a', tight: false, gaps: [0,0], beats: '30/12@2318 14/12@2578 22/13@2661', label: 'В центр и дважды слева' },
@@ -56,9 +56,9 @@ module.exports = {
                 { id: 'f', tight: false, sig: true, minPhase: 2, recoveryMs: 650, gaps: [0,0,0], beats: '70/14@1988 86/15@2148 30/16@2291 78/14@2769', label: 'В центр, справа, в центр и справа' },
                 { id: 'g', tight: false, sig: true, minPhase: 3, recoveryMs: 950, gaps: [250,0,250], beats: '30/12@2318 86/13@2400 70/12@2839 31/13@2921', label: 'В центр, справа и два в центр' }
             ] },
-        enem5: { title: 'Обручник', identity: 'Замыкание обруча',
-            trick: 'сводит угрозы с краёв к внутренним полосам, затем размыкает рисунок',
-            tight: { p1: 400, floor: 120 }, style: 'drift', cadence: 0.72, telegraphMs: 620, speedMultiplier: 1.2, signatureEvery: 4, delay: [250, 5100], firstWave: 2400,
+        enem5: { title: 'Обручник', identity: 'Обруч и увод',
+            trick: 'атаки уходят к центру по пути; серии из четырёх-пяти ударов идут с одного края и центра',
+            tight: { p1: 400, floor: 120 }, style: 'drift', cadence: 0.72, telegraphMs: 620, speedMultiplier: 1.2, signatureEvery: 4, delay: [250, 7300], firstWave: 2400,
             combos: [
                 { id: 'a', tight: false, gaps: [0,250], beats: '30/14@1830 10/15@1888 70/14@2260', label: 'В центр, слева и в центр' },
                 { id: 'b', tight: false, gaps: [0,0,550], beats: '30/14@1830 90/15@1888 84/14@2190 70/15@2618', label: 'В центр, дважды справа и в центр' },

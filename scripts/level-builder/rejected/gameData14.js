@@ -13,7 +13,7 @@ const bossCombatConfig = {
 	defaultRecoveryMs: 180,
 	selection: {historyLength: 2, dangerLengthWeight: 0.8, minCombosForRepeatBlock: 2, dangerousPoolSize: 2, phase1WeightBase: 1.35, phase1WeightFloor: 0.25, phase3WeightBase: 0.45, phase3WeightSlope: 1.35},
 	movementStyles: {accelerate: {start: 0.72, gain: 0.9}, lateRush: {switchAt: 0.55, early: 0.72, late: 1.48}, pause: {at: 0.42, durationMs: 420, after: 1.22}, weave: {frequency: 1.35, amplitude: 5.5}, drift: {shift: 10}},
-	levelCadence: 0.721, damageMultiplier: 1.76, minWaveDelay: 3101, minShotDelay: 135, minTelegraphMs: 470,
+	levelCadence: 0.721, damageMultiplier: 1.76, minWaveDelay: 2701, minShotDelay: 135, minTelegraphMs: 470,
 	phases: [
 		{ phase: 1, minHp: 0.663, cadence: 1.003, speed: 1.002, damage: 1, telegraphMultiplier: 1.004, surpriseChance: 0.141, maxActiveAttacks: 15 },
 		{ phase: 2, minHp: 0.313, cadence: 0.771, speed: 1.131, damage: 1.15, telegraphMultiplier: 0.902, surpriseChance: 0.271, maxActiveAttacks: 19 },
@@ -367,7 +367,7 @@ const mBossDelayAb = [
 	{ boss: 'enem2', bossDelayAb: 301, bossDelayAbDop: 5500, firstWaveDelayMs: 2400 }, // 
 	{ boss: 'enem3', bossDelayAb: 310, bossDelayAbDop: 5400, firstWaveDelayMs: 2400 }, // 
 	{ boss: 'enem4', bossDelayAb: 291, bossDelayAbDop: 6800, firstWaveDelayMs: 2400 }, // 
-	{ boss: 'enem5', bossDelayAb: 249, bossDelayAbDop: 8299, firstWaveDelayMs: 2016 }, // 
+	{ boss: 'enem5', bossDelayAb: 249, bossDelayAbDop: 8301, firstWaveDelayMs: 2016 }, // 
 ];
 
 const bossAbilitiesDop = [

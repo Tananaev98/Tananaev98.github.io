@@ -8,5 +8,5 @@ for(const [k,alts] of Object.entries(spec)){const [role,id]=k.split(':');let got
   for(const a of alts){const [shape,T,mode,x1,x2,x3]=a;
     let r=null; try{ if(mode==='S') r=F.fitShape(L,role,shape,T,x1,x2,x3); else r=F.fitGaps(L,role,shape,T,x1); }catch(e){}
     if(r){got={r,shape};break;} tried.push(shape);}
-  out.push(got?`${k} ${got.r.sl.join('/')}  ${got.r.beats}${got.r.gaps?'  GAPS['+got.r.gaps.join(',')+']':''}`:`${k} НЕТ (${tried.join(' | ')})`);}
+  console.log(got?`${k} ${got.r.sl.join('/')}  ${got.r.beats}${got.r.gaps?'  GAPS['+got.r.gaps.join(',')+']':''}`:`${k} НЕТ (${tried.length+' вариантов'})`);}
 console.log(out.join('\n'));
