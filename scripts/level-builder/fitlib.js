@@ -5,8 +5,8 @@ function evalBeats(L,role,tk,at,gaps){
   let bts;try{bts=lib.solveCombo(L,role,{id:'z',tolerant:true,gaps:gaps&&gaps.length?gaps:undefined,beats:tk.map((o,i)=>[o.x,at[i],o.sp,null])},{},new Set(),new Set());}catch(e){return null;}
   const ab=bts.map(x=>({boss:role,xPos:x.x,yPos:x.y,customSpeed:x.s}));const idx=ab.map((_,i)=>i);
   { const bb=ctx.bossCombatConfig.bosses[role]; const mv=Math.max(...(bb.speedVariance||[1]));
-    for(const a of ab) for(let ph=0;ph<3;ph++){ const proj=a.customSpeed*bb.speedMultiplier*L.phases[ph].speed*mv; const cap=a.yPos>12?15:a.yPos>10?18:31; if(proj>cap) return null; if(a.customSpeed<=10&&proj>11.5) return null; } }
-  for(let ph=0;ph<3;ph++) if(!model.verdict(model.analyze(ctx,role,ab,idx,ph,co)).ok) return null;
+    for(const a of ab) for(let ph=0;ph<3;ph++){ const proj=a.customSpeed*bb.speedMultiplier*L.phases[ph].speed*mv; const cap=a.yPos>11?15:a.yPos>9?18:31; if(proj>cap) return null; if(a.customSpeed<=10&&proj>11.5) return null; } }
+  for(let ph=0;ph<3;ph++){ const an0=model.analyze(ctx,role,ab,idx,ph,co); if(!model.verdict(an0).ok || (ab.length>=2 && an0.spread<80)) return null; }
   // 5.1: быстрые (итоговая скорость >=18) атаки противоположных флангов — не ближе 720 мс по моментам ПОЯВЛЕНИЯ
   { const bb=ctx.bossCombatConfig.bosses[role]; const mv=Math.max(...(bb.speedVariance||[1]));
     for(let ph=0;ph<3;ph++){ const an=model.analyze(ctx,role,ab,idx,ph,co); let lL=-1e9,lR=-1e9;
