@@ -46,4 +46,11 @@ function sequentialSlack(attacks, arrivals, offsets, teleMs, lateral = 0) {
 function worstSequentialSlack(attacks, rots, teleMs) {
     return Math.min(...rots.map(r => sequentialSlack(attacks, r.arrivals, r.offsets, teleMs, r.lateral)));
 }
-module.exports = { PLAYER, comboSlack, sequentialSlack, worstSequentialSlack, SEQ_MIN_MS, SEQ_PLAYER };
+// Типичный запас (медиана по 5 вращениям speedVariance) — то, что игрок реально видит в бою в среднем. Журнал боя ур.25 (2026-09-26, 191 экземпляр комбо):
+// худшее вращение занижало реальный запас в 2-3 раза (ф3: реальные 716 мс против 258), а сама модель игрока на реальных данных боя точна
+// (прогноз 650 против реальных 716). Поэтому: «возможно» (>= SEQ_MIN_MS) проверяется по худшему вращению, «не слишком легко» — по ТИПИЧНОМУ.
+function typicalSequentialSlack(attacks, rots, teleMs) {
+    const v = rots.map(r => sequentialSlack(attacks, r.arrivals, r.offsets, teleMs, r.lateral)).sort((a, b) => a - b);
+    return v[Math.floor(v.length / 2)];
+}
+module.exports = { PLAYER, comboSlack, sequentialSlack, worstSequentialSlack, typicalSequentialSlack, SEQ_MIN_MS, SEQ_PLAYER };

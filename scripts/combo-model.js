@@ -41,7 +41,8 @@ function flightMs(yPos, pctPerSec, style, styleParams) {
     return t;
 }
 // Боковой разброс цели (%): weave качается ±amplitude, drift уходит к центру на shift — игроку нужно запас по x
-function lateralSlop(style, styleParams) {
+function lateralSlop(style, styleParams, attacks) {
+    if (style === 'wave') { const am = (attacks || []).map(a => a && a.waveAmplitude).filter(v => Number.isFinite(v)); return am.length ? am.reduce((t, v) => t + v, 0) / am.length : 0; }
     if (style === 'weave') return styleParams.weave.amplitude;
     if (style === 'drift') return styleParams.drift.shift;
     return 0;
@@ -105,7 +106,7 @@ function analyze(level, boss, abilities, indices, phaseIdx = 0, combo = null, op
     const spread = Math.max(...arrivals) - Math.min(...arrivals);
     const slowCount = speeds.filter((s) => s <= 8).length;
     const hasFast = speeds.some((s) => s >= 12);
-    return { arrivals, offsets, speeds, spread, slowCount, hasFast, shotDelay, first: Math.min(...arrivals), lateral: lateralSlop(style, cfg.movementStyles), rot: opts.rot };
+    return { arrivals, offsets, speeds, spread, slowCount, hasFast, shotDelay, first: Math.min(...arrivals), lateral: lateralSlop(style, cfg.movementStyles, indices.map(i => abilities[i])), rot: opts.rot };
 }
 // Все 5 вращений speedVariance (каждая волна босса сдвигает счётчик) — честность обязана держаться в худшем из них.
 function analyzeAllRot(level, boss, abilities, indices, phaseIdx, combo) {

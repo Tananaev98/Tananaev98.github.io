@@ -1,0 +1,1 @@
+n=$1; echo "mids $(grep -E "enem[1-5]: самая частая" /tmp/run$n.txt | sed -E 's/.*дольше: ([0-9]+)% \/ ([0-9]+)% .*/\2/' | paste -sd' ')"; grep -E "ф1: типичная медиана" /tmp/run$n.txt | sed -E 's/ \/ p75 [0-9]+ \/ мин [0-9]+ мс//g;s/типичная медиана //g'; sed -n '/^1) /,$p' /tmp/run$n.txt | grep -E "^   !|ИТОГ" | grep -v "уже на уровнях" | cut -c1-175

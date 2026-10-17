@@ -1,0 +1,2 @@
+cd "F:/3 Курсы/0 Веб Разработчик/12 Проекты для портфолио/3 Игра без названия/игра №2"
+cp /tmp/design26_base3.js scripts/level-builder/design26.js; node scripts/level-builder/applyfit.js 26 /tmp/plan_some_26.txt | tail -1; node scripts/level-builder/run.js 26 > /tmp/run26.txt 2>&1; sed -n '/^4) Повторы/,$p' /tmp/run26.txt | grep -vE "^  enem[1-5]: (длина|ф1: мин)" | cut -c1-200; grep ОШИБКА -A2 /tmp/run26.txt | head

@@ -42,7 +42,7 @@ function ctxFor(L, role) {
 function parseBeats(str) {
     return str.trim().split(/\s+/).map(t => {
         if (t.startsWith('=')) { const m = /^=([\w]+)#(\d+)$/.exec(t); return { same: [m[1], Number(m[2])] }; }
-        const m = /^(\d+)\/(\d+)@(\d+)(?:~([\d.]+),([\d.]+)(?:,([\d.]+))?)?$/.exec(t);
+        const m = /^(\d+)\/(\d+(?:\.\d+)?)@(\d+)(?:~([\d.]+),([\d.]+)(?:,([\d.]+))?)?$/.exec(t);
         if (!m) throw new Error('плохой бит ' + t);
         return [Number(m[1]), Number(m[3]), Number(m[2]), m[4] ? [Number(m[4]), Number(m[5]), ...(m[6] ? [Number(m[6])] : [])] : null];
     });
@@ -91,8 +91,8 @@ function solveCombo(L, role, combo, solved, avoid, used) {
     beats.forEach((bt, i) => {
         if (bt.fixed) return;
         const key = (x) => `${x}/${bt.y}/${bt.s}/${bt.w ? bt.w[0] : '-'}/${bt.w ? bt.w[1] : '-'}`;
-        const taken = (x) => avoid.has(key(x)) || used.has(key(x));
-        if (taken(bt.x)) for (const d of [1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6, 7, -7, 8, -8, 9, -9, 10, -10, 11, -11, 12, -12]) { const nx = bt.x + d; if (nx >= 4 && nx <= 96 && sideOf(nx) === sideOf(bt.x) && !taken(nx)) { bt.x = nx; break; } }
+        const posOk = (x) => !(x >= 29 && x <= 71) || x >= 69 || (x >= 66 && bt.y === 5); /* А11.8: тело босса — только 69..71 (66..68 при y=5) */ const taken = (x) => !posOk(x) || avoid.has(key(x)) || used.has(key(x)); const takenLoose = (x) => !posOk(x) || avoid.has(key(x));
+        if (taken(bt.x)) { let ok = false; for (const d of [1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6, 7, -7, 8, -8, 9, -9, 10, -10, 11, -11, 12, -12]) { const nx = bt.x + d; if (nx >= 4 && nx <= 96 && sideOf(nx) === sideOf(bt.x) && !taken(nx)) { bt.x = nx; ok = true; break; } } if (!ok && L.reuseKeys && takenLoose(bt.x)) for (const d of [1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6, 7, -7, 8, -8, 9, -9, 10, -10, 11, -11, 12, -12]) { const nx = bt.x + d; if (nx >= 4 && nx <= 96 && sideOf(nx) === sideOf(bt.x) && !takenLoose(nx)) { bt.x = nx; break; } } }
         used.add(key(bt.x));
     });
     return beats;
@@ -334,10 +334,15 @@ function writeLevel(L, solvedByRole) {
     fs.writeFileSync(file, src, 'utf8');
 }
 
+function freshInventory() { // инвентарь по файлам gameData: во временный файл процесса (параллельные прогоны разных уровней), затем в общий inv.json
+    const shared = path.join(__dirname, 'inv.json'); const tmp = path.join(__dirname, 'inv_' + process.pid + '.json');
+    cp.spawnSync('node', [REPO + '/scripts/combat-data-inventory.js', `--json=${tmp}`], { encoding: 'utf8', maxBuffer: 1 << 28 });
+    const levels = JSON.parse(fs.readFileSync(tmp, 'utf8'));
+    try { fs.renameSync(tmp, shared); } catch (e) { try { fs.unlinkSync(tmp); } catch (e2) { } }
+    return levels;
+}
 function avoidSets(n) { // геометрия остальных уровней по ролям (из инструмента, не из своих выборок)
-    const out = path.join(__dirname, 'inv.json');
-    cp.spawnSync('node', [REPO + '/scripts/combat-data-inventory.js', `--json=${out}`], { encoding: 'utf8', maxBuffer: 1 << 28 });
-    const levels = JSON.parse(fs.readFileSync(out, 'utf8'));
+    const levels = freshInventory();
     const sets = {}; ROLES.forEach(r => (sets[r] = new Set()));
     levels.filter(l => l.n !== n).forEach(l => l.bosses.forEach(b => b.attacks.forEach(a => sets[b.role].add(`${a.xPos}/${a.yPos}/${a.customSpeed}/${a.waveAmplitude !== undefined ? a.waveAmplitude : '-'}/${a.waveFrequency !== undefined ? a.waveFrequency : '-'}`))));
     return sets;
@@ -368,8 +373,8 @@ function nudgeScalars(L, levels) {
 }
 function build(L) {
     const NL = String.fromCharCode(10);
-    if (!L._nudged) { const out = path.join(__dirname, 'inv.json'); cp.spawnSync('node', [REPO + '/scripts/combat-data-inventory.js', `--json=${out}`], { encoding: 'utf8', maxBuffer: 1 << 28 });
-      const lv = JSON.parse(fs.readFileSync(out, 'utf8')); const lg = nudgeScalars(L, lv);
+    if (!L._nudged) {
+      const lv = freshInventory(); const lg = nudgeScalars(L, lv);
       if (lg.length) console.log(['сдвиг констант до свободных значений:', ...lg.map(x => '  ' + x)].join(NL)); }
     const avoid = avoidSets(L.n); const solvedByRole = {}; const errs = [];
     for (const r of ROLES) {

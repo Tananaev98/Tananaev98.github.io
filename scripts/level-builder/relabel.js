@@ -18,7 +18,7 @@ for(const [role,B] of Object.entries(D.bosses)){
   const map={};
   for(const c of B.combos){
     const bs=c.beats.split(/\s+/).map(s=>{if(s[0]==='='){const [id,k]=s.slice(1).split('#');return map[id][+k];}
-      const m=s.match(/^(\d+)\/(\d+)@(\d+)/);return {x:+m[1],sp:+m[2],t:+m[3]};});
+      const m=s.match(/^(\d+)\/(\d+(?:\.\d+)?)@(\d+)/);return {x:+m[1],sp:+m[2],t:+m[3]};});
     map[c.id]=bs;
     const sorted=[...bs].sort((a,b)=>a.t-b.t);
     let tail=words(sorted); const pre=/^([^:]*— [^:]*):/.exec(c.label);

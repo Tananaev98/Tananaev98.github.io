@@ -270,7 +270,7 @@ function pressureReport(n) {
 
 
 // ---------- ЗАПАС ВРЕМЕНИ ИГРОКА (часть А9): модель идеального игрока — scripts/player-model.js
-const { PLAYER, comboSlack, worstSequentialSlack, SEQ_MIN_MS } = require('./player-model');
+const { PLAYER, comboSlack, worstSequentialSlack, typicalSequentialSlack, SEQ_MIN_MS } = require('./player-model');
 function slackReport(L) {
     const rows = []; const all = [];
     for (const b of L.bosses) {
@@ -294,24 +294,49 @@ function slackReport(L) {
 // скорости, без стилей) завышала запас на 300-600 мс (журнал боя: атаки lateRush летели на 30 % быстрее расчёта) и пропускала невозможные комбо.
 // Пороги пересчитаны под честную меру: самое тугое комбо каждой фазы — на грани (запас 60-600/350/250), медиана — не «пустая».
 const SLACK_RULE = { possibleMin: SEQ_MIN_MS, medianMax: [750, 600, 500], minMax: [600, 350, 250] };
+// А9.7 (2026-09-26, журнал боя ур.25: «слишком легко, большинство комбо легко заблочить»). А9.3 мерил ХУДШЕЕ из 5 вращений speedVariance, а игрок в бою видит
+// типичное: реальный запас в ф1/ф2/ф3 был 969/767/716 мс при «худшем» прогнозе 617/342/258 (модель игрока на реальных данных верна: 988/780/650).
+// Уровень проходил проверку и играл в 2-3 раза легче заявленного; ур.25 оказался самым лёгким из 25 по типичному запасу в ф3 (861 против 386-696).
+// Теперь для уровней >= TYPICAL_RULE.from: ТИПИЧНЫЙ запас (медиана по вращениям) — по каждому боссу и фазе: медиана комбо, 75-й процентиль (не «большинство комбо
+// лёгкие»), самое тугое комбо; кривая сложности — внутри босса (ф2 тугее ф1, ф3 тугее ф2) и между ипостасями (enem k+1 не легче enem k). Пороги = медианы уровней 1-10
+// (типичные медианы боссов 782/551/462, самые тугие комбо 608/403/268). Худшее вращение по-прежнему обязано быть >= possibleMin (А9.2/А11.3).
+const TYPICAL_RULE = { from: 25, medianMax: [800, 600, 470], p75Max: [1000, 800, 650], minMax: [700, 460, 330], rampPhase: [120, 60], rampBoss: 80 };
 function slackChecks(L) {
-    const rows = [], bad = [];
+    const rows = [], bad = [], typRows = [];
+    const typMed = {};
     for (const b of L.bosses) {
         const per = [0, 1, 2].map(p => {
             const tele = Math.max(L.minTelegraphMs, b.profile.telegraphMs * L.phases[p].telegraphMultiplier);
             const list = b.combos.filter(cb => cb.indices.length >= 2 && cb.minPhase <= p + 1)
-                .map(cb => ({ cb, v: worstSequentialSlack(cb.indices.map(k => b.attacks[k]), cb.phases[p].rots, tele) }));
+                .map(cb => ({ cb, v: worstSequentialSlack(cb.indices.map(k => b.attacks[k]), cb.phases[p].rots, tele), t: typicalSequentialSlack(cb.indices.map(k => b.attacks[k]), cb.phases[p].rots, tele) }));
             list.filter(x => x.v < SLACK_RULE.possibleMin).forEach(x => bad.push(`${b.role} комбо ${x.cb.index} ф${p + 1}: живой игрок (порядок прилёта, худшее из 5 вращений скоростей) имеет запас ${x.v} мс < ${SLACK_RULE.possibleMin} — не успеет`));
             const v = list.map(x => x.v).sort((x, y) => x - y);
-            return { min: v[0], med: v[Math.floor(v.length / 2)], n: v.length };
+            const t = list.map(x => x.t).sort((x, y) => x - y);
+            return { min: v[0], med: v[Math.floor(v.length / 2)], n: v.length, tmin: t[0], tmed: t[Math.floor(t.length / 2)], tp75: t[Math.floor(t.length * 0.75)] };
         });
         rows.push(`  ${b.role}: ` + per.map((q, p) => `ф${p + 1}: мин ${q.min} / медиана ${q.med} мс`).join(' | '));
+        typRows.push(`  ${b.role}: ` + per.map((q, p) => `ф${p + 1}: типичная медиана ${q.tmed} / p75 ${q.tp75} / мин ${q.tmin} мс`).join(' | '));
+        typMed[b.role] = per.map(q => q.tmed);
         per.forEach((q, p) => {
             if (q.min > SLACK_RULE.minMax[p]) bad.push(`${b.role} ф${p + 1}: самое тугое комбо имеет запас ${q.min} мс > ${SLACK_RULE.minMax[p]} — слишком легко (А9.3)`);
             if (q.med > SLACK_RULE.medianMax[p]) bad.push(`${b.role} ф${p + 1}: медианный запас ${q.med} мс > ${SLACK_RULE.medianMax[p]} — слишком легко (А9.3)`);
+            if (L.n >= TYPICAL_RULE.from) {
+                if (q.tmed > TYPICAL_RULE.medianMax[p]) bad.push(`${b.role} ф${p + 1}: ТИПИЧНЫЙ (медиана по вращениям) запас комбо ${q.tmed} мс > ${TYPICAL_RULE.medianMax[p]} — игрок видит уровень заметно легче худшего вращения (А9.7)`);
+                if (q.tp75 > TYPICAL_RULE.p75Max[p]) bad.push(`${b.role} ф${p + 1}: у четверти комбо типичный запас > ${TYPICAL_RULE.p75Max[p]} мс (p75 = ${q.tp75}) — «большинство комбо легко заблочить» (А9.7)`);
+                if (q.tmin > TYPICAL_RULE.minMax[p]) bad.push(`${b.role} ф${p + 1}: самое тугое комбо по типичному запасу ${q.tmin} мс > ${TYPICAL_RULE.minMax[p]} — нет по-настоящему тугих комбо (А9.7)`);
+            }
+        });
+        if (L.n >= TYPICAL_RULE.from) TYPICAL_RULE.rampPhase.forEach((d, i) => {
+            if (per[i + 1].tmed > per[i].tmed - d) bad.push(`${b.role}: ф${i + 2} типичная медиана ${per[i + 1].tmed} мс не тугее ф${i + 1} (${per[i].tmed}) минимум на ${d} мс — многофазный босс не нарастает (А9.7)`);
         });
     }
-    return { rows, bad };
+    if (L.n >= TYPICAL_RULE.from) {
+        const roles = L.bosses.map(b => b.role);
+        for (let i = 1; i < roles.length; i++) for (let p = 0; p < 3; p++) {
+            if (typMed[roles[i]][p] > typMed[roles[i - 1]][p] + TYPICAL_RULE.rampBoss) bad.push(`${roles[i]} ф${p + 1}: типичная медиана ${typMed[roles[i]][p]} мс легче предыдущей ипостаси ${roles[i - 1]} (${typMed[roles[i - 1]][p]}) более чем на ${TYPICAL_RULE.rampBoss} — сложность обязана нарастать к последнему боссу (А9.7)`);
+        }
+    }
+    return { rows, bad, typRows };
 }
 
 
@@ -405,7 +430,7 @@ function main() {
         console.log(`
 5) Давление и медленные атаки (А7): ${PR.bad.length ? PR.bad.length + ' нарушений' : 'нарушений нет'}`); PR.rows.forEach(x => console.log(x)); PR.bad.forEach(x => console.log('   ! ' + x));
         const SL = slackChecks(L);
-        console.log(`\n6) Запас времени игрока (А9): ${SL.bad.length ? SL.bad.length + ' нарушений' : 'нарушений нет'}`); SL.rows.forEach(x => console.log(x)); SL.bad.forEach(x => console.log('   ! ' + x));
+        console.log(`\n6) Запас времени игрока (А9): ${SL.bad.length ? SL.bad.length + ' нарушений' : 'нарушений нет'}`); SL.rows.forEach(x => console.log(x)); console.log('  типичный запас (медиана по 5 вращениям — то, что игрок видит в бою):'); SL.typRows.forEach(x => console.log(x)); SL.bad.forEach(x => console.log('   ! ' + x));
         const IN = individuality(L);
         console.log(`\n7) Индивидуальность боссов (А10): ${IN.bad.length ? IN.bad.length + ' нарушений' : 'нарушений нет'}`); IN.rows.forEach(x => console.log(x)); IN.bad.forEach(x => console.log('   ! ' + x));
         const total = problems.length + C.length + Rp.length + S.length + PR.bad.length + SL.bad.length + IN.bad.length;

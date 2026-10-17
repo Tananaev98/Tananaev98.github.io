@@ -12,7 +12,7 @@ lv.bossAbilitiesDop.filter(x=>x.boss===role).forEach((c,ci)=>{ if(only&&!only.in
     const rots=model.analyzeAllRot(lv,role,at,c.indexAbilities,p,c).map(q=>({arrivals:q.arrivals,offsets:q.offsets,lateral:q.lateral}));
     let worst=null;
     rots.forEach((r,ri)=>{const s=pm.sequentialSlack(A,r.arrivals,r.offsets,tele,r.lateral); if(!worst||s<worst.s)worst={s,ri,r};});
-    line.push(`ф${p+1}: ${worst.s}`);
+    line.push(`ф${p+1}: ${worst.s} / типичный ${pm.typicalSequentialSlack(A,rots,tele)}`);
     if(process.env.VERBOSE){ console.log(`c${ci} ф${p+1} худшее вращение ${worst.ri}, запас ${worst.s}`);
       const ord=A.map((_,i)=>i).sort((a,b)=>worst.r.arrivals[a]-worst.r.arrivals[b]); let x=50,t=worst.r.offsets[0]+P.reactionMs,first=true;
       for(const i of ord){const tr=(Math.abs(A[i].xPos-x)+(first?0:worst.r.lateral))/P.cursorSpeed*1000;const go=Math.max((first?t:t+P.retargetMs)+tr,worst.r.offsets[i]+tele);

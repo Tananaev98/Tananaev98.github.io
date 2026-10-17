@@ -1,6 +1,6 @@
 // Применяет вывод fitmany (строки «enemK:x ф1/ф2/ф3  биты  [GAPS[..]]») к designN.js: биты и shotGapsMs (gaps) комбо.
 // node scripts/level-builder/applyfit.js N файл_вывода
-const fs=require('fs'),path=require('path');const n=+process.argv[2];const lines=fs.readFileSync(process.argv[3],'utf8').split('\n');
+const fs=require('fs'),path=require('path');const n=+process.argv[2];const lines=fs.readFileSync(process.argv[3],'utf8').split(/\r?\n/).map(l=>l.trim().replace(/\s+#.*$/,''));
 const file=path.join(__dirname,'design'+n+'.js');let src=fs.readFileSync(file,'utf8');let cnt=0;
 for(const l of lines){const m=/^(enem\d):([a-p])\s+\S+\s+(.+?)(?:\s+GAPS\[([\d,]*)\])?\s*$/.exec(l); if(!m||/НЕТ/.test(l))continue;
   const [,role,id,beats,gaps]=m; const i=src.indexOf('        '+role+':'); const nx=src.indexOf('\n        enem',i+10); const j=nx<0?src.indexOf('    }\n};'):nx;
