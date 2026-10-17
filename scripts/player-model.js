@@ -7,7 +7,7 @@
 const PLAYER = { cursorSpeed: 111, reactionMs: 250, startX: 50 };
 
 // attacks — объекты с xPos; arrivals/offsets — прилёты и моменты появления комбо (мс); teleMs — время телеграфа фазы
-function comboSlack(attacks, arrivals, offsets, teleMs) {
+function comboSlack(attacks, arrivals, offsets, teleMs, blockOrder) {
     const n = attacks.length; if (n === 0) return null;
     const S = attacks.map((a, i) => offsets[i] + teleMs), D = arrivals.map(t => t + teleMs), X = attacks.map(a => a.xPos);
     const t0 = offsets[0] + PLAYER.reactionMs;
@@ -17,6 +17,7 @@ function comboSlack(attacks, arrivals, offsets, teleMs) {
         if (minSlack <= best) return;
         if (cnt === n) { best = minSlack; return; }
         for (let i = 0; i < n; i++) if (!used[i]) {
+            if (blockOrder && i !== blockOrder[cnt]) continue;
             const arrive = Math.max(t + Math.abs(X[i] - x) / PLAYER.cursorSpeed * 1000, S[i]);
             const slack = D[i] - arrive;
             used[i] = true; dfs(cnt + 1, X[i], arrive, Math.min(minSlack, slack)); used[i] = false;
@@ -27,13 +28,15 @@ function comboSlack(attacks, arrivals, offsets, teleMs) {
 // «Живой игрок» (честность, 2026-09-20). Калибровка по журналу боя (battleLog.js, DataExport/бой): переносы прицела >40 % поля
 // делались за 217-667 мс (мышь, 100-300 %/с); проигрыш происходил не от скорости руки, а от выбора цели и от того, что атаки с
 // lateRush летят на 30 % быстрее расчёта. Здесь: курсор 110 %/с, реакция 300 мс на первое появление, 100 мс на смену цели,
-// отбивает по порядку ПРИЛЁТА (правильная игра). Запас — наименьший (прилёт − момент блока); блок возможен не раньше появления+телеграфа.
+// отбивает по порядку ПРИЛЁТА; blockOrder задаёт обязательный порядок головы цепи.
+// Запас — наименьший (прилёт − момент блока); блок возможен не раньше появления+телеграфа.
 // lateral — боковой разброс цели (weave ±amplitude, drift shift): добавляется к каждому переносу. Пересчитывать константы по новым журналам.
 const SEQ_MIN_MS = 60;
 const SEQ_PLAYER = { cursorSpeed: 110, reactionMs: 300, retargetMs: 100 };
-function sequentialSlack(attacks, arrivals, offsets, teleMs, lateral = 0) {
+function sequentialSlack(attacks, arrivals, offsets, teleMs, lateral = 0, blockOrder) {
     const n = attacks.length; if (n === 0) return null;
-    const order = arrivals.map((_, i) => i).sort((a, b) => arrivals[a] - arrivals[b]);
+    // Цепь снимает неуязвимость строго от головы к хвосту, а не по прилётам.
+    const order = blockOrder || arrivals.map((_, i) => i).sort((a, b) => arrivals[a] - arrivals[b]);
     let x = PLAYER.startX, t = offsets[0] + SEQ_PLAYER.reactionMs, min = Infinity, first = true;
     for (const i of order) {
         const travel = (Math.abs(attacks[i].xPos - x) + (first ? 0 : lateral)) / SEQ_PLAYER.cursorSpeed * 1000;
@@ -44,13 +47,13 @@ function sequentialSlack(attacks, arrivals, offsets, teleMs, lateral = 0) {
 }
 // Худший случай по всем вращениям speedVariance (каждая волна босса сдвигает счётчик — конкретный порядок скоростей заранее неизвестен)
 function worstSequentialSlack(attacks, rots, teleMs) {
-    return Math.min(...rots.map(r => sequentialSlack(attacks, r.arrivals, r.offsets, teleMs, r.lateral)));
+    return Math.min(...rots.map(r => sequentialSlack(attacks, r.arrivals, r.offsets, teleMs, r.lateral, r.blockOrder)));
 }
 // Типичный запас (медиана по 5 вращениям speedVariance) — то, что игрок реально видит в бою в среднем. Журнал боя ур.25 (2026-09-26, 191 экземпляр комбо):
 // худшее вращение занижало реальный запас в 2-3 раза (ф3: реальные 716 мс против 258), а сама модель игрока на реальных данных боя точна
 // (прогноз 650 против реальных 716). Поэтому: «возможно» (>= SEQ_MIN_MS) проверяется по худшему вращению, «не слишком легко» — по ТИПИЧНОМУ.
 function typicalSequentialSlack(attacks, rots, teleMs) {
-    const v = rots.map(r => sequentialSlack(attacks, r.arrivals, r.offsets, teleMs, r.lateral)).sort((a, b) => a - b);
+    const v = rots.map(r => sequentialSlack(attacks, r.arrivals, r.offsets, teleMs, r.lateral, r.blockOrder)).sort((a, b) => a - b);
     return v[Math.floor(v.length / 2)];
 }
 module.exports = { PLAYER, comboSlack, sequentialSlack, worstSequentialSlack, typicalSequentialSlack, SEQ_MIN_MS, SEQ_PLAYER };

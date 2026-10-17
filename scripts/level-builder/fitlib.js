@@ -26,14 +26,20 @@ function settle(L,role,tk){ if(process.env.NONUDGE||process.env.NOSETTLE) return
     if(!pick){warn.push(o.x+'/'+o.sp);pick={x:ox,y:5,k:ox+'/5/'+o.sp+'/-/-'};}
     local.add(pick.k); return {...o,x:pick.x,d:Math.round(fl(o.sp,5)-fl(o.sp,pick.y))}; });
   if(warn.length) out.warn=warn; return out; }
-function commit(L,role,tk,at,gaps){ const P=prep(L); const u=(P.used[role]||=new Set()); lib.solveCombo(L,role,{id:'c',tolerant:true,gaps:gaps&&gaps.length?gaps:undefined,beats:tk.map((o,i)=>[o.x,at[i],o.sp,o.wv||null])},{},P.avoid[role],u); }
-function evalBeats(L,role,tk,at,gaps){
-  const ctx=lib.ctxFor(L,role); const co={shotGapsMs:gaps&&gaps.length?gaps:undefined};
-  let bts;try{const P=process.env.NONUDGE?null:prep(L);bts=lib.solveCombo(L,role,{id:'z',tolerant:true,gaps:gaps&&gaps.length?gaps:undefined,beats:tk.map((o,i)=>[o.x,at[i],o.sp,o.wv||null])},{},P?P.avoid[role]:new Set(),P?new Set(P.used[role]||[]):new Set());}catch(e){return why('solve');}
+function commit(L,role,tk,at,gaps,combo={}){ const P=prep(L); const u=(P.used[role]||=new Set()); lib.solveCombo(L,role,{...combo,id:'c',tolerant:true,gaps:gaps&&gaps.length?gaps:undefined,beats:tk.map((o,i)=>[o.x,at[i],o.sp,o.wv||null])},{},P.avoid[role],u); }
+function evalBeats(L,role,tk,at,gaps,combo={}){
+  const ctx=lib.ctxFor(L,role); const co={isChain:combo.isChain,shotDelayMs:combo.shotDelayMs,shotGapsMs:gaps&&gaps.length?gaps:undefined};
+  let bts;try{const P=process.env.NONUDGE?null:prep(L);bts=lib.solveCombo(L,role,{...combo,id:'z',tolerant:true,gaps:gaps&&gaps.length?gaps:undefined,beats:tk.map((o,i)=>[o.x,at[i],o.sp,o.wv||null])},{},P?P.avoid[role]:new Set(),P?new Set(P.used[role]||[]):new Set());}catch(e){return why('solve');}
   const ab=bts.map(x=>({boss:role,xPos:x.x,yPos:x.y,customSpeed:x.s,waveAmplitude:x.w?x.w[0]:undefined}));const idx=ab.map((_,i)=>i);
   { const bb=ctx.bossCombatConfig.bosses[role]; const mv=Math.max(...(bb.speedVariance||[1]));
     for(const a of ab) for(let ph=0;ph<3;ph++){ const proj=a.customSpeed*bb.speedMultiplier*L.phases[ph].speed*mv; const cap=a.yPos>11?15:a.yPos>9?18:31; if(proj>cap) return why('cap'); if(a.customSpeed<=10&&proj>11.5) return why('anticheese'); } }
-  for(let ph=0;ph<3;ph++){ const an0=model.analyze(ctx,role,ab,idx,ph,co); if(!model.verdict(an0).ok || (ab.length>=2 && an0.spread<80)) { if(process.env.FITDBG) console.error('  dbg ph'+ph+' rot0 spread',Math.round(an0.spread),model.verdict(an0).why||'spread<80','arrivals',an0.arrivals.map(Math.round).join(',')); return why('verdict/spread<80'); } }
+  for(let ph=0;ph<3;ph++){ const an0=model.analyze(ctx,role,ab,idx,ph,co); if((!combo.isChain&&!model.verdict(an0).ok) || (ab.length>=2 && an0.spread<80)) { if(process.env.FITDBG) console.error('  dbg ph'+ph+' rot0 spread',Math.round(an0.spread),model.verdict(an0).why||'spread<80','arrivals',an0.arrivals.map(Math.round).join(',')); return why('verdict/spread<80'); } }
+  if(combo.isChain){
+    if(!L.attackChains||ab.length<3||ab.length>7||ab.some(a=>a.yPos>26))return why('chain-geometry');
+    const b=ctx.bossCombatConfig.bosses[role],v=b.speedVariance;
+    for(let ph=0;ph<3;ph++){const an=model.analyze(ctx,role,ab,idx,ph,co);if(an.shotDelay<12/(.020*120*18)*1000)return why('chain-gap');
+      for(let rot=0;rot<v.length;rot++){const speeds=ab.map((a,i)=>a.customSpeed*b.speedMultiplier*L.phases[ph].speed*v[(rot+i)%v.length]);if(speeds[0]>18||speeds.some((s,i)=>i>0&&s>speeds[i-1]+1e-9))return why('chain-speed');}}
+  }
   // 5.1: быстрые (итоговая скорость >=18) атаки противоположных флангов — не ближе 720 мс по моментам ПОЯВЛЕНИЯ
   { const bb=ctx.bossCombatConfig.bosses[role]; const mv=Math.max(...(bb.speedVariance||[1]));
     for(let ph=0;ph<3;ph++){ const an=model.analyze(ctx,role,ab,idx,ph,co); let lL=-1e9,lR=-1e9;
@@ -42,15 +48,15 @@ function evalBeats(L,role,tk,at,gaps){
   // прикрытие медленных (А7.4): другая атака на другой полосе (dx>=15) в пределах 600 мс прилёта в ф1 и ф3
   for(const ph of [0,2]){const an=model.analyze(ctx,role,ab,idx,ph,co);
     for(let i=0;i<ab.length;i++) if(ab[i].customSpeed<=8&&!ab.some((a,j)=>j!==i&&Math.abs(a.xPos-ab[i].xPos)>=15&&Math.abs(an.arrivals[j]-an.arrivals[i])<=600)) return why('cover');}
-  const sl=[0,1,2].map(ph=>{const tele=Math.max(L.cfg.minTelegraphMs,L.bosses[role].telegraphMs*L.phases[ph].telegraphMultiplier);const rots=model.analyzeAllRot(ctx,role,ab,idx,ph,co);return Math.min(...rots.map(r=>pm.sequentialSlack(ab,r.arrivals,r.offsets,tele,r.lateral)));});
+  const sl=[0,1,2].map(ph=>{const tele=Math.max(L.cfg.minTelegraphMs,L.bosses[role].telegraphMs*L.phases[ph].telegraphMultiplier);const rots=model.analyzeAllRot(ctx,role,ab,idx,ph,co);return pm.worstSequentialSlack(ab,rots,tele);});
   // ТИПИЧНЫЙ запас (медиана по 5 вращениям) — то, что игрок видит в бою (А9.7); худший (sl) остаётся условием «возможно»
-  sl.typ=[0,1,2].map(ph=>{const tele=Math.max(L.cfg.minTelegraphMs,L.bosses[role].telegraphMs*L.phases[ph].telegraphMultiplier);const v=model.analyzeAllRot(ctx,role,ab,idx,ph,co).map(r=>pm.sequentialSlack(ab,r.arrivals,r.offsets,tele,r.lateral)).sort((a,b)=>a-b);return v[Math.floor(v.length/2)];});
+  sl.typ=[0,1,2].map(ph=>{const tele=Math.max(L.cfg.minTelegraphMs,L.bosses[role].telegraphMs*L.phases[ph].telegraphMultiplier);return pm.typicalSequentialSlack(ab,model.analyzeAllRot(ctx,role,ab,idx,ph,co),tele);});
   sl.geo=ab.map(a=>a.xPos+'/'+a.yPos);
   sl.real=model.analyze(ctx,role,ab,idx,0,co).arrivals.map(Math.round);
   return sl;
 }
 function parseShape(shape){return shape.trim().split(/ +/).map(t=>{const [t0,fg]=t.split('!');const [t1,wvs]=t0.split('#');const [a,w]=t1.split('~');const [a2,d]=a.split('^');const [x,sp]=a2.split('/').map(Number);return {x,sp,w:w?+w:1,d:d?+d:0,fg:fg!==undefined?+fg:undefined,wv:wvs?wvs.split(',').map(Number):undefined};});}
-function stepOf(L,role){const b=L.bosses[role];return Math.max(L.cfg.minShotDelay,b.delay[0]*b.cadence*L.phases[0].cadence);}
+function stepOf(L,role,combo={}){const b=L.bosses[role];return Math.max(L.cfg.minShotDelay,b.delay[0]*b.cadence*L.phases[0].cadence,combo.shotDelayMs||0);}
 // Вес паузы ~w у пары битов означает: (а) время прилёта разнесено в w раз, (б) при gs>0 ещё и МЕЖДУ ПОЯВЛЕНИЯМИ (shotGapsMs, не сжимается в ф3) —
 // это единственный способ развести быстрые атаки, у которых время полёта почти не регулируется (окно y 4-10 даёт ~±100 мс).
 // FITTYP=1: подбор по ТИПИЧНОМУ запасу (А9.7): цель T — типичный запас ф3, ф1/ф2 — T*1.75/T*1.3 (env FITK="1.75,1.3"); условие «возможно» (худшее вращение >= MIN) прежнее.
@@ -77,12 +83,12 @@ function fitShape(L,role,shape,target,a0min,gmax,a0span){
 
 // Комбо из «прижатых» атак (быстрые сверху с окном y 4-10 ~ время полёта почти не регулируется; медленные бомбы): времена прилёта задаёт скорость,
 // а расстановку по времени — ПАУЗЫ МЕЖДУ ПОЯВЛЕНИЯМИ (shotGapsMs). Перебор пауз для формы автора: наиболее близкая к цели тугость ф3 при честности.
-function fitGaps(L,role,shape,target,slowAt){
+function fitGaps(L,role,shape,target,slowAt,combo={}){
   const tk0=parseShape(shape).map(o=>({...o,w:1})); const tk=settle(L,role,tk0); fitGaps.warn=tk.warn||null; const T=(typeof target==='string'&&target.includes('/'))?target:(+target||200),MIN=pm.SEQ_MIN_MS+15; const n=tk.length; const opts=process.env.FITOPTS?process.env.FITOPTS.split(',').map(Number):n>4?[0,250,550]:n>3?[0,250,400,700]:[0,150,250,350,450,550,700,900,1100];
-  const step=stepOf(L,role); let best=null;
+  const step=stepOf(L,role,combo); let best=null;
   const ctx0=lib.ctxFor(L,role), bb0=ctx0.bossCombatConfig.bosses[role];
   const baseFlight=(sp)=>{ const eb=ctx0.ENEMY_TYPES[role+role.slice(-1)]; const pps=eb.baseSpeed*sp*bb0.speedMultiplier*L.phases[0].speed*model.BASE_SPEED_GAME; return model.flightMs(5,pps,bb0.movementStyle||null,ctx0.bossCombatConfig.movementStyles); };
-  const rec=(i,g)=>{ if(i===n){ const gaps=g.slice(); let cur=0; const at=tk.map((o,i)=>{ if(i>0) cur+=Math.max(step,gaps[i-1]||0); return Math.round(((o.sp<=8?(slowAt||3000):baseFlight(o.sp,o.x)-(o.d||0))+cur)/10)*10; }); const sl=evalBeats(L,role,tk,at,gaps); if(!sl||Math.min(...sl)<MIN) return; const d=objective(sl,T,+process.env.FITPH||2); const real=sl.real; const sp=Math.max(...real)-Math.min(...real); if(!best||d<best.d||(d===best.d&&sp<best.sp)) best={d,sl,at:real,gaps,sp}; return; } for(const o of (tk[i]&&tk[i].fg!==undefined?[tk[i].fg]:opts)){ g.push(o); rec(i+1,g); g.pop(); } };
+  const rec=(i,g)=>{ if(i===n){ const gaps=g.slice(); let cur=0; const at=tk.map((o,i)=>{ if(i>0) cur+=Math.max(step,gaps[i-1]||0); return Math.round(((o.sp<=8?(slowAt||3000):baseFlight(o.sp,o.x)-(o.d||0))+cur)/10)*10; }); const sl=evalBeats(L,role,tk,at,gaps,combo); if(!sl||Math.min(...sl)<MIN) return; const d=objective(sl,T,+process.env.FITPH||2); const real=sl.real; const sp=Math.max(...real)-Math.min(...real); if(!best||d<best.d||(d===best.d&&sp<best.sp)) best={d,sl,at:real,gaps,sp}; return; } for(const o of (tk[i]&&tk[i].fg!==undefined?[tk[i].fg]:opts)){ g.push(o); rec(i+1,g); g.pop(); } };
   rec(1,[]);
   return best?{sl:best.sl,typ:best.sl.typ,geo:best.sl.geo,beats:tk.map((o,i)=>o.x+'/'+o.sp+'@'+best.at[i]+(o.wv?'~'+o.wv.join(','):'')).join(' '),gaps:best.gaps}:null;
 }

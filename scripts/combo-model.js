@@ -30,7 +30,12 @@ const START_Y = extractNumber('START_Y');
 const TARGET_Y_GAME = extractNumber('TARGET_Y');
 const BASE_SPEED_GAME = extractNumber('BASE_SPEED');
 // Время полёта атаки от yPos до линии героя: интегрирование по РЕАЛЬНОЙ функции стиля из game.js (шаг 2 мс, как кадры игры).
+// Подбор многократно запрашивает один и тот же полёт при разных паузах между атаками.
+// Ключ хранит точные входы без округления; параметры стиля входят целиком.
+const flightCache = new Map();
 function flightMs(yPos, pctPerSec, style, styleParams) {
+    const key = JSON.stringify([yPos, pctPerSec, style, styleParams]);
+    if (flightCache.has(key)) return flightCache.get(key);
     const st = { hasPausedMidFlight: false, pauseUntil: 0, hasTriggeredRush: false };
     let y = yPos, t = 0; const dt = 2;
     while (y < TARGET_Y_GAME && t < 30000) {
@@ -38,6 +43,8 @@ function flightMs(yPos, pctPerSec, style, styleParams) {
         const m = style ? resolveStyle(st, style, progress, styleParams, t).multiplier : 1;
         y += pctPerSec * m * dt / 1000; t += dt;
     }
+    if (flightCache.size >= 50000) flightCache.delete(flightCache.keys().next().value);
+    flightCache.set(key, t);
     return t;
 }
 // Боковой разброс цели (%): weave качается ±amplitude, drift уходит к центру на shift — игроку нужно запас по x
@@ -106,7 +113,8 @@ function analyze(level, boss, abilities, indices, phaseIdx = 0, combo = null, op
     const spread = Math.max(...arrivals) - Math.min(...arrivals);
     const slowCount = speeds.filter((s) => s <= 8).length;
     const hasFast = speeds.some((s) => s >= 12);
-    return { arrivals, offsets, speeds, spread, slowCount, hasFast, shotDelay, first: Math.min(...arrivals), lateral: lateralSlop(style, cfg.movementStyles, indices.map(i => abilities[i])), rot: opts.rot };
+    const blockOrder = cfg.attackChains && combo?.isChain ? indices.map((_, i) => i) : undefined;
+    return { arrivals, offsets, speeds, spread, slowCount, hasFast, shotDelay, first: Math.min(...arrivals), lateral: lateralSlop(style, cfg.movementStyles, indices.map(i => abilities[i])), rot: opts.rot, blockOrder };
 }
 // Все 5 вращений speedVariance (каждая волна босса сдвигает счётчик) — честность обязана держаться в худшем из них.
 function analyzeAllRot(level, boss, abilities, indices, phaseIdx, combo) {

@@ -29,6 +29,7 @@ function ctxFor(L, role) {
     return {
         ENEMY_TYPES: old.__types,
         bossCombatConfig: {
+            attackChains: L.attackChains ?? old.attackChains,
             minShotDelay: L.cfg.minShotDelay,
             movementStyles: old.movementStyles,
             phases: L.phases.map(p => ({ cadence: p.cadence, speed: p.speed, telegraphMultiplier: p.telegraphMultiplier })),
@@ -271,6 +272,7 @@ function writeLevel(L, solvedByRole) {
     // --- bossCombatConfig
     const P = [];
     P.push('const bossCombatConfig = {');
+    if (L.attackChains !== undefined || old.attackChains !== undefined) P.push(`\tattackChains: ${L.attackChains ?? old.attackChains},`);
     if (old.scaleLongComboDamage !== undefined) P.push('\tscaleLongComboDamage: ' + old.scaleLongComboDamage + ',\n\tscaleShortComboDamage: ' + old.scaleShortComboDamage + ',');
     if (old.musicMood) P.push('\tmusicMood: ' + q(old.musicMood) + ',');
     for (const k of ['waveJitter', 'busyRetryMs', 'defaultRecoveryMs', 'selection', 'movementStyles']) P.push(`\t${k}: ${JSON.stringify(old[k]).replace(/"([a-zA-Z0-9]+)":/g, '$1: ').replace(/,/g, ', ')},`);
@@ -313,6 +315,7 @@ function writeLevel(L, solvedByRole) {
         b.combos.forEach((c, ci) => {
             const parts = [`boss: '${r}'`, `indexAbilities: [${comboIdx[ci].join(', ')}]`];
             if (c.sig) parts.push('signature: true');
+            if (c.isChain) parts.push('isChain: true');
             if (c.minPhase) parts.push(`minPhase: ${c.minPhase}`);
             if (c.shotDelayMs) parts.push(`shotDelayMs: ${c.shotDelayMs}`);
             if (c.recoveryMs) parts.push(`recoveryMs: ${c.recoveryMs}`);

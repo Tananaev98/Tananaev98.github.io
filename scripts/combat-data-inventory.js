@@ -96,11 +96,11 @@ function collect(n, problems, srcOverride) {
             const phases = [0, 1, 2].map(ph => {
                 const r = model.analyze(lv, role, attacks, combo.indexAbilities, ph, combo);
                 const arr = r.arrivals.map(Math.round);
-                const order = combo.indexAbilities.map((_, i) => i).sort((a, b) => arr[a] - arr[b] || a - b);
+                const order = r.blockOrder || combo.indexAbilities.map((_, i) => i).sort((a, b) => arr[a] - arr[b] || a - b);
                 const gaps = order.slice(1).map((k, j) => arr[k] - arr[order[j]]);
-                const rots = model.analyzeAllRot(lv, role, attacks, combo.indexAbilities, ph, combo).map(q => ({ arrivals: q.arrivals.map(Math.round), offsets: q.offsets, lateral: q.lateral }));
+                const rots = model.analyzeAllRot(lv, role, attacks, combo.indexAbilities, ph, combo).map(q => ({ arrivals: q.arrivals.map(Math.round), offsets: q.offsets, lateral: q.lateral, blockOrder: q.blockOrder }));
                 return { arrivals: arr, offsets: r.offsets, order: order.map(i => i + 1).join(''), spread: Math.round(r.spread),
-                    gaps, verdict: model.verdict(r), shotDelay: Math.round(r.shotDelay), rots };
+                    gaps, verdict: model.verdict(r), shotDelay: Math.round(r.shotDelay), blockOrder: r.blockOrder, rots };
             });
             boss.combos.push({ index: ci, indices: combo.indexAbilities, kind, minPhase: combo.minPhase || 1, signature: !!combo.signature,
                 openingOrder: combo.openingOrder, shotDelayMs: combo.shotDelayMs, recoveryMs: combo.recoveryMs, shotGapsMs: combo.shotGapsMs,
@@ -156,6 +156,10 @@ function dataRules(L) {
                 if (ys.some(y => y > RULE.chainMaxSpawnY)) P.push(`${b.role} цепь ${cb.index}: звено стартует ниже y=${RULE.chainMaxSpawnY}`);
                 if (ss[0] > RULE.chainMaxHeadSpeed) P.push(`${b.role} цепь ${cb.index} ф${p + 1}: скорость головы ${ss[0].toFixed(1)} > ${RULE.chainMaxHeadSpeed}`);
                 for (let i = 1; i < ss.length; i++) if (ss[i] > ss[i - 1] + 1e-9) { P.push(`${b.role} цепь ${cb.index} ф${p + 1}: звено ${i + 1} быстрее предыдущего`); break; }
+                for (let rot = 0; rot < b.profile.speedVariance.length; rot++) {
+                    const actual = cb.indices.map((k,i) => b.attacks[k].customSpeed * sm * L.phases[p].speed * b.profile.speedVariance[(rot+i)%b.profile.speedVariance.length]);
+                    if (actual.some((v,i) => i>0 && v>actual[i-1]+1e-9)) P.push(`${b.role} цепь ${cb.index} ф${p+1}: при вращении ${rot} следующее звено быстрее предыдущего`);
+                }
                 const minGapMs = RULE.chainMinGapPercent / (RULE.targetYSpeedBase * RULE.chainMaxHeadSpeed) * 1000;
                 if (ph.shotDelay < minGapMs - 1e-6) P.push(`${b.role} цепь ${cb.index} ф${p + 1}: шаг появления звеньев ${ph.shotDelay} мс < ${Math.round(minGapMs)} мс (звенья «кучей»)`);
             }
@@ -165,6 +169,10 @@ function dataRules(L) {
 }
 function constraints(L) {
     const P = dataRules(L);
+    if (L.n >= 41 && L.n <= 65) {
+        if (!L.attackChains) P.push('область V: не включена механика attackChains');
+        for (const b of L.bosses) if (!b.combos.some(c => c.kind === 'C')) P.push(`${b.role}: нет атакующей цепи (область V)`);
+    }
     const barricades = L.bosses.some(b => b.attacks.some(a => a.barricadeHits !== undefined));
     if (L.attackChains && L.n < CHAINS_FROM) P.push(`цепи (attackChains) на уровне ${L.n} < ${CHAINS_FROM}`);
     if (L.bosses.some(b => b.combos.some(c => c.isChain)) && L.n < CHAINS_FROM) P.push(`isChain-комбо на уровне ${L.n} < ${CHAINS_FROM}`);
@@ -276,7 +284,7 @@ function slackReport(L) {
     for (const b of L.bosses) {
         const per = [0, 1, 2].map(p => {
             const tele = Math.max(L.minTelegraphMs, b.profile.telegraphMs * L.phases[p].telegraphMultiplier);
-            const vals = b.combos.filter(cb => cb.indices.length >= 2 && cb.minPhase <= p + 1).map(cb => comboSlack(cb.indices.map(k => b.attacks[k]), cb.phases[p].arrivals, cb.phases[p].offsets, tele));
+            const vals = b.combos.filter(cb => cb.indices.length >= 2 && cb.minPhase <= p + 1).map(cb => comboSlack(cb.indices.map(k => b.attacks[k]), cb.phases[p].arrivals, cb.phases[p].offsets, tele, cb.phases[p].blockOrder));
             vals.sort((a, c) => a - c);
             const med = vals.length ? vals[Math.floor(vals.length / 2)] : null;
             all.push(...vals.map(v => ({ role: b.role, p, v })));
@@ -309,7 +317,7 @@ function slackChecks(L) {
             const tele = Math.max(L.minTelegraphMs, b.profile.telegraphMs * L.phases[p].telegraphMultiplier);
             const list = b.combos.filter(cb => cb.indices.length >= 2 && cb.minPhase <= p + 1)
                 .map(cb => ({ cb, v: worstSequentialSlack(cb.indices.map(k => b.attacks[k]), cb.phases[p].rots, tele), t: typicalSequentialSlack(cb.indices.map(k => b.attacks[k]), cb.phases[p].rots, tele) }));
-            list.filter(x => x.v < SLACK_RULE.possibleMin).forEach(x => bad.push(`${b.role} комбо ${x.cb.index} ф${p + 1}: живой игрок (порядок прилёта, худшее из 5 вращений скоростей) имеет запас ${x.v} мс < ${SLACK_RULE.possibleMin} — не успеет`));
+            list.filter(x => x.v < SLACK_RULE.possibleMin).forEach(x => bad.push(`${b.role} комбо ${x.cb.index} ф${p + 1}: живой игрок (${x.cb.isChain ? 'порядок звеньев' : 'порядок прилёта'}, худшее из 5 вращений скоростей) имеет запас ${x.v} мс < ${SLACK_RULE.possibleMin} — не успеет`));
             const v = list.map(x => x.v).sort((x, y) => x - y);
             const t = list.map(x => x.t).sort((x, y) => x - y);
             return { min: v[0], med: v[Math.floor(v.length / 2)], n: v.length, tmin: t[0], tmed: t[Math.floor(t.length / 2)], tp75: t[Math.floor(t.length * 0.75)] };
@@ -378,7 +386,7 @@ function printLevel(L) {
         for (const cb of b.combos) {
             const att = cb.indices.map(i => { const a = b.attacks[i]; return `${a.xPos}/${a.yPos}/${a.customSpeed}${a.waveAmplitude !== undefined ? `/w${a.waveAmplitude}-${a.waveFrequency}` : ''}${a.barricadeHits ? `/бар${a.barricadeHits}` : ''}`; }).join(' ');
             console.log(`    [${cb.index}] ${cb.kind}${cb.signature ? ' сигн' : ''} minФаза=${cb.minPhase}${cb.openingOrder !== undefined ? ` открывает=${cb.openingOrder}` : ''}${cb.shotDelayMs ? ` shotDelayMs=${cb.shotDelayMs}` : ''}${cb.recoveryMs ? ` recoveryMs=${cb.recoveryMs}` : ''}${cb.shotGapsMs ? ` gaps=[${cb.shotGapsMs}]` : ''} | ${att} | стороны ${cb.sides} классы ${cb.classes}`);
-            console.log('        ' + cb.phases.map((p, i) => `ф${i + 1}: прилёт [${p.arrivals}] порядок ${p.order} разброс ${p.spread}${p.verdict.ok ? '' : ' ✗' + p.verdict.why}`).join(' | '));
+            console.log('        ' + cb.phases.map((p, i) => `ф${i + 1}: прилёт [${p.arrivals}] ${cb.isChain ? "порядок отбоя" : "порядок прилёта"} ${p.order} разброс ${p.spread}${cb.kind !== 'N' || p.verdict.ok ? '' : ' ✗' + p.verdict.why}`).join(' | '));
         }
     }
 }
@@ -402,7 +410,7 @@ function main() {
         if (args.verbose) for (const b of L.bosses) {
             console.log(`  ${b.role}:`);
             b.combos.forEach(cb => { if (cb.indices.length < 2) return;
-                const v = [0, 1, 2].map(p => { const tele = Math.max(L.minTelegraphMs, b.profile.telegraphMs * L.phases[p].telegraphMultiplier); return comboSlack(cb.indices.map(k => b.attacks[k]), cb.phases[p].arrivals, cb.phases[p].offsets, tele); });
+                const v = [0, 1, 2].map(p => { const tele = Math.max(L.minTelegraphMs, b.profile.telegraphMs * L.phases[p].telegraphMultiplier); return comboSlack(cb.indices.map(k => b.attacks[k]), cb.phases[p].arrivals, cb.phases[p].offsets, tele, cb.phases[p].blockOrder); });
                 console.log(`    [${cb.index}] ${cb.kind}${cb.signature ? ' сигн' : ''} дл.${cb.indices.length} minФаза ${cb.minPhase}: запас ф1 ${v[0]}, ф2 ${v[1]}, ф3 ${v[2]} мс | стороны ${cb.sides}`); });
         }
         if (fs.existsSync(bf)) { const pr = []; show('  база (до переработки):', collect(n, pr, fs.readFileSync(bf, 'utf8'))); }
