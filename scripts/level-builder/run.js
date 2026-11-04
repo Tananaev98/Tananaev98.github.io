@@ -13,6 +13,14 @@ function loadInv(n) {
 }
 const L = require('./design' + n + '.js');
 try {
+    // А7.3: compare pressure against the actual level before its first rebuild.
+    // Never replace an existing baseline with an already rebuilt candidate.
+    const baseline = require('path').join(__dirname, '..', 'baseline', `gameData${n}.js`);
+    if (!fs.existsSync(baseline)) {
+        fs.mkdirSync(require('path').dirname(baseline), { recursive: true });
+        fs.copyFileSync(lib.REPO + `/lvlData/gameData${n}.js`, baseline);
+        console.log(`Сохранена исходная база давления: scripts/baseline/gameData${n}.js`);
+    }
     cp.spawnSync('node', [lib.REPO + '/scripts/combat-data-inventory.js', `--json=${require('path').join(__dirname, 'inv.json')}`], { encoding: 'utf8', maxBuffer: 1 << 28 });
     { const lv = JSON.parse(fs.readFileSync(require('path').join(__dirname, 'inv.json'), 'utf8')); const lg = lib.nudgeScalars(L, lv); if (lg.length) console.log(['сдвиг констант до свободных значений:', ...lg.map(x => '  ' + x)].join(String.fromCharCode(10))); L._nudged = true; }
     const G = loadInv(n);

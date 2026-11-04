@@ -264,7 +264,7 @@ function pressureReport(n) {
         const c = cur[role], b = base && base[role];
         const f1 = (x) => x.toFixed(1);
         rows.push(`  ${role}: длина комбо ${b ? f1(b.avgLen) + '→' : ''}${f1(c.avgLen)} | медленных ${b ? Math.round(b.slow * 100) + '→' : ''}${Math.round(c.slow * 100)}% | ` +
-            [0, 2].map(p => `ф${p + 1}: пауза ${b ? b.ph[p].waveDelay + '→' : ''}${c.ph[p].waveDelay}мс, атак/мин ${b ? f1(b.ph[p].apm) + '→' : ''}${f1(c.ph[p].apm)}, решений/комбо ${b ? f1(b.ph[p].decisions) + '→' : ''}${f1(c.ph[p].decisions)}`).join(' | ') + ` | медленных без прикрытия ф1/ф3: ${c.ph[0].slowViol}/${c.ph[2].slowViol}`);
+            [0, 1, 2].map(p => `ф${p + 1}: пауза ${b ? b.ph[p].waveDelay + '→' : ''}${c.ph[p].waveDelay}мс, атак/мин ${b ? f1(b.ph[p].apm) + '→' : ''}${f1(c.ph[p].apm)}, решений/комбо ${b ? f1(b.ph[p].decisions) + '→' : ''}${f1(c.ph[p].decisions)}`).join(' | ') + ` | медленных без прикрытия ф1/ф2/ф3: ${c.ph.map(p=>p.slowViol).join('/')}`);
         if (b) { if (c.avgLen < b.avgLen - 1e-9) bad.push(`${role}: средняя длина комбо ${f1(c.avgLen)} < прежней ${f1(b.avgLen)} (А7.3)`);
             for (const p of [0, 2]) if (c.ph[p].apm < b.ph[p].apm - 1e-9) bad.push(`${role} ф${p + 1}: атак/мин ${f1(c.ph[p].apm)} < прежних ${f1(b.ph[p].apm)} (А7.3)`); }
         // А7.6 (2026-09-21, жалоба на Долбуна ур.13): потолок давления — у игрока должно оставаться окно, чтобы бить босса, а не только защищаться.

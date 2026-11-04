@@ -1259,7 +1259,7 @@ function resetGame() {
     isGameOver = false;
     activeGameTimeMs = 0;
     timeSec2 = 0;
-    lastTimeSec2 = 0;
+    lastTimeSec2 = -1;
     lastFrameTime = null;
     heroHP.current = GAME_CONFIG.HERO_BASE_HP;
     heroHP.max = GAME_CONFIG.HERO_BASE_HP;
@@ -1469,7 +1469,7 @@ function disableSpawning() {
 let lastFrameTime = null;
 let activeGameTimeMs = 0;
 let timeSec2 = 0;
-let lastTimeSec2 = 0;
+let lastTimeSec2 = -1;
  
 function gameLoop(currentTime) {
     const rawDeltaTime = lastFrameTime === null ? 0 : currentTime - lastFrameTime;
@@ -1493,7 +1493,8 @@ function gameLoop(currentTime) {
     updateEliseyBees(currentTime);
     updateEliseyBeeGauge();
 
-	if ((timeSec2-lastTimeSec2)>=1 && (timeNextBoss-timeSec2)>0 && (timeNextBoss-timeSec2)<5 && !bossAlive) {
+	// Показываем весь отсчёт, включая первый активный кадр после окна старта.
+	if ((timeSec2-lastTimeSec2)>=1 && (timeNextBoss-timeSec2)>0 && !bossAlive) {
 		lastTimeSec2 = timeSec2;
 		showCenterText((timeNextBoss-timeSec2), 800, 'info');
 	}

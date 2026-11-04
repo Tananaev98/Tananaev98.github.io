@@ -287,7 +287,10 @@ function writeLevel(L, solvedByRole) {
     ROLES.forEach((r, i) => {
         const b = L.bosses[r]; const o = old.bosses[r];
         const sv = b.speedVariance || o.speedVariance;
-        P.push(`\t\t${r}: { combatIdentity: ${q(b.identity)}, combatTrick: ${q(b.trick)}, signatureEvery: ${b.signatureEvery ?? o.signatureEvery}, movementStyle: '${b.style}', cadence: ${f(b.cadence)}, telegraphMs: ${b.telegraphMs}, speedMultiplier: ${f(b.speedMultiplier)}, damageMultiplier: ${f(o.damageMultiplier)}, speedVariance: [${sv.map(f).join(', ')}]${o.healthMultiplier !== undefined ? `, healthMultiplier: ${f(o.healthMultiplier)}` : ''}${o.appearMessage ? `, appearMessage: ${q(o.appearMessage)}` : ''}${o.phaseMessages ? `, phaseMessages: ${JSON.stringify(o.phaseMessages).replace(/"(d)":/g, '$1: ').replace(/,/g, ', ')}` : ''} }${i < 4 ? ',' : ''}`);
+        // Formatting punctuation with a global replace also changes commas INSIDE dialogue.
+        // An explicit snapshot may restore dialogue damaged by an older builder run.
+        const messages = b.phaseMessages ?? o.phaseMessages;
+        P.push(`\t\t${r}: { combatIdentity: ${q(b.identity)}, combatTrick: ${q(b.trick)}, signatureEvery: ${b.signatureEvery ?? o.signatureEvery}, movementStyle: '${b.style}', cadence: ${f(b.cadence)}, telegraphMs: ${b.telegraphMs}, speedMultiplier: ${f(b.speedMultiplier)}, damageMultiplier: ${f(o.damageMultiplier)}, speedVariance: [${sv.map(f).join(', ')}]${o.healthMultiplier !== undefined ? `, healthMultiplier: ${f(o.healthMultiplier)}` : ''}${o.appearMessage ? `, appearMessage: ${q(o.appearMessage)}` : ''}${messages ? `, phaseMessages: ${JSON.stringify(messages)}` : ''} }${i < 4 ? ',' : ''}`);
     });
     P.push('\t}');
     P.push('};');
