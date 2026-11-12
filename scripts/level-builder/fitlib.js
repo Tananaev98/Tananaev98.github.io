@@ -30,10 +30,10 @@ function commit(L,role,tk,at,gaps,combo={}){ const P=prep(L); const u=(P.used[ro
 function evalBeats(L,role,tk,at,gaps,combo={}){
   const ctx=lib.ctxFor(L,role); const co={isChain:combo.isChain,shotDelayMs:combo.shotDelayMs,shotGapsMs:gaps&&gaps.length?gaps:undefined};
   let bts;try{const P=process.env.NONUDGE?null:prep(L);bts=lib.solveCombo(L,role,{...combo,id:'z',tolerant:true,gaps:gaps&&gaps.length?gaps:undefined,beats:tk.map((o,i)=>[o.x,at[i],o.sp,o.wv||null])},{},P?P.avoid[role]:new Set(),P?new Set(P.used[role]||[]):new Set());}catch(e){return why('solve');}
-  const ab=bts.map(x=>({boss:role,xPos:x.x,yPos:x.y,customSpeed:x.s,waveAmplitude:x.w?x.w[0]:undefined}));const idx=ab.map((_,i)=>i);
+  const ab=bts.map(x=>({boss:role,xPos:x.x,yPos:x.y,customSpeed:x.s,waveAmplitude:x.w?x.w[0]:undefined,...x.bar}));const idx=ab.map((_,i)=>i);
   { const bb=ctx.bossCombatConfig.bosses[role]; const mv=Math.max(...(bb.speedVariance||[1]));
-    for(const a of ab) for(let ph=0;ph<3;ph++){ const proj=a.customSpeed*bb.speedMultiplier*L.phases[ph].speed*mv; const cap=a.yPos>11?15:a.yPos>9?18:31; if(proj>cap) return why('cap'); if(a.customSpeed<=10&&proj>11.5) return why('anticheese'); } }
-  for(let ph=0;ph<3;ph++){ const an0=model.analyze(ctx,role,ab,idx,ph,co); if((!combo.isChain&&!model.verdict(an0).ok) || (ab.length>=2 && an0.spread<80)) { if(process.env.FITDBG) console.error('  dbg ph'+ph+' rot0 spread',Math.round(an0.spread),model.verdict(an0).why||'spread<80','arrivals',an0.arrivals.map(Math.round).join(',')); return why('verdict/spread<80'); } }
+    for(const a of ab) for(let ph=0;ph<3;ph++){ const proj=a.customSpeed*bb.speedMultiplier*L.phases[ph].speed*mv*(a.barricadeHits?a.barricadeRushSpeedMultiplier:1); const cap=a.yPos>11?15:a.yPos>9?18:31; if(proj>cap) return why('cap'); if(!a.barricadeHits&&a.customSpeed<=10&&proj>11.5) return why('anticheese'); } }
+  for(let ph=0;ph<3;ph++){ const an0=model.analyze(ctx,role,ab,idx,ph,co); if((!combo.isChain&&!combo.barricades&&!model.verdict(an0).ok) || (ab.length>=2 && an0.spread<80)) { if(process.env.FITDBG) console.error('  dbg ph'+ph+' rot0 spread',Math.round(an0.spread),model.verdict(an0).why||'spread<80','arrivals',an0.arrivals.map(Math.round).join(',')); return why('verdict/spread<80'); } }
   if(combo.isChain){
     if(!L.attackChains||ab.length<3||ab.length>7||ab.some(a=>a.yPos>26))return why('chain-geometry');
     const b=ctx.bossCombatConfig.bosses[role],v=b.speedVariance;
@@ -43,11 +43,11 @@ function evalBeats(L,role,tk,at,gaps,combo={}){
   // 5.1: быстрые (итоговая скорость >=18) атаки противоположных флангов — не ближе 720 мс по моментам ПОЯВЛЕНИЯ
   { const bb=ctx.bossCombatConfig.bosses[role]; const mv=Math.max(...(bb.speedVariance||[1]));
     for(let ph=0;ph<3;ph++){ const an=model.analyze(ctx,role,ab,idx,ph,co); let lL=-1e9,lR=-1e9;
-      for(let i=0;i<ab.length;i++){ const a=ab[i]; const side=a.xPos<=28?'L':a.xPos>=72?'R':'C'; if(side==='C'||a.customSpeed*bb.speedMultiplier*L.phases[ph].speed*mv<18) continue;
+      for(let i=0;i<ab.length;i++){ const a=ab[i]; const side=a.xPos<=28?'L':a.xPos>=72?'R':'C'; if(a.barricadeHits||side==='C'||a.customSpeed*bb.speedMultiplier*L.phases[ph].speed*mv<18) continue;
         const opp=side==='L'?lR:lL; if(an.offsets[i]-opp<720) return why('cross-flank720'); if(side==='L') lL=an.offsets[i]; else lR=an.offsets[i]; } } }
   // прикрытие медленных (А7.4): другая атака на другой полосе (dx>=15) в пределах 600 мс прилёта в ф1 и ф3
   for(const ph of [0,2]){const an=model.analyze(ctx,role,ab,idx,ph,co);
-    for(let i=0;i<ab.length;i++) if(ab[i].customSpeed<=8&&!ab.some((a,j)=>j!==i&&Math.abs(a.xPos-ab[i].xPos)>=15&&Math.abs(an.arrivals[j]-an.arrivals[i])<=600)) return why('cover');}
+    for(let i=0;i<ab.length;i++) if(!ab[i].barricadeHits&&ab[i].customSpeed<=8&&!ab.some((a,j)=>j!==i&&Math.abs(a.xPos-ab[i].xPos)>=15&&Math.abs(an.arrivals[j]-an.arrivals[i])<=600)) return why('cover');}
   const sl=[0,1,2].map(ph=>{const tele=Math.max(L.cfg.minTelegraphMs,L.bosses[role].telegraphMs*L.phases[ph].telegraphMultiplier);const rots=model.analyzeAllRot(ctx,role,ab,idx,ph,co);return pm.worstSequentialSlack(ab,rots,tele);});
   // ТИПИЧНЫЙ запас (медиана по 5 вращениям) — то, что игрок видит в бою (А9.7); худший (sl) остаётся условием «возможно»
   sl.typ=[0,1,2].map(ph=>{const tele=Math.max(L.cfg.minTelegraphMs,L.bosses[role].telegraphMs*L.phases[ph].telegraphMultiplier);return pm.typicalSequentialSlack(ab,model.analyzeAllRot(ctx,role,ab,idx,ph,co),tele);});

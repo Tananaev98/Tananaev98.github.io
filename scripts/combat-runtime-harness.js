@@ -41,6 +41,7 @@ function loadRuntime(number, levelSource) {
             link: linkNextChainMember, resolve: resolveChainMember,
             spawn: spawnEnemyWithParams, impact: applyHeroImpactDamage,
             pause: pauseBossEventTimers, resume: resumeBossEventTimers,
+            pauseGame, resumeGame, updateWound: Enemy.prototype.updateWound, applyWound: Enemy.prototype.applyWound,
             health: calculateBossMaxHealth, damage: calculateBossAttackDamage,
             comboDamage: getBossComboDamageMultiplier,
             setBoss(role, phaseIndex = 0) {
@@ -76,7 +77,7 @@ function loadRuntime(number, levelSource) {
         }
         now = end;
     }
-    function flight(attack, speed, style) {
+    function flight(attack, speed, style, trace = false) {
         // Geometry in percent on a 100x100 presentation stub. No movement formula here.
         const start = now;
         const p = {
@@ -93,13 +94,16 @@ function loadRuntime(number, levelSource) {
             updateWound: () => false, resolveAwayFromBoss() {}, applyPositionTransform() {},
             clampHorizontal: x => Math.max(0.5, Math.min(93.5, x))
         };
-        let elapsed = 0;
+        let elapsed = 0, firstMovement = null, maxXDeviation = 0;
         while (elapsed < 30000) {
             elapsed += 1000 / 120; now = start + elapsed;
-            if (w.api.update.call(p, 1000 / 120)) break;
+            const done = w.api.update.call(p, 1000 / 120);
+            if(firstMovement===null&&p.pixelY!==attack.yPos)firstMovement=elapsed;
+            maxXDeviation=Math.max(maxXDeviation,Math.abs(p.x-attack.xPos));
+            if (done) break;
         }
         now = start;
-        return elapsed;
+        return trace ? {elapsed,firstMovement,maxXDeviation} : elapsed;
     }
     return { api: w.api, window: w, dom, errors, advance, flight, close: () => dom.window.close() };
 }

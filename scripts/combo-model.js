@@ -29,6 +29,14 @@ const resolveStyle = new Function('return ' + extractFunction(GAME_SRC, 'resolve
 const START_Y = extractNumber('START_Y');
 const TARGET_Y_GAME = extractNumber('TARGET_Y');
 const BASE_SPEED_GAME = extractNumber('BASE_SPEED');
+// Non-boss targets use a per-target cooldown, independently of the selected hero.
+const hitIntervalMatch = /const shotInterval\s*=\s*isBoss\s*\?\s*SHOT_INTERVAL\s*:\s*(\d+)/.exec(extractFunction(GAME_SRC, 'checkAimAndDamage'));
+if (!hitIntervalMatch) throw new Error('combo-model: non-boss hit interval changed; re-audit barricades');
+const TARGET_HIT_INTERVAL_MS = Number(hitIntervalMatch[1]);
+function attackFlightMs(attack, pps, style, styleParams) {
+    if (!attack.barricadeHits) return flightMs(attack.yPos, pps, style, styleParams);
+    return attack.barricadePauseMs + flightMs(attack.yPos, pps * attack.barricadeRushSpeedMultiplier, null, styleParams);
+}
 // Время полёта атаки от yPos до линии героя: интегрирование по РЕАЛЬНОЙ функции стиля из game.js (шаг 2 мс, как кадры игры).
 // Подбор многократно запрашивает один и тот же полёт при разных паузах между атаками.
 // Ключ хранит точные входы без округления; параметры стиля входят целиком.
@@ -107,7 +115,7 @@ function analyze(level, boss, abilities, indices, phaseIdx = 0, combo = null, op
         // без rot берётся середина (1.0) — только для унаследованных проверок, честность считается по ВСЕМ rot (analyzeWorst).
         const variation = opts.rot === undefined ? 1 : var5[(opts.rot + i) % var5.length];
         const pps = level.ENEMY_TYPES[a.type || (boss + boss.slice(-1))].baseSpeed * a.customSpeed * profile.speedMultiplier * phase.speed * variation * BASE_SPEED_GAME;
-        arrivals.push(offsets[i] + flightMs(a.yPos, pps, style, cfg.movementStyles));
+        arrivals.push(offsets[i] + attackFlightMs(a, pps, style, cfg.movementStyles));
         speeds.push(a.customSpeed);
     });
     const spread = Math.max(...arrivals) - Math.min(...arrivals);
@@ -148,4 +156,4 @@ function crossViolations(xs, arrivals) {
     return bad;
 }
 
-module.exports = { BASE_SPEED_GAME, analyzeAllRot, flightMs, crossViolations, CROSS_MIN_DX, CROSS_MIN_GAP_MS, loadLevel, analyze, verdict, sideOf, schedule, projectedSpeed, ROOT, FAST_BOSS_ATTACK_SPEED, MIN_FAST_CROSSFIRE_GAP_MS };
+module.exports = { TARGET_HIT_INTERVAL_MS, attackFlightMs, BASE_SPEED_GAME, analyzeAllRot, flightMs, crossViolations, CROSS_MIN_DX, CROSS_MIN_GAP_MS, loadLevel, analyze, verdict, sideOf, schedule, projectedSpeed, ROOT, FAST_BOSS_ATTACK_SPEED, MIN_FAST_CROSSFIRE_GAP_MS };

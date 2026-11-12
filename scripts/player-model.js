@@ -5,6 +5,11 @@
 // (мс между моментом блока и прилётом). Запас < 0 — комбо физически не отбить целиком; малый запас — трудно.
 'use strict';
 const PLAYER = { cursorSpeed: 111, reactionMs: 250, startX: 50 };
+const { TARGET_HIT_INTERVAL_MS } = require('./combo-model');
+// Input damage is polled by gameLoop. Reserve up to one 60Hz frame per repeat
+// rather than assuming every cooldown expires exactly on a rendered frame.
+const BARRICADE_FRAME_MS = 1000 / 60;
+const serviceMs = a => a.barricadeHits ? (a.barricadeHits - 1) * (TARGET_HIT_INTERVAL_MS + BARRICADE_FRAME_MS) : 0;
 
 // attacks — объекты с xPos; arrivals/offsets — прилёты и моменты появления комбо (мс); teleMs — время телеграфа фазы
 function comboSlack(attacks, arrivals, offsets, teleMs, blockOrder) {
@@ -18,7 +23,7 @@ function comboSlack(attacks, arrivals, offsets, teleMs, blockOrder) {
         if (cnt === n) { best = minSlack; return; }
         for (let i = 0; i < n; i++) if (!used[i]) {
             if (blockOrder && i !== blockOrder[cnt]) continue;
-            const arrive = Math.max(t + Math.abs(X[i] - x) / PLAYER.cursorSpeed * 1000, S[i]);
+            const arrive = Math.max(t + Math.abs(X[i] - x) / PLAYER.cursorSpeed * 1000, S[i]) + serviceMs(attacks[i]);
             const slack = D[i] - arrive;
             used[i] = true; dfs(cnt + 1, X[i], arrive, Math.min(minSlack, slack)); used[i] = false;
         }
@@ -33,18 +38,28 @@ function comboSlack(attacks, arrivals, offsets, teleMs, blockOrder) {
 // lateral — боковой разброс цели (weave ±amplitude, drift shift): добавляется к каждому переносу. Пересчитывать константы по новым журналам.
 const SEQ_MIN_MS = 60;
 const SEQ_PLAYER = { cursorSpeed: 110, reactionMs: 300, retargetMs: 100 };
-function sequentialSlack(attacks, arrivals, offsets, teleMs, lateral = 0, blockOrder) {
+function sequentialTimeline(attacks, arrivals, offsets, teleMs, lateral = 0, blockOrder) {
     const n = attacks.length; if (n === 0) return null;
     // Цепь снимает неуязвимость строго от головы к хвосту, а не по прилётам.
     const order = blockOrder || arrivals.map((_, i) => i).sort((a, b) => arrivals[a] - arrivals[b]);
     let x = PLAYER.startX, t = offsets[0] + SEQ_PLAYER.reactionMs, min = Infinity, first = true;
+    const steps = [];
     for (const i of order) {
-        const travel = (Math.abs(attacks[i].xPos - x) + (first ? 0 : lateral)) / SEQ_PLAYER.cursorSpeed * 1000;
-        const at = Math.max((first ? t : t + SEQ_PLAYER.retargetMs) + travel, offsets[i] + teleMs);
-        min = Math.min(min, arrivals[i] + teleMs - at); x = attacks[i].xPos; t = at; first = false;
+        // Barricades do not inherit weave/drift. Retaining the source target's
+        // uncertainty on departure is conservative when returning from a moving target.
+        const slop = first ? 0 : attacks[i].barricadeHits ? (attacks[steps.at(-1).index].barricadeHits ? 0 : lateral) : lateral;
+        const travel = (Math.abs(attacks[i].xPos - x) + slop) / SEQ_PLAYER.cursorSpeed * 1000;
+        const start = Math.max((first ? t : t + SEQ_PLAYER.retargetMs) + travel, offsets[i] + teleMs);
+        const at = start + serviceMs(attacks[i]);
+        const slack = arrivals[i] + teleMs - at;
+        steps.push({index:i, start, end:at, deadline:arrivals[i]+teleMs, slack});
+        min = Math.min(min, slack); x = attacks[i].xPos; t = at; first = false;
     }
-    return Math.round(min);
+    return {slack:Math.round(min), steps};
 }
+// Conservative, readable strategy: earliest arrival first; finish every barricade
+// before retargeting. No omniscient route search and no free intermediate hits.
+function sequentialSlack(...args) { return sequentialTimeline(...args)?.slack ?? null; }
 // Худший случай по всем вращениям speedVariance (каждая волна босса сдвигает счётчик — конкретный порядок скоростей заранее неизвестен)
 function worstSequentialSlack(attacks, rots, teleMs) {
     return Math.min(...rots.map(r => sequentialSlack(attacks, r.arrivals, r.offsets, teleMs, r.lateral, r.blockOrder)));
@@ -56,4 +71,4 @@ function typicalSequentialSlack(attacks, rots, teleMs) {
     const v = rots.map(r => sequentialSlack(attacks, r.arrivals, r.offsets, teleMs, r.lateral, r.blockOrder)).sort((a, b) => a - b);
     return v[Math.floor(v.length / 2)];
 }
-module.exports = { PLAYER, comboSlack, sequentialSlack, worstSequentialSlack, typicalSequentialSlack, SEQ_MIN_MS, SEQ_PLAYER };
+module.exports = { BARRICADE_FRAME_MS, serviceMs, sequentialTimeline, PLAYER, comboSlack, sequentialSlack, worstSequentialSlack, typicalSequentialSlack, SEQ_MIN_MS, SEQ_PLAYER };

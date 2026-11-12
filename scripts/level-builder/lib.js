@@ -57,14 +57,18 @@ function solveCombo(L, role, combo, solved, avoid, used) {
         if (bt.same) { const src = solved[bt.same[0]][bt.same[1]]; return { ...src, fixed: true }; }
         const [x, at, s, w] = bt; return { x, at, s, w: w || null };
     });
+    beats.forEach((bt,i) => { const bar=combo.barricades?.[i]; if(bar) {
+        if(!Number.isInteger(bar.hits)||!Number.isFinite(bar.rush)||!Number.isFinite(bar.y))throw new Error(`${role}/${combo.id}: barricade requires hits, rush and y`);
+        bt.bar={barricadeHits:bar.hits,barricadePauseMs:bar.hits*400,barricadeRushSpeedMultiplier:bar.rush}; bt.y=bar.y;
+    } });
     beats.forEach((bt, i) => { if (bt.x >= 32 && bt.x <= 68 && bt.y !== undefined) return; });
     const comboObj = { shotDelayMs: combo.shotDelayMs, shotGapsMs: combo.gaps };
-    const ab = beats.map(bt => ({ boss: role, xPos: bt.x, yPos: bt.y !== undefined ? bt.y : 15, customSpeed: bt.s }));
+    const ab = beats.map(bt => ({ boss: role, xPos: bt.x, yPos: bt.y !== undefined ? bt.y : 15, customSpeed: bt.s, ...bt.bar }));
     const idx = beats.map((_, i) => i);
     for (let it = 0; it < 8; it++) {
         const an = model.analyze(ctx, role, ab, idx, 0, comboObj);
         beats.forEach((bt, i) => {
-            if (bt.fixed) return;
+            if (bt.fixed || bt.bar) return;
             // y такой, чтобы прилёт (по РЕАЛЬНОЙ функции движения из game.js — стиль, старт от START_Y) совпал с желаемым: бисекция
             const pps = ctx.ENEMY_TYPES[role + role.slice(-1)].baseSpeed * bt.s * mult * model.BASE_SPEED_GAME;
             const want = bt.at - an.offsets[i]; let lo = 4, hi = 76;
@@ -81,7 +85,7 @@ function solveCombo(L, role, combo, solved, avoid, used) {
     beats.forEach((bt, i) => {
         if (!bt.fixed && bt.x >= 32 && bt.x <= 68 && bt.y >= 6 && bt.y <= 44) problems.push(`${combo.id}#${i}: атака x=${bt.x}, y=${bt.y} попадает в тело босса (правило зон спавна)`);
         if (!yRuleOk(bt.s, bt.y)) problems.push(`${combo.id}#${i}: скорость ${bt.s} при y=${bt.y} вне разрешённого (желаемый прилёт ${bt.at}мс)`);
-        if (!combo.tolerant && !bt.fixed && Math.abs(an.arrivals[i] - bt.at) > 160) problems.push(`${combo.id}#${i}: скорость ${bt.s} даёт прилёт ${Math.round(an.arrivals[i])}мс вместо желаемых ${bt.at}мс (достижимо только около этого значения)`);
+        if (!combo.tolerant && !bt.fixed && !bt.bar && Math.abs(an.arrivals[i] - bt.at) > 160) problems.push(`${combo.id}#${i}: скорость ${bt.s} даёт прилёт ${Math.round(an.arrivals[i])}мс вместо желаемых ${bt.at}мс (достижимо только около этого значения)`);
     });
     if (combo.expect) {
         const order = idx.slice().sort((a, b) => an.arrivals[a] - an.arrivals[b]).map(i => i + 1).join('');
@@ -269,6 +273,11 @@ const q = (s) => JSON.stringify(s);
 function writeLevel(L, solvedByRole) {
     const file = path.join(REPO, 'lvlData', `gameData${L.n}.js`);
     let src = fs.readFileSync(file, 'utf8'); const old = loadOld(L.n);
+    if (L.combatHeader) {
+        const at = src.search(/let lvlNumber\s*=/);
+        if (at < 0) throw new Error('Missing level declaration for combat header');
+        src = L.combatHeader.trimEnd() + '\n' + src.slice(at);
+    }
     // --- bossCombatConfig
     const P = [];
     P.push('const bossCombatConfig = {');
@@ -303,7 +312,7 @@ function writeLevel(L, solvedByRole) {
         const b = L.bosses[r]; const solved = solvedByRole[r];
         const reg = []; const regIdx = new Map();
         const idxOf = (bt) => {
-            const k = `${bt.x}/${bt.y}/${bt.s}/${bt.w ? bt.w.join('-') : ''}`;
+            const k = `${bt.x}/${bt.y}/${bt.s}/${bt.w ? bt.w.join('-') : ''}/${JSON.stringify(bt.bar||null)}`;
             if (!regIdx.has(k)) { regIdx.set(k, reg.length); reg.push({ ...bt, k, combo: null }); }
             return regIdx.get(k);
         };
@@ -311,7 +320,7 @@ function writeLevel(L, solvedByRole) {
         AB.push(`\t// ===== ${b.title} =====`);
         reg.forEach((a, i) => {
             const t = 'enem' + (ri + 1) + (ri + 1);
-            AB.push(`\t{ boss: '${r}', type: '${t}', xPos: ${a.x}, yPos: ${a.y}, customHP: 1, customDamage: ${L.damageByClass ? `attackDamage.${r}.${(L.damageClassOverride && L.damageClassOverride[r]) || (a.s >= 13 ? 'light' : a.s >= 7 ? 'medium' : 'heavy')}` : (L.damageTiers && L.damageTiers[r]) ? L.damageTiers[r][a.s >= 18 ? 0 : a.s >= 11 ? 1 : 2] : `ENEMY_TYPES.${r}.baseDamage`}, customSpeed: ${a.s}${a.w ? `, waveAmplitude: ${f(a.w[0])}, waveFrequency: ${f(a.w[1])}${a.w[2] !== undefined ? `, wavePhase: ${f(a.w[2])}` : ''}` : ''} }, // ${i} ${a.combo}`);
+            AB.push(`\t{ boss: '${r}', type: '${t}', xPos: ${a.x}, yPos: ${a.y}, customHP: 1, customDamage: ${L.damageByClass ? `attackDamage.${r}.${(L.damageClassOverride && L.damageClassOverride[r]) || (a.s >= 13 ? 'light' : a.s >= 7 ? 'medium' : 'heavy')}` : (L.damageTiers && L.damageTiers[r]) ? L.damageTiers[r][a.s >= 18 ? 0 : a.s >= 11 ? 1 : 2] : `ENEMY_TYPES.${r}.baseDamage`}, customSpeed: ${a.s}${a.w ? `, waveAmplitude: ${f(a.w[0])}, waveFrequency: ${f(a.w[1])}${a.w[2] !== undefined ? `, wavePhase: ${f(a.w[2])}` : ''}` : ''}${a.bar ? `, barricadeHits: ${a.bar.barricadeHits}, barricadePauseMs: ${a.bar.barricadePauseMs}, barricadeRushSpeedMultiplier: ${a.bar.barricadeRushSpeedMultiplier}` : ''} }, // ${i} ${a.combo}`);
         });
         AB.push('');
         DOP.push(`\t// ${b.title}`);
@@ -319,6 +328,7 @@ function writeLevel(L, solvedByRole) {
             const parts = [`boss: '${r}'`, `indexAbilities: [${comboIdx[ci].join(', ')}]`];
             if (c.sig) parts.push('signature: true');
             if (c.isChain) parts.push('isChain: true');
+            if (c.barricades) parts.push('barricade: true');
             if (c.minPhase) parts.push(`minPhase: ${c.minPhase}`);
             if (c.shotDelayMs) parts.push(`shotDelayMs: ${c.shotDelayMs}`);
             if (c.recoveryMs) parts.push(`recoveryMs: ${c.recoveryMs}`);
@@ -395,6 +405,11 @@ function build(L) {
     const au = cp.spawnSync('node', [REPO + '/scripts/combo-audit.js', String(L.n)], { encoding: 'utf8', maxBuffer: 1 << 28 });
     let status = res.status; let out = res.stdout + res.stderr + NL + '--- combo-audit ---' + NL + au.stdout + au.stderr;
     if (au.status) status = au.status;
+    if (!status && ROLES.some(r => L.bosses[r].combos.some(c => c.barricades))) {
+        const workload = cp.spawnSync('node', [REPO + '/scripts/barricade-workload-audit.js', String(L.n)], {encoding:'utf8',maxBuffer:1<<24});
+        out += NL + '--- actual barricade workload: 45000 selected waves ---' + NL + workload.stdout + workload.stderr;
+        if (workload.status) status = workload.status;
+    }
     // А10.5: провал проверок — прежний файл уровня возвращается, отвергнутый вариант сохраняется для разбора
     if (status) {
         const rej = path.join(__dirname, 'rejected'); fs.mkdirSync(rej, { recursive: true });

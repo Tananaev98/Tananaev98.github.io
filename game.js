@@ -985,6 +985,8 @@ class Enemy {
      * @return {boolean} true если враг умер от ранения
      */
 updateWound() {
+    // Barricade HP counts direct hits; damage-over-time cannot consume that counter.
+    if (this.isBarricade) return false;
     if (this.isWounded) {
         const now = Date.now();
         
@@ -1041,6 +1043,7 @@ updateWound() {
      * @param {number} damage - урон, на основе которого рассчитывается ранение
      */
     applyWound(damage) {
+        if (this.isBarricade) return;
         this.isWounded = true;
         this.woundDamagePerSecond = Math.round(damage / 10);
         this.woundEndTime = Date.now() + WOUND_DURATION;
@@ -3603,7 +3606,7 @@ function damageEnemy(enemy, attackMultiplier = 1, attackKind = 'normal', shotInt
     const timing = isBoss
         ? getHeroAttackTiming(shotIntervalMs)
         : getHeroDeflectTiming();
-    const predictedDestroyed = enemy.hp - damageResult.damage <= 0;
+    const predictedDestroyed = enemy.hp - (enemy.isBarricade ? 1 : damageResult.damage) <= 0;
 
     // Сначала проигрываем активную фазу атаки. Урон будет применён
     // централизованно в её точке контакта.
@@ -3755,6 +3758,7 @@ function applyHeroImpactDamage(enemy, damageResult, isBoss) {
 }
 
 function checkForWound(enemy, damage) {
+    if (enemy.isBarricade) return;
     // Если враг уже ранен - не проверяем снова
     if (enemy.isWounded) return;
     
@@ -6103,6 +6107,9 @@ function pauseGame() {
     activeEnemies.forEach(enemy => {
         enemy.originalSpeedPixelsPerSecond = enemy.speedPixelsPerSecond;
         enemy.speedPixelsPerSecond = 0;
+        if (enemy.isBarricade && !enemy.hasRushed) {
+            enemy.pausedBarricadeHoldMs = Math.max(0, enemy.barricadeHoldUntil - performance.now());
+        }
     });
     
     
@@ -6117,6 +6124,10 @@ function resumeGame() {
     
     // Восстанавливаем скорости врагов
     activeEnemies.forEach(enemy => {
+        if (enemy.pausedBarricadeHoldMs !== undefined) {
+            enemy.barricadeHoldUntil = performance.now() + enemy.pausedBarricadeHoldMs;
+            delete enemy.pausedBarricadeHoldMs;
+        }
         if (enemy.originalSpeedPixelsPerSecond !== undefined) {
             enemy.speedPixelsPerSecond = enemy.originalSpeedPixelsPerSecond;
             delete enemy.originalSpeedPixelsPerSecond;

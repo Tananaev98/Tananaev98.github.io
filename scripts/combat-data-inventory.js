@@ -104,7 +104,7 @@ function collect(n, problems, srcOverride) {
             });
             boss.combos.push({ index: ci, indices: combo.indexAbilities, kind, minPhase: combo.minPhase || 1, signature: !!combo.signature,
                 openingOrder: combo.openingOrder, shotDelayMs: combo.shotDelayMs, recoveryMs: combo.recoveryMs, shotGapsMs: combo.shotGapsMs,
-                isChain: !!combo.isChain, sides: combo.indexAbilities.map(i => sideOf(attacks[i])).join(''),
+                isChain: !!combo.isChain, barricade: !!combo.barricade, sides: combo.indexAbilities.map(i => sideOf(attacks[i])).join(''),
                 speeds: combo.indexAbilities.map(i => attacks[i].customSpeed), classes: combo.indexAbilities.map(i => speedClass(attacks[i].customSpeed)).join(''),
                 phases });
         });
@@ -128,12 +128,12 @@ function dataRules(L) {
     const P = [];
     L.bosses.forEach(b => {
         const sm = b.profile.speedMultiplier, mv = Math.max(...b.profile.speedVariance);
-        const proj = (a, p) => a.customSpeed * sm * L.phases[p].speed * mv;
+        const proj = (a, p) => a.customSpeed * sm * L.phases[p].speed * mv * (a.barricadeHits ? a.barricadeRushSpeedMultiplier : 1);
         const sideOfA = (a) => (a.xPos <= RULE.leftFlank ? 'L' : a.xPos >= RULE.rightFlank ? 'R' : 'C');
         b.attacks.forEach((a, i) => [0, 1, 2].forEach(p => {
             const v = proj(a, p); const cap = a.yPos > 12 ? 15 : a.yPos > 10 ? 18 : 31;
             if (v > cap) P.push(`${b.role} атака ${i} ф${p + 1}: итоговая скорость ${v.toFixed(1)} при старте y=${a.yPos} выше допустимых ${cap} (раздел 5; движок больше не режет скорость)`);
-            if (a.customSpeed <= 10 && v > 11.5) P.push(`${b.role} атака ${i} ф${p + 1}: «медленная» атака разгоняется до ${v.toFixed(1)} (>11.5)`);
+            if (!a.barricadeHits && a.customSpeed <= 10 && v > 11.5) P.push(`${b.role} атака ${i} ф${p + 1}: «медленная» атака разгоняется до ${v.toFixed(1)} (>11.5)`);
         }));
         // 16.3: баррикады — не более одной комбинации на босса; (память выбора + 1) × minWaveDelay ≥ 7000 мс
         const barr = b.combos.filter(cb => cb.kind === 'B').length;
@@ -143,7 +143,7 @@ function dataRules(L) {
             // 5.1: быстрые атаки с противоположных флангов — не ближе 720 мс по моментам появления
             let lastL = -Infinity, lastR = -Infinity;
             cb.indices.forEach((k, i) => {
-                const a = b.attacks[k]; const side = sideOfA(a); if (side === 'C' || proj(a, p) < RULE.fastSpeed) return;
+                const a = b.attacks[k]; const side = sideOfA(a); if (a.barricadeHits || side === 'C' || proj(a, p) < RULE.fastSpeed) return;
                 const opp = side === 'L' ? lastR : lastL;
                 if (Number.isFinite(opp) && ph.offsets[i] - opp < RULE.crossfireMs) P.push(`${b.role} комбо ${cb.index} ф${p + 1}: быстрые атаки противоположных флангов через ${ph.offsets[i] - opp} мс (<${RULE.crossfireMs}, раздел 5.1)`);
                 if (side === 'L') lastL = ph.offsets[i]; else lastR = ph.offsets[i];
@@ -164,6 +164,17 @@ function dataRules(L) {
                 if (ph.shotDelay < minGapMs - 1e-6) P.push(`${b.role} цепь ${cb.index} ф${p + 1}: шаг появления звеньев ${ph.shotDelay} мс < ${Math.round(minGapMs)} мс (звенья «кучей»)`);
             }
         }));
+        b.attacks.forEach((a,i) => {
+            if(a.barricadeHits === undefined) return;
+            if(!Number.isInteger(a.barricadeHits)||a.barricadeHits<3||a.barricadeHits>7) P.push(`${b.role} атака ${i}: баррикада требует 3–7 ударов`);
+            if(a.barricadePauseMs!==a.barricadeHits*400) P.push(`${b.role} атака ${i}: ожидание баррикады должно равняться hits × 400 мс`);
+            if(!Number.isFinite(a.barricadeRushSpeedMultiplier)||a.barricadeRushSpeedMultiplier<=1) P.push(`${b.role} атака ${i}: некорректный рывок баррикады`);
+        });
+        b.combos.forEach(cb => {
+            const bars=cb.indices.filter(k=>b.attacks[k].barricadeHits!==undefined);
+            if(cb.barricade!==!!bars.length) P.push(`${b.role} комбо ${cb.index}: флаг barricade не соответствует составу`);
+            if(bars.length && (cb.isChain||bars.length!==1||cb.indices.length<2)) P.push(`${b.role} комбо ${cb.index}: нужна одна баррикада с обычными угрозами, без isChain`);
+        });
     });
     return P;
 }
@@ -239,6 +250,8 @@ function pressureOf(n, srcOverride) {
         const avgLen = cs.reduce((t, c) => t + c.indexAbilities.length, 0) / cs.length;
         const slow = at.filter(x => x.customSpeed <= 8).length / at.length;
         const ph = [0, 1, 2].map(p => {
+            const eligible=cs.filter(c=>(c.minPhase||1)<=p+1&&(c.maxPhase??3)>=p+1);
+            const avgHits=eligible.reduce((t,c)=>t+c.indexAbilities.reduce((s,k)=>s+(at[k].barricadeHits||1),0),0)/eligible.length;
             a.setBoss(role, p); const wd = Math.round(a.waveDelay());
             let dec = 0, viol = 0, nc = 0;
             for (const c of cs) {
@@ -249,7 +262,7 @@ function pressureOf(n, srcOverride) {
                 dec += d;
                 idx.forEach((k, i) => { if (at[k].customSpeed <= 8 && !at[k].barricadeHits) { const cover = idx.some((k2, j) => j !== i && Math.abs(at[k2].xPos - at[k].xPos) >= 15 && Math.abs(an.arrivals[i] - an.arrivals[j]) <= 700); if (!cover) viol++; } });
             }
-            return { waveDelay: wd, apm: avgLen * 60000 / (wd + 2500), decisions: dec / nc, slowViol: viol };
+            return { waveDelay: wd, apm: avgLen * 60000 / (wd + 2500), hitApm: avgHits * 60000 / (wd + 2500), decisions: dec / nc, slowViol: viol };
         });
         out[role] = { avgLen, slow, ph };
     }
@@ -271,6 +284,10 @@ function pressureReport(n) {
         if (n >= 11) { if (c.ph[0].apm > 46) bad.push(`${role} ф1: атак/мин ${f1(c.ph[0].apm)} > 46 — нет окон для атаки по боссу (А7.6)`);
             if (c.ph[2].apm > 54) bad.push(`${role} ф3: атак/мин ${f1(c.ph[2].apm)} > 54 — нет окон для атаки по боссу (А7.6)`);
             if (c.ph[2].waveDelay < 2400) bad.push(`${role} ф3: пауза между комбо ${c.ph[2].waveDelay} мс < 2400 (А7.6)`); }
+        if(n>=66) {
+            rows.push(`    с учётом всех ударов баррикады: ф1/ф2/ф3 ${c.ph.map(p=>f1(p.hitApm)).join('/')} попаданий/мин`);
+            for(const p of [0,2])if(c.ph[p].hitApm>[46,0,54][p])bad.push(`${role} ф${p+1}: ${f1(c.ph[p].hitApm)} попаданий/мин с баррикадой выше потолка ${[46,0,54][p]}`);
+        }
         for (const p of [0, 1, 2]) if (c.ph[p].slowViol) { bad.push(`${role} ф${p + 1}: медленных атак без прикрытия — ${c.ph[p].slowViol} (А7.4)`); break; }
     }
     return { rows, bad, hasBase: !!base };
